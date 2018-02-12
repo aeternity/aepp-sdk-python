@@ -59,6 +59,7 @@ class EpochClient:
         # )
 
     def on_new_block(self, message):
+        pass
 
 
     def http_call(self, method, base_url, endpoint, **kwargs):
