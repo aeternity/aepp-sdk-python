@@ -2,7 +2,7 @@ class ValidateClassMixin:
     validate_attr_not_none = None
 
     def assure_attr_not_none(self, attrname):
-        if not hasattr(self.__class__, attrname) or getattr(self.__class__, attrname, None) is None:
+        if not hasattr(self, attrname) or getattr(self, attrname, None) is None:
             raise ValueError(f'You must specify `{attrname}` on {self.__class__}')
 
     def __init__(self):

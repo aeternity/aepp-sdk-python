@@ -44,11 +44,12 @@ can be used in smart contracts. There are two roles when using an oracle:
  - Oracle Operator ("hosts" the oracle and responds to queries)
  - Oracle User (sends queries to the oracle)
 
-To provide an Oracle on the block chain, you have to inherit from aeternity.Oracle
-and implement `get_reply` which will be passed a `message` when a request to
-this oracle was found in the block chain.
 
 #### Oracle Operator
+
+To provide an Oracle on the block chain, you have to inherit from
+`aeternity.Oracle` and implement `get_reply` which will be passed a `message`
+when a request to this oracle was found in the block chain.
 
 Furthermore you must specify `query_format`, `response_format`,
 `default_query_fee`, `default_fee`, `default_query_ttl`, `default_response_ttl`
@@ -71,7 +72,9 @@ class WeatherOracle(Oracle):
 
 To act as operator of this oracle, you have to connect to your local epoch node
 (see [the epoch repo](https://github.com/aeternity/epoch) to find out how to run
-a local node), instantiate your oracle and register it on the block chain.
+a local node), instantiate your oracle and register it on the block chain using
+`client.register_oracle`. Then you must constantly watch for queries on the
+block chain using `client.run()`
 
 ```python
 from aeternity import Config, EpochClient
@@ -86,11 +89,13 @@ client.run() # blocking, responds to all queries for all registered oracles
 
 The oracle operator will want to publish their oracle using a description how
 to talk to their oracle. All that has to be done is to create a corresponding
-`OracleQuery` class. Normally it's in the interest of the oracle operator to do
-this, but you can also implement this yourself:
+`OracleQuery` class. Normally it's in the interest of the oracle operator 
+provide this for you, but you can also easily implement this yourself in the
+case that the operator did not.
 
 ```python
 from aeternity import OracleQuery
+
 class WeatherOracleQuery(OracleQuery):
     oracle_id = 'deadbeef...'  # query_id of the oracle as published by the operator
     query_fee = 4      # these are the same values as the Oracle
@@ -116,7 +121,7 @@ config = Config(local_port=3013, internal_port=3113, websocket_port=3114)
 client = EpochClient(config=config)
 # instantiate your oracle query and register it with the node
 weather_oracle_query = WeatherOracleQuery()
-client.
+client.mount(weather_oracle_query)
 ``` 
 
 

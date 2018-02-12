@@ -1,6 +1,6 @@
 import sys
 
-from aeternity import EpochClient, Name, InvalidName
+from aeternity import EpochClient, AEName, InvalidName
 
 
 def print_usage():
@@ -62,12 +62,12 @@ if '--no-input' in args:
 if system == 'aens':
     domain = args[2]
     try:
-        Name.validate_name(domain)
+        AEName.validate_name(domain)
     except InvalidName as exc:
         stderr('Error:', str(exc))
         sys.exit(1)
 
-    name = Name(domain)
+    name = AEName(domain)
 
     if command == 'available':
         if name.is_available():

@@ -25,17 +25,17 @@ class Connection:
 
     def assure_connected(self):
         if self.websocket is None:
-            self.websocket = websocket.create_connection(self.config.websocker_url)
+            self.websocket = websocket.create_connection(self.config.websocket_url)
 
     def receive(self):
         self.assure_connected()
         message = json.loads(self.websocket.recv())
-        logger.debug('received: %s', message)
+        logger.debug('RECEIVED: %s', message)
         return message
 
     def send(self, message):
         self.assure_connected()
-        logger.debug('sending: %s', message)
+        logger.debug('SENDING: %s', message)
         self.websocket.send(json.dumps(message))
 
 
@@ -53,10 +53,9 @@ class EpochClient:
         self._listeners = defaultdict(list)
         self._connection = Connection(config=config)
         self._top_block = None
-        # self.send_and_receive(
-        #     {"target":"chain", "action":"subscribe", "payload":{"type":"new_block"}},
-        #     print
-        # )
+        self.send(
+            {"target":"chain", "action":"subscribe", "payload":{"type":"new_block"}}
+        )
 
     def on_new_block(self, message):
         pass
@@ -112,27 +111,24 @@ class EpochClient:
                 self._top_block = new_block
                 break
 
-    def add_listener(self, target, action, callback):
-        self._listeners[(target, action)].append(callback)
-
-    def remove_listener(self, target, action, callback):
-        self._listeners[(target, action)].remove(callback)
-
     def dispatch_message(self, message):
-        for callback in self._listeners[(message['origin'], message['action'])]:
+        subscription_id = (message['origin'], message['action'])
+        callbacks = self._listeners[subscription_id]
+        logging.debug('DISPATCH: message %s to callbacks %s', subscription_id, callbacks)
+        for callback in callbacks:
             callback(message)
 
     def mount(self, component):
         for target, action, callback_name in component.message_listeners:
             callback = getattr(component, callback_name)
-            self.add_listener(target, action, callback)
+            self._listeners[(target, action)].append(callback)
         component.on_mounted(self)
 
     register_oracle = mount
 
     def unmount(self, component):
         for target, action, callback in component.get_message_listeners():
-            self.add_listener(target, action, callback)
+            self._listeners[(target, action)].remove(callback)
 
     def send(self, message):
         self.update_top_block()
@@ -160,6 +156,15 @@ class EpochClient:
     def _tick(self):
         message = self._connection.receive()
         self.dispatch_message(message)
+
+    def tick_until(self, func, timeout=None):
+        start = time.time()
+        while True:
+            if timeout is not None and time.time() > start + timeout:
+                raise TimeoutError('Condition %s was never fulfilled' % func)
+            self._tick()
+            if func():
+                return
 
     def run(self):
         try:

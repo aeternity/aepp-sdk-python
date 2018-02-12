@@ -46,7 +46,7 @@ class NameStatus:
     TRANSFERRED = 'TRANSFERRED'
 
 
-class Name:
+class AEName:
     Status = NameStatus
 
     def __init__(self, domain, client=None):
@@ -178,7 +178,7 @@ class Name:
         )
         try:
             self.name_hash = response['name_hash']
-            self.status = Name.Status.CLAIMED
+            self.status = AEName.Status.CLAIMED
         except KeyError:
             raise ClaimFailed(response)
 

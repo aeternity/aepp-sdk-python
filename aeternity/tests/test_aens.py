@@ -4,7 +4,7 @@ import string
 from pytest import raises
 
 from aeternity import Config, EpochClient
-from aeternity.aens import Name, AENSException
+from aeternity.aens import AEName, AENSException
 from aeternity.config import ConfigException
 
 # to run this test in other environments set the env vars as specified in the
@@ -24,47 +24,47 @@ def random_domain(length=10):
 
 def test_name_validation_fails():
     with raises(ValueError):
-        Name('test.lol')
+        AEName('test.lol')
 
 def test_name_validation_succeeds():
-    Name('test.aet')
+    AEName('test.aet')
 
 def test_name_is_available():
-    name = Name(random_domain())
+    name = AEName(random_domain())
     assert name.is_available()
 
 def test_name_status_availavle():
-    name = Name(random_domain())
-    assert name.status == Name.Status.UNKNOWN
+    name = AEName(random_domain())
+    assert name.status == AEName.Status.UNKNOWN
     name.update_status()
-    assert name.status == Name.Status.AVAILABLE
+    assert name.status == AEName.Status.AVAILABLE
 
 def test_name_claim_lifecycle():
     domain = random_domain()
-    name = Name(domain)
-    assert name.status == Name.Status.UNKNOWN
+    name = AEName(domain)
+    assert name.status == AEName.Status.UNKNOWN
     name.update_status()
-    assert name.status == Name.Status.AVAILABLE
+    assert name.status == AEName.Status.AVAILABLE
     name.preclaim()
-    assert name.status == Name.Status.PRECLAIMED
+    assert name.status == AEName.Status.PRECLAIMED
     name.claim_blocking()
-    assert name.status == Name.Status.CLAIMED
+    assert name.status == AEName.Status.CLAIMED
 
 def test_name_status_unavailable():
     # claim a domain
     domain = random_domain()
-    occupy_name = Name(domain)
+    occupy_name = AEName(domain)
     occupy_name.full_claim_blocking()
     # wait for the state to propagate in the block chain
     EpochClient().wait_for_next_block()
-    same_name = Name(domain)
+    same_name = AEName(domain)
     assert not same_name.is_available()
 
 def test_name_update():
     client = EpochClient()
     # claim a domain
     domain = random_domain()
-    name = Name(domain)
+    name = AEName(domain)
     name.full_claim_blocking()
     name.update(target=client.get_pubkey())
     client.wait_for_next_block()
@@ -73,23 +73,26 @@ def test_name_update():
 
 def test_transfer_ownership():
     client = EpochClient()
-    name = Name(random_domain())
+    name = AEName(random_domain())
     name.full_claim_blocking()
     client.wait_for_next_block()
     name.transfer_ownership('ak$3scLu3oJbhsdCJkDjfJ6BUPJ4M9ZZJe57CQ56deSbEXhaTSfG3Wf3i2GYZV6APX7RDDVk4Weewb7oLePte3H3QdBw4rMZw')
-    assert name.status == Name.Status.TRANSFERRED
+    assert name.status == AEName.Status.TRANSFERRED
 
 def test_transfer_failure_wrong_pubkey():
     client = EpochClient()
-    name = Name(random_domain())
+    name = AEName(random_domain())
     name.full_claim_blocking()
     client.wait_for_next_block()
     with raises(AENSException):
         name.transfer_ownership('ak$deadbeef')
 
 def test_revocation():
-    name = Name(random_domain())
+    domain = random_domain()
+    name = AEName(domain)
     name.full_claim_blocking()
     EpochClient().wait_for_next_block()
     name.revoke()
-    assert name.status == Name.Status.REVOKED
+    assert name.status == AEName.Status.REVOKED
+    EpochClient().wait_for_next_block()
+    assert AEName(domain).is_available()
