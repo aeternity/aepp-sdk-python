@@ -1,10 +1,8 @@
 import json
 import random
 
-from aeternity.oracle import EpochClient, Oracle
-
-class InvalidName(Exception):
-    pass
+from aeternity.oracle import Oracle
+from aeternity.epoch import EpochClient
 
 
 class AENSException(Exception):
@@ -48,7 +46,7 @@ class NameStatus:
     TRANSFERRED = 'TRANSFERRED'
 
 
-class Name:
+class AEName:
     Status = NameStatus
 
     def __init__(self, domain, client=None):
@@ -70,15 +68,31 @@ class Name:
 
     @classmethod
     def validate_pointer(cls, pointer):
-        if not pointer.startswith(('ak$')):
-            raise ValueError('pointer addresses must start with in ak$')
+        return (
+            not cls.validate_address(pointer, raise_exception=False)
+            or
+            not cls.validate_name(pointer, raise_exception=False)
+        )
 
     @classmethod
-    def validate_name(cls, domain):
+    def validate_address(cls, address, raise_exception=True):
+        if not address.startswith(('ak$', 'ok$')):
+            if raise_exception:
+                raise ValueError(
+                    'pointer addresses must start with in ak$'
+                )
+            return False
+        return True
+
+    @classmethod
+    def validate_name(cls, domain, raise_exception=True):
         # TODO: validate according to the spec!
         # TODO: https://github.com/aeternity/protocol/blob/master/AENS.md#name
         if not domain.endswith(('.aet', '.test')):
-            raise InvalidName('AENS TLDs must end in .aet')
+            if raise_exception:
+                raise ValueError('AENS TLDs must end in .aet')
+            return False
+        return True
 
     def update_status(self):
         response = self.client.local_http_get('name', params={'name': self.domain})
@@ -101,13 +115,13 @@ class Name:
         self.update_status()
         return self.status == NameStatus.CLAIMED
 
-    def full_claim_blocking(self):
+    def full_claim_blocking(self, preclaim_fee=1, claim_fee=1):
         if not self.is_available():
             raise NameNotAvailable(self.domain)
-        self.preclaim()
-        self.claim_blocking()
+        self.preclaim(fee=preclaim_fee)
+        self.claim_blocking(fee=claim_fee)
 
-    def preclaim(self):
+    def preclaim(self, fee=1):
         # check which block we used to create the preclaim
         self.preclaimed_block_height = self.client.get_top_block()
         self.preclaim_salt = random.randint(0, 2**64)
@@ -126,7 +140,7 @@ class Name:
             'name-preclaim-tx',
             json={
                 "commitment": commitment_hash,
-                "fee": 1
+                "fee": fee
             },
         )
         try:
@@ -136,14 +150,14 @@ class Name:
         except KeyError:
             raise PreclaimFailed(response)
 
-    def claim_blocking(self):
+    def claim_blocking(self, fee=1):
         try:
-            self.claim()
+            self.claim(fee=fee)
         except TooEarlyClaim:
             self.client.wait_for_next_block()
-            self.claim()
+            self.claim(fee=fee)
 
-    def claim(self):
+    def claim(self, fee=1):
         if self.preclaimed_block_height is None:
             raise MissingPreclaim('You must call preclaim before claiming a name')
 
@@ -159,16 +173,16 @@ class Name:
             json={
                 'name': self.domain,
                 'name_salt': self.preclaim_salt,
-                'fee': 1
+                'fee': fee
             }
         )
         try:
             self.name_hash = response['name_hash']
-            self.status = Name.Status.CLAIMED
+            self.status = AEName.Status.CLAIMED
         except KeyError:
             raise ClaimFailed(response)
 
-    def update(self, target):
+    def update(self, target, ttl=50, fee=1):
         assert self.status == NameStatus.CLAIMED, 'Must be claimed to update pointer'
 
         if isinstance(target, Oracle):
@@ -186,9 +200,9 @@ class Name:
             json={
                 "name_hash": self.name_hash,
                 "name_ttl": self.name_ttl,
-                "ttl": 50,
+                "ttl": ttl,
                 "pointers": json.dumps(pointers),
-                "fee": 1
+                "fee": fee
             }
         )
         if 'name_hash' in response:
@@ -196,25 +210,25 @@ class Name:
         else:
             raise UpdateError(response)
 
-    def transfer_ownership(self, receipient_pubkey):
+    def transfer_ownership(self, receipient_pubkey, fee=1):
         response = self.client.internal_http_post(
             'name-transfer-tx',
             json={
                 "name_hash": self.name_hash,
                 "recipient_pubkey": receipient_pubkey,
-                "fee": 1
+                "fee": fee
             }
         )
         if 'name_hash' not in response:
             raise AENSException('transfer ownership failed', payload=response)
         self.status = NameStatus.TRANSFERRED
 
-    def revoke(self):
+    def revoke(self, fee=1):
         response = self.client.internal_http_post(
             'name-revoke-tx',
             json={
                 "name_hash": self.name_hash,
-                "fee": 1
+                "fee": fee
             }
         )
         if 'name_hash' in response:

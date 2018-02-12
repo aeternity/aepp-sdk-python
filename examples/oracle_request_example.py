@@ -3,7 +3,7 @@ import logging
 
 from aeternity.config import Config
 from aeternity.oracle import EpochClient
-from aeternity.oracle import Oracle
+from aeternity.oracle import OracleProvider
 
 
 logging.basicConfig(level=logging.DEBUG)

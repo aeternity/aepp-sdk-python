@@ -27,7 +27,7 @@ class Config:
                 'AE_LOCAL_INTERNAL_PORT and AE_WEBSOCKET'
             )
 
-        self.websocker_url = f'ws://{host}:{self.websocket_port}/websocket'
+        self.websocket_url = f'ws://{host}:{self.websocket_port}/websocket'
         self.http_api_url = f'http://{host}:{self.local_port}/v2'
         self.internal_api_url = f'http://{host}:{self.local_internal_port}/v2'
 
