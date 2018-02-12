@@ -3,13 +3,13 @@ import logging
 
 from aeternity.config import Config
 from aeternity.oracle import EpochClient
-from aeternity.oracle import Oracle
+from aeternity.oracle import OracleProvider
 
 
 logging.basicConfig(level=logging.DEBUG)
 
 
-class WeatherOracle(Oracle):
+class WeatherOracle(OracleProvider):
     query_format = 'weather_query2'
     response_format = 'weather_resp2'
     default_query_fee = 4

@@ -20,6 +20,9 @@ Usage:
             Transfers a domain to another user
 The `--no-input` will suppress any questions before performing the action.
 
+You can override the standard connection ports using the following environment
+variables: AE_LOCAL_PORT, AE_LOCAL_INTERNAL_PORT and AE_WEBSOCKET
+
 ''')
     sys.exit(1)
 
@@ -38,8 +41,11 @@ def prompt(message, skip):
         print('cancelled')
         sys.exit(0)
 
-
 args = sys.argv[1:]
+
+if '--help' in args:
+    print_usage()
+
 if len(args) < 2:
     print_usage()
 

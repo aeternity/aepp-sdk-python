@@ -1,8 +1,6 @@
-import sys
-
-from .oracle import Oracle
+from .oracle import Oracle, OracleQuery
 from .aens import Name, InvalidName
-from .oracle import EpochClient
+from .epoch import EpochClient
 from .config import Config
 
 __version__ = '0.1.0'

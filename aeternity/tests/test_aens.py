@@ -4,7 +4,7 @@ import string
 from pytest import raises
 
 from aeternity import Config, EpochClient
-from aeternity.aens import InvalidName, Name, AENSException
+from aeternity.aens import Name, AENSException
 from aeternity.config import ConfigException
 
 # to run this test in other environments set the env vars as specified in the
@@ -23,7 +23,7 @@ def random_domain(length=10):
     return rand_str + '.aet'
 
 def test_name_validation_fails():
-    with raises(InvalidName):
+    with raises(ValueError):
         Name('test.lol')
 
 def test_name_validation_succeeds():
