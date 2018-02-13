@@ -33,10 +33,10 @@ class WeatherOracle(Oracle):
 class WeatherQuery(OracleQuery):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.response_received = False
+        self.response_received = False  # for testing, record if we received anything
 
     def on_response(self, response, query):
-        print('Weather Oracle Received a response! %s' % response)
+        logger.debug('Weather Oracle Received a response! %s' % response)
         self.response_received = True
 
 
@@ -76,6 +76,5 @@ def test_oracle_query_received():
         response_ttl=2,
     )
     client.mount(weather_query)
-    client._tick()
     weather_query.query("{'city': 'Berlin'}")
     client.consume_until(lambda: weather_query.response_received, timeout=180)
