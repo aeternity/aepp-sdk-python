@@ -1,3 +1,4 @@
+import json
 import logging
 
 from aeternity.epoch import EpochSubscription
@@ -74,6 +75,9 @@ class OracleQuery(EpochSubscription):
 
     def handle_oracle_query_sent(self, message):
         query_id = message['payload']['query_id']
+        self._subscribe_to_query_id(query_id)
+
+    def _subscribe_to_query_id(self, query_id):
         logger.debug('Query was sent. Subscribing to query with id %s', query_id)
         subscribe_message = {
             "target": "chain",
@@ -132,15 +136,15 @@ class Oracle(EpochSubscription):
     ]
 
     def __init__(
-            self,
-            *,
-            query_format,
-            response_format,
-            default_query_fee,
-            default_fee,
-            default_ttl,
-            default_query_ttl,
-            default_response_ttl,
+        self,
+        *,
+        query_format,
+        response_format,
+        default_query_fee,
+        default_fee,
+        default_ttl,
+        default_query_ttl,
+        default_response_ttl,
     ):
         super().__init__()
         # force the developer inheriting from this class to always specify these:
@@ -231,7 +235,7 @@ class Oracle(EpochSubscription):
                 "vsn": 1,
                 "query_id": query_id,
                 "fee": self.get_fee(),
-                "response": response
+                "response": json.dumps(response),
             }
         })
 

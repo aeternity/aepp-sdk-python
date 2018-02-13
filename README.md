@@ -137,7 +137,7 @@ To register human-readable names with the aeternity naming system you also need
 to connect to your local epoch node.
 
 ```python
-from aeternity import Config, EpochClient, Name
+from aeternity import Config, EpochClient, AEName
 import sys
 # create connection with the local node:
 config = Config(local_port=3013, internal_port=3113, websocket_port=3114)
@@ -165,6 +165,7 @@ name.update(target=oracle)
 ## Reference:
 
 [AENS API Spec](https://github.com/aeternity/protocol/blob/master/epoch/api/naming_system_api_usage.md)
+
 [AENS Protocol](https://github.com/aeternity/protocol/blob/master/AENS.md)
 
 
