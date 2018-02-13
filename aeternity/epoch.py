@@ -157,7 +157,7 @@ class EpochClient:
         message = self._connection.receive()
         self.dispatch_message(message)
 
-    def tick_until(self, func, timeout=None):
+    def consume_until(self, func, timeout=None):
         start = time.time()
         while True:
             if timeout is not None and time.time() > start + timeout:
@@ -180,7 +180,7 @@ class EpochClient:
             return
 
 
-class EpochComponent(ValidateClassMixin):
+class EpochSubscription():
     message_listeners = None
 
     # Message listeners are a list of tuples to define how the class should
@@ -194,7 +194,8 @@ class EpochComponent(ValidateClassMixin):
 
     def __init__(self):
         super().__init__()
-        self.assure_attr_not_none('message_listeners')
+        assert self.message_listeners is not None, \
+            'Classes inheriting EpochSubscription must have message_listeners'
 
     def on_mounted(self, client):
         """

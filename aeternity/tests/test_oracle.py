@@ -23,14 +23,6 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 class WeatherOracle(Oracle):
-    query_format = "{'city': str}"
-    response_format = "{'temp_c': int}"
-    default_query_fee = 0
-    default_fee = 10
-    default_ttl = 50
-    default_query_ttl = 2
-    default_response_ttl = 2
-
     def get_response(self, message):
         query = message['payload']['query']
         logger.debug('Received query %s' % query)
@@ -58,18 +50,34 @@ class WeatherQuery(OracleQuery):
 
 def test_oracle_registration():
     client = EpochClient()
-    weather_oracle = WeatherOracle()
+    weather_oracle = WeatherOracle(
+        query_format="{'city': str}",
+        response_format= "{'temp_c': int}",
+        default_query_fee=0,
+        default_fee=10,
+        default_ttl=50,
+        default_query_ttl=2,
+        default_response_ttl=2,
+    )
     client.register_oracle(weather_oracle)
-    client.tick_until(lambda: weather_oracle.oracle_registered, timeout=40)
+    client.consume_until(weather_oracle.is_ready, timeout=40)
     assert weather_oracle.oracle_id is not None
 
 def test_oracle_query_received():
     client = EpochClient()
-    weather_oracle = WeatherOracle()
+    weather_oracle = WeatherOracle(
+        query_format="{'city': str}",
+        response_format="{'temp_c': int}",
+        default_query_fee=0,
+        default_fee=10,
+        default_ttl=50,
+        default_query_ttl=2,
+        default_response_ttl=2,
+    )
     client.register_oracle(weather_oracle)
-    client.tick_until(lambda: weather_oracle.oracle_registered)
+    client.consume_until(weather_oracle.is_ready, timeout=180)
     weather_query = WeatherQuery(oracle_pubkey=weather_oracle.oracle_id)
     client.mount(weather_query)
     client._tick()
     weather_query.query("{'city': 'Berlin'}")
-    client.tick_until(lambda: weather_query.response_received, timeout=180)
+    client.consume_until(lambda: weather_query.response_received, timeout=180)

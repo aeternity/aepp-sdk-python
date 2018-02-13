@@ -53,21 +53,24 @@ when a request to this oracle was found in the block chain.
 
 Furthermore you must specify `query_format`, `response_format`,
 `default_query_fee`, `default_fee`, `default_query_ttl`, `default_response_ttl`
+in the oracle constructor.
 
 For example:
 ```python
 from aeternity import Oracle
 
 class WeatherOracle(Oracle):
-    query_format = 'weather_query2'
-    response_format = 'weather_resp2'
-    default_query_fee = 4
-    default_fee = 6
-    default_query_ttl = 10
-    default_response_ttl = 10
-
     def get_reply(self, message):
         return '26 C'
+
+weather_oracle = WeatherOracle(
+    query_format='weather_query2',
+    response_format='weather_resp2',
+    default_query_fee=4,
+    default_fee=6,
+    default_query_ttl=10,
+    default_response_ttl=10,
+)
 ```
 
 To act as operator of this oracle, you have to connect to your local epoch node
@@ -81,7 +84,7 @@ from aeternity import Config, EpochClient
 # example configuration to create a connection to your node:
 config = Config(local_port=3013, internal_port=3113, websocket_port=3114)
 client = EpochClient(config=config)  # connect with the epoch node
-client.register_oracle(WeatherOracle())  # instantiate and register your oracle
+client.register_oracle(weather_oracle)  # instantiate and register your oracle
 client.run() # blocking, responds to all queries for all registered oracles
 ```
 
