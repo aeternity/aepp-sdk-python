@@ -5,14 +5,6 @@ from aeternity.epoch import EpochSubscription
 logger = logging.getLogger(__name__)
 
 
-class OracleQuerySubscriptionFailed(Exception):
-    pass
-
-
-class OracleQueryState:
-    NONE = 'NONE'
-
-
 class OracleQuery(EpochSubscription):
     message_listeners = [
         ('oracle', 'query', 'handle_oracle_query_sent'),
@@ -29,13 +21,13 @@ class OracleQuery(EpochSubscription):
     ]
 
     def __init__(
-            self,
-            *,
-            oracle_pubkey,
-            query_fee,
-            query_ttl,
-            response_ttl,
-            fee
+        self,
+        *,
+        oracle_pubkey,
+        query_fee,
+        query_ttl,
+        response_ttl,
+        fee
     ):
         super().__init__()
         self.oracle_pubkey = oracle_pubkey
@@ -59,7 +51,6 @@ class OracleQuery(EpochSubscription):
     def query(self, query):
         if not self.mounted:
             raise RuntimeError('You must `mount` the OracleQuery before usage!')
-
         message = {
             "target": "oracle",
             "action": "query",
@@ -108,10 +99,6 @@ class OracleQuery(EpochSubscription):
             # handler anyways?
             query = None
         self.on_response(message, query)
-
-
-class OracleRegistrationFailed(Exception):
-    pass
 
 
 class OracleState:
@@ -200,7 +187,7 @@ class Oracle(EpochSubscription):
 
     def handle_registration_response(self, message):
         if message['payload'].get('result') != 'ok':
-            raise OracleRegistrationFailed(message)
+            raise RuntimeError('Oracle registration failed!')
         self.oracle_id = message['payload']['oracle_id']
         logger.debug('Got OracleRegisterTx, oracle_id %s', self.oracle_id)
         logger.debug('Subscribing to oracles queries')
