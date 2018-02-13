@@ -9,16 +9,15 @@ class OracleQuerySubscriptionFailed(Exception):
     pass
 
 
-class OracleQuery(EpochSubscription):
-    oracle_pubkey = None
-    query_fee = None
-    query_ttl = None
-    response_ttl = None
-    fee = None
+class OracleQueryState:
+    NONE = 'NONE'
 
+
+class OracleQuery(EpochSubscription):
     message_listeners = [
         ('oracle', 'query', 'handle_oracle_query_sent'),
         ('chain', 'new_oracle_response', 'handle_oracle_response'),
+        ('chain', 'subscription', 'handle_query_subscription_ack'),
     ]
 
     validate_attr_not_none = [
@@ -29,16 +28,33 @@ class OracleQuery(EpochSubscription):
         'fee',
     ]
 
-    def __init__(self, oracle_pubkey=None):
+    def __init__(
+            self,
+            *,
+            oracle_pubkey,
+            query_fee,
+            query_ttl,
+            response_ttl,
+            fee
+    ):
+        super().__init__()
+        self.oracle_pubkey = oracle_pubkey
+        self.query_fee = query_fee
+        self.query_ttl = query_ttl
+        self.response_ttl = response_ttl
+        self.fee = fee
+
+        self._last_query = None
+        self.query_by_query_id = {}
         self.mounted = False
         self.client = None
-        if oracle_pubkey is not None:
-            self.oracle_pubkey = oracle_pubkey
-        super().__init__()
-        self.query_ids = []
 
     def on_response(self, response, query):
         raise NotImplementedError('You must implement the `on_response` method')
+
+    def on_mounted(self, client):
+        self.client = client
+        self.mounted = True
 
     def query(self, query):
         if not self.mounted:
@@ -63,6 +79,7 @@ class OracleQuery(EpochSubscription):
             }
         }
         self.client.send(message)
+        self._last_query = query
 
     def handle_oracle_query_sent(self, message):
         query_id = message['payload']['query_id']
@@ -74,12 +91,23 @@ class OracleQuery(EpochSubscription):
         }
         self.client.send(subscribe_message)
 
-    def handle_oracle_response(self, message):
-        self.on_response(message, 'TODO: get the initial query in here.')
+    def handle_query_subscription_ack(self, message):
+        query_id = message['payload'].get('subscribed_to', {}).get('query_id')
+        if query_id:
+            logger.debug(f'Got subscription ack for query {query_id}')
+            self.query_by_query_id[query_id] = self._last_query
+            self._last_query = None
 
-    def on_mounted(self, client):
-        self.client = client
-        self.mounted = True
+    def handle_oracle_response(self, message):
+        query_id = message['payload']['query_id']
+        try:
+            query = self.query_by_query_id.pop(query_id)
+        except KeyError:
+            # this only happens if this instance did not send the initial
+            # query. Should we forward this response to the `on_response`
+            # handler anyways?
+            query = None
+        self.on_response(message, query)
 
 
 class OracleRegistrationFailed(Exception):

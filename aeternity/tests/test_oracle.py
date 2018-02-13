@@ -5,7 +5,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 from aeternity import Config, EpochClient, Oracle, OracleQuery
-from aeternity.aens import AEName, AENSException
 from aeternity.config import ConfigException
 
 # to run this test in other environments set the env vars as specified in the
@@ -32,12 +31,6 @@ class WeatherOracle(Oracle):
 
 
 class WeatherQuery(OracleQuery):
-    oracle_pubkey = None
-    query_fee = 0
-    fee = 10
-    query_ttl = 2
-    response_ttl = 2
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.response_received = False
@@ -45,7 +38,6 @@ class WeatherQuery(OracleQuery):
     def on_response(self, response, query):
         print('Weather Oracle Received a response! %s' % response)
         self.response_received = True
-
 
 
 def test_oracle_registration():
@@ -76,7 +68,13 @@ def test_oracle_query_received():
     )
     client.register_oracle(weather_oracle)
     client.consume_until(weather_oracle.is_ready, timeout=180)
-    weather_query = WeatherQuery(oracle_pubkey=weather_oracle.oracle_id)
+    weather_query = WeatherQuery(
+        oracle_pubkey=weather_oracle.oracle_id,
+        query_fee=0,
+        fee=10,
+        query_ttl=2,
+        response_ttl=2,
+    )
     client.mount(weather_query)
     client._tick()
     weather_query.query("{'city': 'Berlin'}")

@@ -59,13 +59,13 @@ For example:
 ```python
 from aeternity import Oracle
 
-class WeatherOracle(Oracle):
+class MyOracle(Oracle):
     def get_reply(self, message):
-        return '26 C'
+        return '42'
 
-weather_oracle = WeatherOracle(
-    query_format='weather_query2',
-    response_format='weather_resp2',
+my_oracle = MyOracle(
+    query_format='spec still missing',      # this will be defined later
+    response_format='spec still missing',   # this will be defined later
     default_query_fee=4,
     default_fee=6,
     default_query_ttl=10,
@@ -84,7 +84,7 @@ from aeternity import Config, EpochClient
 # example configuration to create a connection to your node:
 config = Config(local_port=3013, internal_port=3113, websocket_port=3114)
 client = EpochClient(config=config)  # connect with the epoch node
-client.register_oracle(weather_oracle)  # instantiate and register your oracle
+client.register_oracle(my_oracle)  # instantiate and register your oracle
 client.run() # blocking, responds to all queries for all registered oracles
 ```
 
@@ -99,16 +99,18 @@ case that the operator did not.
 ```python
 from aeternity import OracleQuery
 
-class WeatherOracleQuery(OracleQuery):
-    oracle_id = 'deadbeef...'  # query_id of the oracle as published by the operator
-    query_fee = 4      # these are the same values as the Oracle
-    fee = 6
-    response_ttl = 10
-    query_ttl = 10
-    
+class MyOracleQuery(OracleQuery):    
     def on_response(self, query):
         print('You requested %s' % query)
         print('The oracle responded %s' % query)
+
+my_query = MyOracleQuery(
+    oracle_pubkey='ok$deadbeef...',  # oracle id as published by the operator
+    query_fee=4,      # these are the same values as the Oracle
+    fee=6,
+    response_ttl=10,
+    query_ttl=10,
+)
 ```
 
 As you can see this is mostly equivalent to the Oracle itself, but the oracle
@@ -123,8 +125,8 @@ from aeternity import Config, EpochClient
 config = Config(local_port=3013, internal_port=3113, websocket_port=3114)
 client = EpochClient(config=config)
 # instantiate your oracle query and register it with the node
-weather_oracle_query = WeatherOracleQuery()
-client.mount(weather_oracle_query)
+client.mount(my_query)
+my_query.query('The answer to life, the universe and everything')
 ``` 
 
 
@@ -155,14 +157,14 @@ you can also pass an oracle instance directly to in the `target` parameter
 when calling `update`
 
 ```python
-oracle = WeatherOracle()
+oracle = MyOracle()
 client.register_oracle(oracle)  # the oracle must be registered for this to work
 name.update(target=oracle)
 ```
 
 ## Reference:
 
-(AENS API Spec)[https://github.com/aeternity/protocol/blob/master/epoch/api/naming_system_api_usage.md]
-(AENS Protocol)[https://github.com/aeternity/protocol/blob/master/AENS.md]
+[AENS API Spec](https://github.com/aeternity/protocol/blob/master/epoch/api/naming_system_api_usage.md)
+[AENS Protocol](https://github.com/aeternity/protocol/blob/master/AENS.md)
 
 
