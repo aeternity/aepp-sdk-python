@@ -1,27 +1,38 @@
-#!/usr/env/bin python
+#!/usr/bin/env python
+import json
 import logging
+import sys
+import os
 
-from aeternity.config import Config
-from aeternity.oracle import EpochClient
-from aeternity.oracle import OracleProvider
+# this is just a hack to get this example to import a parent folder:
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
 
+from aeternity import Config
+from aeternity import EpochClient
+from aeternity import OracleQuery
 
 logging.basicConfig(level=logging.DEBUG)
 
+class AeternityInUSDOracleQuery(OracleQuery):
+    def on_response(self, message, query):
+        print(query)
+        print(message)
+
+
 dev1_config = Config(local_port=3013, internal_port=3113, websocket_port=3114)
-dev2_config = Config(local_port=3023, internal_port=3123, websocket_port=3124)
 client = EpochClient(config=dev1_config)
+oracle_pubkey = 'ok$3WRqCYwdr9B5aeAMT7Bfv2gGZpLUdD4RQM4hzFRpRzRRZx7d8pohQ6xviXxDTLHVwWKDbGzxH1xRp19LtwBypFpCVBDjEQ'
 
-oracle_id = 'ok$3ZTGFF2EyRGBVRsJhUs2CuRUqGXW1AthNWKAQTFDmhcHwDfEWtqR4QXbFoEGc96Kf6edoqmh6stPYbdt7stPSKp34E3GZC'
-
-
-
-client.ask_oracle(
-    oracle_pub_key=oracle_id,
+oracle_query = AeternityInUSDOracleQuery(
+    oracle_pubkey=oracle_pubkey,
     query_fee=4,
     query_ttl=10,
     response_ttl=10,
     fee=6,
-    query="what the current the temperature?"
 )
+client.mount(oracle_query)
+oracle_query.query(json.dumps({
+    'url': 'https://api.coinmarketcap.com/v1/ticker/aeternity/?convert=USD',
+    'jq': '.[0].price_usd',
+}))
 client.run()

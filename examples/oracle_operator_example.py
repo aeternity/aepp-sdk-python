@@ -1,38 +1,119 @@
-#!/usr/env/bin python
+#!/usr/bin/env python
+import json
 import logging
+import re
 
-from aeternity.config import Config
-from aeternity.oracle import EpochClient
-from aeternity.oracle import OracleProvider
+import os
+import requests
+import sys
+
+# this is just a hack to get this example to import a parent folder:
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
+
+from aeternity import Config
+from aeternity import EpochClient
+from aeternity import Oracle
 
 
 logging.basicConfig(level=logging.DEBUG)
 
 
-class WeatherOracle(OracleProvider):
-    query_format = 'weather_query2'
-    response_format = 'weather_resp2'
-    default_query_fee = 4
-    default_fee = 6
-    default_query_ttl = 10
-    default_response_ttl = 10
+class OraclefJean(Oracle):
+    """
+    An oracle that can provide data from JSON APIs from the web.
 
-    def get_reply(self, message):
-        return '26 C'
+    Just provide an URL that returns JSON for a GET request
+
+    And provide the a jq-style query:
+        (but it's reduced to alphanumeric non-quoted key traversal for plain
+        objects and lists, e.g.)
+
+        {'this': {'is': ['some', 'awesome'], 'api': 'result'}}}
+
+        with the parameter
+            jq='.this.is[1]'
+        would return
+            "awesome"
+
+    """
+    def _error(self, message, data=None):
+        if data is None:
+            data = {}
+        return {'status': 'error', 'message': message, 'data': data}
+
+    def _success(self, data):
+        return {'status': 'ok', 'message': '', 'data': data}
+
+    def _jq_traverse(self, jq, data):
+        assert jq.startswith('.')  # remove identity
+        if jq == '.':
+            return data
+        ret_data = data
+        for subpath in jq[1:].split('.'):
+            obj_traverse = subpath
+            list_index = None
+            list_indexed_match = re.match('(\w*)\[(\d+:?\d*)\]', subpath)
+            if list_indexed_match:
+                obj_traverse, list_index = list_indexed_match.groups()
+            if obj_traverse:
+                ret_data = ret_data[obj_traverse]
+            if list_index is not None:
+                # slices
+                if ':' in list_index:
+                    start, end = list_index.split(':')
+                    start, end = int(start), int(end)
+                    ret_data = ret_data[start:end]
+                else:
+                    # indices
+                    ret_data = ret_data[int(list_index)]
+        return ret_data
+
+    def get_response(self, message):
+        payload_query = message['payload']['query']
+        payload_query = json.loads(payload_query)
+        try:
+            url, jq = payload_query['url'], payload_query['jq']
+        except (KeyError, AssertionError) as exc:
+            print(exc)
+            return self._error('malformed query')
+        try:
+            json_data = requests.get(url).json()
+        except:
+            return self._error('request/json error')
+        try:
+            ret_data = self._jq_traverse(jq, json_data)
+        except (KeyError, AssertionError):
+            return self._error('error traversing json/invalid jq')
+        # make sure the result is not huge
+        ret_data = json.dumps(ret_data)
+        if len(ret_data) > 1024:
+            return self._error('return data is too big (>1024 bytes)')
+        return self._success(ret_data)
 
 
 dev1_config = Config(local_port=3013, internal_port=3113, websocket_port=3114)
-
-weather_oracle = WeatherOracle()
+oraclef_jean = OraclefJean(
+    # example spec (this spec is fictional and will be defined later)
+    query_format='''{'url': 'str', 'jq': 'str'}''',
+    # example spec (this spec is fictional and will be defined later)
+    response_format='''{'status': 'error'|'ok', 'message': 'str', 'data': {}}''',
+    default_ttl=50,
+    default_query_fee=4,
+    default_fee=6,
+    default_query_ttl=10,
+    default_response_ttl=10,
+)
 client = EpochClient(config=dev1_config)
-client.register_oracle(weather_oracle)
+client.register_oracle(oraclef_jean)
+client.consume_until(oraclef_jean.is_ready)
+
 print(f'''You can now query this oracle using the following parameters:
-    oracle_pub_key: {client.get_pub_key()}
-    query_fee: {weather_oracle.get_query_fee()}
-    query_ttl: {weather_oracle.get_query_ttl()}
-    response_ttl: {weather_oracle.get_response_ttl()}
-    fee: {weather_oracle.get_fee()}
-    query_format: {weather_oracle.query_format}
+    oracle_pubkey: {oraclef_jean.oracle_id}
+    query_fee: {oraclef_jean.get_query_fee()}
+    query_ttl: {oraclef_jean.get_query_ttl()}
+    response_ttl: {oraclef_jean.get_response_ttl()}
+    fee: {oraclef_jean.get_fee()}
+    query_format: {oraclef_jean.query_format}
 ''')
 print('Oracle ready')
 client.run()
