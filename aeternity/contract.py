@@ -7,11 +7,15 @@ class ContractError(Exception):
 
 
 class Contract:
-    def __init__(self, code, client=None):
+    EVM = 'evm'
+    RING = 'ring'
+
+    def __init__(self, code, abi, client=None):
         if client is None:
             client = EpochClient()
         self.client = client
         self.code = code
+        self.abi = abi
 
     def compile(self, options=''):
         """Compile a ring contract from source and return byte code"""
@@ -29,17 +33,25 @@ class Contract:
         return pretty_bytecode(bytecode)
 
     def call(self, function, arg):
-        '''"Call a ring function with a given name and argument in the given bytecode off chain.'''
+        '''"Call a ring function with a given name and argument in the given
+        bytecode off chain.'''
+
+        compiled_code = self.compile()
 
         # see: /epoch/lib/aehttp-0.1.0/src/aehttp_dispatch_ext.erl
         data = self.client.local_http_post(
             'contract/call',
             json={
-                'code': self.code,
+                # TODO: this looks the same as the encode-calldata call from the
+                # TODO: outside, but actually *requires* compiled code as hex
+                # TODO: string as argument
+                'code': compiled_code,
                 'function': function,
-                'arg': arg
+                'arg': arg,
+                'abi': self.abi,
             }
         )
+        # TODO: this just returns a 500 when we are out of gas. It would be nice to get something back
         error = data.get('reason')
         if error:
             raise ContractError(error)
@@ -49,9 +61,10 @@ class Contract:
         data = self.client.local_http_post(
             'contract/encode-calldata',
             json={
+                'abi': 'evm',
                 'code': self.code,
                 'function': function,
-                'arg': arg
+                'arg': arg,
             }
         )
         error = data.get('reason')
