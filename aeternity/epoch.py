@@ -132,9 +132,11 @@ class EpochClient:
         self._connection.send(message)
 
     def spend(self, recipient_pubkey, amount):
-        data = {"recipient_pubkey": recipient_pubkey,
-                "amount": int(amount),
-                "fee": 1}
+        data = {
+            "recipient_pubkey": recipient_pubkey,
+            "amount": amount,
+            "fee": 1
+        }
         logging.debug('Spend: sending data %s to %s', json.dumps(data),
                       self._config.spend_url)
         requests.post(self._config.spend_url, json=data)
