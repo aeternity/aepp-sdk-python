@@ -123,7 +123,7 @@ class AEName:
 
     def preclaim(self, fee=1):
         # check which block we used to create the preclaim
-        self.preclaimed_block_height = self.client.get_current_height()
+        self.preclaimed_block_height = self.client.get_height()
         self.preclaim_salt = random.randint(0, 2**64)
         response = self.client.local_http_get(
             'commitment-hash',
@@ -161,7 +161,7 @@ class AEName:
         if self.preclaimed_block_height is None:
             raise MissingPreclaim('You must call preclaim before claiming a name')
 
-        current_block_height = self.client.get_current_height()
+        current_block_height = self.client.get_height()
         if self.preclaimed_block_height >= current_block_height:
             raise TooEarlyClaim(
                 'You must wait for one block to call claim.'

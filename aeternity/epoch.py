@@ -143,14 +143,14 @@ class EpochClient:
         )
 
     def update_top_block(self):
-        self._top_block = self.get_current_height()
+        self._top_block = self.get_height()
 
     def wait_for_next_block(self):
         if self._top_block == None:
             self.update_top_block()
         while True:
             time.sleep(self.next_block_poll_interval_sec)
-            new_block = self.get_current_height()
+            new_block = self.get_height()
             if (new_block > self._top_block):
                 self._top_block = new_block
                 break

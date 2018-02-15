@@ -36,7 +36,7 @@ def test_get_latest_block():
     assert block.height > 0
 
 def test_get_block_by_heigt():
-    height = client.get_current_height()
+    height = client.get_height()
     block = client.get_block_by_height(height)
     assert type(block) == BlockWithTx
     assert block.height > 0
@@ -73,7 +73,7 @@ def test_get_block_transaction_count_by_hash():
     assert transaction_count > 0
 
 def test_get_block_transaction_count_by_height():
-    previous_height = client.get_current_height() - 1
+    previous_height = client.get_height() - 1
     transaction_count = client.get_block_transaction_count_by_height(previous_height)
     print(transaction_count)
     assert transaction_count > 0
@@ -86,7 +86,7 @@ def test_get_transaction_from_block_height():
     assert False
 
 def test_get_transactions_in_block_range():
-    height = client.get_current_height()
+    height = client.get_height()
     result = client.get_transactions_in_block_range(height-5, height)
     assert len(result) > 1
     assert type(result[0]) == Transaction
