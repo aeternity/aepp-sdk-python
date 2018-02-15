@@ -32,7 +32,6 @@ class Config:
         self.internal_api_url = f'http://{host}:{self.local_internal_port}/v2'
 
         self.name_url = f'{self.http_api_url}/name'
-
         self.pubkey = None
 
     @property

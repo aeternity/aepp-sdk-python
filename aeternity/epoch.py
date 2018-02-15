@@ -178,6 +178,15 @@ class EpochClient:
         self.update_top_block()
         self._connection.send(message)
 
+    def spend(self, recipient_pubkey, amount):
+        data = {
+            "recipient_pubkey": recipient_pubkey,
+            "amount": amount,
+            "fee": 1,
+        }
+        logging.debug('Spend: %s', data)
+        self.internal_http_post('spent-tx', json=data)
+
     def send_and_receive(self, message):
         """
         This is a workaround for the problem described here:
