@@ -32,12 +32,6 @@ class Config:
         self.internal_api_url = f'http://{host}:{self.local_internal_port}/v2'
 
         self.name_url = f'{self.http_api_url}/name'
-        self.pre_claim_url = self.internal_api_url + "/name-preclaim-tx"
-        self.claim_url = self.internal_api_url + "/name-claim-tx"
-        self.update_url = self.internal_api_url + "/name-update-tx"
-        self.transfer_url = self.internal_api_url + "/name-transfer-tx"
-        self.revoke_url = self.internal_api_url + "/name-revoke-tx"
-        self.spend_url = self.internal_api_url + "/spend-tx"
         self.pubkey = None
 
     @property
