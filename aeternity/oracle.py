@@ -1,24 +1,16 @@
+import json
 import logging
 
-from aeternity.epoch import EpochComponent
+from aeternity.epoch import EpochSubscription
 
 logger = logging.getLogger(__name__)
 
 
-class OracleQuerySubscriptionFailed(Exception):
-    pass
-
-
-class OracleQuery(EpochComponent):
-    oracle_pubkey = None
-    query_fee = None
-    query_ttl = None
-    response_ttl = None
-    fee = None
-
+class OracleQuery(EpochSubscription):
     message_listeners = [
         ('oracle', 'query', 'handle_oracle_query_sent'),
         ('chain', 'new_oracle_response', 'handle_oracle_response'),
+        ('chain', 'subscription', 'handle_query_subscription_ack'),
     ]
 
     validate_attr_not_none = [
@@ -29,21 +21,37 @@ class OracleQuery(EpochComponent):
         'fee',
     ]
 
-    def __init__(self, oracle_pubkey=None):
+    def __init__(
+        self,
+        *,
+        oracle_pubkey,
+        query_fee,
+        query_ttl,
+        response_ttl,
+        fee
+    ):
+        super().__init__()
+        self.oracle_pubkey = oracle_pubkey
+        self.query_fee = query_fee
+        self.query_ttl = query_ttl
+        self.response_ttl = response_ttl
+        self.fee = fee
+
+        self._last_query = None
+        self.query_by_query_id = {}
         self.mounted = False
         self.client = None
-        if oracle_pubkey is not None:
-            self.oracle_pubkey = oracle_pubkey
-        super().__init__()
-        self.query_ids = []
 
     def on_response(self, response, query):
         raise NotImplementedError('You must implement the `on_response` method')
 
+    def on_mounted(self, client):
+        self.client = client
+        self.mounted = True
+
     def query(self, query):
         if not self.mounted:
             raise RuntimeError('You must `mount` the OracleQuery before usage!')
-
         message = {
             "target": "oracle",
             "action": "query",
@@ -63,9 +71,13 @@ class OracleQuery(EpochComponent):
             }
         }
         self.client.send(message)
+        self._last_query = query
 
     def handle_oracle_query_sent(self, message):
         query_id = message['payload']['query_id']
+        self._subscribe_to_query_id(query_id)
+
+    def _subscribe_to_query_id(self, query_id):
         logger.debug('Query was sent. Subscribing to query with id %s', query_id)
         subscribe_message = {
             "target": "chain",
@@ -74,39 +86,43 @@ class OracleQuery(EpochComponent):
         }
         self.client.send(subscribe_message)
 
+    def handle_query_subscription_ack(self, message):
+        query_id = message['payload'].get('subscribed_to', {}).get('query_id')
+        if query_id:
+            logger.debug(f'Got subscription ack for query {query_id}')
+            self.query_by_query_id[query_id] = self._last_query
+            self._last_query = None
+
     def handle_oracle_response(self, message):
-        self.on_response(message, 'TODO: get the initial query in here.')
+        query_id = message['payload']['query_id']
+        try:
+            query = self.query_by_query_id.pop(query_id)
+        except KeyError:
+            # this only happens if this instance did not send the initial
+            # query. Should we forward this response to the `on_response`
+            # handler anyways?
+            query = None
+        self.on_response(message, query)
 
-    def on_mounted(self, client):
-        self.client = client
-        self.mounted = True
+
+class OracleState:
+    NONE = 'NONE'
+    REGISTRATION_REQUESTED = 'REGISTRATION_REQUESTED'
+    SUBSCRIPTION_REQUESTED = 'SUBSCRIPTION_REQUESTED'
+    READY = 'READY'
 
 
-class OracleRegistrationFailed(Exception):
-    pass
-
-
-class Oracle(EpochComponent):
+class Oracle(EpochSubscription):
     """
     This the base class to override when creating an Oracle
 
     e.g.
 
     class MyWeatherOracle(Oracle):
-        query_format = 'weather_query'
-        response_format = 'weather_resp'
-        default_query_fee = 0
-        default_fee = 6
-        default_ttl = 2000
+        def get_response(message):
+            return 42
 
     """
-    query_format = None
-    response_format = None
-    default_query_fee = None
-    default_fee = None
-    default_ttl = None
-    default_query_ttl = None
-    default_response_ttl = None
 
     def get_response(self, message):
         raise NotImplementedError()
@@ -116,26 +132,38 @@ class Oracle(EpochComponent):
         ('chain', 'new_oracle_query', 'handle_oracle_query_received'),
         ('oracle', 'response', 'handle_response_sent'),
         ('oracle', 'register', 'handle_registration_response'),
-        ('chain', 'register', 'handle_oracle_registration'),
+        ('chain', 'subscribe', 'handle_oracle_subscription_ack'),
     ]
 
-    def __init__(self):
+    def __init__(
+        self,
+        *,
+        query_format,
+        response_format,
+        default_query_fee,
+        default_fee,
+        default_ttl,
+        default_query_ttl,
+        default_response_ttl,
+    ):
         super().__init__()
         # force the developer inheriting from this class to always specify these:
-        self.assure_attr_not_none('query_format')
-        self.assure_attr_not_none('response_format')
-        self.assure_attr_not_none('default_query_fee')
-        self.assure_attr_not_none('default_ttl')
-        self.assure_attr_not_none('default_query_ttl')
-        self.assure_attr_not_none('default_response_ttl')
-        self.assure_attr_not_none('message_listeners')
+        self.query_format = query_format
+        self.response_format = response_format
+        self.default_query_fee = default_query_fee
+        self.default_fee = default_fee
+        self.default_ttl = default_ttl
+        self.default_query_ttl = default_query_ttl
+        self.default_response_ttl = default_response_ttl
+
         self.oracle_id = None
-        self.oracle_registered = False
-        self.subscribed_to_queries = False
-        self.mounted = False
+        self.state = OracleState.NONE
+
+    def is_ready(self):
+        return self.state == OracleState.READY
 
     def on_mounted(self, client):
-        assert not self.mounted, 'Cannot mount an oracle twice'
+        assert self.state == OracleState.NONE, f'Cannot mount an oracle twice'
         pubkey = client.get_pubkey()
         # send oracle register signal to the node
         logger.debug('Sending OracleRegisterTx')
@@ -146,8 +174,8 @@ class Oracle(EpochComponent):
                 "type": "OracleRegisterTxObject",
                 "vsn": 1,
                 "account": pubkey,
-                "query_format": self.__class__.query_format,
-                "response_format": self.__class__.response_format,
+                "query_format": self.query_format,
+                "response_format": self.response_format,
                 "query_fee": self.get_query_fee(),
                 "ttl": {
                     "type": "delta",
@@ -156,14 +184,14 @@ class Oracle(EpochComponent):
                 "fee": self.get_fee()
             }
         }
-        logger.debug('Waiting for OracleRegisterTx response')
         client.send(register_message)
+        self.state = OracleState.REGISTRATION_REQUESTED
         self.client = client
-        self.mounted = True
+        logger.debug('Waiting for OracleRegisterTx response')
 
     def handle_registration_response(self, message):
         if message['payload'].get('result') != 'ok':
-            raise OracleRegistrationFailed(message)
+            raise RuntimeError('Oracle registration failed!')
         self.oracle_id = message['payload']['oracle_id']
         logger.debug('Got OracleRegisterTx, oracle_id %s', self.oracle_id)
         logger.debug('Subscribing to oracles queries')
@@ -173,23 +201,14 @@ class Oracle(EpochComponent):
             "payload": {"type": "oracle_query", 'oracle_id': self.oracle_id}
         }
         self.client.send(subscribe_message)
-        self.oracle_registered = True
+        self.state = OracleState.SUBSCRIPTION_REQUESTED
 
-    def handle_oracle_registration(self, message):
-        message = {
-            'action': 'register',
-            'origin': 'oracle',
-            'payload': {
-                'result': 'ok',
-                'oracle_id': 'ok$3WRqCYwdr9B5aeAMT7Bfv2gGZpLUdD4RQM4hzFRpRzRRZx7d8pohQ6xviXxDTLHVwWKDbGzxH1xRp19LtwBypFpCVBDjEQ',
-                'tx_hash': 'th$bRFKbTNEMhUJE23G6d7XLkrKcivaDuH6nihkKmqQPzxp4nocz'
-            }
-        }
-        oracle_id = message['payload'].get('oracle_id')
+    def handle_oracle_subscription_ack(self, message):
+        oracle_id = message['payload'].get('subscribed_to', {}).get('oracle_id')
         if oracle_id:
-            logger.debug(f'Subscribed to {subscribed_to}')
+            logger.debug(f'Subscribed to {oracle_id}')
             self.oracle_id = oracle_id
-            self.subscribed_to_queries = True
+            self.state = OracleState.READY
 
     def get_query_fee(self):
         # TODO: does is make sense to make this variable during runtime?
@@ -216,7 +235,7 @@ class Oracle(EpochComponent):
                 "vsn": 1,
                 "query_id": query_id,
                 "fee": self.get_fee(),
-                "response": response
+                "response": json.dumps(response),
             }
         })
 

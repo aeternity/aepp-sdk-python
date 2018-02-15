@@ -46,20 +46,17 @@ class EpochRequestError(Exception):
 class EpochClient:
     next_block_poll_interval_sec = 10
 
-    def __init__(self, *, config=None):
+    def __init__(self, *, config=None, retry=True):
         if config is None:
             config = Config.get_default()
         self._config = config
         self._listeners = defaultdict(list)
         self._connection = Connection(config=config)
         self._top_block = None
+        self._retry = retry
         self.send(
             {"target":"chain", "action":"subscribe", "payload":{"type":"new_block"}}
         )
-
-    def on_new_block(self, message):
-        pass
-
 
     def http_call(self, method, base_url, endpoint, **kwargs):
         url = base_url + '/' + endpoint
@@ -95,7 +92,7 @@ class EpochClient:
         return self._config.get_pubkey()
 
     def get_top_block(self):
-        data = requests.get(self._config.top_block_url).json()
+        data = self.http_call('get', self._config.http_api_url, 'top')
         return int(data['height'])
 
     def update_top_block(self):
@@ -157,7 +154,7 @@ class EpochClient:
         message = self._connection.receive()
         self.dispatch_message(message)
 
-    def tick_until(self, func, timeout=None):
+    def consume_until(self, func, timeout=None):
         start = time.time()
         while True:
             if timeout is not None and time.time() > start + timeout:
@@ -172,6 +169,8 @@ class EpochClient:
                 try:
                     self._tick()
                 except websocket.WebSocketConnectionClosedException:
+                    if not self._retry:
+                        raise
                     self._connection.close()
                     logger.error('Connection closed by node, retrying in 5s...')
                     time.sleep(5)
@@ -180,7 +179,7 @@ class EpochClient:
             return
 
 
-class EpochComponent(ValidateClassMixin):
+class EpochSubscription():
     message_listeners = None
 
     # Message listeners are a list of tuples to define how the class should
@@ -194,7 +193,8 @@ class EpochComponent(ValidateClassMixin):
 
     def __init__(self):
         super().__init__()
-        self.assure_attr_not_none('message_listeners')
+        assert self.message_listeners is not None, \
+            'Classes inheriting EpochSubscription must have message_listeners'
 
     def on_mounted(self, client):
         """
