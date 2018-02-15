@@ -135,7 +135,7 @@ class EpochClient:
         data = {
             "recipient_pubkey": recipient_pubkey,
             "amount": amount,
-            "fee": 1
+            "fee": 1,
         }
         logging.debug('Spend: sending data %s to %s', json.dumps(data),
                       self._config.spend_url)
