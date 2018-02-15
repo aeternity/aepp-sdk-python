@@ -241,11 +241,11 @@ class EpochClient:
     def get_pubkey(self):
         return self._config.get_pubkey()
 
-    def get_current_height(self):
+    def get_height(self):
         data = self.http_json_call('get', self._config.http_api_url, 'top')
         return int(data['height'])
 
-    def get_balance(self, account_pubkey=None, height=None, hash=None):
+    def get_balance(self, account_pubkey=None, height=None, block_hash=None):
         """
         get the balance of the account `account_pubkey`. If left empty, gets
         the balance of this node's account.
@@ -254,17 +254,17 @@ class EpochClient:
 
         :param account_pubkey:
         :param height:
-        :param hash:
+        :param block_hash:
         :return:
         """
-        assert not (height is not None and hash is not None), "Can only set either height or hash!"
+        assert not (height is not None and block_hash is not None), "Can only set either height or hash!"
         if account_pubkey is None:
             account_pubkey = self.get_pubkey()
         params = {}
         if height is not None:
             params['height'] = height
-        if hash is not None:
-            params['hash'] = hash
+        if block_hash is not None:
+            params['hash'] = block_hash
         return self.internal_http_get(f'account/balance/{account_pubkey}', params=params)['balance']
 
     @classmethod
@@ -331,8 +331,6 @@ class EpochClient:
             'txs_hash': None, 'data_schema': None, 'hash': None
         }
         data = self.local_http_get('block-by-height', params=dict(height=height))
-        print(empty_block)
-        print(data)
         return block_from_dict({**empty_block, **data})
 
     def get_block_by_hash(self, hash):
