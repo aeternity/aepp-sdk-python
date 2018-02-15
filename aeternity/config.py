@@ -37,7 +37,7 @@ class Config:
         self.update_url = self.internal_api_url + "/name-update-tx"
         self.transfer_url = self.internal_api_url + "/name-transfer-tx"
         self.revoke_url = self.internal_api_url + "/name-revoke-tx"
-
+        self.spend_url = self.internal_api_url + "/spend-tx"
         self.pubkey = None
 
     @property
