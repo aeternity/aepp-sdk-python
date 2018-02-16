@@ -44,7 +44,6 @@ def test_get_block_by_heigt():
 def test_get_block_by_hash():
     latest_block = client.get_latest_block()
     block = client.get_block_by_hash(latest_block.hash)
-    assert type(block) == BlockWithTx
     # TODO: The following check should not fail. I feel that's a problem with
     # TODO: the current state of the api  --devsnd
     # assert block.hash == latest_block.hash
