@@ -219,7 +219,7 @@ class EpochClient:
             if func():
                 return
 
-    def run(self):
+    def listen(self):
         try:
             while True:
                 try:

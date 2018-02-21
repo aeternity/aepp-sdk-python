@@ -116,5 +116,5 @@ print(f'''You can now query this oracle using the following parameters:
     query_format: {oraclef_jean.query_format}
 ''')
 print('Oracle ready')
-client.run()
+client.listen()
 print('Oracle Stopped')
