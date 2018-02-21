@@ -8,17 +8,17 @@ def print_usage():
 Usage:
     aens available <domain.aet>
             Check Domain availablity    
-    aens register <domain.aet> [--no-input]
+    aens register <domain.aet> [--force]
             Register a domain (incurs fees!)    
     aens status <domain.aet>
             Checks the status of a domain    
     aens update <domain.aet> <address>
             Updates where the name points to    
-    aens revoke <domain.aet> [--no-input]
+    aens revoke <domain.aet> [--force]
             Removes this domain from the block chain (incurs fees!)    
-    aens transfer <domain.aet> <receipient_address> [--no-input]
+    aens transfer <domain.aet> <receipient_address> [--force]
             Transfers a domain to another user
-The `--no-input` will suppress any questions before performing the action.
+The `--force` will suppress any questions before performing the action.
 
 You can override the standard connection ports using the following environment
 variables: AE_LOCAL_PORT, AE_LOCAL_INTERNAL_PORT and AE_WEBSOCKET
@@ -53,10 +53,10 @@ client = EpochClient()
 
 system, command = args[:2]
 
-# allow using the --no-input parameter anywhere
+# allow using the --force parameter anywhere
 noinput = False
-if '--no-input' in args:
-    args.remove('--no-input')
+if '--force' in args:
+    args.remove('--force')
     noinput = True
 
 if system == 'aens':
