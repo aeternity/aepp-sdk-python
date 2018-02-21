@@ -1,3 +1,9 @@
+---
+layout: page
+title: SDK.py
+navigation: 6
+---
+
 # aepp-sdk-python
 
 ## Introduction
