@@ -1,11 +1,14 @@
+import json
 import sys
 
-from aeternity import EpochClient, AEName, InvalidName
+from aeternity import EpochClient, AEName, AENSException, Oracle, Config
+from aeternity.oracle import NoOracleResponse, OracleQuery
 
 
 def print_usage():
     print('''aeternity cli tool:
 Usage:
+
     aens available <domain.aet>
             Check Domain availablity    
     aens register <domain.aet> [--force]
@@ -63,7 +66,7 @@ if system == 'aens':
     domain = args[2]
     try:
         AEName.validate_name(domain)
-    except InvalidName as exc:
+    except AENSException as exc:
         stderr('Error:', str(exc))
         sys.exit(1)
 
