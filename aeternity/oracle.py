@@ -6,6 +6,11 @@ from aeternity.epoch import EpochSubscription
 logger = logging.getLogger(__name__)
 
 
+class NoOracleResponse(Exception):
+    """raised when the Oracle refuses to respond to a query"""
+    pass
+
+
 class OracleQuery(EpochSubscription):
     message_listeners = [
         ('oracle', 'query', 'handle_oracle_query_sent'),
@@ -225,7 +230,10 @@ class Oracle(EpochSubscription):
         return self.default_response_ttl
 
     def handle_oracle_query_received(self, message):
-        response = self.get_response(message)
+        try:
+            response = self.get_response(message)
+        except NoOracleResponse:
+            logger.debug('Oracle refused to respond')
         query_id = message['payload']['query_id']
         self.client.send({
             "target": "oracle",

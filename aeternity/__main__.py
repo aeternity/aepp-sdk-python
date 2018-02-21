@@ -21,10 +21,21 @@ Usage:
             Removes this domain from the block chain (incurs fees!)    
     aens transfer <domain.aet> <receipient_address> [--force]
             Transfers a domain to another user
+    
+    oracle register [--query-format] [--response-format] [--default-query-fee]
+                    [--default-fee] [--default-ttl] [--default-query-ttl]
+                    [--default-response-ttl]
+            You will be prompted for any non-provided argument
+    
+    oracle query [--oracle-pubkey] [--query-fee] [--query-ttl] [--response-ttl]
+                 [--fee]
+            You will be prompted for any non-provided argument
+ 
 The `--force` will suppress any questions before performing the action.
 
 You can override the standard connection ports using the following environment
-variables: AE_LOCAL_PORT, AE_LOCAL_INTERNAL_PORT and AE_WEBSOCKET
+variables: AE_LOCAL_PORT, AE_LOCAL_INTERNAL_PORT and AE_WEBSOCKET, or using
+the parameters: --external-port, --internal-port and --websocket-port
 
 ''')
     sys.exit(1)
@@ -52,17 +63,29 @@ if '--help' in args:
 if len(args) < 2:
     print_usage()
 
-client = EpochClient()
 
-system, command = args[:2]
+def popdefault(d, key, default):
+    try:
+        d.pop(key)
+    except KeyError:
+        return default
 
-# allow using the --force parameter anywhere
-noinput = False
-if '--force' in args:
-    args.remove('--force')
-    noinput = True
+external_port = popdefault(args, '--external-port', None)
+internal_port = popdefault(args, '--internal-port', None)
+websocket_port = popdefault(args, '--websocket-port', None)
 
-if system == 'aens':
+config = Config(
+    local_port=external_port,
+    internal_port=internal_port,
+    websocket_port=websocket_port,
+)
+
+client = EpochClient(config=config)
+
+system = args[0]
+
+def aens(args, force=False):
+    command = args[1]
     domain = args[2]
     try:
         AEName.validate_name(domain)
@@ -84,7 +107,7 @@ if system == 'aens':
         if not name.is_available():
             print('Name was already claimed')
             sys.exit(1)
-        prompt('Do you want to register this name? (incurs fees)', skip=noinput)
+        prompt('Do you want to register this name? (incurs fees)', skip=force)
         print('Name is available, pre-claiming now')
         name.preclaim()
         print('Pre-Claim successful')
@@ -125,7 +148,7 @@ if system == 'aens':
         sys.exit(0)
 
     if command == 'revoke':
-        prompt('Do really want to revoke this name? (incurs fees)', skip=noinput)
+        prompt('Do really want to revoke this name? (incurs fees)', skip=force)
         name.revoke()
 
     if command == 'transfer':
@@ -144,5 +167,79 @@ if system == 'aens':
             )
             sys.exit(1)
 
-        prompt('Do really want to transfer this name?', skip=noinput)
+        prompt('Do really want to transfer this name?', skip=force)
         name.transfer_ownership(receipient)
+
+
+class CLIOracle(Oracle):
+    def get_response(self, message):
+        print(f'Received message:\n{message}')
+        print('Please type a json response:')
+        json_data = None
+        while json_data is None:
+            try:
+                return json.loads(input('JSON: '))
+            except KeyboardInterrupt:
+                print('Cancelled, oracle will not respond to query.')
+                raise NoOracleResponse()
+            except:
+                print('Invalid JSON. Please retry or press ctrl-c to cancel')
+
+
+def cli_args_to_kwargs(cli_args, args):
+    return {
+        # this requires the kwargs to be compatible to the CLI params
+        cli_arg[2:].replace('-', '_'): args.get(cli_arg, None)
+        for cli_arg in cli_args
+    }
+
+
+def oracle(args, force=False):
+    '''
+    :param args:
+    :param force:
+    :return:
+    '''
+
+    command, args = args[0], args[1:]
+
+    if command == 'register':
+        cli_args = [
+            '--query-format',
+            '--response-format',
+            '--default-query-fee',
+            '--default-fee',
+            '--default-ttl',
+            '--default-query-ttl',
+            '--default-response-ttl',
+        ]
+        mapped_kwargs = cli_args_to_kwargs(cli_args, args)
+        oracle = CLIOracle(**mapped_kwargs)
+        client.mount(oracle)
+        client.listen()
+    elif command == 'query':
+        cli_args = [
+            '--oracle-pubkey',
+            '--query-fee',
+            '--query-ttl',
+            '--response-ttl',
+            '--fee',
+        ]
+        mapped_kwargs = cli_args_to_kwargs(cli_args, args)
+        oracle_query = OracleQuery(**mapped_kwargs)
+        client.mount(oracle_query)
+
+
+# allow using the --force parameter anywhere
+force = False
+if '--force' in args:
+    args.remove('--force')
+    force = True
+
+if system == 'aens':
+    aens(args, force=force)
+elif system == 'oracle':
+    oracle(args, force=force)
+else:
+    print(f'Invalid system "{system}"')
+    sys.exit(1)
