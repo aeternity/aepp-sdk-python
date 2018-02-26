@@ -84,7 +84,7 @@ config = Config(
     websocket_host=websocket_host,
 )
 
-client = EpochClient(config=config)
+client = EpochClient(configs=config)
 
 system = args[0]
 

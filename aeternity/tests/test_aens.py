@@ -15,7 +15,7 @@ try:
 except ConfigException:
     # in this case we create a default config that should work on the dev
     # machines.
-    Config.set_default(Config(external_host=3013, internal_host=3113, websocket_host=3114))
+    Config.set_defaults(Config(external_host=3013, internal_host=3113, websocket_host=3114))
 
 
 def random_domain(length=10):

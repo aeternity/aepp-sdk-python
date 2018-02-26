@@ -1,5 +1,5 @@
 import json
-from collections import defaultdict, namedtuple
+from collections import defaultdict, namedtuple, MutableSequence
 import logging
 
 from json import JSONDecodeError
@@ -24,7 +24,7 @@ class Connection:
 
     def assure_connected(self):
         if self.websocket is None:
-            self.websocket = websocket.create_connection(self.config.websocket_url)
+            self.websocket = websocket.create_connection(self.config.websocket_url, timeout=1)
 
     def receive(self):
         self.assure_connected()
@@ -98,17 +98,26 @@ def block_from_dict(data):
 class EpochClient:
     next_block_poll_interval_sec = 10
 
-    def __init__(self, *, config=None, retry=True):
-        if config is None:
-            config = Config.get_default()
-        self._config = config
+    def __init__(self, *, configs=None, retry=True):
+        if configs is None:
+            configs = Config.get_defaults()
+        if isinstance(configs, Config):
+            configs = [configs]
+        self._configs = configs
+        self._active_config_idx = 0
         self._listeners = defaultdict(list)
-        self._connection = Connection(config=config)
+        self._connection = Connection(config=self._get_active_config())
         self._top_block = None
         self._retry = retry
         self.send(
             {"target":"chain", "action":"subscribe", "payload":{"type":"new_block"}}
         )
+
+    def _get_active_config(self):
+        return self._configs[self._active_config_idx]
+
+    def _use_next_config(self):
+        self._active_config_idx = (self._active_config_idx) + 1 % len(self._configs)
 
     def http_json_call(self, method, base_url, endpoint, **kwargs):
         if endpoint.startswith('/'):  # strip leading slash to avoid petty errors
@@ -123,23 +132,27 @@ class EpochClient:
             raise EpochRequestError(response.text)
 
     def internal_http_get(self, endpoint, **kwargs):
+        config = self._get_active_config()
         return self.http_json_call(
-            'get', self._config.internal_api_url, endpoint, **kwargs
+            'get', config.internal_api_url, endpoint, **kwargs
         )
 
     def internal_http_post(self, endpoint, **kwargs):
+        config = self._get_active_config()
         return self.http_json_call(
-            'post', self._config.internal_api_url, endpoint, **kwargs
+            'post', config.internal_api_url, endpoint, **kwargs
         )
 
     def local_http_get(self, endpoint, **kwargs):
+        config = self._get_active_config()
         return self.http_json_call(
-            'get', self._config.http_api_url, endpoint, **kwargs
+            'get', config.http_api_url, endpoint, **kwargs
         )
 
     def local_http_post(self, endpoint, **kwargs):
+        config = self._get_active_config()
         return self.http_json_call(
-            'post', self._config.http_api_url, endpoint, **kwargs
+            'post', config.http_api_url, endpoint, **kwargs
         )
 
     def update_top_block(self):
@@ -215,7 +228,10 @@ class EpochClient:
         while True:
             if timeout is not None and time.time() > start + timeout:
                 raise TimeoutError('Condition %s was never fulfilled' % func)
-            self._tick()
+            try:
+                self._tick()
+            except websocket.WebSocketTimeoutException:
+                pass  # the timeout is set to 1s on the connection
             if func():
                 return
 
@@ -239,11 +255,10 @@ class EpochClient:
     #
 
     def get_pubkey(self):
-        return self._config.get_pubkey()
+        return self.internal_http_get('account/pub-key')['pub_key']
 
     def get_height(self):
-        data = self.http_json_call('get', self._config.http_api_url, 'top')
-        return int(data['height'])
+        return int(self.local_http_get('top')['height'])
 
     def get_balance(self, account_pubkey=None, height=None, block_hash=None):
         """

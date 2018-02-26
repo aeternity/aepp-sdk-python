@@ -103,7 +103,7 @@ oraclef_jean = OraclefJean(
     default_query_ttl=10,
     default_response_ttl=10,
 )
-client = EpochClient(config=dev1_config)
+client = EpochClient(configs=dev1_config)
 client.register_oracle(oraclef_jean)
 client.listen_until(oraclef_jean.is_ready)
 

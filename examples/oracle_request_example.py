@@ -20,7 +20,7 @@ class AeternityInUSDOracleQuery(OracleQuery):
 
 
 dev1_config = Config(external_host=3013, internal_host=3113, websocket_host=3114)
-client = EpochClient(config=dev1_config)
+client = EpochClient(configs=dev1_config)
 oracle_pubkey = 'ok$3WRqCYwdr9B5aeAMT7Bfv2gGZpLUdD4RQM4hzFRpRzRRZx7d8pohQ6xviXxDTLHVwWKDbGzxH1xRp19LtwBypFpCVBDjEQ'
 
 oracle_query = AeternityInUSDOracleQuery(

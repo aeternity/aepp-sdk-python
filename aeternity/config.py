@@ -1,6 +1,7 @@
 import os
 
 import requests
+from collections import MutableSequence
 
 
 class ConfigException(Exception):
@@ -15,7 +16,7 @@ ae_default_websocket_host = 'localhost'
 ae_default_websocket_port = 3114
 
 class Config:
-    default_config = None
+    default_configs = None
 
     def __init__(self, external_host=None, internal_host=None, websocket_host=None):
         try:
@@ -65,23 +66,25 @@ class Config:
         return self.pubkey
 
     @classmethod
-    def set_default(cls, config):
+    def set_defaults(cls, config):
         """
         sets the default configuration that will be used when the epoch client
         did not get a config passed into its constructor
 
         :return: None
         """
-        cls.default_config = config
+        if not isinstance(config, MutableSequence):
+            config = [config]
+        cls.default_configs = config
 
     @classmethod
-    def get_default(cls):
+    def get_defaults(cls):
         """
         returns the previously set default config or constructs a configuration
         automatically from environment variables
 
         :return: Config
         """
-        if cls.default_config is None:
-            cls.default_config = Config()
-        return cls.default_config
+        if cls.default_configs is None:
+            cls.default_configs = [Config()]
+        return cls.default_configs
