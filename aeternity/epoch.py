@@ -9,6 +9,7 @@ import time
 import websocket
 
 from aeternity.config import Config
+from aeternity.exceptions import AException
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +107,7 @@ class EpochClient:
         self._configs = configs
         self._active_config_idx = 0
         self._listeners = defaultdict(list)
-        self._connection = Connection(config=self._get_active_config())
+        self._connection = self._make_connection()
         self._top_block = None
         self._retry = retry
         self.send(
@@ -116,8 +117,13 @@ class EpochClient:
     def _get_active_config(self):
         return self._configs[self._active_config_idx]
 
+    def _make_connection(self):
+        return Connection(config=self._get_active_config())
+
     def _use_next_config(self):
         self._active_config_idx = (self._active_config_idx) + 1 % len(self._configs)
+        logger.info(f'Trying next connection to: {self._get_active_config()}')
+        self._connection = Connection(config=self._get_active_config())
 
     def http_json_call(self, method, base_url, endpoint, **kwargs):
         if endpoint.startswith('/'):  # strip leading slash to avoid petty errors
@@ -127,7 +133,10 @@ class EpochClient:
         if response.status_code >= 500:
             raise EpochRequestError(response)
         try:
-            return response.json()
+            json_data = response.json()
+            if json_data.get('reason'):
+                raise AException(payload=json_data)
+            return json_data
         except JSONDecodeError:
             raise EpochRequestError(response.text)
 
@@ -226,29 +235,27 @@ class EpochClient:
     def listen_until(self, func, timeout=None):
         start = time.time()
         while True:
+            if func():
+                return
             if timeout is not None and time.time() > start + timeout:
                 raise TimeoutError('Condition %s was never fulfilled' % func)
+
             try:
                 self._tick()
             except websocket.WebSocketTimeoutException:
                 pass  # the timeout is set to 1s on the connection
-            if func():
-                return
+            except websocket.WebSocketConnectionClosedException:
+                if not self._retry:
+                    raise
+                self._connection.close()
+                self._use_next_config()
+                logger.error('Connection closed by node, retrying in 5s...')
+                time.sleep(5)
+            except KeyboardInterrupt:
+                self._connection.close()
 
     def listen(self):
-        try:
-            while True:
-                try:
-                    self._tick()
-                except websocket.WebSocketConnectionClosedException:
-                    if not self._retry:
-                        raise
-                    self._connection.close()
-                    logger.error('Connection closed by node, retrying in 5s...')
-                    time.sleep(5)
-        except KeyboardInterrupt:
-            self._connection.close()
-            return
+        self.listen_until(lambda: False)
 
     #
     # API functions
@@ -280,7 +287,8 @@ class EpochClient:
             params['height'] = height
         if block_hash is not None:
             params['hash'] = block_hash
-        return self.internal_http_get(f'account/balance/{account_pubkey}', params=params)['balance']
+        response = self.internal_http_get(f'account/balance/{account_pubkey}', params=params)
+        return response['balance']
 
     @classmethod
     def make_tx_types_params(cls, tx_types=None, exclude_tx_types=None):

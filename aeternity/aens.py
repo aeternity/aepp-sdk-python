@@ -2,7 +2,7 @@ import json
 import random
 
 from aeternity.exceptions import NameNotAvailable, PreclaimFailed, TooEarlyClaim, ClaimFailed, AENSException, \
-    UpdateError, MissingPreclaim
+    UpdateError, MissingPreclaim, InsufficientFundsException
 from aeternity.oracle import Oracle
 from aeternity.epoch import EpochClient
 
@@ -117,6 +117,9 @@ class AEName:
             self.preclaimed_commitment_hash = response['commitment']
             self.status = NameStatus.PRECLAIMED
         except KeyError:
+            reason = response.get('reason')
+            if reason == 'No funds in account':
+                raise InsufficientFundsException(response)
             raise PreclaimFailed(response)
 
     def claim_blocking(self, fee=1):

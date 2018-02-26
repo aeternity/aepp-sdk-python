@@ -52,6 +52,12 @@ class Config:
         self.name_url = f'{self.http_api_url}/name'
         self.pubkey = None
 
+    def __str__(self):
+        ws = self.websocket_host_port
+        external = self.external_host_port
+        internal = self.internal_host_port
+        return f'ws:{ws} ext:{external} int:{internal}'
+
     @property
     def top_block_url(self):
         return f'{self.http_api_url}/top'

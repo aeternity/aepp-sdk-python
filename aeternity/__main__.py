@@ -2,12 +2,17 @@ import json
 import sys
 
 from aeternity import EpochClient, AEName, Oracle, Config
+from aeternity.exceptions import AENSException, AException
 from aeternity.oracle import NoOracleResponse, OracleQuery
 
 
 def print_usage():
     print('''aeternity cli tool:
 Usage:
+    balance [pubkey]
+        Returns the balance of pubkey or the balance of the node's pubkey
+    height
+        returns the top block number
 
     aens available <domain.aet>
             Check Domain availablity    
@@ -64,19 +69,17 @@ args = sys.argv[1:]
 if '--help' in args:
     print_usage()
 
-if len(args) < 2:
-    print_usage()
-
-
-def popdefault(d, key, default):
+def popargs(d, key, default):
     try:
-        d.pop(key)
-    except KeyError:
+        idx = d.index(key)
+        default.pop(idx)  # remove arg
+        return default.pop(idx)  # remove value after arg
+    except ValueError:
         return default
 
-external_host = popdefault(args, '--external-host', None)
-internal_host = popdefault(args, '--internal-host', None)
-websocket_host = popdefault(args, '--websocket-host', None)
+external_host = popargs(args, '--external-host', None)
+internal_host = popargs(args, '--internal-host', None)
+websocket_host = popargs(args, '--websocket-host', None)
 
 config = Config(
     external_host=external_host,
@@ -86,7 +89,7 @@ config = Config(
 
 client = EpochClient(configs=config)
 
-system = args[0]
+main_arg = args[0]
 
 def aens(args, force=False):
     command = args[1]
@@ -265,16 +268,37 @@ def oracle(args, force=False):
                 print('Invalid json-query, please try again (ctrl-c to exit)')
 
 
+def balance(args):
+    if len(args) >= 2:
+        pubkey = args[1]
+    else:
+        pubkey = client.get_pubkey()
+    print(f'Getting balance for account: {pubkey}')
+    try:
+        balance = client.get_balance(pubkey)
+        print(f'Balance: {balance}')
+    except AException as exc:
+        print(f'Error getting balance: {exc.payload}')
+
+
+def height():
+    print(f'Height: {client.get_height()}')
+
+
 # allow using the --force parameter anywhere
 force = False
 if '--force' in args:
     args.remove('--force')
     force = True
 
-if system == 'aens':
+if main_arg == 'aens':
     aens(args, force=force)
-elif system == 'oracle':
+elif main_arg == 'oracle':
     oracle(args, force=force)
+elif main_arg == 'balance':
+    balance(args)
+elif main_arg == 'height':
+    height()
 else:
-    print(f'Invalid system "{system}"')
+    print(f'Invalid args. Use --help to see available commands and arguments')
     sys.exit(1)
