@@ -186,6 +186,18 @@ class CLIOracle(Oracle):
                 print('Invalid JSON. Please retry or press ctrl-c to cancel')
 
 
+class CLIOracleQuery(OracleQuery):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.response_received = False
+        self.last_response = None
+
+    def on_response(self, response, query):
+        self.response_received = True
+        self.last_response = response
+
+
+
 def cli_args_to_kwargs(cli_args, args):
     return {
         # this requires the kwargs to be compatible to the CLI params
@@ -226,8 +238,27 @@ def oracle(args, force=False):
             '--fee',
         ]
         mapped_kwargs = cli_args_to_kwargs(cli_args, args)
-        oracle_query = OracleQuery(**mapped_kwargs)
+        oracle_query = CLIOracleQuery(**mapped_kwargs)
         client.mount(oracle_query)
+        fee = int(mapped_kwargs['query_fee'])
+        print(
+            f'Please enter a query to be sent. Note: every query will '
+            f'cost a fee of {fee}! Cancel with ctrl-c'
+        )
+        while True:
+            try:
+                query = json.loads(input('Query:\n'))
+                oracle_query.query(query)
+                print('You query was sent, waiting for reply from oracle. Press ctrl-c to stop waiting.')
+                client.listen_until(lambda: oracle_query.response_received)
+                print('Received response:')
+                print(oracle_query.last_response)
+                print('You can enter another query now or cancel with ctrl-c.')
+            except KeyboardInterrupt:
+                print('Interrupted by user')
+                sys.exit(1)
+            except:
+                print('Invalid json-query, please try again (ctrl-c to exit)')
 
 
 # allow using the --force parameter anywhere

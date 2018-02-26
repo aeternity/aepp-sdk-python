@@ -210,7 +210,7 @@ class EpochClient:
         message = self._connection.receive()
         self.dispatch_message(message)
 
-    def consume_until(self, func, timeout=None):
+    def listen_until(self, func, timeout=None):
         start = time.time()
         while True:
             if timeout is not None and time.time() > start + timeout:
