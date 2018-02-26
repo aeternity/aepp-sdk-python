@@ -15,7 +15,7 @@ try:
 except ConfigException:
     # in this case we create a default config that should work on the dev
     # machines.
-    Config.set_default(Config(local_port=3013, internal_port=3113, websocket_port=3114))
+    Config.set_default(Config(external_host=3013, internal_host=3113, websocket_host=3114))
 
 
 logging.basicConfig(level=logging.DEBUG)
