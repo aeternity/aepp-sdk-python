@@ -1,7 +1,7 @@
 import json
 import sys
 
-from aeternity import EpochClient, AEName, AENSException, Oracle, Config
+from aeternity import EpochClient, AEName, Oracle, Config
 from aeternity.oracle import NoOracleResponse, OracleQuery
 
 
