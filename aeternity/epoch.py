@@ -10,7 +10,7 @@ import websocket
 
 from aeternity.config import Config
 from aeternity.exceptions import AException, NameNotAvailable, InsufficientFundsException, TransactionNotFoundException
-from aeternity.signing import base58encode, base58_check_encode
+from aeternity.signing import base58encode
 
 logger = logging.getLogger(__name__)
 
