@@ -37,3 +37,7 @@ class UpdateError(Exception):
 
 class InsufficientFundsException(AException):
     pass
+
+
+class TransactionNotFoundException(AException):
+    pass

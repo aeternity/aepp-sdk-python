@@ -9,7 +9,7 @@ import time
 import websocket
 
 from aeternity.config import Config
-from aeternity.exceptions import AException, NameNotAvailable, InsufficientFundsException
+from aeternity.exceptions import AException, NameNotAvailable, InsufficientFundsException, TransactionNotFoundException
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +52,10 @@ AccountBalance = namedtuple('AccountBalance', [
     'pub_key', 'balance'
 ])
 Transaction = namedtuple('Transaction', [
-    'block_hash', 'block_height', 'hash', 'signatures', 'tx'
+    'block_hash', 'block_height', 'hash', 'signatures', 'tx', 'data_schema'
 ])
 CoinbaseTx = namedtuple('CoinbaseTx', [
-    'account', 'data_schema', 'type', 'vsn'
+    'block_height', 'account', 'data_schema', 'type', 'vsn'
 ])
 GenericTx = namedtuple('GenericTx', ['tx'])
 
@@ -79,12 +79,16 @@ def transaction_from_dict(data):
         return GenericTx(**data)
 
     tx_type = data['tx']['type']
-    if tx_type == 'coinbase':
+    if tx_type == 'aec_coinbase_tx':
         tx = CoinbaseTx(**data['tx'])
     else:
         raise ValueError(f'Cannot deserialize transaction of type {tx_type}')
     data = data.copy()  # don't mutate the input
     data['tx'] = tx
+    if not 'data_schema' in data:
+        data['data_schema'] = None
+        # TODO: The API should provide a data_schema for all objects
+        logger.debug('Deserialized transaction without data_schema!')
     return Transaction(**data)
 
 
@@ -102,6 +106,7 @@ class EpochClient:
     exception_by_reason = {
         'Name not found': NameNotAvailable,
         'No funds in account': InsufficientFundsException,
+        'Transaction not found': TransactionNotFoundException,
     }
 
     def __init__(self, *, configs=None, retry=True):
@@ -334,11 +339,6 @@ class EpochClient:
             transaction_from_dict(transaction) for transaction in resp['transactions']
         ]
 
-    def get_all_balances(self):
-        # TODO: how does this call make any sense?? all balanaces?! --devsnd
-        balance_dict_list = self.local_http_get('balances')['accounts_balances']
-        return [AccountBalance(**balance) for balance in balance_dict_list]
-
     def get_version(self):
         return Version(**self.local_http_get('version'))
 
@@ -405,9 +405,7 @@ class EpochClient:
             f'block/tx/height/{height}/{tx_idx}',
             params={'tx_encoding': 'json'}
         )
-        if data.get('reason'):
-            raise EpochRequestError(data['reason'])
-        return data
+        return transaction_from_dict(data['transaction'])
 
     def get_transaction_from_block_hash(self, block_hash, tx_idx):
         data = self.internal_http_get(
