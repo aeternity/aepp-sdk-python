@@ -74,6 +74,9 @@ BlockWithTx = namedtuple('BlockWithTx', [
     'target', 'time', 'transactions', 'txs_hash', 'version'
 ])
 
+NewTransaction = namedtuple('NewTransaction', ['tx', 'tx_hash'])
+
+
 def transaction_from_dict(data):
     if set(data.keys()) == {'tx'}:
         return GenericTx(**data)
@@ -434,7 +437,7 @@ class EpochClient:
         from aeternity import AEName
         assert AEName.validate_pointer(recipient)
         sender = self.get_pubkey()
-        response = self.internal_http_post(
+        response = self.local_http_post(
             'tx/spend',
             json=dict(
                 amount=amount,
@@ -443,10 +446,7 @@ class EpochClient:
                 recipient_pubkey=recipient,
             )
         )
-        return response
-
-    def sign_transaction(self, transaction, keypair):
-        return keypair.sign_transaction(transaction)
+        return NewTransaction(**response)
 
     def send_signed_transaction(self, signed_transaction):
         data = [
