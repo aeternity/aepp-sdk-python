@@ -37,15 +37,13 @@ class KeyPair:
     def __init__(self, public, private):
         self.public = public
         self.private = private
-        self.signing_key = SigningKey.from_der(self.private)
+        self.signing_key = SigningKey.from_string(self.private, curve=SECP256k1)
 
     def sign_transaction(self, transaction):
         transaction_hash = base58decode(transaction.tx_hash.split('$')[1])
         signature = self.signing_key.sign(transaction_hash)
-        return SignedTransaction(
-            transaction=transaction,
-            signatures=[signature]
-        )
+        return SignedTransaction(transaction=transaction, signatures=[signature])
+
     #
     # initializers
     #
@@ -55,14 +53,18 @@ class KeyPair:
         raise NotImplementedError()
 
     @classmethod
-    def decrypt_key(cls, key_content, password):
+    def sha256(cls, data):
         hash = SHA256.new()
+        hash.update(data)
+        return hash.digest()
+
+    @classmethod
+    def decrypt_key(cls, key_content, password):
         if isinstance(password, str):
             password = password.encode('utf-8')
-        hash.update(password)
-        password_digest = hash.digest()
-        aes = AES.new(password_digest, AES.MODE_ECB)
-        return aes.decrypt(key_content)
+        aes = AES.new(cls.sha256(password))
+        decrypted_key = aes.decrypt(key_content)
+        return decrypted_key
 
     @classmethod
     def read_from_files(cls, public_key_file, private_key_file, password):

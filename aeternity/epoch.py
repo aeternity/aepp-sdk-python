@@ -10,6 +10,7 @@ import websocket
 
 from aeternity.config import Config
 from aeternity.exceptions import AException, NameNotAvailable, InsufficientFundsException, TransactionNotFoundException
+from aeternity.signing import base58encode
 
 logger = logging.getLogger(__name__)
 
@@ -453,7 +454,7 @@ class EpochClient:
             'sig_tx',   # SIG_TX_TYPE
             1,          # VSN
             signed_transaction.transaction,
-            [signed_transaction.signature]
+            [base58encode(sig) for sig in signed_transaction.signatures]
         ]
         self.internal_http_post('tx', json=data)
 
