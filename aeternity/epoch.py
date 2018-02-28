@@ -9,7 +9,7 @@ import time
 import websocket
 
 from aeternity.config import Config
-from aeternity.exceptions import AException
+from aeternity.exceptions import AException, NameNotAvailable, InsufficientFundsException
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +99,11 @@ def block_from_dict(data):
 class EpochClient:
     next_block_poll_interval_sec = 10
 
+    exception_by_reason = {
+        'Name not found': NameNotAvailable,
+        'No funds in account': InsufficientFundsException,
+    }
+
     def __init__(self, *, configs=None, retry=True):
         if configs is None:
             configs = Config.get_defaults()
@@ -130,15 +135,18 @@ class EpochClient:
             endpoint = endpoint[1:]
         url = base_url + '/' + endpoint
         response = requests.request(method, url, **kwargs)
-        if response.status_code >= 500:
-            raise EpochRequestError(response)
         try:
             json_data = response.json()
-            if json_data.get('reason'):
+            if response.status_code >= 500:
                 raise AException(payload=json_data)
+
+            reason = json_data.get('reason')
+            if reason:
+                exception_cls = self.exception_by_reason.get(reason, AException)
+                raise exception_cls(payload=json_data)
             return json_data
         except JSONDecodeError:
-            raise EpochRequestError(response.text)
+            raise AException(payload={'broken_json': response.text})
 
     def internal_http_get(self, endpoint, **kwargs):
         config = self._get_active_config()
@@ -423,6 +431,33 @@ class EpochClient:
         params.update(self.make_tx_types_params(tx_types, exclude_tx_types))
         data = self.internal_http_get('/block/txs/list/height', params=params)
         return [transaction_from_dict(tx) for tx in data['transactions']]
+
+    def create_transaction(self, recipient, amount, fee=1):
+        from aeternity import AEName
+        assert AEName.validate_pointer(recipient)
+        sender = self.get_pubkey()
+        response = self.internal_http_post(
+            'tx/spend',
+            json=dict(
+                amount=amount,
+                sender=sender,
+                fee=fee,
+                recipient_pubkey=recipient,
+            )
+        )
+        return response
+
+    def sign_transaction(self, transaction, keypair):
+        return keypair.sign_transaction(transaction)
+
+    def send_signed_transaction(self, signed_transaction):
+        data = [
+            'sig_tx',   # SIG_TX_TYPE
+            1,          # VSN
+            signed_transaction.transaction,
+            [signed_transaction.signature]
+        ]
+        self.internal_http_post('tx', json=data)
 
 
 class EpochSubscription():

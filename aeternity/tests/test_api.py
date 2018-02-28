@@ -2,7 +2,11 @@ from aeternity import EpochClient
 from aeternity.epoch import AccountBalance, Transaction, CoinbaseTx, Version, EpochInfo, LastBlockInfo, BlockWithTx
 
 
-client = EpochClient()
+client = None
+
+def setup_module(module):
+    global client
+    client = EpochClient()
 
 
 def test_get_balance():

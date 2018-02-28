@@ -160,7 +160,3 @@ def pretty_bytecode(bytecode_as_hex):
         else:
             print(pos, name)
         i += 1 + consumes
-
-
-#    print('\n'.join( ))
-

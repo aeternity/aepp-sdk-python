@@ -2,7 +2,7 @@ import json
 import random
 
 from aeternity.exceptions import NameNotAvailable, PreclaimFailed, TooEarlyClaim, ClaimFailed, AENSException, \
-    UpdateError, MissingPreclaim, InsufficientFundsException
+    UpdateError, MissingPreclaim, InsufficientFundsException, AException
 from aeternity.oracle import Oracle
 from aeternity.epoch import EpochClient
 
@@ -64,17 +64,17 @@ class AEName:
         return True
 
     def update_status(self):
-        response = self.client.local_http_get('name', params={'name': self.domain})
-        wasnt_found = response.get('reason') == 'Name not found'
-        # e.g. if the status is already PRECLAIMED or CLAIMED, don't reset
-        # it to AVAILABLE.
-        if wasnt_found and self.status == NameStatus.UNKNOWN:
-            self.status = NameStatus.AVAILABLE
-        else:
+        try:
+            response = self.client.local_http_get('name', params={'name': self.domain})
             self.status = NameStatus.CLAIMED
             self.name_hash = response['name_hash']
             self.name_ttl = response['name_ttl']
             self.pointers = json.loads(response['pointers'])
+        except NameNotAvailable:
+            # e.g. if the status is already PRECLAIMED or CLAIMED, don't reset
+            # it to AVAILABLE.
+            if self.status == NameStatus.UNKNOWN:
+                self.status = NameStatus.AVAILABLE
 
     def is_available(self):
         self.update_status()
