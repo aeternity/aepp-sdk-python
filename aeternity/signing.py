@@ -1,11 +1,14 @@
 import os
 from collections import namedtuple
 
+from hashlib import sha256
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA256
 from ecdsa import SECP256k1, SigningKey
 
 alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+
+
 
 
 def base58encode(bytes):
@@ -17,6 +20,11 @@ def base58encode(bytes):
         accu, b58 = divmod(accu, 58)
         retval = alphabet[b58] + retval
     return retval
+
+
+def base58_check_encode(bytes):
+    digest = sha256(sha256(bytes).digest()).digest()
+    return base58encode(bytes + digest[:4])
 
 
 def base58decode(base58str):
@@ -37,15 +45,14 @@ class KeyPair:
     def __init__(self, public, private):
         self.public = public
         self.private = private
-        self.signing_key = SigningKey.from_der(self.private)
+        self.signing_key = SigningKey.from_string(self.private, curve=SECP256k1)
 
     def sign_transaction(self, transaction):
         transaction_hash = base58decode(transaction.tx_hash.split('$')[1])
-        signature = self.signing_key.sign(transaction_hash)
-        return SignedTransaction(
-            transaction=transaction,
-            signatures=[signature]
-        )
+        bytes_signature = self.signing_key.sign(transaction_hash)
+        signature = 'sg$' + base58_check_encode(bytes_signature)
+        return SignedTransaction(transaction=transaction, signatures=[signature])
+
     #
     # initializers
     #
@@ -55,14 +62,18 @@ class KeyPair:
         raise NotImplementedError()
 
     @classmethod
-    def decrypt_key(cls, key_content, password):
+    def sha256(cls, data):
         hash = SHA256.new()
+        hash.update(data)
+        return hash.digest()
+
+    @classmethod
+    def decrypt_key(cls, key_content, password):
         if isinstance(password, str):
             password = password.encode('utf-8')
-        hash.update(password)
-        password_digest = hash.digest()
-        aes = AES.new(password_digest, AES.MODE_ECB)
-        return aes.decrypt(key_content)
+        aes = AES.new(cls.sha256(password))
+        decrypted_key = aes.decrypt(key_content)
+        return decrypted_key
 
     @classmethod
     def read_from_files(cls, public_key_file, private_key_file, password):
