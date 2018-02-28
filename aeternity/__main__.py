@@ -34,9 +34,13 @@ Usage:
 The `--force` will suppress any questions before performing the action.
 
 You can override the standard connection ports using the following environment
-variables: AE_LOCAL_PORT, AE_LOCAL_INTERNAL_PORT and AE_WEBSOCKET, or using
-the parameters: --external-port, --internal-port and --websocket-port
-
+variables:
+    AE_EXTERNAL_HOST, AE_EXTERNAL_PORT, AE_INTERNAL_HOST, AE_INTERNAL_PORT,
+    AE_WEBSOCKET_HOST and AE_WEBSOCKET_PORT
+or using the command line parameters:
+    --external-host
+    --internal-host
+    --websocket-host
 ''')
     sys.exit(1)
 
@@ -70,14 +74,14 @@ def popdefault(d, key, default):
     except KeyError:
         return default
 
-external_port = popdefault(args, '--external-port', None)
-internal_port = popdefault(args, '--internal-port', None)
-websocket_port = popdefault(args, '--websocket-port', None)
+external_host = popdefault(args, '--external-host', None)
+internal_host = popdefault(args, '--internal-host', None)
+websocket_host = popdefault(args, '--websocket-host', None)
 
 config = Config(
-    local_port=external_port,
-    internal_port=internal_port,
-    websocket_port=websocket_port,
+    external_host=external_host,
+    internal_host=internal_host,
+    websocket_host=websocket_host,
 )
 
 client = EpochClient(config=config)

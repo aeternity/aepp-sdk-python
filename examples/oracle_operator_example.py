@@ -91,7 +91,7 @@ class OraclefJean(Oracle):
         return self._success(ret_data)
 
 
-dev1_config = Config(local_port=3013, internal_port=3113, websocket_port=3114)
+dev1_config = Config(external_host=3013, internal_host=3113, websocket_host=3114)
 oraclef_jean = OraclefJean(
     # example spec (this spec is fictional and will be defined later)
     query_format='''{'url': 'str', 'jq': 'str'}''',
