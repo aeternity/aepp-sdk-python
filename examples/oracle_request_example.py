@@ -35,4 +35,4 @@ oracle_query.query(json.dumps({
     'url': 'https://api.coinmarketcap.com/v1/ticker/aeternity/?convert=USD',
     'jq': '.[0].price_usd',
 }))
-client.run()
+client.listen()

@@ -1,52 +1,110 @@
-from aeternity import EpochClient
 from aeternity.contract import Contract
 
-client = EpochClient()
-
-# see: /epoch/apps/aering/test/contracts/05_greeter.aer
+# see: /epoch/apps/aering/test/contracts/identity.aer
 example_contract = '''
-contract type Counter = {
+contract type Identity = {
   type state;
-  let init : unit => state;
-  let get  : unit => int;
-  let tick : unit => unit;
+
+  let main: int => int;
 };
 
-contract Counter = {
-
-  type state = int;
-
-  let init() = 0;
-
-  let get() = {
-    let s = state();
-    (s, s)
-  };
-
-  let tick() = {
-    let s = state();
-    ((), s + 1)
+contract Identity = {
+  let main(x:int) = {
+    x;
   };
 };
-
-
 '''
 
-def test_contract_compile():
-    contract = Contract(client)
-    result = contract.contract_compile(example_contract, '')
-    assert result is not None
-    print(result)
-    assert result.get('bytecode')
+broken_contract = '''
+contract type Identity = {
+  BROKEN state;
 
-def test_contract_call():
-    contract = Contract(client)
-    result = contract.call(example_contract, 'init', '0x9')
+  let main: int => int;
+};
+
+contract Identity = {
+  let main(x:int) = {
+    x;
+  };
+};
+'''
+
+#
+# RING
+#
+
+def test_ring_contract_compile():
+    contract = Contract(example_contract, Contract.RING)
+    result = contract.compile('')
+    assert result is not None
+    assert result.startswith('0x')
+
+def test_ring_contract_call():
+    contract = Contract(example_contract, Contract.RING)
+    result = contract.call('Identity.main', '1')
     assert result is not None
     assert result.get('out')
 
-def test_encode_calldata():
-    contract = Contract(client)
-    result = contract.encode_calldata(example_contract, 'init', '1')
+def test_ring_encode_calldata():
+    contract = Contract(example_contract, Contract.RING)
+    result = contract.encode_calldata('Identity.main', '1')
+    assert result is not None
+    assert result == 'Identity.main1'
+
+def test_ring_broken_contract_compile():
+    contract = Contract(broken_contract, Contract.RING)
+    result = contract.compile('')
     assert result is not None
     assert result.startswith('0x')
+
+def test_ring_broken_contract_call():
+    contract = Contract(broken_contract, Contract.RING)
+    result = contract.call('Identity.main', '1')
+    assert result is not None
+    assert result.get('out')
+
+def test_ring_broken_encode_calldata():
+    contract = Contract(broken_contract, Contract.RING)
+    result = contract.encode_calldata('Identity.main', '1')
+    assert result is not None
+    assert result == 'Identity.main1'
+
+#
+# EVM
+#
+
+def test_evm_contract_compile():
+    contract = Contract(example_contract, Contract.EVM)
+    result = contract.compile('')
+    assert result is not None
+    assert result.startswith('0x')
+
+def test_evm_contract_call():
+    contract = Contract(example_contract, Contract.EVM)
+    result = contract.call('Identity.main', '1')
+    assert result is not None
+    assert result.get('out')
+
+def test_evm_encode_calldata():
+    contract = Contract(example_contract, Contract.EVM)
+    result = contract.encode_calldata('Identity.main', '1')
+    assert result is not None
+    assert result == 'Identity.main1'
+
+def test_evm_broken_contract_compile():
+    contract = Contract(broken_contract, Contract.EVM)
+    result = contract.compile('')
+    assert result is not None
+    assert result.startswith('0x')
+
+def test_evm_broken_contract_call():
+    contract = Contract(broken_contract, Contract.EVM)
+    result = contract.call('Identity.main', '1')
+    assert result is not None
+    assert result.get('out')
+
+def test_evm_broken_encode_calldata():
+    contract = Contract(broken_contract, Contract.EVM)
+    result = contract.encode_calldata('Identity.main', '1')
+    assert result is not None
+    assert result == 'Identity.main1'

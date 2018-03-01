@@ -105,7 +105,7 @@ oraclef_jean = OraclefJean(
 )
 client = EpochClient(config=dev1_config)
 client.register_oracle(oraclef_jean)
-client.consume_until(oraclef_jean.is_ready)
+client.listen_until(oraclef_jean.is_ready)
 
 print(f'''You can now query this oracle using the following parameters:
     oracle_pubkey: {oraclef_jean.oracle_id}
@@ -116,5 +116,5 @@ print(f'''You can now query this oracle using the following parameters:
     query_format: {oraclef_jean.query_format}
 ''')
 print('Oracle ready')
-client.run()
+client.listen()
 print('Oracle Stopped')

@@ -52,7 +52,7 @@ def test_oracle_registration():
         default_response_ttl=2,
     )
     client.register_oracle(weather_oracle)
-    client.consume_until(weather_oracle.is_ready, timeout=40)
+    client.listen_until(weather_oracle.is_ready, timeout=40)
     assert weather_oracle.oracle_id is not None
 
 def test_oracle_query_received():
@@ -67,7 +67,7 @@ def test_oracle_query_received():
         default_response_ttl=2,
     )
     client.register_oracle(weather_oracle)
-    client.consume_until(weather_oracle.is_ready, timeout=180)
+    client.listen_until(weather_oracle.is_ready, timeout=180)
     weather_query = WeatherQuery(
         oracle_pubkey=weather_oracle.oracle_id,
         query_fee=0,
@@ -77,4 +77,4 @@ def test_oracle_query_received():
     )
     client.mount(weather_query)
     weather_query.query("{'city': 'Berlin'}")
-    client.consume_until(lambda: weather_query.response_received, timeout=180)
+    client.listen_until(lambda: weather_query.response_received, timeout=180)
