@@ -10,7 +10,7 @@ import websocket
 
 from aeternity.config import Config
 from aeternity.exceptions import AException, NameNotAvailable, InsufficientFundsException, TransactionNotFoundException
-from aeternity.signing import base58encode
+from aeternity.signing import SignableTransaction, KeyPair
 
 logger = logging.getLogger(__name__)
 
@@ -278,6 +278,11 @@ class EpochClient:
     # API functions
     #
 
+    @classmethod
+    def _get_burn_key(cls):
+        keypair = KeyPair.generate()
+        keypair.signing_key
+
     def get_pubkey(self):
         return self.internal_http_get('account/pub-key')['pub_key']
 
@@ -447,21 +452,11 @@ class EpochClient:
                 recipient_pubkey=recipient,
             )
         )
-        return NewTransaction(**response)
+        return SignableTransaction(response)
 
-    def send_signed_transaction(self, signed_transaction):
-        data = {
-            'tx': json.dumps([
-                'sig_tx',   # SIG_TX_TYPE
-                1,          # VSN
-                signed_transaction.transaction,
-                signed_transaction.signatures
-            ])
-        }
-        print(data)
-        response = self.local_http_post('tx', json=data)
-        print(response)
-        return response
+    def send_signed_transaction(self, encoded_signed_transaction):
+        data = {'tx': encoded_signed_transaction}
+        return self.local_http_post('tx', json=data)
 
 
 class EpochSubscription():
