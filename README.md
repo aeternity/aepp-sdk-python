@@ -10,7 +10,7 @@ navigation: 6
 This repository is for tools and notes for working with æternity when you're running
 an Epoch node on your local machine.
 
-[Follow these installation notes for a three-node linux setup with fast mining settings](https://github.com/aeternity/aepp-sdk-python/blob/master/INSTALL.md)
+[Follow these installation notes for a three node linux setup with fast mining settings](https://github.com/aeternity/aepp-sdk-python/blob/master/INSTALL.md)
 
 ## CLI Usage
 See below for programmatic usage
