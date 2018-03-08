@@ -1,24 +1,30 @@
+---
+layout: page
+title: SDK.py
+navigation: 6
+---
+
 # aepp-sdk-python
 
 ## Introduction
-
-This repo is for tools and notes for working with aeternity when you're running
-an epoch node on your local machine.
+This repo is for tools and notes for working with æternity when you're running
+an Epoch node on your local machine.
 
 [Follow these installation notes for a three-node linux setup with fast mining settings](https://github.com/aeternity/aepp-sdk-python/blob/master/INSTALL.md)
 
 ## CLI Usage
-
 See below for programmatic usage
 
 You can launch the CLI tool using
+
 ```
 python -m aeternity
 ```
 
 Available commands:
+
 ```
-aepps sdk cli tool:
+æternity cli tool:
 Usage:
     balance [pubkey]
         Returns the balance of pubkey or the balance of the node's pubkey
@@ -61,13 +67,11 @@ or using the command line parameters:
 ## Programmatic Usage
 
 ### Oracles
-
 Oracles are a means to provide external data in the block chain which then
 can be used in smart contracts. There are two roles when using an oracle:
 
  - Oracle Operator ("hosts" the oracle and responds to queries)
  - Oracle User (sends queries to the oracle)
-
 
 #### Oracle Operator
 
@@ -80,6 +84,7 @@ Furthermore you must specify `query_format`, `response_format`,
 in the oracle constructor.
 
 For example:
+
 ```python
 from aeternity import Oracle
 
@@ -97,8 +102,8 @@ my_oracle = MyOracle(
 )
 ```
 
-To act as operator of this oracle, you have to connect to your local epoch node
-(see [the epoch repo](https://github.com/aeternity/epoch) to find out how to run
+To act as operator of this oracle, you have to connect to your local Epoch node
+(see the [Epoch repo](https://github.com/aeternity/epoch) to find out how to run
 a local node), instantiate your oracle and register it on the block chain using
 `client.register_oracle`. Then you must constantly watch for queries on the
 block chain using `client.run()`
@@ -107,23 +112,22 @@ block chain using `client.run()`
 from aeternity import Config, EpochClient
 # example configuration to create a connection to your node:
 config = Config(local_port=3013, internal_port=3113, websocket_port=3114)
-client = EpochClient(config=config)  # connect with the epoch node
+client = EpochClient(config=config)  # connect with the Epoch node
 client.register_oracle(my_oracle)  # instantiate and register your oracle
 client.run() # blocking, responds to all queries for all registered oracles
 ```
 
 #### Oracle User
-
 The oracle operator will want to publish their oracle using a description how
 to talk to their oracle. All that has to be done is to create a corresponding
-`OracleQuery` class. Normally it's in the interest of the oracle operator 
+`OracleQuery` class. Normally it's in the interest of the oracle operator
 provide this for you, but you can also easily implement this yourself in the
 case that the operator did not.
 
 ```python
 from aeternity import OracleQuery
 
-class MyOracleQuery(OracleQuery):    
+class MyOracleQuery(OracleQuery):
     def on_response(self, query):
         print('You requested %s' % query)
         print('The oracle responded %s' % query)
@@ -151,14 +155,11 @@ client = EpochClient(config=config)
 # instantiate your oracle query and register it with the node
 client.mount(my_query)
 my_query.query('The answer to life, the universe and everything')
-``` 
+```
 
-
-
-### AENS (aeternity name system)
-
-To register human-readable names with the aeternity naming system you also need
-to connect to your local epoch node.
+### AENS (æternity name system)
+To register human-readable names with the æternity naming system you also need
+to connect to your local Epoch node.
 
 ```python
 from aeternity import Config, EpochClient, AEName
@@ -177,6 +178,7 @@ name.preclaim()  # preclaim will mark the domain as yours in the current block
 name.claim_blocking()  # will wait for the next block to claim the domain
 name.update(target='ak$1234deadbeef')  # set what this domain stands for
 ```
+
 you can also pass an oracle instance directly to in the `target` parameter
 when calling `update`
 
@@ -187,9 +189,6 @@ name.update(target=oracle)
 ```
 
 ## Reference:
-
 [AENS API Spec](https://github.com/aeternity/protocol/blob/master/epoch/api/naming_system_api_usage.md)
 
 [AENS Protocol](https://github.com/aeternity/protocol/blob/master/AENS.md)
-
-
