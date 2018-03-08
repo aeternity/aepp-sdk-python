@@ -47,6 +47,14 @@ class KeyPair:
         encoded_msg = self.encode_transaction_message(transaction.tx_unpacked, [signature])
         return encoded_msg
 
+    def save_to_folder(self, folder):
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        with open(os.path.join(folder, 'key'), 'wb') as fh:
+            fh.write(self.signing_key.to_string())
+        with open(os.path.join(folder, 'key.pub'), 'wb') as fh:
+            fh.write(self.verifying_key.to_string())
+
     #
     # initializers
     #

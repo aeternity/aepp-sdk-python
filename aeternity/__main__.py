@@ -4,6 +4,7 @@ import sys
 from aeternity import EpochClient, AEName, Oracle, Config
 from aeternity.exceptions import AENSException, AException
 from aeternity.oracle import NoOracleResponse, OracleQuery
+from aeternity.signing import KeyPair
 
 
 def print_usage():
@@ -13,6 +14,8 @@ Usage:
         Returns the balance of pubkey or the balance of the node's pubkey
     height
         returns the top block number
+    generate wallet --path <path>
+        creates a new wallet
 
     aens available <domain.aet>
             Check Domain availablity    
@@ -68,12 +71,18 @@ args = sys.argv[1:]
 if '--help' in args or len(args) < 1:
     print_usage()
 
-def popargs(d, key, default):
+
+_no_popargs_default = object()
+
+
+def popargs(d, key, default=_no_popargs_default):
     try:
         idx = d.index(key)
-        default.pop(idx)  # remove arg
-        return default.pop(idx)  # remove value after arg
+        d.pop(idx)  # remove arg
+        return d.pop(idx)  # remove value after arg
     except ValueError:
+        if default == _no_popargs_default:
+            raise
         return default
 
 external_host = popargs(args, '--external-host', None)
@@ -299,6 +308,17 @@ elif main_arg == 'balance':
     balance(args)
 elif main_arg == 'height':
     height()
+elif main_arg == 'generate':
+    # generate wallet
+    keypair = KeyPair.generate()
+    path = popargs(args, '--path')
+    keypair.save_to_folder(path)
+    address = keypair.get_address()
+    print('You wallet has been generated:')
+    print('Address: %s' % address)
+    print('Saved to: %s' % path)
+
+
 else:
     print(f'Invalid args. Use --help to see available commands and arguments')
     sys.exit(1)
