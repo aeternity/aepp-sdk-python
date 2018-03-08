@@ -21,6 +21,8 @@ Usage:
     spend <amount> <receipient> <wallet-path>
         send money to another account. The folder at wallet-path must contain
         key and key.pub
+    wallet info <wallet-path>
+        prints info about your wallet (address in base58)
 
     aens available <domain.aet>
             Check Domain availablity    
@@ -347,6 +349,11 @@ elif main_arg == 'generate':
     print('You wallet has been generated:')
     print('Address: %s' % address)
     print('Saved to: %s' % path)
+elif main_arg == 'wallet':
+    wallet_path = args[2]
+    password = getpass('Wallet password: ')
+    keypair = KeyPair.read_from_dir(wallet_path, password)
+    print('Address: %s' % keypair.get_address())
 else:
     print(f'Invalid args. Use --help to see available commands and arguments')
     sys.exit(1)
