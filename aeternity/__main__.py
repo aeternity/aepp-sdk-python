@@ -25,15 +25,15 @@ Usage:
         prints info about your wallet (address in base58)
 
     aens available <domain.aet>
-            Check Domain availablity    
+            Check Domain availablity
     aens register <domain.aet> [--force]
-            Register a domain (incurs fees!)    
+            Register a domain (incurs fees!)
     aens status <domain.aet>
-            Checks the status of a domain    
+            Checks the status of a domain
     aens update <domain.aet> <address>
-            Updates where the name points to    
+            Updates where the name points to
     aens revoke <domain.aet> [--force]
-            Removes this domain from the block chain (incurs fees!)    
+            Removes this domain from the block chain (incurs fees!)
     aens transfer <domain.aet> <receipient_address> [--force]
             Transfers a domain to another user
     
