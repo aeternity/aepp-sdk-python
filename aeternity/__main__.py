@@ -282,12 +282,11 @@ def balance(args):
         pubkey = args[1]
     else:
         pubkey = client.get_pubkey()
-    print(f'Getting balance for account: {pubkey}')
     try:
         balance = client.get_balance(pubkey)
-        print(f'Balance: {balance}')
+        print(balance)
     except AException as exc:
-        print(f'Error getting balance: {exc.payload}')
+        stderr(f'Error getting balance: {exc.payload}')
 
 
 def height():
@@ -317,8 +316,6 @@ elif main_arg == 'generate':
     print('You wallet has been generated:')
     print('Address: %s' % address)
     print('Saved to: %s' % path)
-
-
 else:
     print(f'Invalid args. Use --help to see available commands and arguments')
     sys.exit(1)
