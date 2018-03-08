@@ -2,3 +2,4 @@ venv
 .idea
 **/*.pyc
 .pytest_cache
+/epoch/
