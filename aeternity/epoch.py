@@ -220,7 +220,7 @@ class EpochClient:
         self._connection.send(message)
 
     def spend(self, recipient_pubkey, amount, keypair):
-        transaction = self.create_transaction(recipient_pubkey, 10)
+        transaction = self.create_spend_transaction(recipient_pubkey, 10)
         signed_transaction = keypair.sign_transaction(transaction)
         return self.send_signed_transaction(signed_transaction)
 
@@ -437,7 +437,7 @@ class EpochClient:
         data = self.internal_http_get('/block/txs/list/height', params=params)
         return [transaction_from_dict(tx) for tx in data['transactions']]
 
-    def create_transaction(self, recipient, amount, fee=1):
+    def create_spend_transaction(self, recipient, amount, fee=1):
         from aeternity import AEName
         assert AEName.validate_pointer(recipient)
         sender = self.get_pubkey()
