@@ -45,7 +45,8 @@ class KeyPair:
     def sign_transaction(self, transaction):
         signature = self.sign_transaction_message(msgpacked_tx=transaction.tx_msg_packed)
         encoded_msg = self.encode_transaction_message(transaction.tx_unpacked, [signature])
-        return encoded_msg
+        b58_signature = 'sg$' + base58.b58encode_check(signature)
+        return encoded_msg, b58_signature
 
     def save_to_folder(self, folder):
         if not os.path.exists(folder):

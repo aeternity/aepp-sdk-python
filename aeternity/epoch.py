@@ -61,6 +61,9 @@ CoinbaseTx = namedtuple('CoinbaseTx', [
 AENSTransferTx = namedtuple('AENSTransferTx', [
     'account', 'fee', 'name_hash', 'nonce', 'recipient_pubkey', 'type', 'vsn'
 ])
+SpendTx = namedtuple('SpendTx', [
+    'data_schema', 'type', 'vsn', 'amount', 'fee', 'nonce', 'recipient', 'sender'
+])
 GenericTx = namedtuple('GenericTx', ['tx'])
 
 Version = namedtuple('Version', [
@@ -90,6 +93,8 @@ def transaction_from_dict(data):
         tx = CoinbaseTx(**data['tx'])
     elif tx_type == 'aens_transfer_tx':
         tx = AENSTransferTx(**data['tx'])
+    elif tx_type == 'aec_spend_tx':
+        tx = SpendTx(**data['tx'])
     else:
         raise ValueError(f'Cannot deserialize transaction of type {tx_type}')
     data = data.copy()  # don't mutate the input
@@ -110,7 +115,7 @@ def block_from_dict(data):
 
 
 class EpochClient:
-    next_block_poll_interval_sec = 10
+    next_block_poll_interval_sec = 0.01
 
     exception_by_reason = {
         'Name not found': NameNotAvailable,
@@ -186,11 +191,13 @@ class EpochClient:
     def update_top_block(self):
         self._top_block = self.get_height()
 
-    def wait_for_next_block(self):
+    def wait_for_next_block(self, polling_interval=None):
         if self._top_block == None:
             self.update_top_block()
+        if polling_interval is None:
+            polling_interval = self.next_block_poll_interval_sec
         while True:
-            time.sleep(self.next_block_poll_interval_sec)
+            time.sleep(polling_interval)
             new_block = self.get_height()
             if (new_block > self._top_block):
                 self._top_block = new_block
@@ -221,7 +228,7 @@ class EpochClient:
 
     def spend(self, recipient_pubkey, amount, keypair):
         transaction = self.create_spend_transaction(recipient_pubkey, 10)
-        signed_transaction = keypair.sign_transaction(transaction)
+        signed_transaction, signature = keypair.sign_transaction(transaction)
         return self.send_signed_transaction(signed_transaction)
 
     def send_and_receive(self, message):
