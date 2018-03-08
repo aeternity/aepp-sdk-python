@@ -46,7 +46,7 @@ class Config:
 
             )
 
-        internal_host_suffix = "internal/" if docker_semantics else ""
+        internal_host_suffix = 'internal/' if docker_semantics else ''
 
         self.websocket_url = f'ws://{self.websocket_host_port}/websocket'
         self.http_api_url = f'http://{self.external_host_port}/v2'
