@@ -280,7 +280,9 @@ def oracle(args, force=False):
                 sys.exit(1)
             except:
                 print('Invalid json-query, please try again (ctrl-c to exit)')
-
+    else:
+        stderr('Unknown oracle command: %s' % command)
+        sys.exit(1)
 
 def balance(args):
     if len(args) >= 2:
