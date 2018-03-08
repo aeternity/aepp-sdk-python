@@ -23,7 +23,7 @@ def test_get_transactions():
 def test_get_version():
     version_info = client.get_version()
     assert type(version_info) == Version
-    assert version_info.version == '0.7.1'
+    assert version_info.version == '0.8.0'
 
 def test_get_info():
     info = EpochClient().get_info()
