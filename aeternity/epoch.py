@@ -58,6 +58,9 @@ Transaction = namedtuple('Transaction', [
 CoinbaseTx = namedtuple('CoinbaseTx', [
     'block_height', 'account', 'data_schema', 'type', 'vsn'
 ])
+AENSTransferTx = namedtuple('AENSTransferTx', [
+    'account', 'fee', 'name_hash', 'nonce', 'recipient_pubkey', 'type', 'vsn'
+])
 GenericTx = namedtuple('GenericTx', ['tx'])
 
 Version = namedtuple('Version', [
@@ -85,6 +88,8 @@ def transaction_from_dict(data):
     tx_type = data['tx']['type']
     if tx_type == 'aec_coinbase_tx':
         tx = CoinbaseTx(**data['tx'])
+    elif tx_type == 'aens_transfer_tx':
+        tx = AENSTransferTx(**data['tx'])
     else:
         raise ValueError(f'Cannot deserialize transaction of type {tx_type}')
     data = data.copy()  # don't mutate the input
