@@ -31,7 +31,6 @@ Usage:
                     [--default-fee] [--default-ttl] [--default-query-ttl]
                     [--default-response-ttl]
             You will be prompted for any non-provided argument
-    
     oracle query [--oracle-pubkey] [--query-fee] [--query-ttl] [--response-ttl]
                  [--fee]
             You will be prompted for any non-provided argument
@@ -66,7 +65,7 @@ def prompt(message, skip):
 
 args = sys.argv[1:]
 
-if '--help' in args:
+if '--help' in args or len(args) < 1:
     print_usage()
 
 def popargs(d, key, default):
@@ -88,6 +87,7 @@ config = Config(
 )
 
 client = EpochClient(configs=config)
+
 
 main_arg = args[0]
 
