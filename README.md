@@ -18,22 +18,44 @@ python -m aeternity
 
 Available commands:
 ```
-aeternity cli tool:
+aepps sdk cli tool:
 Usage:
+    balance [pubkey]
+        Returns the balance of pubkey or the balance of the node's pubkey
+    height
+        returns the top block number
+
     aens available <domain.aet>
-            Check Domain availablity
+            Check Domain availablity    
     aens register <domain.aet> [--force]
-            Register a domain (incurs fees!)
+            Register a domain (incurs fees!)    
     aens status <domain.aet>
-            Checks the status of a domain
+            Checks the status of a domain    
     aens update <domain.aet> <address>
-            Updates where the name points to
+            Updates where the name points to    
     aens revoke <domain.aet> [--force]
-            Removes this domain from the block chain (incurs fees!)
+            Removes this domain from the block chain (incurs fees!)    
     aens transfer <domain.aet> <receipient_address> [--force]
             Transfers a domain to another user
+    
+    oracle register [--query-format] [--response-format] [--default-query-fee]
+                    [--default-fee] [--default-ttl] [--default-query-ttl]
+                    [--default-response-ttl]
+            You will be prompted for any non-provided argument
+    oracle query [--oracle-pubkey] [--query-fee] [--query-ttl] [--response-ttl]
+                 [--fee]
+            You will be prompted for any non-provided argument
+ 
 The `--force` will suppress any questions before performing the action.
 
+You can override the standard connection ports using the following environment
+variables:
+    AE_EXTERNAL_HOST, AE_EXTERNAL_PORT, AE_INTERNAL_HOST, AE_INTERNAL_PORT,
+    AE_WEBSOCKET_HOST and AE_WEBSOCKET_PORT
+or using the command line parameters:
+    --external-host
+    --internal-host
+    --websocket-host
 ```
 
 ## Programmatic Usage
