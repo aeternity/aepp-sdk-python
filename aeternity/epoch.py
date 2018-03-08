@@ -129,9 +129,6 @@ class EpochClient:
         self._connection = self._make_connection()
         self._top_block = None
         self._retry = retry
-        self.send(
-            {"target":"chain", "action":"subscribe", "payload":{"type":"new_block"}}
-        )
 
     def _get_active_config(self):
         return self._configs[self._active_config_idx]
