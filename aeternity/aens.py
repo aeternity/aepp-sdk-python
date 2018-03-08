@@ -1,41 +1,10 @@
 import json
 import random
 
+from aeternity.exceptions import NameNotAvailable, PreclaimFailed, TooEarlyClaim, ClaimFailed, AENSException, \
+    UpdateError, MissingPreclaim, InsufficientFundsException, AException
 from aeternity.oracle import Oracle
 from aeternity.epoch import EpochClient
-
-
-class AENSException(Exception):
-    def __init__(self, *args, payload=None):
-        super().__init__(*args)
-        self.payload = payload
-
-    def __str__(self):
-        return super().__str__() + '\npayload\n' + str(self.payload)
-
-class MissingPreclaim(AENSException):
-    pass
-
-
-class PreclaimFailed(AENSException):
-    pass
-
-
-class TooEarlyClaim(AENSException):
-    pass
-
-
-class ClaimFailed(AENSException):
-    pass
-
-
-class NameNotAvailable(AENSException):
-    pass
-
-
-class UpdateError(Exception):
-    pass
-
 
 class NameStatus:
     REVOKED = 'REVOKED'
@@ -95,17 +64,17 @@ class AEName:
         return True
 
     def update_status(self):
-        response = self.client.local_http_get('name', params={'name': self.domain})
-        wasnt_found = response.get('reason') == 'Name not found'
-        # e.g. if the status is already PRECLAIMED or CLAIMED, don't reset
-        # it to AVAILABLE.
-        if wasnt_found and self.status == NameStatus.UNKNOWN:
-            self.status = NameStatus.AVAILABLE
-        else:
+        try:
+            response = self.client.local_http_get('name', params={'name': self.domain})
             self.status = NameStatus.CLAIMED
             self.name_hash = response['name_hash']
             self.name_ttl = response['name_ttl']
             self.pointers = json.loads(response['pointers'])
+        except NameNotAvailable:
+            # e.g. if the status is already PRECLAIMED or CLAIMED, don't reset
+            # it to AVAILABLE.
+            if self.status == NameStatus.UNKNOWN:
+                self.status = NameStatus.AVAILABLE
 
     def is_available(self):
         self.update_status()
@@ -121,10 +90,13 @@ class AEName:
         self.preclaim(fee=preclaim_fee)
         self.claim_blocking(fee=claim_fee)
 
-    def preclaim(self, fee=1):
+    def preclaim(self, fee=1, salt=None):
         # check which block we used to create the preclaim
         self.preclaimed_block_height = self.client.get_height()
-        self.preclaim_salt = random.randint(0, 2**64)
+        if salt is not None:
+            self.preclaim_salt = salt
+        else:
+            self.preclaim_salt = random.randint(0, 2**64)
         response = self.client.local_http_get(
             'commitment-hash',
             params={
@@ -148,6 +120,9 @@ class AEName:
             self.preclaimed_commitment_hash = response['commitment']
             self.status = NameStatus.PRECLAIMED
         except KeyError:
+            reason = response.get('reason')
+            if reason == 'No funds in account':
+                raise InsufficientFundsException(response)
             raise PreclaimFailed(response)
 
     def claim_blocking(self, fee=1):

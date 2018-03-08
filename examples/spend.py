@@ -3,7 +3,7 @@ from aeternity.config import Config
 
 import sys
 
-Config.set_default(Config(local_port=3013, internal_port=3113, websocket_port=3114))
+Config.set_defaults(Config(external_host=3013, internal_host=3113, websocket_host=3114))
 
 recipient, amount = sys.argv[1:3]
 

@@ -1,0 +1,6 @@
+requests==2.18.4
+websocket-client==0.46.0
+ecdsa==0.13
+pycrypto==2.6.1
+base58==0.2.5
+msgpack==0.5.6

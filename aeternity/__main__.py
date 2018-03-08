@@ -1,24 +1,39 @@
 import json
 import sys
 
-from aeternity import EpochClient, AEName, AENSException, Oracle, Config
+from getpass import getpass
+
+from aeternity import EpochClient, AEName, Oracle, Config
+from aeternity.exceptions import AENSException, AException
 from aeternity.oracle import NoOracleResponse, OracleQuery
+from aeternity.signing import KeyPair
 
 
 def print_usage():
     print('''aeternity cli tool:
 Usage:
+    balance [pubkey]
+        Returns the balance of pubkey or the balance of the node's pubkey
+    height
+        returns the top block number
+    generate wallet --path <path>
+        creates a new wallet
+    spend <amount> <receipient> <wallet-path>
+        send money to another account. The folder at wallet-path must contain
+        key and key.pub
+    wallet info <wallet-path>
+        prints info about your wallet (address in base58)
 
     aens available <domain.aet>
-            Check Domain availablity    
+            Check Domain availablity
     aens register <domain.aet> [--force]
-            Register a domain (incurs fees!)    
+            Register a domain (incurs fees!)
     aens status <domain.aet>
-            Checks the status of a domain    
+            Checks the status of a domain
     aens update <domain.aet> <address>
-            Updates where the name points to    
+            Updates where the name points to
     aens revoke <domain.aet> [--force]
-            Removes this domain from the block chain (incurs fees!)    
+            Removes this domain from the block chain (incurs fees!)
     aens transfer <domain.aet> <receipient_address> [--force]
             Transfers a domain to another user
     
@@ -26,7 +41,6 @@ Usage:
                     [--default-fee] [--default-ttl] [--default-query-ttl]
                     [--default-response-ttl]
             You will be prompted for any non-provided argument
-    
     oracle query [--oracle-pubkey] [--query-fee] [--query-ttl] [--response-ttl]
                  [--fee]
             You will be prompted for any non-provided argument
@@ -34,9 +48,13 @@ Usage:
 The `--force` will suppress any questions before performing the action.
 
 You can override the standard connection ports using the following environment
-variables: AE_LOCAL_PORT, AE_LOCAL_INTERNAL_PORT and AE_WEBSOCKET, or using
-the parameters: --external-port, --internal-port and --websocket-port
-
+variables:
+    AE_EXTERNAL_HOST, AE_EXTERNAL_PORT, AE_INTERNAL_HOST, AE_INTERNAL_PORT,
+    AE_WEBSOCKET_HOST and AE_WEBSOCKET_PORT
+or using the command line parameters:
+    --external-host
+    --internal-host
+    --websocket-host
 ''')
     sys.exit(1)
 
@@ -57,32 +75,37 @@ def prompt(message, skip):
 
 args = sys.argv[1:]
 
-if '--help' in args:
-    print_usage()
-
-if len(args) < 2:
+if '--help' in args or len(args) < 1:
     print_usage()
 
 
-def popdefault(d, key, default):
+_no_popargs_default = object()
+
+
+def popargs(d, key, default=_no_popargs_default):
     try:
-        d.pop(key)
-    except KeyError:
+        idx = d.index(key)
+        d.pop(idx)  # remove arg
+        return d.pop(idx)  # remove value after arg
+    except ValueError:
+        if default == _no_popargs_default:
+            raise
         return default
 
-external_port = popdefault(args, '--external-port', None)
-internal_port = popdefault(args, '--internal-port', None)
-websocket_port = popdefault(args, '--websocket-port', None)
+external_host = popargs(args, '--external-host', None)
+internal_host = popargs(args, '--internal-host', None)
+websocket_host = popargs(args, '--websocket-host', None)
 
 config = Config(
-    local_port=external_port,
-    internal_port=internal_port,
-    websocket_port=websocket_port,
+    external_host=external_host,
+    internal_host=internal_host,
+    websocket_host=websocket_host,
 )
 
-client = EpochClient(config=config)
+client = EpochClient(configs=config)
 
-system = args[0]
+
+main_arg = args[0]
 
 def aens(args, force=False):
     command = args[1]
@@ -259,6 +282,29 @@ def oracle(args, force=False):
                 sys.exit(1)
             except:
                 print('Invalid json-query, please try again (ctrl-c to exit)')
+    else:
+        stderr('Unknown oracle command: %s' % command)
+        sys.exit(1)
+
+def balance(args):
+    if len(args) >= 2:
+        pubkey = args[1]
+    else:
+        pubkey = client.get_pubkey()
+    try:
+        balance = client.get_balance(pubkey)
+        print(balance)
+    except AException as exc:
+        stderr(f'Error getting balance: {exc.payload}')
+
+
+def height():
+    print(client.get_height())
+
+
+def spend(amount, receipient, keypair_folder, password):
+    keypair = KeyPair.read_from_dir(keypair_folder, password)
+    EpochClient().spend(receipient, amount, keypair)
 
 
 # allow using the --force parameter anywhere
@@ -267,10 +313,47 @@ if '--force' in args:
     args.remove('--force')
     force = True
 
-if system == 'aens':
+if main_arg == 'aens':
     aens(args, force=force)
-elif system == 'oracle':
+elif main_arg == 'oracle':
     oracle(args, force=force)
+elif main_arg == 'balance':
+    balance(args)
+elif main_arg == 'height':
+    height()
+elif main_arg == 'spend':
+    if len(args) != 4:
+        print('You must specify <amount>, <receipient> and <wallet-path>. '
+              'Tip: escape the receipient address in single quotes to make '
+              'sure that your shell does not get confused with the dollar-sign')
+        sys.exit(1)
+    password = getpass('Wallet password: ')
+    amount, address, wallet_path = args[1:]
+    KeyPair.read_from_dir(wallet_path, password)
+    result = spend(amount, address, wallet_path, password)
+    print(
+        'Transaction sent. Your balance will change once it was included in '
+        'the blockchain.'
+    )
+    sys.exit(1)
+elif main_arg == 'generate':
+    # generate wallet
+    keypair = KeyPair.generate()
+    try:
+        path = popargs(args, '--path')
+    except ValueError:
+        print('You must specify the --path argument')
+        sys.exit(1)
+    keypair.save_to_folder(path)
+    address = keypair.get_address()
+    print('You wallet has been generated:')
+    print('Address: %s' % address)
+    print('Saved to: %s' % path)
+elif main_arg == 'wallet':
+    wallet_path = args[2]
+    password = getpass('Wallet password: ')
+    keypair = KeyPair.read_from_dir(wallet_path, password)
+    print('Address: %s' % keypair.get_address())
 else:
-    print(f'Invalid system "{system}"')
+    print(f'Invalid args. Use --help to see available commands and arguments')
     sys.exit(1)

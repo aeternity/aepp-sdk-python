@@ -1,5 +1,5 @@
 import json
-from collections import defaultdict, namedtuple
+from collections import defaultdict, namedtuple, MutableSequence
 import logging
 
 from json import JSONDecodeError
@@ -9,6 +9,8 @@ import time
 import websocket
 
 from aeternity.config import Config
+from aeternity.exceptions import AException, NameNotAvailable, InsufficientFundsException, TransactionNotFoundException
+from aeternity.signing import SignableTransaction, KeyPair
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +26,7 @@ class Connection:
 
     def assure_connected(self):
         if self.websocket is None:
-            self.websocket = websocket.create_connection(self.config.websocket_url)
+            self.websocket = websocket.create_connection(self.config.websocket_url, timeout=1)
 
     def receive(self):
         self.assure_connected()
@@ -51,10 +53,16 @@ AccountBalance = namedtuple('AccountBalance', [
     'pub_key', 'balance'
 ])
 Transaction = namedtuple('Transaction', [
-    'block_hash', 'block_height', 'hash', 'signatures', 'tx'
+    'block_hash', 'block_height', 'hash', 'signatures', 'tx', 'data_schema'
 ])
 CoinbaseTx = namedtuple('CoinbaseTx', [
-    'account', 'data_schema', 'type', 'vsn'
+    'block_height', 'account', 'data_schema', 'type', 'vsn'
+])
+AENSTransferTx = namedtuple('AENSTransferTx', [
+    'account', 'fee', 'name_hash', 'nonce', 'recipient_pubkey', 'type', 'vsn'
+])
+SpendTx = namedtuple('SpendTx', [
+    'data_schema', 'type', 'vsn', 'amount', 'fee', 'nonce', 'recipient', 'sender'
 ])
 GenericTx = namedtuple('GenericTx', ['tx'])
 
@@ -73,17 +81,28 @@ BlockWithTx = namedtuple('BlockWithTx', [
     'target', 'time', 'transactions', 'txs_hash', 'version'
 ])
 
+NewTransaction = namedtuple('NewTransaction', ['tx', 'tx_hash'])
+
+
 def transaction_from_dict(data):
     if set(data.keys()) == {'tx'}:
         return GenericTx(**data)
 
     tx_type = data['tx']['type']
-    if tx_type == 'coinbase':
+    if tx_type == 'aec_coinbase_tx':
         tx = CoinbaseTx(**data['tx'])
+    elif tx_type == 'aens_transfer_tx':
+        tx = AENSTransferTx(**data['tx'])
+    elif tx_type == 'aec_spend_tx':
+        tx = SpendTx(**data['tx'])
     else:
         raise ValueError(f'Cannot deserialize transaction of type {tx_type}')
     data = data.copy()  # don't mutate the input
     data['tx'] = tx
+    if not 'data_schema' in data:
+        data['data_schema'] = None
+        # TODO: The API should provide a data_schema for all objects
+        logger.debug('Deserialized transaction without data_schema!')
     return Transaction(**data)
 
 
@@ -96,60 +115,89 @@ def block_from_dict(data):
 
 
 class EpochClient:
-    next_block_poll_interval_sec = 10
+    next_block_poll_interval_sec = 0.01
 
-    def __init__(self, *, config=None, retry=True):
-        if config is None:
-            config = Config.get_default()
-        self._config = config
+    exception_by_reason = {
+        'Name not found': NameNotAvailable,
+        'No funds in account': InsufficientFundsException,
+        'Transaction not found': TransactionNotFoundException,
+    }
+
+    def __init__(self, *, configs=None, retry=True):
+        if configs is None:
+            configs = Config.get_defaults()
+        if isinstance(configs, Config):
+            configs = [configs]
+        self._configs = configs
+        self._active_config_idx = 0
         self._listeners = defaultdict(list)
-        self._connection = Connection(config=config)
+        self._connection = self._make_connection()
         self._top_block = None
         self._retry = retry
-        self.send(
-            {"target":"chain", "action":"subscribe", "payload":{"type":"new_block"}}
-        )
+
+    def _get_active_config(self):
+        return self._configs[self._active_config_idx]
+
+    def _make_connection(self):
+        return Connection(config=self._get_active_config())
+
+    def _use_next_config(self):
+        self._active_config_idx = (self._active_config_idx) + 1 % len(self._configs)
+        logger.info(f'Trying next connection to: {self._get_active_config()}')
+        self._connection = Connection(config=self._get_active_config())
 
     def http_json_call(self, method, base_url, endpoint, **kwargs):
         if endpoint.startswith('/'):  # strip leading slash to avoid petty errors
             endpoint = endpoint[1:]
         url = base_url + '/' + endpoint
         response = requests.request(method, url, **kwargs)
-        if response.status_code >= 500:
-            raise EpochRequestError(response)
         try:
-            return response.json()
+            json_data = response.json()
+            if response.status_code >= 500:
+                raise AException(payload=json_data)
+
+            reason = json_data.get('reason')
+            if reason:
+                exception_cls = self.exception_by_reason.get(reason, AException)
+                raise exception_cls(payload=json_data)
+            return json_data
         except JSONDecodeError:
-            raise EpochRequestError(response.text)
+            raise AException(payload={'broken_json': response.text})
 
     def internal_http_get(self, endpoint, **kwargs):
+        config = self._get_active_config()
         return self.http_json_call(
-            'get', self._config.internal_api_url, endpoint, **kwargs
+            'get', config.internal_api_url, endpoint, **kwargs
         )
 
     def internal_http_post(self, endpoint, **kwargs):
+        config = self._get_active_config()
         return self.http_json_call(
-            'post', self._config.internal_api_url, endpoint, **kwargs
+            'post', config.internal_api_url, endpoint, **kwargs
         )
 
     def local_http_get(self, endpoint, **kwargs):
+        config = self._get_active_config()
         return self.http_json_call(
-            'get', self._config.http_api_url, endpoint, **kwargs
+            'get', config.http_api_url, endpoint, **kwargs
         )
 
     def local_http_post(self, endpoint, **kwargs):
+        config = self._get_active_config()
         return self.http_json_call(
-            'post', self._config.http_api_url, endpoint, **kwargs
+            'post', config.http_api_url, endpoint, **kwargs
         )
 
     def update_top_block(self):
         self._top_block = self.get_height()
 
-    def wait_for_next_block(self):
+    def wait_for_next_block(self, polling_interval=None):
         if self._top_block == None:
             self.update_top_block()
+        if polling_interval is None:
+            polling_interval = self.next_block_poll_interval_sec
         while True:
-            time.sleep(self.next_block_poll_interval_sec)
+            time.sleep(polling_interval)
             new_block = self.get_height()
             if (new_block > self._top_block):
                 self._top_block = new_block
@@ -178,14 +226,10 @@ class EpochClient:
         self.update_top_block()
         self._connection.send(message)
 
-    def spend(self, recipient_pubkey, amount):
-        data = {
-            "recipient_pubkey": recipient_pubkey,
-            "amount": amount,
-            "fee": 1,
-        }
-        logging.debug('Spend: %s', data)
-        self.internal_http_post('spent-tx', json=data)
+    def spend(self, recipient_pubkey, amount, keypair):
+        transaction = self.create_spend_transaction(recipient_pubkey, 10)
+        signed_transaction, signature = keypair.sign_transaction(transaction)
+        return self.send_signed_transaction(signed_transaction)
 
     def send_and_receive(self, message):
         """
@@ -213,37 +257,42 @@ class EpochClient:
     def listen_until(self, func, timeout=None):
         start = time.time()
         while True:
-            if timeout is not None and time.time() > start + timeout:
-                raise TimeoutError('Condition %s was never fulfilled' % func)
-            self._tick()
             if func():
                 return
+            if timeout is not None and time.time() > start + timeout:
+                raise TimeoutError('Condition %s was never fulfilled' % func)
+
+            try:
+                self._tick()
+            except websocket.WebSocketTimeoutException:
+                pass  # the timeout is set to 1s on the connection
+            except websocket.WebSocketConnectionClosedException:
+                if not self._retry:
+                    raise
+                self._connection.close()
+                self._use_next_config()
+                logger.error('Connection closed by node, retrying in 5s...')
+                time.sleep(5)
+            except KeyboardInterrupt:
+                self._connection.close()
 
     def listen(self):
-        try:
-            while True:
-                try:
-                    self._tick()
-                except websocket.WebSocketConnectionClosedException:
-                    if not self._retry:
-                        raise
-                    self._connection.close()
-                    logger.error('Connection closed by node, retrying in 5s...')
-                    time.sleep(5)
-        except KeyboardInterrupt:
-            self._connection.close()
-            return
+        self.listen_until(lambda: False)
 
     #
     # API functions
     #
 
+    @classmethod
+    def _get_burn_key(cls):
+        keypair = KeyPair.generate()
+        keypair.signing_key
+
     def get_pubkey(self):
-        return self._config.get_pubkey()
+        return self.internal_http_get('account/pub-key')['pub_key']
 
     def get_height(self):
-        data = self.http_json_call('get', self._config.http_api_url, 'top')
-        return int(data['height'])
+        return int(self.local_http_get('top')['height'])
 
     def get_balance(self, account_pubkey=None, height=None, block_hash=None):
         """
@@ -265,7 +314,8 @@ class EpochClient:
             params['height'] = height
         if block_hash is not None:
             params['hash'] = block_hash
-        return self.internal_http_get(f'account/balance/{account_pubkey}', params=params)['balance']
+        response = self.internal_http_get(f'account/balance/{account_pubkey}', params=params)
+        return response['balance']
 
     @classmethod
     def make_tx_types_params(cls, tx_types=None, exclude_tx_types=None):
@@ -302,11 +352,6 @@ class EpochClient:
         return [
             transaction_from_dict(transaction) for transaction in resp['transactions']
         ]
-
-    def get_all_balances(self):
-        # TODO: how does this call make any sense?? all balanaces?! --devsnd
-        balance_dict_list = self.local_http_get('balances')['accounts_balances']
-        return [AccountBalance(**balance) for balance in balance_dict_list]
 
     def get_version(self):
         return Version(**self.local_http_get('version'))
@@ -374,9 +419,7 @@ class EpochClient:
             f'block/tx/height/{height}/{tx_idx}',
             params={'tx_encoding': 'json'}
         )
-        if data.get('reason'):
-            raise EpochRequestError(data['reason'])
-        return data
+        return transaction_from_dict(data['transaction'])
 
     def get_transaction_from_block_hash(self, block_hash, tx_idx):
         data = self.internal_http_get(
@@ -400,6 +443,25 @@ class EpochClient:
         params.update(self.make_tx_types_params(tx_types, exclude_tx_types))
         data = self.internal_http_get('/block/txs/list/height', params=params)
         return [transaction_from_dict(tx) for tx in data['transactions']]
+
+    def create_spend_transaction(self, recipient, amount, fee=1):
+        from aeternity import AEName
+        assert AEName.validate_pointer(recipient)
+        sender = self.get_pubkey()
+        response = self.local_http_post(
+            'tx/spend',
+            json=dict(
+                amount=amount,
+                sender=sender,
+                fee=fee,
+                recipient_pubkey=recipient,
+            )
+        )
+        return SignableTransaction(response)
+
+    def send_signed_transaction(self, encoded_signed_transaction):
+        data = {'tx': encoded_signed_transaction}
+        return self.local_http_post('tx', json=data)
 
 
 class EpochSubscription():

@@ -1,8 +1,15 @@
+from pytest import raises
+
 from aeternity import EpochClient
-from aeternity.epoch import AccountBalance, Transaction, CoinbaseTx, Version, EpochInfo, LastBlockInfo, BlockWithTx
+from aeternity.epoch import AccountBalance, Transaction, CoinbaseTx, Version, EpochInfo, LastBlockInfo, BlockWithTx, \
+    AENSTransferTx
+from aeternity.exceptions import TransactionNotFoundException
 
+client = None
 
-client = EpochClient()
+def setup_module(module):
+    global client
+    client = EpochClient()
 
 
 def test_get_balance():
@@ -12,17 +19,12 @@ def test_get_transactions():
     trans = client.get_transactions()
     assert len(trans) > 0
     assert type(trans[0]) == Transaction
-    assert type(trans[0].tx) == CoinbaseTx
-
-def test_get_all_balances():
-    balances = client.get_all_balances()
-    assert len(balances) > 0
-    assert type(balances[0]) == AccountBalance
+    assert type(trans[0].tx) in [CoinbaseTx, AENSTransferTx]
 
 def test_get_version():
     version_info = client.get_version()
     assert type(version_info) == Version
-    assert version_info.version == '0.6.0'
+    assert version_info.version == '0.8.0'
 
 def test_get_info():
     info = EpochClient().get_info()
@@ -79,10 +81,13 @@ def test_get_block_transaction_count_by_height():
 
 def test_get_transaction_from_block_height():
     latest_block = client.get_latest_block()
-    print(latest_block)
-    transaction = client.get_transaction_from_block_height(latest_block.height, 0)
-    print(transaction)
-    assert False
+    transaction = client.get_transaction_from_block_height(latest_block.height, 1)
+    assert type(transaction) == Transaction
+
+def test_get_missing_transaction_from_block_height():
+    latest_block = client.get_latest_block()
+    with raises(TransactionNotFoundException):
+        transaction = client.get_transaction_from_block_height(latest_block.height, -1)
 
 def test_get_transactions_in_block_range():
     height = client.get_height()
