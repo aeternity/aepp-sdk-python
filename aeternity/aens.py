@@ -90,10 +90,13 @@ class AEName:
         self.preclaim(fee=preclaim_fee)
         self.claim_blocking(fee=claim_fee)
 
-    def preclaim(self, fee=1):
+    def preclaim(self, fee=1, salt=None):
         # check which block we used to create the preclaim
         self.preclaimed_block_height = self.client.get_height()
-        self.preclaim_salt = random.randint(0, 2**64)
+        if salt is not None:
+            self.preclaim_salt = salt
+        else:
+            self.preclaim_salt = random.randint(0, 2**64)
         response = self.client.local_http_get(
             'commitment-hash',
             params={
