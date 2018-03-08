@@ -12,10 +12,10 @@ an Epoch node on your local machine.
 
 [Follow these installation notes for a three-node linux setup with fast mining settings](https://github.com/aeternity/aepp-sdk-python/blob/master/INSTALL.md)
 
-## CLI Usage
+## Command line Usage
 See below for programmatic usage
 
-You can launch the CLI tool using
+You can launch the command line tool using
 
 ```
 python -m aeternity
