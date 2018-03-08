@@ -12,6 +12,18 @@ an Epoch node on your local machine.
 
 [Follow these installation notes for a three-node linux setup with fast mining settings](https://github.com/aeternity/aepp-sdk-python/blob/master/INSTALL.md)
 
+## Installation
+The SDK required Python 3. For out of the box use, it is recommended to use
+`venv` and install dependencies into it.
+
+```
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+Whenever you come back, don't forget to run `source venv/bin/activate`, again.
+
 ## CLI Usage
 See below for programmatic usage
 
