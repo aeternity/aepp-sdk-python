@@ -60,6 +60,9 @@ or using the command line parameters:
     --external-host
     --internal-host
     --websocket-host
+
+When running against a local setup of Epoch based on the provided
+docker-compose setup, specify --docker for the right URLs to be formed.
 ''')
     sys.exit(1)
 
@@ -87,24 +90,32 @@ if '--help' in args or len(args) < 1:
 _no_popargs_default = object()
 
 
-def popargs(d, key, default=_no_popargs_default):
+def popargs(d, key, default=_no_popargs_default, boolean=False):
     try:
         idx = d.index(key)
         d.pop(idx)  # remove arg
-        return d.pop(idx)  # remove value after arg
+        if boolean:
+            return True
+        else:
+            return d.pop(idx)  # remove value after arg
     except ValueError:
-        if default == _no_popargs_default:
+        if default != _no_popargs_default:
+            return default
+        elif boolean:
+            return False
+        else:
             raise
-        return default
 
 external_host = popargs(args, '--external-host', None)
 internal_host = popargs(args, '--internal-host', None)
 websocket_host = popargs(args, '--websocket-host', None)
+docker = popargs(args, '--docker', False, True)
 
 config = Config(
     external_host=external_host,
     internal_host=internal_host,
     websocket_host=websocket_host,
+    docker_semantics=docker
 )
 
 client = EpochClient(configs=config)

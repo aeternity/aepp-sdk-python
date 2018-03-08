@@ -18,7 +18,8 @@ ae_default_websocket_port = 3114
 class Config:
     default_configs = None
 
-    def __init__(self, external_host=None, internal_host=None, websocket_host=None):
+    def __init__(self, external_host=None, internal_host=None, websocket_host=None,
+                 docker_semantics=False):
         try:
             if external_host is None:
                 host = os.environ.get('AE_EXTERNAL_HOST', ae_default_external_host)
@@ -45,9 +46,11 @@ class Config:
 
             )
 
+        internal_host_suffix = "internal/" if docker_semantics else ""
+
         self.websocket_url = f'ws://{self.websocket_host_port}/websocket'
         self.http_api_url = f'http://{self.external_host_port}/v2'
-        self.internal_api_url = f'http://{self.internal_host_port}/v2'
+        self.internal_api_url = f'http://{self.internal_host_port}/{internal_host_suffix}v2'
 
         self.name_url = f'{self.http_api_url}/name'
         self.pubkey = None
