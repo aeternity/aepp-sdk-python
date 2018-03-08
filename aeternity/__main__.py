@@ -1,6 +1,8 @@
 import json
 import sys
 
+from getpass import getpass
+
 from aeternity import EpochClient, AEName, Oracle, Config
 from aeternity.exceptions import AENSException, AException
 from aeternity.oracle import NoOracleResponse, OracleQuery
@@ -16,6 +18,9 @@ Usage:
         returns the top block number
     generate wallet --path <path>
         creates a new wallet
+    spend <amount> <receipient> <wallet-path>
+        send money to another account. The folder at wallet-path must contain
+        key and key.pub
 
     aens available <domain.aet>
             Check Domain availablity    
@@ -290,7 +295,12 @@ def balance(args):
 
 
 def height():
-    print(f'Height: {client.get_height()}')
+    print(client.get_height())
+
+
+def spend(amount, receipient, keypair_folder, password):
+    keypair = KeyPair.read_from_dir(keypair_folder, password)
+    EpochClient().spend(receipient, amount, keypair)
 
 
 # allow using the --force parameter anywhere
@@ -307,10 +317,29 @@ elif main_arg == 'balance':
     balance(args)
 elif main_arg == 'height':
     height()
+elif main_arg == 'spend':
+    if len(args) != 4:
+        print('You must specify <amount>, <receipient> and <wallet-path>. '
+              'Tip: escape the receipient address in single quotes to make '
+              'sure that your shell does not get confused with the dollar-sign')
+        sys.exit(1)
+    password = getpass('Wallet password: ')
+    amount, address, wallet_path = args[1:]
+    KeyPair.read_from_dir(wallet_path, password)
+    result = spend(amount, address, wallet_path, password)
+    print(
+        'Transaction sent. Your balance will change once it was included in '
+        'the blockchain.'
+    )
+    sys.exit(1)
 elif main_arg == 'generate':
     # generate wallet
     keypair = KeyPair.generate()
-    path = popargs(args, '--path')
+    try:
+        path = popargs(args, '--path')
+    except ValueError:
+        print('You must specify the --path argument')
+        sys.exit(1)
     keypair.save_to_folder(path)
     address = keypair.get_address()
     print('You wallet has been generated:')
