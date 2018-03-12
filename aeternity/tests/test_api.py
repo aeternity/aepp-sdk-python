@@ -2,7 +2,7 @@ from pytest import raises
 
 from aeternity import EpochClient
 from aeternity.epoch import AccountBalance, Transaction, CoinbaseTx, Version, EpochInfo, LastBlockInfo, BlockWithTx, \
-    AENSTransferTx
+    AENSTransferTx, transaction_type_mapping
 from aeternity.exceptions import TransactionNotFoundException
 
 client = None
@@ -19,7 +19,8 @@ def test_get_transactions():
     trans = client.get_transactions()
     assert len(trans) > 0
     assert type(trans[0]) == Transaction
-    assert type(trans[0].tx) in [CoinbaseTx, AENSTransferTx]
+    all_transaction_types = set(transaction_type_mapping.values())
+    assert type(trans[0].tx) in all_transaction_types
 
 def test_get_version():
     version_info = client.get_version()

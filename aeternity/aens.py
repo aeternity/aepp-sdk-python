@@ -124,6 +124,7 @@ class AEName:
             if reason == 'No funds in account':
                 raise InsufficientFundsException(response)
             raise PreclaimFailed(response)
+        return self.preclaimed_commitment_hash, self.preclaim_salt
 
     def claim_blocking(self, fee=1):
         try:

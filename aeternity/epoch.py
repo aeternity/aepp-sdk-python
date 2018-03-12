@@ -48,28 +48,53 @@ class EpochRequestError(Exception):
 # Datatypes used for API responses:
 #
 
-
 AccountBalance = namedtuple('AccountBalance', [
     'pub_key', 'balance'
 ])
+
+# Wrapper Datatype for all transactions
 Transaction = namedtuple('Transaction', [
     'block_hash', 'block_height', 'hash', 'signatures', 'tx', 'data_schema'
 ])
+#
+# Transaction types:
+#
 CoinbaseTx = namedtuple('CoinbaseTx', [
     'block_height', 'account', 'data_schema', 'type', 'vsn'
+])
+AENSClaimTx = namedtuple('AENSClaimTx', [
+    'account', 'fee', 'name', 'name_salt', 'nonce', 'type', 'vsn'
+])
+AENSPreclaimTx = namedtuple('AENSPreclaimTx', [
+    'account', 'commitment', 'fee', 'nonce', 'type', 'vsn'
 ])
 AENSTransferTx = namedtuple('AENSTransferTx', [
     'account', 'fee', 'name_hash', 'nonce', 'recipient_pubkey', 'type', 'vsn'
 ])
+AENSUpdateTX = namedtuple('AENSUpdateTx', [
+    'account', 'fee', 'name_hash', 'name_ttl', 'nonce', 'pointers', 'ttl',
+    'type', 'vsn'
+])
 SpendTx = namedtuple('SpendTx', [
     'data_schema', 'type', 'vsn', 'amount', 'fee', 'nonce', 'recipient', 'sender'
 ])
+AEOQueryTx = namedtuple('AEOQueryTx', [
+    'data_schema', 'fee', 'nonce', 'oracle', 'query', 'query_fee', 'query_ttl',
+    'response_ttl', 'sender', 'type', 'vsn'
+])
+AEOResponseTx = namedtuple('AEOResponseTx', [
+    'data_schema', 'fee', 'nonce', 'oracle', 'query_id', 'response', 'type', 'vsn'
+])
+AEORegisterTx = namedtuple('AEORegisterTx', [
+    'account', 'data_schema', 'fee', 'nonce', 'query_fee', 'query_spec',
+    'response_spec', 'ttl', 'type', 'vsn'
+])
 GenericTx = namedtuple('GenericTx', ['tx'])
+
 
 Version = namedtuple('Version', [
     'genesis_hash', 'revision', 'version'
 ])
-
 EpochInfo = namedtuple('EpochInfo', [
     'last_30_blocks_time'
 ])
@@ -81,7 +106,22 @@ BlockWithTx = namedtuple('BlockWithTx', [
     'target', 'time', 'transactions', 'txs_hash', 'version'
 ])
 
+# NewTransaction is the container when creating a transaction using the epoch
+# node, which then can be signed offline
 NewTransaction = namedtuple('NewTransaction', ['tx', 'tx_hash'])
+
+
+transaction_type_mapping = {
+    'aec_coinbase_tx': CoinbaseTx,
+    'aec_spend_tx': SpendTx,
+    'aens_claim_tx': AENSClaimTx,
+    'aens_preclaim_tx': AENSPreclaimTx,
+    'aens_transfer_tx': AENSTransferTx,
+    'aens_update_tx': AENSUpdateTX,
+    'aeo_query_tx': AEOQueryTx,
+    'aeo_register_tx': AEORegisterTx,
+    'aeo_response_tx': AEOResponseTx,
+}
 
 
 def transaction_from_dict(data):
@@ -89,14 +129,12 @@ def transaction_from_dict(data):
         return GenericTx(**data)
 
     tx_type = data['tx']['type']
-    if tx_type == 'aec_coinbase_tx':
-        tx = CoinbaseTx(**data['tx'])
-    elif tx_type == 'aens_transfer_tx':
-        tx = AENSTransferTx(**data['tx'])
-    elif tx_type == 'aec_spend_tx':
-        tx = SpendTx(**data['tx'])
-    else:
+    try:
+        tx = transaction_type_mapping[tx_type](**data['tx'])
+    except KeyError:
+        print(data['tx'])
         raise ValueError(f'Cannot deserialize transaction of type {tx_type}')
+
     data = data.copy()  # don't mutate the input
     data['tx'] = tx
     if not 'data_schema' in data:
