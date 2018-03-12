@@ -35,9 +35,12 @@ class AEName:
         self.preclaimed_commitment_hash = None
         self.preclaim_salt = None
         # set after claimed
-        self.name_hash = None
         self.name_ttl = 0
         self.pointers = []
+
+    @property
+    def name_hash(self):
+        return self._encode_name(self.domain)
 
     @classmethod
     def validate_pointer(cls, pointer):
@@ -71,7 +74,6 @@ class AEName:
         try:
             response = self.client.external_http_get('name', params={'name': self.domain})
             self.status = NameStatus.CLAIMED
-            self.name_hash = response['name_hash']
             self.name_ttl = response['name_ttl']
             self.pointers = json.loads(response['pointers'])
         except NameNotAvailable:
@@ -88,11 +90,11 @@ class AEName:
         self.update_status()
         return self.status == NameStatus.CLAIMED
 
-    def full_claim_blocking(self, preclaim_fee=1, claim_fee=1):
+    def full_claim_blocking(self, keypair, preclaim_fee=1, claim_fee=1):
         if not self.is_available():
             raise NameNotAvailable(self.domain)
-        self.preclaim(fee=preclaim_fee)
-        self.claim_blocking(fee=claim_fee)
+        self.preclaim(keypair, fee=preclaim_fee)
+        self.claim_blocking(keypair, fee=claim_fee)
 
     def _get_commitment_hash(self, salt):
         response = self.client.external_http_get(
@@ -128,6 +130,7 @@ class AEName:
         signable_preclaim_tx = SignableTransaction(preclaim_transaction)
         signed_transaction, b58signature = keypair.sign_transaction(signable_preclaim_tx)
         self.client.send_signed_transaction(signed_transaction)
+        self.status = AEName.Status.PRECLAIMED
         return signed_transaction, self.preclaim_salt
 
     def claim_blocking(self, keypair, fee=1):
@@ -141,7 +144,7 @@ class AEName:
     def _encode_name(cls, name):
         return 'nm$' + b58encode_check(name.encode('ascii'))
 
-    def claim(self, keypair, fee=1, nonce=1):
+    def claim(self, keypair, fee=1):
         if self.preclaimed_block_height is None:
             raise MissingPreclaim('You must call preclaim before claiming a name')
 
@@ -164,6 +167,7 @@ class AEName:
         signable_claim_tx = SignableTransaction(claim_transaction)
         signed_transaction, b58signature = keypair.sign_transaction(signable_claim_tx)
         self.client.send_signed_transaction(signed_transaction)
+        self.status = AEName.Status.CLAIMED
         return signed_transaction, self.preclaim_salt
 
     def update(self, target, ttl=50, fee=1):
@@ -178,6 +182,17 @@ class AEName:
             pointers = {'account_pubkey': target}
         else:
             pointers = {'oracle_pubkey': target}
+
+        self.client.external_http_post(
+            'tx/name/update',
+            json=dict(
+                fee=fee,
+                name_hash=self.name_hash,
+                name_ttl=ttl,
+                pointers=pointers,
+                ttl=ttl,
+            )
+        )
 
         response = self.client.internal_http_post(
             'name-update-tx',
