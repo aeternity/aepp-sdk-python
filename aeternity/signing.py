@@ -14,6 +14,7 @@ import ecdsa
 class SignableTransaction:
     def __init__(self, tx_json_data):
         self.tx_json_data = tx_json_data
+        self.tx_hash = tx_json_data['tx_hash']
         self.tx_msg_packed = base58.b58decode_check(tx_json_data['tx'][3:])
         self.tx_unpacked = msgpack.unpackb(self.tx_msg_packed)
 
