@@ -453,6 +453,7 @@ class EpochClient:
         return data['count']
 
     def get_transaction_by_transaction_hash(self, tx_hash):
+        assert tx_hash.startswith('th$'), 'A transaction hash must start with "th$"'
         data = self.local_http_get(
             f'tx/{tx_hash}',
             params={'tx_encoding': 'json'}
