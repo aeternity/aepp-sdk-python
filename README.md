@@ -24,23 +24,33 @@ python -m aeternity
 Available commands:
 
 ```
-æternity cli tool:
+aeternity cli tool:
 Usage:
     balance [pubkey]
         Returns the balance of pubkey or the balance of the node's pubkey
     height
         returns the top block number
-
+    generate wallet --path <path>
+        creates a new wallet
+    spend <amount> <receipient> <wallet-path>
+        send money to another account. The folder at wallet-path must contain
+        key and key.pub
+    wallet info <wallet-path>
+        prints info about your wallet (address in base58)
+    inspect block <block height | block hash | "latest">
+        prints the contents of a block
+    inspect transaction <transaction hash>
+        prints the contents of a transaction
     aens available <domain.aet>
-            Check Domain availablity    
+            Check Domain availablity
     aens register <domain.aet> [--force]
-            Register a domain (incurs fees!)    
+            Register a domain (incurs fees!)
     aens status <domain.aet>
-            Checks the status of a domain    
+            Checks the status of a domain
     aens update <domain.aet> <address>
-            Updates where the name points to    
+            Updates where the name points to
     aens revoke <domain.aet> [--force]
-            Removes this domain from the block chain (incurs fees!)    
+            Removes this domain from the block chain (incurs fees!)
     aens transfer <domain.aet> <receipient_address> [--force]
             Transfers a domain to another user
     
