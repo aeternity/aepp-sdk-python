@@ -27,17 +27,17 @@ Usage:
         prints the contents of a block
     inspect transaction <transaction hash>
         prints the contents of a transaction
-    aens available <domain.aet>
+    name available <domain.aet>
             Check Domain availablity
-    aens register <domain.aet> [--force]
+    name register <domain.aet> [--force]
             Register a domain (incurs fees!)
-    aens status <domain.aet>
+    name status <domain.aet>
             Checks the status of a domain
-    aens update <domain.aet> <address>
+    name update <domain.aet> <address>
             Updates where the name points to
-    aens revoke <domain.aet> [--force]
+    name revoke <domain.aet> [--force]
             Removes this domain from the block chain (incurs fees!)
-    aens transfer <domain.aet> <receipient_address> [--force]
+    name transfer <domain.aet> <receipient_address> [--force]
             Transfers a domain to another user
     
     oracle register [--query-format] [--response-format] [--default-query-fee]
@@ -316,7 +316,7 @@ if '--force' in args:
     args.remove('--force')
     force = True
 
-if main_arg == 'aens':
+if main_arg == 'name':
     aens(args, force=force)
 elif main_arg == 'oracle':
     oracle(args, force=force)
