@@ -268,7 +268,7 @@ class EpochClient:
         self._connection.send(message)
 
     def spend(self, recipient_pubkey, amount, keypair):
-        transaction = self.create_spend_transaction(recipient_pubkey, 10)
+        transaction = self.create_spend_transaction(recipient_pubkey, amount)
         signed_transaction, signature = keypair.sign_transaction(transaction)
         self.send_signed_transaction(signed_transaction)
         return transaction.tx_hash
