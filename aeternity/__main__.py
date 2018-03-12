@@ -3,6 +3,8 @@ import sys
 
 from getpass import getpass
 
+import os
+
 from aeternity import EpochClient, AEName, Oracle, Config
 from aeternity.exceptions import AENSException, AException
 from aeternity.oracle import NoOracleResponse, OracleQuery
@@ -29,8 +31,8 @@ Usage:
         prints the contents of a transaction
     name available <domain.aet>
             Check Domain availablity
-    name register <domain.aet> [--force]
-            Register a domain (incurs fees!)
+    name register <domain.aet> <wallet-path> [--force]
+            Register a domain for the given account (incurs fees!)
     name status <domain.aet>
             Checks the status of a domain
     name update <domain.aet> <address>
@@ -133,12 +135,14 @@ def aens(args, force=False):
         if not name.is_available():
             print('Name was already claimed')
             sys.exit(1)
+        wallet_path = args[3]
+        keypair = read_keypair(wallet_path)
         prompt('Do you want to register this name? (incurs fees)', skip=force)
         print('Name is available, pre-claiming now')
-        name.preclaim()
+        name.preclaim(keypair)
         print('Pre-Claim successful')
         print('Claiming name (waiting for next block, this may take a while)')
-        name.claim_blocking()
+        name.claim_blocking(keypair)
         print('Claim successful')
         print(f'{domain} was registered successfully')
         sys.exit(0)
@@ -310,6 +314,15 @@ def spend(amount, receipient, keypair_folder, password):
     EpochClient().spend(receipient, amount, keypair)
 
 
+def read_keypair(wallet_path):
+    if not os.path.exists(wallet_path):
+        stderr(f'Path to wallet "{wallet_path}" does not exist!')
+        sys.exit(1)
+    password = getpass('Wallet password: ')
+    keypair = KeyPair.read_from_dir(wallet_path, password)
+    return keypair
+
+
 # allow using the --force parameter anywhere
 force = False
 if '--force' in args:
@@ -354,8 +367,7 @@ elif main_arg == 'generate':
     print('Saved to: %s' % path)
 elif main_arg == 'wallet':
     wallet_path = args[2]
-    password = getpass('Wallet password: ')
-    keypair = KeyPair.read_from_dir(wallet_path, password)
+    keypair = read_keypair(wallet_path)
     print('Address: %s' % keypair.get_address())
 elif main_arg == 'inspect':
     inspect_what = args[1]

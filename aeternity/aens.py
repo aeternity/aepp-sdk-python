@@ -1,10 +1,14 @@
 import json
 import random
 
+from base58 import b58encode_check
+
 from aeternity.exceptions import NameNotAvailable, PreclaimFailed, TooEarlyClaim, ClaimFailed, AENSException, \
     UpdateError, MissingPreclaim, InsufficientFundsException, AException
 from aeternity.oracle import Oracle
 from aeternity.epoch import EpochClient
+from aeternity.signing import SignableTransaction
+
 
 class NameStatus:
     REVOKED = 'REVOKED'
@@ -65,7 +69,7 @@ class AEName:
 
     def update_status(self):
         try:
-            response = self.client.local_http_get('name', params={'name': self.domain})
+            response = self.client.external_http_get('name', params={'name': self.domain})
             self.status = NameStatus.CLAIMED
             self.name_hash = response['name_hash']
             self.name_ttl = response['name_ttl']
@@ -90,50 +94,54 @@ class AEName:
         self.preclaim(fee=preclaim_fee)
         self.claim_blocking(fee=claim_fee)
 
-    def preclaim(self, fee=1, salt=None):
+    def _get_commitment_hash(self, salt):
+        response = self.client.external_http_get(
+            'commitment-hash',
+            params={
+                'name': self.domain,
+                'salt': salt
+            }
+        )
+        try:
+            return response['commitment']
+        except KeyError:
+            raise PreclaimFailed(response)
+
+    def preclaim(self, keypair, fee=1, salt=None,):
         # check which block we used to create the preclaim
         self.preclaimed_block_height = self.client.get_height()
         if salt is not None:
             self.preclaim_salt = salt
         else:
             self.preclaim_salt = random.randint(0, 2**64)
-        response = self.client.local_http_get(
-            'commitment-hash',
-            params={
-                'name': self.domain,
-                'salt': self.preclaim_salt
-            }
-        )
-        try:
-            commitment_hash = response['commitment']
-        except KeyError:
-            raise PreclaimFailed(response)
-        response = self.client.internal_http_post(
-            'name-preclaim-tx',
-            json={
-                "commitment": commitment_hash,
-                "fee": fee
-            },
-        )
-        try:
-            # the response is an empty dict if the call failed error
-            self.preclaimed_commitment_hash = response['commitment']
-            self.status = NameStatus.PRECLAIMED
-        except KeyError:
-            reason = response.get('reason')
-            if reason == 'No funds in account':
-                raise InsufficientFundsException(response)
-            raise PreclaimFailed(response)
-        return self.preclaimed_commitment_hash, self.preclaim_salt
 
-    def claim_blocking(self, fee=1):
+        commitment_hash = self._get_commitment_hash(self.preclaim_salt)
+
+        preclaim_transaction = self.client.external_http_post(
+            '/tx/name/preclaim',
+            json=dict(
+                commitment=commitment_hash,
+                fee=fee,
+                account=keypair.get_address(),
+            )
+        )
+        signable_preclaim_tx = SignableTransaction(preclaim_transaction)
+        signed_transaction, b58signature = keypair.sign_transaction(signable_preclaim_tx)
+        self.client.send_signed_transaction(signed_transaction)
+        return signed_transaction, self.preclaim_salt
+
+    def claim_blocking(self, keypair, fee=1):
         try:
-            self.claim(fee=fee)
+            self.claim(keypair, fee=fee)
         except TooEarlyClaim:
             self.client.wait_for_next_block()
-            self.claim(fee=fee)
+            self.claim(keypair, fee=fee)
 
-    def claim(self, fee=1):
+    @classmethod
+    def _encode_name(cls, name):
+        return 'nm$' + b58encode_check(name.encode('ascii'))
+
+    def claim(self, keypair, fee=1, nonce=1):
         if self.preclaimed_block_height is None:
             raise MissingPreclaim('You must call preclaim before claiming a name')
 
@@ -144,19 +152,19 @@ class AEName:
                 'Use `claim_blocking` if you have a lot of time on your hands'
             )
 
-        response = self.client.internal_http_post(
-            'name-claim-tx',
-            json={
-                'name': self.domain,
-                'name_salt': self.preclaim_salt,
-                'fee': fee
-            }
+        claim_transaction = self.client.external_http_post(
+            '/tx/name/claim',
+            json=dict(
+                account=keypair.get_address(),
+                name=AEName._encode_name(self.domain),
+                name_salt=self.preclaim_salt,
+                fee=fee,
+            )
         )
-        try:
-            self.name_hash = response['name_hash']
-            self.status = AEName.Status.CLAIMED
-        except KeyError:
-            raise ClaimFailed(response)
+        signable_claim_tx = SignableTransaction(claim_transaction)
+        signed_transaction, b58signature = keypair.sign_transaction(signable_claim_tx)
+        self.client.send_signed_transaction(signed_transaction)
+        return signed_transaction, self.preclaim_salt
 
     def update(self, target, ttl=50, fee=1):
         assert self.status == NameStatus.CLAIMED, 'Must be claimed to update pointer'

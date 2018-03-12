@@ -19,7 +19,7 @@ class Contract:
 
     def compile(self, options=''):
         """Compile a ring contract from source and return byte code"""
-        data = self.client.local_http_post(
+        data = self.client.external_http_post(
             'contract/compile',
             json={'code': self.code, 'options': options}
         )
@@ -39,7 +39,7 @@ class Contract:
         compiled_code = self.compile()
 
         # see: /epoch/lib/aehttp-0.1.0/src/aehttp_dispatch_ext.erl
-        data = self.client.local_http_post(
+        data = self.client.external_http_post(
             'contract/call',
             json={
                 # TODO: this looks the same as the encode-calldata call from the
@@ -58,7 +58,7 @@ class Contract:
         return data
 
     def encode_calldata(self, function, arg):
-        data = self.client.local_http_post(
+        data = self.client.external_http_post(
             'contract/encode-calldata',
             json={
                 'abi': 'evm',

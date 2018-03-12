@@ -214,13 +214,13 @@ class EpochClient:
             'post', config.internal_api_url, endpoint, **kwargs
         )
 
-    def local_http_get(self, endpoint, **kwargs):
+    def external_http_get(self, endpoint, **kwargs):
         config = self._get_active_config()
         return self.http_json_call(
             'get', config.http_api_url, endpoint, **kwargs
         )
 
-    def local_http_post(self, endpoint, **kwargs):
+    def external_http_post(self, endpoint, **kwargs):
         config = self._get_active_config()
         return self.http_json_call(
             'post', config.http_api_url, endpoint, **kwargs
@@ -330,7 +330,7 @@ class EpochClient:
         return self.internal_http_get('account/pub-key')['pub_key']
 
     def get_height(self):
-        return int(self.local_http_get('top')['height'])
+        return int(self.external_http_get('top')['height'])
 
     def get_balance(self, account_pubkey=None, height=None, block_hash=None):
         """
@@ -392,10 +392,10 @@ class EpochClient:
         ]
 
     def get_version(self):
-        return Version(**self.local_http_get('version'))
+        return Version(**self.external_http_get('version'))
 
     def get_info(self):
-        data = self.local_http_get('info')
+        data = self.external_http_get('info')
         data['last_30_blocks_time'] = [
             # set `time_delta_to_parent` per default to None
             LastBlockInfo(**{'time_delta_to_parent': None, **blk})
@@ -413,11 +413,11 @@ class EpochClient:
             'pow': None, 'prev_hash': None, 'transactions': [],
             'txs_hash': None, 'data_schema': None, 'hash': None
         }
-        data = self.local_http_get('block-by-height', params=dict(height=height))
+        data = self.external_http_get('block-by-height', params=dict(height=height))
         return block_from_dict({**empty_block, **data})
 
     def get_block_by_hash(self, hash):
-        data = self.local_http_get('block-by-hash', params=dict(hash=hash))
+        data = self.external_http_get('block-by-hash', params=dict(hash=hash))
         # add this to make it compatible to the struct from `get_latest_block`
         data.update({'data_schema': None, 'hash': None})
         return block_from_dict(data)
@@ -454,7 +454,7 @@ class EpochClient:
 
     def get_transaction_by_transaction_hash(self, tx_hash):
         assert tx_hash.startswith('th$'), 'A transaction hash must start with "th$"'
-        data = self.local_http_get(
+        data = self.external_http_get(
             f'tx/{tx_hash}',
             params={'tx_encoding': 'json'}
         )
@@ -494,7 +494,7 @@ class EpochClient:
         from aeternity import AEName
         assert AEName.validate_pointer(recipient)
         sender = self.get_pubkey()
-        response = self.local_http_post(
+        response = self.external_http_post(
             'tx/spend',
             json=dict(
                 amount=amount,
@@ -507,7 +507,7 @@ class EpochClient:
 
     def send_signed_transaction(self, encoded_signed_transaction):
         data = {'tx': encoded_signed_transaction}
-        return self.local_http_post('tx', json=data)
+        return self.external_http_post('tx', json=data)
 
 
 class EpochSubscription():
