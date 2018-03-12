@@ -76,6 +76,7 @@ def test_name_update():
     name.update(target=client.get_pubkey())
     client.wait_for_next_block()
     name.update_status()
+    assert name.pointers != [], 'Pointers should not be empty'
     assert name.pointers['account_pubkey'] == client.get_pubkey()
 
 @pytest.mark.skip('The name transfer must be rewritten to use offline signing')

@@ -183,16 +183,16 @@ class AEName:
         else:
             pointers = {'oracle_pubkey': target}
 
-        self.client.external_http_post(
-            'tx/name/update',
-            json=dict(
-                fee=fee,
-                name_hash=self.name_hash,
-                name_ttl=ttl,
-                pointers=pointers,
-                ttl=ttl,
-            )
-        )
+        # self.client.external_http_post(
+        #     'tx/name/update',
+        #     json=dict(
+        #         fee=fee,
+        #         name_hash=self.name_hash,
+        #         name_ttl=ttl,
+        #         pointers=pointers,
+        #         ttl=ttl,
+        #     )
+        # )
 
         response = self.client.internal_http_post(
             'name-update-tx',
