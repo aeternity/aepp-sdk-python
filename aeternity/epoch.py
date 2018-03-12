@@ -452,6 +452,13 @@ class EpochClient:
         data = self.internal_http_get(f'/block/txs/count/height/{height}', params=params)
         return data['count']
 
+    def get_transaction_by_transaction_hash(self, tx_hash):
+        data = self.local_http_get(
+            f'tx/{tx_hash}',
+            params={'tx_encoding': 'json'}
+        )
+        return transaction_from_dict(data['transaction'])
+
     def get_transaction_from_block_height(self, height, tx_idx):
         data = self.internal_http_get(
             f'block/tx/height/{height}/{tx_idx}',

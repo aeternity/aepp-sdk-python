@@ -23,7 +23,10 @@ Usage:
         key and key.pub
     wallet info <wallet-path>
         prints info about your wallet (address in base58)
-
+    inspect block <block height | block hash | "latest">
+        prints the contents of a block
+    inspect transaction <transaction hash>
+        prints the contents of a transaction
     aens available <domain.aet>
             Check Domain availablity
     aens register <domain.aet> [--force]
@@ -354,6 +357,27 @@ elif main_arg == 'wallet':
     password = getpass('Wallet password: ')
     keypair = KeyPair.read_from_dir(wallet_path, password)
     print('Address: %s' % keypair.get_address())
+elif main_arg == 'inspect':
+    inspect_what = args[1]
+    if inspect_what == 'block':
+        block_id = args[2]
+        if block_id == 'latest':
+            block = client.get_latest_block()
+        elif block_id.startswith('bh$'):
+            block = client.get_block_by_hash(block_id)
+        else:
+            block = client.get_block_by_height(block_id)
+        print(block)
+    elif inspect_what == 'transaction' or inspect_what == 'tx':
+        transaction_hash = args[2]
+        if not transaction_hash.startswith('th$'):
+            stderr('A transaction hash must start with "th$"')
+            sys.exit(1)
+        transaction = client.get_transaction_by_transaction_hash(transaction_hash)
+        print(transaction)
+    else:
+        stderr('Can only inspect `block`.')
+        sys.exit(1)
 else:
     print(f'Invalid args. Use --help to see available commands and arguments')
     sys.exit(1)
