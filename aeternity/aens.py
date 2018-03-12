@@ -131,7 +131,7 @@ class AEName:
         signed_transaction, b58signature = keypair.sign_transaction(signable_preclaim_tx)
         self.client.send_signed_transaction(signed_transaction)
         self.status = AEName.Status.PRECLAIMED
-        return signed_transaction, self.preclaim_salt
+        return preclaim_transaction['tx_hash'], self.preclaim_salt
 
     def claim_blocking(self, keypair, fee=1):
         try:
@@ -168,7 +168,7 @@ class AEName:
         signed_transaction, b58signature = keypair.sign_transaction(signable_claim_tx)
         self.client.send_signed_transaction(signed_transaction)
         self.status = AEName.Status.CLAIMED
-        return signed_transaction, self.preclaim_salt
+        return claim_transaction['tx_hash'], self.preclaim_salt
 
     def update(self, target, ttl=50, fee=1):
         assert self.status == NameStatus.CLAIMED, 'Must be claimed to update pointer'
