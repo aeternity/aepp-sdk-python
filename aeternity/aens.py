@@ -44,9 +44,8 @@ class AEName:
     def b58_name(self):
         return self._encode_name(self.domain)
 
-    @classmethod
-    def _blake_hash(cls, data):
-        return
+    def get_name_hash(self):
+        return AEName.calculate_name_hash(self.domain)
 
     @classmethod
     def calculate_name_hash(cls, name):
@@ -226,18 +225,22 @@ class AEName:
         self.pointers = pointers
         return signed_transaction
 
-    def transfer_ownership(self, receipient_pubkey, fee=1):
-        response = self.client.internal_http_post(
-            'name-transfer-tx',
-            json={
-                "name_hash": self.b58_name,
-                "recipient_pubkey": receipient_pubkey,
-                "fee": fee
-            }
+    def transfer_ownership(self, keypair, receipient_pubkey, fee=1):
+        transfer_transaction = self.client.external_http_post(
+            'tx/name/transfer',
+            json=dict(
+                account=keypair.get_address(),
+                name_hash=self.get_name_hash(),
+                recipient_pubkey=receipient_pubkey,
+                fee=fee,
+            )
         )
-        if 'name_hash' not in response:
-            raise AENSException('transfer ownership failed', payload=response)
+
+        signable_transfer_tx = SignableTransaction(transfer_transaction)
+        signed_transaction, b58signature = keypair.sign_transaction(signable_transfer_tx)
+        self.client.send_signed_transaction(signed_transaction)
         self.status = NameStatus.TRANSFERRED
+        return signed_transaction
 
     def revoke(self, fee=1):
         response = self.client.internal_http_post(
