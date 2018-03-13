@@ -84,22 +84,21 @@ def test_name_update():
     assert name.pointers != [], 'Pointers should not be empty'
     assert name.pointers['account_pubkey'] == client.get_pubkey()
 
-@pytest.mark.skip('The name transfer must be rewritten to use offline signing')
+
 def test_transfer_ownership():
     client = EpochClient()
-    domain = random_domain()
-    name = AEName()
+    name = AEName(random_domain())
     name.full_claim_blocking(keypair)
-    client.wait_for_next_block()
-    name.update_status()
     assert name.status == AEName.Status.CLAIMED
+    client.wait_for_next_block()
 
     new_key_pair = KeyPair.generate()
-    name.transfer_ownership(new_key_pair.get_address())
+    name.transfer_ownership(keypair, new_key_pair.get_address())
 
     assert name.status == AEName.Status.TRANSFERRED
     client.wait_for_next_block()
     # try changing the target using that new keypair
+    name.update_status()
     name.update(new_key_pair, target=keypair.get_address())
     client.wait_for_next_block()
     name.update_status()
