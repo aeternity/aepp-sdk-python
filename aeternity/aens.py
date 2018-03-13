@@ -1,6 +1,8 @@
 import json
 import random
+from _blake2 import blake2b
 
+import base58
 from base58 import b58encode_check
 
 from aeternity.exceptions import NameNotAvailable, PreclaimFailed, TooEarlyClaim, ClaimFailed, AENSException, \
@@ -28,7 +30,7 @@ class AEName:
         self.__class__.validate_name(domain)
 
         self.client = client
-        self.domain = domain
+        self.domain = domain.lower()
         self.status = NameStatus.UNKNOWN
         # set after preclaimed:
         self.preclaimed_block_height = None
@@ -39,8 +41,29 @@ class AEName:
         self.pointers = []
 
     @property
-    def name_hash(self):
+    def b58_name(self):
         return self._encode_name(self.domain)
+
+    @classmethod
+    def _blake_hash(cls, data):
+        return
+
+    @classmethod
+    def calculate_name_hash(cls, name):
+        if isinstance(name, str):
+            name = name.encode('ascii')
+        # see:
+        # https://github.com/aeternity/protocol/blob/master/AENS.md#hashing
+        # and also:
+        # https://github.com/ethereum/EIPs/blob/master/EIPS/eip-137.md#namehash-algorithm
+        labels = name.split(b'.')
+        hash_func = lambda data: blake2b(data, digest_size=32).digest()
+        hashed = b'\x00' * 32
+        while labels:
+            hashed = hash_func(hashed + hash_func(labels[0]))
+            labels = labels[1:]
+        b58hash = base58.b58encode_check(hashed)
+        return f'nm${b58hash}'
 
     @classmethod
     def validate_pointer(cls, pointer):
@@ -142,7 +165,9 @@ class AEName:
 
     @classmethod
     def _encode_name(cls, name):
-        return 'nm$' + b58encode_check(name.encode('ascii'))
+        if isinstance(name, str):
+            name = name.encode('ascii')
+        return 'nm$' + b58encode_check(name)
 
     def claim(self, keypair, fee=1):
         if self.preclaimed_block_height is None:
@@ -170,7 +195,7 @@ class AEName:
         self.status = AEName.Status.CLAIMED
         return signed_transaction, self.preclaim_salt
 
-    def update(self, target, ttl=50, fee=1):
+    def update(self, keypair, target, ttl=50, name_ttl=600000, fee=1):
         assert self.status == NameStatus.CLAIMED, 'Must be claimed to update pointer'
 
         if isinstance(target, Oracle):
@@ -183,37 +208,29 @@ class AEName:
         else:
             pointers = {'oracle_pubkey': target}
 
-        # self.client.external_http_post(
-        #     'tx/name/update',
-        #     json=dict(
-        #         fee=fee,
-        #         name_hash=self.name_hash,
-        #         name_ttl=ttl,
-        #         pointers=pointers,
-        #         ttl=ttl,
-        #     )
-        # )
-
-        response = self.client.internal_http_post(
-            'name-update-tx',
-            json={
-                "name_hash": self.name_hash,
-                "name_ttl": self.name_ttl,
-                "ttl": ttl,
-                "pointers": json.dumps(pointers),
-                "fee": fee
-            }
+        update_transaction = self.client.external_http_post(
+            'tx/name/update',
+            json=dict(
+                account=keypair.get_address(),
+                name_hash=AEName.calculate_name_hash(self.domain),
+                name_ttl=name_ttl,
+                pointers=json.dumps(pointers),
+                ttl=ttl,
+                fee=fee,
+            )
         )
-        if 'name_hash' in response:
-            self.pointers = pointers
-        else:
-            raise UpdateError(response)
+
+        signable_update_tx = SignableTransaction(update_transaction)
+        signed_transaction, b58signature = keypair.sign_transaction(signable_update_tx)
+        self.client.send_signed_transaction(signed_transaction)
+        self.pointers = pointers
+        return signed_transaction
 
     def transfer_ownership(self, receipient_pubkey, fee=1):
         response = self.client.internal_http_post(
             'name-transfer-tx',
             json={
-                "name_hash": self.name_hash,
+                "name_hash": self.b58_name,
                 "recipient_pubkey": receipient_pubkey,
                 "fee": fee
             }
@@ -226,7 +243,7 @@ class AEName:
         response = self.client.internal_http_post(
             'name-revoke-tx',
             json={
-                "name_hash": self.name_hash,
+                "name_hash": self.b58_name,
                 "fee": fee
             }
         )

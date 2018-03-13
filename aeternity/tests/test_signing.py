@@ -21,6 +21,8 @@ def test_create_transaction_signing():
     # make sure this works for very short block times
     client.wait_for_next_block(polling_interval=0.01)
     next_block = client.get_latest_block()
+    next_next_block = client.get_latest_block()
+    all_transactions = next_block.transactions + next_next_block.transactions
     # find the transaction that is the spend transaction we just submitted
-    spend_tx = next(tx for tx in next_block.transactions if type(tx.tx) == SpendTx)
+    spend_tx = next(tx for tx in all_transactions if type(tx.tx) == SpendTx)
     assert spend_tx.signatures[0] == b58signature

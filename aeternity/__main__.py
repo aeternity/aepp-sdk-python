@@ -150,7 +150,7 @@ def aens(args, force=False):
     if command == 'status':
         name.update_status()
         print('status: %s' % name.status)
-        print('name_hash: %s' % name.name_hash)
+        print('name_hash: %s' % name.b58_name)
         print('name_ttl: %s' % name.name_ttl)
         print('pointers: %s' % name.pointers)
         sys.exit(0)

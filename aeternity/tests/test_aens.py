@@ -10,6 +10,7 @@ from aeternity.config import ConfigException
 
 # to run this test in other environments set the env vars as specified in the
 # config.py
+from aeternity.formatter import pretty_block
 from aeternity.signing import KeyPair
 
 try:
@@ -44,6 +45,9 @@ def test_name_status_availavle():
     name.update_status()
     assert name.status == AEName.Status.AVAILABLE
 
+def test_name_hashing():
+    assert AEName.calculate_name_hash('welghmolql.aet') == 'nm$2KrC4asc6fdv82uhXDwfiqB1TY2htjhnzwzJJKLxidyMymJRUQ'
+
 def test_name_claim_lifecycle():
     domain = random_domain()
     name = AEName(domain)
@@ -65,7 +69,6 @@ def test_name_status_unavailable():
     same_name = AEName(domain)
     assert not same_name.is_available()
 
-@pytest.mark.skip('The name update must be rewritten to use offline signing')
 def test_name_update():
     client = EpochClient()
     # claim a domain
@@ -73,7 +76,9 @@ def test_name_update():
     name = AEName(domain)
     name.full_claim_blocking(keypair)
     client.wait_for_next_block()
-    name.update(target=client.get_pubkey())
+    assert not AEName(domain).is_available(), 'The name should be claimed now'
+    name.update_status()
+    transaction = name.update(keypair, target=client.get_pubkey())
     client.wait_for_next_block()
     name.update_status()
     assert name.pointers != [], 'Pointers should not be empty'
