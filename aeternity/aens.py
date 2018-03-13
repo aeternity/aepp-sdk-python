@@ -242,15 +242,17 @@ class AEName:
         self.status = NameStatus.TRANSFERRED
         return signed_transaction
 
-    def revoke(self, fee=1):
-        response = self.client.internal_http_post(
-            'name-revoke-tx',
-            json={
-                "name_hash": self.b58_name,
-                "fee": fee
-            }
+    def revoke(self, keypair, fee=1):
+        revoke_transaction = self.client.external_http_post(
+            'tx/name/revoke',
+            json=dict(
+                account=keypair.get_address(),
+                name_hash=self.get_name_hash(),
+                fee=fee,
+            )
         )
-        if 'name_hash' in response:
-            self.status = NameStatus.REVOKED
-        else:
-            raise AENSException('Error revoking name', payload=response)
+        signable_revoke_tx = SignableTransaction(revoke_transaction)
+        signed_transaction, b58signature = keypair.sign_transaction(signable_revoke_tx)
+        self.client.send_signed_transaction(signed_transaction)
+        self.status = NameStatus.REVOKED
+        return signed_transaction
