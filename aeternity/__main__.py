@@ -311,7 +311,7 @@ def height():
 
 def spend(amount, receipient, keypair_folder, password):
     keypair = KeyPair.read_from_dir(keypair_folder, password)
-    EpochClient().spend(receipient, amount, keypair)
+    EpochClient().spend(keypair, receipient, amount)
 
 
 def read_keypair(wallet_path):

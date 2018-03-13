@@ -76,6 +76,7 @@ def test_name_update():
     name = AEName(domain)
     name.full_claim_blocking(keypair)
     client.wait_for_next_block()
+    client.wait_for_next_block()
     assert not AEName(domain).is_available(), 'The name should be claimed now'
     name.update_status()
     transaction = name.update(keypair, target=client.get_pubkey())
@@ -93,8 +94,12 @@ def test_transfer_ownership():
     client.wait_for_next_block()
 
     new_key_pair = KeyPair.generate()
+    # put some coins into the account so the account is in the state tree
+    # otherwise it couldn't become the owner of an address.
+    client.spend(keypair, new_key_pair.get_address(), 1)
+    client.wait_for_next_block()
+    # now transfer the name to the other account
     name.transfer_ownership(keypair, new_key_pair.get_address())
-
     assert name.status == AEName.Status.TRANSFERRED
     client.wait_for_next_block()
     # try changing the target using that new keypair
