@@ -185,6 +185,7 @@ class EpochClient:
         self._connection = Connection(config=self._get_active_config())
 
     def http_json_call(self, method, base_url, endpoint, **kwargs):
+        logger.debug(f'Going to connect to {base_url}/{endpoint}')
         if endpoint.startswith('/'):  # strip leading slash to avoid petty errors
             endpoint = endpoint[1:]
         url = base_url + '/' + endpoint
