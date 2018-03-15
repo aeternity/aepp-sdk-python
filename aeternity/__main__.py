@@ -4,11 +4,14 @@ import sys
 from getpass import getpass
 
 import os
+import logging
 
 from aeternity import EpochClient, AEName, Oracle, Config
 from aeternity.exceptions import AENSException, AException
 from aeternity.oracle import NoOracleResponse, OracleQuery
 from aeternity.signing import KeyPair
+
+logging.basicConfig(format='%(message)s', level=logging.INFO)
 
 
 def print_usage():
@@ -110,6 +113,10 @@ external_host = popargs(args, '--external-host', None)
 internal_host = popargs(args, '--internal-host', None)
 websocket_host = popargs(args, '--websocket-host', None)
 docker = popargs(args, '--docker', False, True)
+verbose = popargs(args, '--verbose', False, True)
+
+if verbose:
+    logging.getLogger().setLevel(logging.DEBUG)
 
 config = Config(
     external_host=external_host,
