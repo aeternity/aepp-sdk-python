@@ -27,7 +27,7 @@ Whenever you come back, don't forget to run `source venv/bin/activate`, again.
 ## CLI Usage
 See below for programmatic usage
 
-You can launch the CLI tool using
+You can launch the command line tool using
 
 ```
 python -m aeternity

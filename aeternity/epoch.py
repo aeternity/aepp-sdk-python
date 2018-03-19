@@ -268,7 +268,7 @@ class EpochClient:
         self.update_top_block()
         self._connection.send(message)
 
-    def spend(self, keypair, recipient_pubkey, amount):
+    def spend(self, recipient_pubkey, amount, keypair):
         transaction = self.create_spend_transaction(recipient_pubkey, amount)
         signed_transaction, signature = keypair.sign_transaction(transaction)
         self.send_signed_transaction(signed_transaction)
