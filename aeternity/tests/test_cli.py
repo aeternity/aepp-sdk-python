@@ -5,6 +5,8 @@ import os
 import tempfile
 from contextlib import contextmanager
 
+import pytest
+
 current_folder = os.path.dirname(os.path.abspath(__file__))
 aecli_exe = os.path.join(current_folder, '..', '..', 'aecli')
 
@@ -17,12 +19,12 @@ def call_aecli(*params):
 
 @contextmanager
 def tempdir():
+    # contextmanager to generate and delete a temporary directory
+    path = tempfile.mkdtemp()
     try:
-        path = tempfile.mkdtemp()
         yield path
     finally:
         shutil.rmtree(path)
-
 
 
 def test_balance():
@@ -65,6 +67,7 @@ def test_generate_wallet_and_wallet_info():
         read_address = output[len('Address: '):]
         assert read_address == gen_address
 
+
 def test_read_wallet_fail():
     with tempdir() as tmp_path:
         output = call_aecli('generate', 'wallet', tmp_path, '--password', 'secret')
@@ -74,4 +77,75 @@ def test_read_wallet_fail():
         #TODO I guess this should fail more spectacularly. Just getting "another"
         #TODO wallet is a really subtle error state...
         assert gen_address != read_address
+
+
+@pytest.mark.skip('Cannot spend using a waller without balance. We have to mine into that wallet somehow')
+def test_spend():
+    with tempdir() as wallet_path:
+        output = call_aecli('generate', 'wallet', wallet_path, '--password', 'whatever')
+        receipient_address = output.split('\n')[1][len('Address: '):]
+    with tempdir() as wallet_path:
+        call_aecli('generate', 'wallet', wallet_path, '--password', 'secret')
+        output = call_aecli('spend', '1', receipient_address, wallet_path, '--password', 'secret')
+        assert 'Transaction sent' in output
+
+
+@pytest.mark.skip('We currently cannot verify if the transaction failed because of a wrong password or some other error '
+                  '(e.g. no balance)')
+def test_spend_wrong_password():
+    with tempdir() as wallet_path:
+        output = call_aecli('generate', 'wallet', wallet_path, '--password', 'whatever')
+        receipient_address = output.split('\n')[1][len('Address: '):]
+    with tempdir() as wallet_path:
+        call_aecli('generate', 'wallet', wallet_path, '--password', 'secret')
+        output = call_aecli('spend', '1', receipient_address, wallet_path, '--password', 'WRONGPASS')
+        assert 'Transaction sent' in output
+
+
+def test_spend_invalid_amount():
+    # try to send a negative amount
+    with tempdir() as wallet_path:
+        output = call_aecli('generate', 'wallet', wallet_path, '--password', 'whatever')
+        receipient_address = output.split('\n')[1][len('Address: '):]
+    with tempdir() as wallet_path:
+        call_aecli('generate', 'wallet', wallet_path, '--password', 'secret')
+        with pytest.raises(subprocess.CalledProcessError):
+            output = call_aecli('spend', '-1', receipient_address, wallet_path, '--password', 'secret')
+
+
+def test_inspect_block_by_height():
+    from aeternity import EpochClient
+    height = EpochClient().get_height()
+    output = call_aecli('inspect', 'block', str(height))
+    print(output)
+    assert False
+
+
+@pytest.mark.skip('NOT IMPLEMENTED YET')
+def test_inspect_block_by_hash():
+    # TODO
+    raise NotImplementedError()
+
+@pytest.mark.skip('NOT IMPLEMENTED YET')
+def test_inspect_block_by_latest():
+    # TODO
+    raise NotImplementedError()
+
+
+@pytest.mark.skip('NOT IMPLEMENTED YET')
+def test_inspect_block_by_invalid_arg():
+    # TODO
+    raise NotImplementedError()
+
+
+@pytest.mark.skip('NOT IMPLEMENTED YET')
+def test_inspect_transaction_by_hash():
+    # TODO
+    raise NotImplementedError()
+
+
+@pytest.mark.skip('NOT IMPLEMENTED YET')
+def test_check_name_available():
+    # TODO
+    raise NotImplementedError()
 

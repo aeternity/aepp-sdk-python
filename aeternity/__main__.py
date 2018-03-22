@@ -1,13 +1,17 @@
 import json
 import sys
+from contextlib import contextmanager
 
 from getpass import getpass
 
 import os
 import logging
 
+import requests
+
 from aeternity import EpochClient, AEName, Oracle, Config
 from aeternity.exceptions import AENSException, AException
+from aeternity.formatter import pretty_block
 from aeternity.oracle import NoOracleResponse, OracleQuery
 from aeternity.signing import KeyPair
 
@@ -23,7 +27,7 @@ Usage:
         returns the top block number
     generate wallet <path> [--password <password>]
         creates a new wallet
-    spend <amount> <receipient> <wallet-path>
+    spend <amount> <receipient> <wallet-path> [--password <password>]
         send money to another account. The folder at wallet-path must contain
         key and key.pub
     wallet info <wallet-path>
@@ -327,11 +331,6 @@ def height():
     print(client.get_height())
 
 
-def spend(amount, receipient, keypair_folder, password):
-    keypair = KeyPair.read_from_dir(keypair_folder, password)
-    EpochClient().spend(keypair, receipient, amount)
-
-
 def read_keypair(wallet_path, password=None):
     if not os.path.exists(wallet_path):
         stderr(f'Path to wallet "{wallet_path}" does not exist!')
@@ -340,6 +339,15 @@ def read_keypair(wallet_path, password=None):
         password = getpass('Wallet password: ')
     keypair = KeyPair.read_from_dir(wallet_path, password)
     return keypair
+
+
+@contextmanager
+def handle_connection_failure():
+    try:
+        yield
+    except requests.exceptions.ConnectionError:
+        print('Unable to connect to node')
+        sys.exit(1)
 
 
 # allow using the --force parameter anywhere
@@ -357,19 +365,34 @@ elif main_arg == 'balance':
 elif main_arg == 'height':
     height()
 elif main_arg == 'spend':
+    password = popargs(args, '--password', None)
     if len(args) != 4:
         print('You must specify <amount>, <receipient> and <wallet-path>. '
               'Tip: escape the receipient address in single quotes to make '
               'sure that your shell does not get confused with the dollar-sign')
         sys.exit(1)
-    password = getpass('Wallet password: ')
-    amount, address, wallet_path = args[1:]
-    KeyPair.read_from_dir(wallet_path, password)
-    result = spend(amount, address, wallet_path, password)
+    if password is None:
+        password = getpass('Wallet password: ')
+    amount, receipient, wallet_path = args[1:]
+    amount = int(amount)
+    if amount < 0:
+        print('Invalid amount')
+        sys.exit(1)
+    keypair = KeyPair.read_from_dir(wallet_path, password)
+    with handle_connection_failure():
+        response, tx_hash = EpochClient().spend(keypair, receipient, amount)
+    if response == {}:
+        print(
+            'An error occurred, your transaction was not completed. Please check'
+            'the logs of the node to diagnose the problem.'
+        )
+        sys.exit(1)
+
     print(
-        'Transaction sent. Your balance will change once it was included in '
+        'Transaction sent. Your balance will change once it is included in '
         'the blockchain.'
     )
+    print(f'TxHash: {tx_hash}')
     sys.exit(0)
 elif main_arg == 'generate':
     # args[1] is the string 'wallet'
@@ -409,7 +432,7 @@ elif main_arg == 'inspect':
             block = client.get_block_by_hash(block_id)
         else:
             block = client.get_block_by_height(block_id)
-        print(block)
+        print(pretty_block(block))
     elif inspect_what == 'transaction' or inspect_what == 'tx':
         transaction_hash = args[2]
         if not transaction_hash.startswith('th$'):

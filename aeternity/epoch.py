@@ -271,8 +271,8 @@ class EpochClient:
     def spend(self, keypair, recipient_pubkey, amount):
         transaction = self.create_spend_transaction(recipient_pubkey, amount)
         signed_transaction, signature = keypair.sign_transaction(transaction)
-        self.send_signed_transaction(signed_transaction)
-        return transaction.tx_hash
+        resp = self.send_signed_transaction(signed_transaction)
+        return resp, transaction.tx_hash
 
     def send_and_receive(self, message):
         """
