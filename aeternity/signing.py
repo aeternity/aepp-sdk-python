@@ -49,13 +49,15 @@ class KeyPair:
         b58_signature = 'sg$' + base58.b58encode_check(signature)
         return encoded_msg, b58_signature
 
-    def save_to_folder(self, folder):
+    def save_to_folder(self, folder, password):
+        enc_key = self._encrypt_key(self.signing_key.to_string(), password)
+        enc_key_pub = self._encrypt_key(self.verifying_key.to_string(), password)
         if not os.path.exists(folder):
             os.makedirs(folder)
         with open(os.path.join(folder, 'key'), 'wb') as fh:
-            fh.write(self.signing_key.to_string())
+            fh.write(enc_key)
         with open(os.path.join(folder, 'key.pub'), 'wb') as fh:
-            fh.write(self.verifying_key.to_string())
+            fh.write(enc_key_pub)
 
     #
     # initializers
@@ -76,6 +78,14 @@ class KeyPair:
         hash = SHA256.new()
         hash.update(data)
         return hash.digest()
+
+    @classmethod
+    def _encrypt_key(cls, key_string, password):
+        if isinstance(password, str):
+            password = password.encode('utf-8')
+        aes = AES.new(cls.sha256(password))
+        encrypted_key = aes.encrypt(key_string)
+        return encrypted_key
 
     @classmethod
     def _decrypt_key(cls, key_content, password):

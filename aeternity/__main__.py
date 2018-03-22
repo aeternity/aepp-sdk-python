@@ -21,7 +21,7 @@ Usage:
         Returns the balance of pubkey or the balance of the node's pubkey
     height
         returns the top block number
-    generate wallet --path <path>
+    generate wallet <path> [--password <password>]
         creates a new wallet
     spend <amount> <receipient> <wallet-path>
         send money to another account. The folder at wallet-path must contain
@@ -332,11 +332,12 @@ def spend(amount, receipient, keypair_folder, password):
     EpochClient().spend(keypair, receipient, amount)
 
 
-def read_keypair(wallet_path):
+def read_keypair(wallet_path, password=None):
     if not os.path.exists(wallet_path):
         stderr(f'Path to wallet "{wallet_path}" does not exist!')
         sys.exit(1)
-    password = getpass('Wallet password: ')
+    if password is None:
+        password = getpass('Wallet password: ')
     keypair = KeyPair.read_from_dir(wallet_path, password)
     return keypair
 
@@ -369,24 +370,35 @@ elif main_arg == 'spend':
         'Transaction sent. Your balance will change once it was included in '
         'the blockchain.'
     )
-    sys.exit(1)
+    sys.exit(0)
 elif main_arg == 'generate':
-    # generate wallet
+    # args[1] is the string 'wallet'
+    password = popargs(args, '--password', None)
+    if password is None:
+        print('DO NOT LOSE THE PASSWORD YOU ARE GOING TO TYPE NOW FOR YOUR'
+              'WALLET. LOSING THIS PASSWORD WILL RESULT IN LOSING ACCESS TO YOUR'
+              'WALLET, AND ALL ASSOCIATED ENTITIES (NAMES, TOKENS, ORACLE AND FUNDS)!')
+        password = getpass('New Wallet password: ')
     keypair = KeyPair.generate()
     try:
-        path = popargs(args, '--path')
+        path = args[2]
     except ValueError:
-        print('You must specify the --path argument')
+        print('You must specify the <path> argument')
         sys.exit(1)
-    keypair.save_to_folder(path)
+    keypair.save_to_folder(path, password)
     address = keypair.get_address()
-    print('You wallet has been generated:')
+    print('Your wallet has been generated:')
     print('Address: %s' % address)
     print('Saved to: %s' % path)
 elif main_arg == 'wallet':
-    wallet_path = args[2]
-    keypair = read_keypair(wallet_path)
-    print('Address: %s' % keypair.get_address())
+    if args[1] == 'info':
+        wallet_path = args[2]
+        password = popargs(args, '--password', None)
+        keypair = read_keypair(wallet_path, password)
+        print('Address: %s' % keypair.get_address())
+    else:
+        stderr('Unknown command')
+        sys.exit(1)
 elif main_arg == 'inspect':
     inspect_what = args[1]
     if inspect_what == 'block':
