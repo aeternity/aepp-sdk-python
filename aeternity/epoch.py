@@ -60,7 +60,7 @@ Transaction = namedtuple('Transaction', [
 # Transaction types:
 #
 CoinbaseTx = namedtuple('CoinbaseTx', [
-    'block_height', 'account', 'data_schema', 'type', 'vsn'
+    'block_height', 'account', 'data_schema', 'type', 'vsn', 'reward'
 ])
 AENSClaimTx = namedtuple('AENSClaimTx', [
     'account', 'fee', 'name', 'name_salt', 'nonce', 'type', 'vsn'
@@ -112,8 +112,10 @@ NewTransaction = namedtuple('NewTransaction', ['tx', 'tx_hash'])
 
 
 transaction_type_mapping = {
+    'coinbase_tx': CoinbaseTx,
     'aec_coinbase_tx': CoinbaseTx,
     'aec_spend_tx': SpendTx,
+    'spend_tx': SpendTx,
     'aens_claim_tx': AENSClaimTx,
     'aens_preclaim_tx': AENSPreclaimTx,
     'aens_transfer_tx': AENSTransferTx,
@@ -132,7 +134,6 @@ def transaction_from_dict(data):
     try:
         tx = transaction_type_mapping[tx_type](**data['tx'])
     except KeyError:
-        print(data['tx'])
         raise ValueError(f'Cannot deserialize transaction of type {tx_type}')
 
     data = data.copy()  # don't mutate the input
@@ -269,7 +270,7 @@ class EpochClient:
         self._connection.send(message)
 
     def spend(self, keypair, recipient_pubkey, amount):
-        transaction = self.create_spend_transaction(recipient_pubkey, amount)
+        transaction = self.create_spend_transaction(recipient_pubkey, amount, sender=keypair)
         signed_transaction, signature = keypair.sign_transaction(transaction)
         resp = self.send_signed_transaction(signed_transaction)
         return resp, transaction.tx_hash
@@ -332,7 +333,8 @@ class EpochClient:
         keypair.signing_key
 
     def get_pubkey(self):
-        return self.internal_http_get('account/pub-key')['pub_key']
+        pub_key = self.internal_http_get('account/pub-key')
+        return pub_key['pub_key']
 
     def get_height(self):
         return int(self.external_http_get('top')['height'])
@@ -495,15 +497,18 @@ class EpochClient:
         data = self.internal_http_get('/block/txs/list/height', params=params)
         return [transaction_from_dict(tx) for tx in data['transactions']]
 
-    def create_spend_transaction(self, recipient, amount, fee=1):
-        from aeternity import AEName
-        assert AEName.validate_pointer(recipient)
-        sender = self.get_pubkey()
+    def create_spend_transaction(self, recipient, amount, fee=1, sender=None):
+        if sender is None:
+            from aeternity import AEName
+            assert AEName.validate_pointer(recipient)
+            origin = self.get_pubkey()
+        else:
+            origin = sender.get_address() 
         response = self.external_http_post(
             'tx/spend',
             json=dict(
                 amount=amount,
-                sender=sender,
+                sender=origin,
                 fee=fee,
                 recipient_pubkey=recipient,
             )
