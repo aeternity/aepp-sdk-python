@@ -1,16 +1,12 @@
-GIT_DESCR = $(shell git describe)
 # build output folder
 DIST_FOLDER = dist
 BUILD_FOLDER = build
 
 .PHONY: list
 list:
-	clean build lint test publish-test publish
+	@echo clean build lint test publish-test publish
 
 default: build
-
-workdir:
-	mkdir -p dist
 
 build: build-dist
 

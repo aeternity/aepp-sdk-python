@@ -1,5 +1,4 @@
 import os
-from collections import namedtuple
 
 from hashlib import sha256
 
@@ -7,11 +6,15 @@ import base58
 import rlp
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA256
-from ecdsa import SECP256k1, SigningKey, VerifyingKey
+from ecdsa import SECP256k1, SigningKey
 import ecdsa
 
+# RLP version number
+# https://github.com/aeternity/protocol/blob/epoch-v0.10.1/serializations.md#binary-serialization
 VSN = 1
 
+# The list of tags can be found here:
+# https://github.com/aeternity/protocol/blob/epoch-v0.10.1/serializations.md#table-of-object-tags
 TAG_SIGNED_TX = 11
 TAG_SPEND_TX = 12
 
@@ -23,7 +26,7 @@ class SignableTransaction:
         self.tx = tx_json_data['tx']
         self.tx_unsigned = base58.b58decode_check(tx_json_data['tx'][3:])
         self.tx_decoded = rlp.decode(self.tx_unsigned)
-        
+
         # decode a transaction
         def btoi(byts):
             return int.from_bytes(byts, byteorder='big')
@@ -32,11 +35,11 @@ class SignableTransaction:
         self.vsn = btoi(self.tx_decoded[1])
         self.fields = {}
         if self.tag == TAG_SPEND_TX:
-            self.fields['sender'] = base58.b58encode_check(self.tx_decoded[2]) 
+            self.fields['sender'] = base58.b58encode_check(self.tx_decoded[2])
             self.fields['recipient'] = base58.b58encode_check(self.tx_decoded[3])
-            self.fields['amount'] = btoi(self.tx_decoded[4]) 
-            self.fields['fee'] = btoi(self.tx_decoded[5])  
-            self.fields['nonce'] = btoi(self.tx_decoded[6])  
+            self.fields['amount'] = btoi(self.tx_decoded[4])
+            self.fields['fee'] = btoi(self.tx_decoded[5])
+            self.fields['nonce'] = btoi(self.tx_decoded[6])
 
 
 class KeyPair:
@@ -45,7 +48,7 @@ class KeyPair:
         self.verifying_key = verifying_key
 
     def get_address(self):
-
+        """get the keypair public_key base58 encoded and prefixed (ak$...)"""
         pub_key = self.verifying_key.to_string()
         return 'ak$' + base58.b58encode_check(b'\x04' + pub_key)
 
