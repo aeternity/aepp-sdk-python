@@ -1,8 +1,10 @@
 import base58
+import os
 
 from aeternity import EpochClient
 from aeternity.epoch import SpendTx
 from aeternity.signing import KeyPair
+
 
 def test_create_transaction_signing():
     client = EpochClient()
@@ -10,7 +12,9 @@ def test_create_transaction_signing():
     new_keypair = KeyPair.generate()
     receiver_address = new_keypair.get_address()
 
-    keypair = KeyPair.read_from_dir('/home/tom/data/aeternity/epoch/_build/dev1/rel/epoch/data/aecore/keys/', 'secret')
+    pub_key = os.environ.get('WALLET_PUB')
+    priv_key = os.environ.get('WALLET_PRIV')
+    keypair = KeyPair.from_public_private_key_strings(pub_key, priv_key)
 
     transaction = client.create_spend_transaction(receiver_address, 10)
     signed_transaction, b58signature = keypair.sign_transaction(transaction)
