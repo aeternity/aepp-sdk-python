@@ -8,14 +8,131 @@ import os
 import logging
 
 import requests
-
-from aeternity import EpochClient, AEName, Oracle, Config
-from aeternity.exceptions import AENSException, AException
-from aeternity.formatter import pretty_block
-from aeternity.oracle import NoOracleResponse, OracleQuery
-from aeternity.signing import KeyPair
+import argparse
 
 logging.basicConfig(format='%(message)s', level=logging.INFO)
+
+
+def cmd_noop(args=None):
+    """no operations"""
+    print("exec noop", args)
+
+
+cmds = [
+    {
+        "name": "wallet create",
+        "target": "noop",
+        "help": "run operations on a wallet",
+        "opts": [
+            {
+                "names": ["-f", "--key-path"],
+                "help": "path of the wallet to create",
+                "required": True
+            }
+        ],
+    },
+    {
+        "name": "wallet info",
+        "target": "noop",
+        "help": "get informations of a wallet",
+        "opts": [
+            {
+                "names": ["-p", "--pubkey"],
+                "help": "path of the wallet to create",
+                "required": True
+            },
+        ],
+    },
+    {
+        "name": "name_available",
+        "target": "noop",
+        "help": "create a new wallet",
+    },
+    {
+        "name": "name_register",
+        "target": "noop",
+        "help": "get informations of a wallet",
+    },
+    {
+        "name": "name_status",
+        "target": "noop",
+        "help": "get informations of a wallet",
+    },
+    {
+        "name": "name_update",
+        "target": "noop",
+        "help": "get informations of a wallet",
+    },
+    {
+        "name": "name_revoke",
+        "target": "noop",
+        "help": "get informations of a wallet",
+    },
+    {
+        "name": "name_transfer",
+        "target": "noop",
+        "help": "get informations of a wallet",
+    },
+    {
+        "name": "oracle register",
+        "target": "noop",
+        "help": "create a new wallet",
+    },
+    {
+        "name": "oracle query",
+        "target": "noop",
+        "help": "get informations of a wallet",
+    },
+    {
+        "name": "balance",
+        "target": "noop",
+        "help": "Returns the balance of pubkey or the balance of the node's pubkey",
+        "opts": [
+                {
+                    "names": ["-p", "--pubkey"],
+                    "help": "check the balance of pubkey"
+                },
+        ]
+    },
+    {
+        "name": "height",
+        "target": "noop",
+        "help": "Returns the highest block numeber in the chain",
+    },
+]
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--debug", action="store_true", help="enable debug logging")
+subparsers = parser.add_subparsers()
+subparsers.required = True
+subparsers.dest = 'command'
+# register all the commands
+for c in cmds:
+    subp = subparsers.add_parser(c['name'], help=c['help'])
+    subp.set_defaults(func=getattr(sys.modules[__name__], f"cmd_{c.get('target')}"))
+    # add the sub arguments
+    for sa in c.get('opts', []):
+        subp.add_argument(*sa['names'],
+                          help=sa['help'],
+                          action=sa.get('action'),
+                          default=sa.get('default'),
+                          required=sa.get('required', False))
+
+# parse the arguments
+args = parser.parse_args()
+# call the command with our args
+args.func(args)
+# 
+sys.exit(0)
+
+#     ___   _____     ______     ______   _________  _____  _____  ________  ________
+#   .'   `.|_   _|   |_   _ `. .' ____ \ |  _   _  ||_   _||_   _||_   __  ||_   __  |
+#  /  .-.  \ | |       | | `. \| (___ \_||_/ | | \_|  | |    | |    | |_ \_|  | |_ \_|
+#  | |   | | | |   _   | |  | | _.____`.     | |      | '    ' |    |  _|     |  _|
+#  \  `-'  /_| |__/ | _| |_.' /| \____) |   _| |_      \ \__/ /    _| |_     _| |_
+#   `.___.'|________||______.'  \______.'  |_____|      `.__.'    |_____|   |_____|
+#
 
 
 def print_usage():
@@ -48,7 +165,7 @@ Usage:
             Removes this domain from the block chain (incurs fees!)
     name transfer <domain.aet> <receipient_address> [--force]
             Transfers a domain to another user
-    
+
     oracle register [--query-format] [--response-format] [--default-query-fee]
                     [--default-fee] [--default-ttl] [--default-query-ttl]
                     [--default-response-ttl]
@@ -56,7 +173,7 @@ Usage:
     oracle query [--oracle-pubkey] [--query-fee] [--query-ttl] [--response-ttl]
                  [--fee]
             You will be prompted for any non-provided argument
- 
+
 The `--force` will suppress any questions before performing the action.
 
 You can override the standard connection ports using the following environment
@@ -73,6 +190,7 @@ docker-compose setup, specify --docker for the right URLs to be formed.
 ''')
     sys.exit(1)
 
+
 def stderr(*args):
     for message in args:
         sys.stderr.write(message)
@@ -87,6 +205,7 @@ def prompt(message, skip):
     if input(message + ' [y/N]') != 'y':
         print('cancelled')
         sys.exit(0)
+
 
 args = sys.argv[1:]
 
@@ -113,6 +232,7 @@ def popargs(d, key, default=_no_popargs_default, boolean=False):
         else:
             raise
 
+
 external_host = popargs(args, '--external-host', None)
 internal_host = popargs(args, '--internal-host', None)
 websocket_host = popargs(args, '--websocket-host', None)
@@ -133,6 +253,7 @@ client = EpochClient(configs=config)
 
 
 main_arg = args[0]
+
 
 def aens(args, force=False):
     command = args[1]
