@@ -104,6 +104,7 @@ class AEName:
             if self.status == NameStatus.UNKNOWN:
                 self.status = NameStatus.AVAILABLE
 
+
     def is_available(self):
         self.update_status()
         return self.status == NameStatus.AVAILABLE

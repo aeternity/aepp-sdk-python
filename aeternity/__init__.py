@@ -4,4 +4,4 @@ from .epoch import EpochClient
 from .config import Config
 from .contract import Contract
 
-__version__ = '0.1.0'
+__version__ = '0.1.2'

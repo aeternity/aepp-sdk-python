@@ -2,14 +2,17 @@ from setuptools import setup, find_packages
 import sys
 import os
 
+
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
 
 def get_version():
     with open(os.path.join('aeternity', '__init__.py')) as f:
         for line in f:
             if line.startswith('__version__ ='):
                 return line.split('=')[1].strip().strip('"\'')
+
 
 long_description = None
 if 'upload' in sys.argv or 'register' in sys.argv:
@@ -27,13 +30,13 @@ else:
     long_description = "\n" + "\n".join([read('README.md')])
 
 setup(
-    name='aeternity',
+    name='aepp-sdk',
     version=get_version(),
     description='Perform actions on the aeternity block chain',
     long_description=long_description,
     author='Tom Wallroth',
-    author_email='tomwallroth@gmail.com',
-    url='https://github.com/devsnd/aeternity/',
+    author_email='aepp-dev@aeternity.com',
+    url='https://github.com/aeternity/aepp-sdk-python',
     license='ISC',
     packages=find_packages(),
     install_requires=[],
