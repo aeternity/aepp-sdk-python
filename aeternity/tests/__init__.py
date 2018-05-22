@@ -1,15 +1,21 @@
 import logging
-from aeternity import Config
+import os
+from urllib.parse import urlparse
+from aeternity.config import Config
 
 logging.getLogger("requests").setLevel(logging.DEBUG)
 logging.getLogger("urllib3").setLevel(logging.DEBUG)
 
-KEY_PATH = '/Users/andrea/Documents/workspaces/blockchain/aeternity/epoch/deployment/ansible/files/tester'
-KEY_PASSWORD = 'secret'
 
+PUBLIC_KEY = os.environ.get('WALLET_PUB')
+PRIVATE_KEY = os.environ.get('WALLET_PRIV')
+NODE_URL = os.environ.get('TEST_URL')
+
+o = urlparse(NODE_URL)
+secured = True if o.scheme == 'https' else False
 
 Config.set_defaults(Config(
-    external_host='sdk-testnet.aepps.com:443',
-    internal_host='sdk-testnet.aepps.com:443/internal',
-    secure_connection=True
+    external_host=f"{o.hostname}:{o.port}",
+    internal_host=f'{o.hostname}:{o.port}/internal',
+    secure_connection=secured
 ))

@@ -2,6 +2,7 @@ import json
 import os
 import re
 import requests
+import keyword
 from collections import namedtuple
 
 
@@ -31,19 +32,25 @@ class OpenAPICli(object):
     Generates a Opena API client
     """
     # skip tags
-    skip_tags = set(["obsolete", "internal", "debug", "internal"])
+    skip_tags = set(["obsolete", "debug"])
     # openapi versions
     open_api_versions = ["2.0"]
+    # type mapping
+    oa2py_type = {
+        "string": "str",
+        "integer": "int",
+        "boolean": "bool",
+    }
 
-    def __init__(self, specs_path, host="127.0.0.1", port="3013", secured=False):
+    def __init__(self, specs_path, url="http://127.0.0.1:3013"):
         if not os.path.exists(specs_path):
             raise FileNotFoundError(f"Open api specification file not found: {specs_path}")
         with open(specs_path) as fp:
-            data = json.load(fp)
+            self.api_def = json.load(fp)
         # check open_api_version
-        if data.get('swagger', 'x') not in self.open_api_versions:
-            raise OpenAPIException(f"Unsupported Open API specification version {data.get('swagger')}")
-        self.version = data.get('info', {}).get('version')
+        if self.api_def.get('swagger', 'x') not in self.open_api_versions:
+            raise OpenAPIException(f"Unsupported Open API specification version {self.api_def.get('swagger')}")
+        self.version = self.api_def.get('info', {}).get('version')
 
         # regexp to convert method signature to snakecase
         first_cap_re = re.compile('(.)([A-Z][a-z]+)')
@@ -54,13 +61,15 @@ class OpenAPICli(object):
             return all_cap_re.sub(r'\1_\2', s1).lower()
 
         # prepare the baseurl
-        protocol = "https" if secured else "http"
-        self.base_url = f"{protocol}://{host}:{port}{data.get('basePath','/')}"
+        self.base_url = f"{url}{self.api_def.get('basePath','/')}"
         # parse the api
-        Param = namedtuple("Param", ['name', 'required', 'pos', 'type', 'values', 'default', 'minimum', 'maximum'])
-        Resp = namedtuple("Resp", ['schema', 'desc'])
-        Api, self.api_methods = namedtuple('Api', ['name', 'doc', 'params', 'responses', 'query_path', 'http_method']), []
-        for k, path in data.get('paths').items():
+        # definition of a field
+        FieldDef = namedtuple("FieldDef", ["required", "type", "values", "minimum", "maximum", "default"])
+        Param = namedtuple("Param", ["name", "pos", "field"])
+        Resp = namedtuple("Resp", ["schema", "desc"])
+        Api, self.api_methods = namedtuple("Api", ["name", "doc", "params", "responses", "query_path", "http_method"]), []
+
+        for k, path in self.api_def.get("paths").items():
             for m, func in path.items():
                 # exclude the paths/method tagged with skip_tags
                 if not self.skip_tags.isdisjoint(func.get('tags')):
@@ -75,16 +84,28 @@ class OpenAPICli(object):
                 )
                 # collect the parameters
                 for p in func.get('parameters', []):
-                    api.params.append(Param(
-                        name=p.get("name"),
-                        required=p.get("required"),
-                        pos=p.get("in"),
-                        type=p.get("type"),
-                        values=p.get("enum", []),
-                        default=p.get("default"),
-                        minimum=p.get("minimum"),
-                        maximum=p.get("maximum"))
+
+                    param_name = p.get("name")
+                    param_pos = p.get("in")
+                    # check if the param name is a reserved keyword
+                    if keyword.iskeyword(param_name):
+                        if param_pos == 'path':
+                            api.query_path = api.query_path.replace("{%s}" % param_name, "{_%s}" % param_name)
+                        param_name = f"_{param_name}"
+                    
+                    param = Param(
+                        name=param_name,
+                        pos=param_pos,
+                        field=FieldDef(
+                            required=p.get("required"),
+                            type=p.get("type", p.get("schema", {}).get("$ref")),
+                            values=p.get("enum", []),
+                            default=p.get("default"),
+                            minimum=p.get("minimum"),
+                            maximum=p.get("maximum"))
                     )
+                    api.params.append(param)
+
                 # responses
                 for code, r in func.get('responses', {}).items():
                     api.responses[int(code)] = Resp(
@@ -98,40 +119,45 @@ class OpenAPICli(object):
         """add an api method to the client"""
         def api_method(*args, **kwargs):
             query_params = {}
+            post_body = {}
             target_path = api.query_path
             for p in api.params:
-                # TODO: check for unknown parameters
                 # get the value or default
-                val, ok = self._get_param_val(kwargs, p.name, p.default, p.required)
+                val, ok = self._get_param_val(kwargs, p)
                 if not ok:
                     raise OpenAPIArgsException(f"missing required paramter {p.name}")
                 # if none continue
                 if val is None:
                     continue
                 # check the type
-                if not p.type.startswith(type(val).__name__, 0, 3):
-                    raise OpenAPIArgsException(f"type error for paramter {p.name}, expected: {p.type} got {type(val).__name__}", )
+                if p.field.type.startswith("#/definitions/"):
+                    # TODO: validate the model
+                    pass
+                elif not self._is_valid_type(val, p.field):
+                    raise OpenAPIArgsException(f"type error for paramter {p.name}, expected: {p.field.type} got {type(val).__name__}", )
                 # check the ranges
-                if not self._is_valid_interval(val, p.minimum, p.maximum):
+                if not self._is_valid_interval(val, p.field):
                     raise OpenAPIArgsException(f"value error for paramter {p.name}, expected: {p.minimum} =< {val} =< {p.maximum}", )
                 # check allowed walues
-                if len(p.values) > 0 and val not in p.values:
+                if len(p.field.values) > 0 and val not in p.field.values:
                     raise OpenAPIArgsException(f"Invalid value for param {p.name}, allowed values are {','.join(p.values)}")
                 # if in path substute
                 if p.pos == 'path':
-                    target_path = target_path.replace('{%s}' % p.name, val)
+                    target_path = target_path.replace('{%s}' % p.name, str(val))
                 # if in query add to the query
                 if p.pos == 'query':
                     query_params[p.name] = val
-                # TODO: body param
+                if p.pos == 'body':
+                    post_body = val
             # make the request
             endpoint = f"{self.base_url}{target_path}"
 
             if api.http_method == 'get':
-                http_reply = requests.get(endpoint, params=kwargs)
-                # get response object
+                http_reply = requests.get(endpoint, params=query_params)
                 api_response = api.responses.get(http_reply.status_code, None)
             else:
+                http_reply = requests.post(endpoint, params=query_params, json=post_body)
+                api_response = api.responses.get(http_reply.status_code, None)
                 raise OpenAPIException("not yet implemented")
             # unknow error
             if api_response is None:
@@ -149,25 +175,31 @@ class OpenAPICli(object):
         setattr(self, api_method.__name__, api_method)
         self.api_methods.append(api)
 
-    def _is_valid_interval(self, val, min_val, max_val):
+    def _is_valid_interval(self, val, field):
         is_ok = True
         if not isinstance(val, int):
             return is_ok
-        if min is not None and val < min:
+        if field.minimum is not None and val < field.minimum:
             is_ok = False
-        if max is not None and val > max:
+        if field.maximum is not None and val > field.maximum:
             is_ok = False
         return is_ok
 
-    def _get_param_val(self, params, name, default=None, required=False):
+    def _is_valid_type(self, val, field):
+        py_type = self.oa2py_type.get(field.type, "unknown")
+        if py_type != type(val).__name__:
+            return False
+        return True
+
+    def _get_param_val(self, params, param):
         """
         get the parameter "name" from the parmaters,
         raise an exception if the paramter is required and is None
         """
-        val = params.get(name, default)
-        val = val if val is not None else default
+        val = params.get(param.name, param.field.default)
+        val = val if val is not None else param.field.default
         # check required
-        if required and val is None:
+        if param.field.required and val is None:
             return val, False
         return val, True
 
