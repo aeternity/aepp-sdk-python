@@ -142,6 +142,7 @@ OPCODES = {
     0xff: ('SUICIDE', 1, 0, 0, 0),
 }
 
+
 def pretty_bytecode(bytecode_as_hex):
     if bytecode_as_hex.startswith('0x'):
         bytecode_as_hex = bytecode_as_hex[2:]
@@ -151,7 +152,7 @@ def pretty_bytecode(bytecode_as_hex):
     while i < len(bytecode_as_bytes):
         opcode = bytecode_as_bytes[i]
         name, ins, outs, gas, consumes = OPCODES.get(opcode, (f'UNKNOWN ({opcode})!', 0, 0, 0))
-        arguments = bytecode_as_bytes[i+1:i+1+consumes]
+        arguments = bytecode_as_bytes[i + 1:i + 1 + consumes]
         arguments_ascii = arguments.decode('ascii', errors='replace')
         arguments_hex = binascii.hexlify(arguments).decode('ascii')
         pos = '0x%04x' % i
