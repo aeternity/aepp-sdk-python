@@ -1,16 +1,15 @@
 import json
-from collections import defaultdict, namedtuple, MutableSequence
+from collections import defaultdict
 import logging
+import os
 
-from json import JSONDecodeError
-
-import requests
 import time
 import websocket
 
 from aeternity.config import Config
-from aeternity.exceptions import AException, NameNotAvailable, InsufficientFundsException, TransactionNotFoundException
-from aeternity.signing import SignableTransaction, KeyPair
+from aeternity.exceptions import NameNotAvailable, InsufficientFundsException, TransactionNotFoundException
+from aeternity.signing import KeyPair
+from aeternity.openapi import OpenAPICli
 
 logger = logging.getLogger(__name__)
 
@@ -44,113 +43,113 @@ class EpochRequestError(Exception):
     pass
 
 
-#
-# Datatypes used for API responses:
-#
+# #
+# # Datatypes used for API responses:
+# #
 
-AccountBalance = namedtuple('AccountBalance', [
-    'pub_key', 'balance'
-])
+# AccountBalance = namedtuple('AccountBalance', [
+#     'pub_key', 'balance'
+# ])
 
-# Wrapper Datatype for all transactions
-Transaction = namedtuple('Transaction', [
-    'block_hash', 'block_height', 'hash', 'signatures', 'tx', 'data_schema'
-])
-#
-# Transaction types:
-#
-CoinbaseTx = namedtuple('CoinbaseTx', [
-    'block_height', 'account', 'data_schema', 'type', 'vsn', 'reward'
-])
-AENSClaimTx = namedtuple('AENSClaimTx', [
-    'account', 'fee', 'name', 'name_salt', 'nonce', 'type', 'vsn'
-])
-AENSPreclaimTx = namedtuple('AENSPreclaimTx', [
-    'account', 'commitment', 'fee', 'nonce', 'type', 'vsn'
-])
-AENSTransferTx = namedtuple('AENSTransferTx', [
-    'account', 'fee', 'name_hash', 'nonce', 'recipient_pubkey', 'type', 'vsn'
-])
-AENSUpdateTX = namedtuple('AENSUpdateTx', [
-    'account', 'fee', 'name_hash', 'name_ttl', 'nonce', 'pointers', 'ttl',
-    'type', 'vsn'
-])
-SpendTx = namedtuple('SpendTx', [
-    'data_schema', 'type', 'vsn', 'amount', 'fee', 'nonce', 'recipient', 'sender'
-])
-AEOQueryTx = namedtuple('AEOQueryTx', [
-    'data_schema', 'fee', 'nonce', 'oracle', 'query', 'query_fee', 'query_ttl',
-    'response_ttl', 'sender', 'type', 'vsn'
-])
-AEOResponseTx = namedtuple('AEOResponseTx', [
-    'data_schema', 'fee', 'nonce', 'oracle', 'query_id', 'response', 'type', 'vsn'
-])
-AEORegisterTx = namedtuple('AEORegisterTx', [
-    'account', 'data_schema', 'fee', 'nonce', 'query_fee', 'query_spec',
-    'response_spec', 'ttl', 'type', 'vsn'
-])
-GenericTx = namedtuple('GenericTx', ['tx'])
-
-
-Version = namedtuple('Version', [
-    'genesis_hash', 'revision', 'version'
-])
-EpochInfo = namedtuple('EpochInfo', [
-    'last_30_blocks_time'
-])
-LastBlockInfo = namedtuple('BlockInfo', [
-    'difficulty', 'height', 'time', 'time_delta_to_parent'
-])
-BlockWithTx = namedtuple('BlockWithTx', [
-    'data_schema', 'hash', 'height', 'nonce', 'pow', 'prev_hash', 'state_hash',
-    'target', 'time', 'transactions', 'txs_hash', 'version'
-])
-
-# NewTransaction is the container when creating a transaction using the epoch
-# node, which then can be signed offline
-NewTransaction = namedtuple('NewTransaction', ['tx', 'tx_hash'])
+# # Wrapper Datatype for all transactions
+# Transaction = namedtuple('Transaction', [
+#     'block_hash', 'block_height', 'hash', 'signatures', 'tx', 'data_schema'
+# ])
+# #
+# # Transaction types:
+# #
+# CoinbaseTx = namedtuple('CoinbaseTx', [
+#     'block_height', 'account', 'data_schema', 'type', 'vsn', 'reward'
+# ])
+# AENSClaimTx = namedtuple('AENSClaimTx', [
+#     'account', 'fee', 'name', 'name_salt', 'nonce', 'type', 'vsn'
+# ])
+# AENSPreclaimTx = namedtuple('AENSPreclaimTx', [
+#     'account', 'commitment', 'fee', 'nonce', 'type', 'vsn'
+# ])
+# AENSTransferTx = namedtuple('AENSTransferTx', [
+#     'account', 'fee', 'name_hash', 'nonce', 'recipient_pubkey', 'type', 'vsn'
+# ])
+# AENSUpdateTX = namedtuple('AENSUpdateTx', [
+#     'account', 'fee', 'name_hash', 'name_ttl', 'nonce', 'pointers', 'ttl',
+#     'type', 'vsn'
+# ])
+# SpendTx = namedtuple('SpendTx', [
+#     'data_schema', 'type', 'vsn', 'amount', 'fee', 'nonce', 'recipient', 'sender'
+# ])
+# AEOQueryTx = namedtuple('AEOQueryTx', [
+#     'data_schema', 'fee', 'nonce', 'oracle', 'query', 'query_fee', 'query_ttl',
+#     'response_ttl', 'sender', 'type', 'vsn'
+# ])
+# AEOResponseTx = namedtuple('AEOResponseTx', [
+#     'data_schema', 'fee', 'nonce', 'oracle', 'query_id', 'response', 'type', 'vsn'
+# ])
+# AEORegisterTx = namedtuple('AEORegisterTx', [
+#     'account', 'data_schema', 'fee', 'nonce', 'query_fee', 'query_spec',
+#     'response_spec', 'ttl', 'type', 'vsn'
+# ])
+# GenericTx = namedtuple('GenericTx', ['tx'])
 
 
-transaction_type_mapping = {
-    'coinbase_tx': CoinbaseTx,
-    'aec_coinbase_tx': CoinbaseTx,
-    'aec_spend_tx': SpendTx,
-    'spend_tx': SpendTx,
-    'aens_claim_tx': AENSClaimTx,
-    'aens_preclaim_tx': AENSPreclaimTx,
-    'aens_transfer_tx': AENSTransferTx,
-    'aens_update_tx': AENSUpdateTX,
-    'aeo_query_tx': AEOQueryTx,
-    'aeo_register_tx': AEORegisterTx,
-    'aeo_response_tx': AEOResponseTx,
-}
+# Version = namedtuple('Version', [
+#     'genesis_hash', 'revision', 'version'
+# ])
+# EpochInfo = namedtuple('EpochInfo', [
+#     'last_30_blocks_time'
+# ])
+# LastBlockInfo = namedtuple('BlockInfo', [
+#     'difficulty', 'height', 'time', 'time_delta_to_parent'
+# ])
+# BlockWithTx = namedtuple('BlockWithTx', [
+#     'data_schema', 'hash', 'height', 'nonce', 'pow', 'prev_hash', 'state_hash',
+#     'target', 'time', 'transactions', 'txs_hash', 'version'
+# ])
+
+# # NewTransaction is the container when creating a transaction using the epoch
+# # node, which then can be signed offline
+# NewTransaction = namedtuple('NewTransaction', ['tx', 'tx_hash'])
 
 
-def transaction_from_dict(data):
-    if set(data.keys()) == {'tx'}:
-        return GenericTx(**data)
-
-    tx_type = data['tx']['type']
-    try:
-        tx = transaction_type_mapping[tx_type](**data['tx'])
-    except KeyError:
-        raise ValueError(f'Cannot deserialize transaction of type {tx_type}')
-
-    data = data.copy()  # don't mutate the input
-    data['tx'] = tx
-    if not 'data_schema' in data:
-        data['data_schema'] = None
-        # TODO: The API should provide a data_schema for all objects
-        logger.debug('Deserialized transaction without data_schema!')
-    return Transaction(**data)
+# transaction_type_mapping = {
+#     'coinbase_tx': CoinbaseTx,
+#     'aec_coinbase_tx': CoinbaseTx,
+#     'aec_spend_tx': SpendTx,
+#     'spend_tx': SpendTx,
+#     'aens_claim_tx': AENSClaimTx,
+#     'aens_preclaim_tx': AENSPreclaimTx,
+#     'aens_transfer_tx': AENSTransferTx,
+#     'aens_update_tx': AENSUpdateTX,
+#     'aeo_query_tx': AEOQueryTx,
+#     'aeo_register_tx': AEORegisterTx,
+#     'aeo_response_tx': AEOResponseTx,
+# }
 
 
-def block_from_dict(data):
-    data = data.copy()  # dont mutate the input
-    data['transactions'] = [
-        transaction_from_dict(tx) for tx in data.get('transactions', [])
-    ]
-    return BlockWithTx(**data)
+# def transaction_from_dict(data):
+#     if set(data.keys()) == {'tx'}:
+#         return GenericTx(**data)
+
+#     tx_type = data['tx']['type']
+#     try:
+#         tx = transaction_type_mapping[tx_type](**data['tx'])
+#     except KeyError:
+#         raise ValueError(f'Cannot deserialize transaction of type {tx_type}')
+
+#     data = data.copy()  # don't mutate the input
+#     data['tx'] = tx
+#     if 'data_schema' not in data:
+#         data['data_schema'] = None
+#         # TODO: The API should provide a data_schema for all objects
+#         logger.debug('Deserialized transaction without data_schema!')
+#     return Transaction(**data)
+
+
+# def block_from_dict(data):
+#     data = data.copy()  # dont mutate the input
+#     data['transactions'] = [
+#         transaction_from_dict(tx) for tx in data.get('transactions', [])
+#     ]
+#     return BlockWithTx(**data)
 
 
 class EpochClient:
@@ -174,6 +173,13 @@ class EpochClient:
         self._top_block = None
         self._retry = retry
 
+        # find out the version of the node we are connecting to
+        swagger_file = f'assets/swagger/{configs[0].node_version}.json'
+        if not os.path.exists(swagger_file):
+            raise Exception(f"node version {configs[0].node_version} not supported")
+        # instantiate the request client
+        self.cli = OpenAPICli(swagger_file, url=configs[0].http_api_url)
+
     def _get_active_config(self):
         return self._configs[self._active_config_idx]
 
@@ -184,50 +190,7 @@ class EpochClient:
         self._active_config_idx = (self._active_config_idx) + 1 % len(self._configs)
         logger.info(f'Trying next connection to: {self._get_active_config()}')
         self._connection = Connection(config=self._get_active_config())
-
-    def http_json_call(self, method, base_url, endpoint, **kwargs):
-        logger.debug(f'Going to connect to {base_url}/{endpoint}')
-        if endpoint.startswith('/'):  # strip leading slash to avoid petty errors
-            endpoint = endpoint[1:]
-        url = base_url + '/' + endpoint
-        response = requests.request(method, url, **kwargs)
-        try:
-            json_data = response.json()
-            if response.status_code >= 500:
-                raise AException(payload=json_data)
-
-            reason = json_data.get('reason')
-            if reason:
-                exception_cls = self.exception_by_reason.get(reason, AException)
-                raise exception_cls(payload=json_data)
-            return json_data
-        except JSONDecodeError:
-            raise AException(payload={'broken_json': response.text})
-
-    def internal_http_get(self, endpoint, **kwargs):
-        config = self._get_active_config()
-        return self.http_json_call(
-            'get', config.internal_api_url, endpoint, **kwargs
-        )
-
-    def internal_http_post(self, endpoint, **kwargs):
-        config = self._get_active_config()
-        return self.http_json_call(
-            'post', config.internal_api_url, endpoint, **kwargs
-        )
-
-    def external_http_get(self, endpoint, **kwargs):
-        config = self._get_active_config()
-        return self.http_json_call(
-            'get', config.http_api_url, endpoint, **kwargs
-        )
-
-    def external_http_post(self, endpoint, **kwargs):
-        config = self._get_active_config()
-        return self.http_json_call(
-            'post', config.http_api_url, endpoint, **kwargs
-        )
-
+        
     def update_top_block(self):
         self._top_block = self.get_height()
 
@@ -337,7 +300,9 @@ class EpochClient:
         return pub_key['pub_key']
 
     def get_height(self):
-        return int(self.external_http_get('top')['height'])
+        top = self.cli.get_top()
+        logging.debug(f"get_height: {top}")
+        return top.height
 
     def get_balance(self, account_pubkey=None, height=None, block_hash=None):
         """
@@ -352,15 +317,10 @@ class EpochClient:
         :return:
         """
         assert not (height is not None and block_hash is not None), "Can only set either height or hash!"
-        if account_pubkey is None:
-            account_pubkey = self.get_pubkey()
-        params = {}
-        if height is not None:
-            params['height'] = height
-        if block_hash is not None:
-            params['hash'] = block_hash
-        response = self.internal_http_get(f'account/balance/{account_pubkey}', params=params)
-        return response['balance']
+        balance = self.cli.get_account_balance(
+            account_pubkey=account_pubkey, height=height, block_hash=block_hash
+        )
+        return balance.balance
 
     @classmethod
     def make_tx_types_params(cls, tx_types=None, exclude_tx_types=None):
@@ -376,148 +336,98 @@ class EpochClient:
             account_pubkey=None,
             offset=None,
             limit=None,
-            tx_types=None,
-            exclude_tx_types=None,
+            tx_types=[],
+            exclude_tx_types=[],
     ):
         """
         get the transactions of the account `account_pubkey`. If left empty, gets
         the transactions of this node's account.
         """
-        if account_pubkey is None:
-            account_pubkey = self.get_pubkey()
-
-        params = {'tx_encoding': 'json'}
-        if offset is not None:
-            params['offset'] = offset
-        if limit is not None:
-            params['limit'] = limit
-        params.update(self.make_tx_types_params(tx_types, exclude_tx_types))
-
-        resp = self.internal_http_get(f'account/txs/{account_pubkey}', params=params)
-        return [
-            transaction_from_dict(transaction) for transaction in resp['transactions']
-        ]
+        return self.cli.get_account_transactions(account_pubkey=account_pubkey,
+                                                 tx_encoding='json',
+                                                 offset=offset,
+                                                 limit=limit,
+                                                 tx_types=','.join(tx_types),
+                                                 exclude_tx_types=','.join(exclude_tx_types),)
 
     def get_version(self):
-        return Version(**self.external_http_get('version'))
+        # return Version(**self.external_http_get('version'))
+        pass
 
     def get_info(self):
-        data = self.external_http_get('info')
-        data['last_30_blocks_time'] = [
-            # set `time_delta_to_parent` per default to None
-            LastBlockInfo(**{'time_delta_to_parent': None, **blk})
-            for blk in data['last_30_blocks_time']
-        ]
-        return EpochInfo(**data)
+        # TODO: write test for this one
+        pass
 
     def get_peers(self):
         # this is a debugging function
-        # TODO
+        # TODO: whi is this here?
         raise NotImplementedError()
 
     def get_block_by_height(self, height):
-        empty_block = {  # this data does not exist in the genesis block struct
-            'pow': None, 'prev_hash': None, 'transactions': [],
-            'txs_hash': None, 'data_schema': None, 'hash': None
-        }
-        data = self.external_http_get('block-by-height', params=dict(height=height))
-        return block_from_dict({**empty_block, **data})
+        return self.cli.get_block_by_height(height=height)
 
     def get_block_by_hash(self, hash):
-        data = self.external_http_get('block-by-hash', params=dict(hash=hash))
-        # add this to make it compatible to the struct from `get_latest_block`
-        data.update({'data_schema': None, 'hash': None})
-        return block_from_dict(data)
+        return self.cli.get_block_by_hash(hash=hash)
 
     def get_genesis_block(self):
-        data = self.internal_http_get('block/genesis', params=dict(tx_encoding='json'))
-        # fill up the fields that cannot exist in the genesis block to make it
-        # compatible with the `BlockWithTxs`
-        data.update({'pow': None, 'prev_hash': None, 'transactions': [], 'txs_hash': None})
-        return block_from_dict(data)
+        return self.cli.get_block_genesis()
 
     def get_latest_block(self):
-        data = self.internal_http_get('block/latest', params=dict(tx_encoding='json'))
-        return block_from_dict(data)
+        return self.cli.get_block_latest()
 
     def get_pending_block(self):
-        data = self.internal_http_get('block/pending', params=dict(tx_encoding='json'))
-        missing_data = {'hash': None}  # the pending block cannot have a hash yet
-        return block_from_dict({**missing_data, **data})
+        return self.cli.get_block_pending()
 
-    def get_block_transaction_count_by_hash(
-        self, _hash, tx_types=None, exclude_tx_types=None
-    ):
-        params = self.make_tx_types_params(tx_types, exclude_tx_types)
-        data = self.internal_http_get(f'/block/txs/count/hash/{_hash}', params=params)
-        return data['count']
+    def get_block_transaction_count_by_hash(self, _hash, tx_types=None, exclude_tx_types=None):
+        return self.cli.get_block_txs_count_by_hash(hash=_hash, tx_types=tx_types, exclude_tx_types=exclude_tx_types)
 
-    def get_block_transaction_count_by_height(
-        self, height, tx_types=None, exclude_tx_types=None
-    ):
-        params = self.make_tx_types_params(tx_types, exclude_tx_types)
-        data = self.internal_http_get(f'/block/txs/count/height/{height}', params=params)
-        return data['count']
+    def get_block_transaction_count_by_height(self, height, tx_types=None, exclude_tx_types=None):
+
+        return self.cli.get_block_txs_count_by_height(height=height, tx_types=tx_types, exclude_tx_types=exclude_tx_types)
 
     def get_transaction_by_transaction_hash(self, tx_hash):
         assert tx_hash.startswith('th$'), 'A transaction hash must start with "th$"'
-        data = self.external_http_get(
-            f'tx/{tx_hash}',
-            params={'tx_encoding': 'json'}
-        )
-        return transaction_from_dict(data['transaction'])
+        return self.cli.get_tx(tx_hash=tx_hash)
 
-    def get_transaction_from_block_height(self, height, tx_idx):
-        data = self.internal_http_get(
-            f'block/tx/height/{height}/{tx_idx}',
-            params={'tx_encoding': 'json'}
-        )
-        return transaction_from_dict(data['transaction'])
+    def get_transaction_from_block_height(self, height, tx_index):
+        return self.cli.get_transaction_from_block_height(height=height, tx_index=tx_index)
 
-    def get_transaction_from_block_hash(self, block_hash, tx_idx):
-        data = self.internal_http_get(
-            f'block/tx/hash/{block_hash}/{tx_idx}',
-            params={'tx_encoding': 'json'}
-        )
-        if data.get('reason'):
-            raise EpochRequestError(data['reason'])
-        return data
+    def get_transaction_from_block_hash(self, block_hash, tx_index):
+        return self.cli.get_transaction_from_block_hash(hash=block_hash, tx_index=tx_index)
 
     def get_transaction_from_latest_block(self, tx_idx):
         return self.get_transaction_from_block_hash('latest', tx_idx)
 
     def get_transactions_in_block_range(self, from_height, to_height, tx_types=None, exclude_tx_types=None):
         '''Get transactions list from a block range by height'''
-        params = {
-            'from': from_height,
-            'to': to_height,
-            'tx_encoding': 'json'
-        }
-        params.update(self.make_tx_types_params(tx_types, exclude_tx_types))
-        data = self.internal_http_get('/block/txs/list/height', params=params)
-        return [transaction_from_dict(tx) for tx in data['transactions']]
-
-    def create_spend_transaction(self, recipient, amount, fee=1, sender=None):
-        if sender is None:
-            from aeternity import AEName
-            assert AEName.validate_pointer(recipient)
-            origin = self.get_pubkey()
-        else:
-            origin = sender.get_address() 
-        response = self.external_http_post(
-            'tx/spend',
-            json=dict(
-                amount=amount,
-                sender=origin,
-                fee=fee,
-                recipient_pubkey=recipient,
-            )
+        return self.cli.get_txs_list_from_block_range_by_height(
+            _from=from_height,
+            to=to_height,
+            tx_types=tx_types,
+            exclude_tx_types=exclude_tx_types
         )
-        return SignableTransaction(response)
+
+    def create_spend_transaction(self, sender_pubkey, recipient_pubkey, amount, fee=1, nonce=0, payload="payload"):
+        """
+        create a spend transaction
+        :param sender: the public key of the sender
+        :param recipient: the public key of the recipient
+        :param amount: the amount to send
+        :param fee: the fee for the transaction
+        """
+        body = {
+            "recipient_pubkey": recipient_pubkey,
+            "amount": amount,
+            "fee":  fee,
+            "sender": sender_pubkey,
+            "payload": payload,
+        }
+        if nonce > 0:
+            body['nonce'] = nonce
+        return self.cli.post_spend(body=body)
 
     def send_signed_transaction(self, encoded_signed_transaction):
-        data = {'tx': encoded_signed_transaction}
-        return self.external_http_post('tx', json=data)
+        return self.cli.send_tx(tx=encoded_signed_transaction)
 
 
 class EpochSubscription():
