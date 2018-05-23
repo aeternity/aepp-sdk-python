@@ -42,7 +42,7 @@ class OpenAPICli(object):
         "boolean": "bool",
     }
 
-    def __init__(self, specs_path, url="http://127.0.0.1:3013"):
+    def __init__(self, specs_path, url="http://127.0.0.1:3013", url_internal="http://127.0.0.1:3113"):
         if not os.path.exists(specs_path):
             raise FileNotFoundError(f"Open api specification file not found: {specs_path}")
         with open(specs_path) as fp:
@@ -61,26 +61,31 @@ class OpenAPICli(object):
             return all_cap_re.sub(r'\1_\2', s1).lower()
 
         # prepare the baseurl
-        self.base_url = f"{url}{self.api_def.get('basePath','/')}"
+        base_path = self.api_def.get('basePath', '/')
+        self.base_url = f"{url}{base_path}"
+        self.base_url_internal = f"{url_internal}{base_path}"
         # parse the api
         # definition of a field
         FieldDef = namedtuple("FieldDef", ["required", "type", "values", "minimum", "maximum", "default"])
-        Param = namedtuple("Param", ["name", "pos", "field"])
+        Param = namedtuple("Param", ["name", "raw", "pos", "field"])
         Resp = namedtuple("Resp", ["schema", "desc"])
-        Api, self.api_methods = namedtuple("Api", ["name", "doc", "params", "responses", "query_path", "http_method"]), []
+        Api, self.api_methods = namedtuple("Api", ["name", "doc", "params", "responses", "endpoint", "http_method"]), []
 
-        for k, path in self.api_def.get("paths").items():
+        for query_path, path in self.api_def.get("paths").items():
             for m, func in path.items():
                 # exclude the paths/method tagged with skip_tags
-                if not self.skip_tags.isdisjoint(func.get('tags')):
+                if not self.skip_tags.isdisjoint(func.get("tags")):
                     continue
+                # get if is an internal or external endpoint
+                endpoint_url = self.base_url_internal if "internal" in func.get("tags", []) else self.base_url
                 api = Api(
                     name=c2s(func['operationId']),
                     doc=func.get("description"),
                     params=[],
                     responses={},
-                    query_path=k,
-                    http_method=m
+                    endpoint=f"{endpoint_url}{query_path}",
+                    http_method=m,
+
                 )
                 # collect the parameters
                 for p in func.get('parameters', []):
@@ -92,9 +97,10 @@ class OpenAPICli(object):
                         if param_pos == 'path':
                             api.query_path = api.query_path.replace("{%s}" % param_name, "{_%s}" % param_name)
                         param_name = f"_{param_name}"
-                    
+
                     param = Param(
                         name=param_name,
+                        raw=p.get("name"),
                         pos=param_pos,
                         field=FieldDef(
                             required=p.get("required"),
@@ -110,7 +116,7 @@ class OpenAPICli(object):
                 for code, r in func.get('responses', {}).items():
                     api.responses[int(code)] = Resp(
                         desc=r.get("description"),
-                        schema=r.get("schema", {"$ref": "Success"}).get("$ref").replace("#/definitions/", "")
+                        schema=r.get("schema", {"$ref": ""}).get("$ref",).replace("#/definitions/", "")
                     )
                 # crete the method
                 self._add_api_method(api)
@@ -120,7 +126,7 @@ class OpenAPICli(object):
         def api_method(*args, **kwargs):
             query_params = {}
             post_body = {}
-            target_path = api.query_path
+            target_endpoint = api.endpoint
             for p in api.params:
                 # get the value or default
                 val, ok = self._get_param_val(kwargs, p)
@@ -143,28 +149,27 @@ class OpenAPICli(object):
                     raise OpenAPIArgsException(f"Invalid value for param {p.name}, allowed values are {','.join(p.values)}")
                 # if in path substute
                 if p.pos == 'path':
-                    target_path = target_path.replace('{%s}' % p.name, str(val))
+                    target_endpoint = target_endpoint.replace('{%s}' % p.name, str(val))
                 # if in query add to the query
                 if p.pos == 'query':
-                    query_params[p.name] = val
+                    query_params[p.raw] = val
                 if p.pos == 'body':
                     post_body = val
             # make the request
-            endpoint = f"{self.base_url}{target_path}"
-
             if api.http_method == 'get':
-                http_reply = requests.get(endpoint, params=query_params)
+                http_reply = requests.get(target_endpoint, params=query_params)
                 api_response = api.responses.get(http_reply.status_code, None)
             else:
-                http_reply = requests.post(endpoint, params=query_params, json=post_body)
+                http_reply = requests.post(target_endpoint, params=query_params, json=post_body)
                 api_response = api.responses.get(http_reply.status_code, None)
-                raise OpenAPIException("not yet implemented")
             # unknow error
             if api_response is None:
                 raise OpenAPIClientException(f"Unknown error {http_reply.status_code} - {http_reply.text}")
             # success
             if http_reply.status_code == 200:
                 # parse the http_reply
+                if len(api_response.schema) == 0:
+                    return {}
                 jr = http_reply.json()
                 return namedtuple(api_response.schema, jr.keys())(**jr)
             # error

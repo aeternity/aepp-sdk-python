@@ -98,7 +98,7 @@ def test_generatedcli():
                     "params": {
                       "account_pubkey": PUBLIC_KEY
                     },
-                    "wantErr": True
+                    "wantErr": False
                 },
                 {
                     "name": "ok limit",
@@ -106,7 +106,7 @@ def test_generatedcli():
                         "account_pubkey": PUBLIC_KEY,
                         "limit": 10,
                     },
-                    "wantErr": True
+                    "wantErr": False
                 },
                 {
                     "name": " limit out of range",
