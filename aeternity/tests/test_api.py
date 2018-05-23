@@ -82,17 +82,18 @@ def test_get_pending_block():
 
 def test_get_block_transaction_count_by_hash():
     block = client.get_latest_block()
+    print(block)
     assert block.hash is not None
     transaction_count = client.get_block_transaction_count_by_hash(block.hash)
     print(transaction_count)
-    assert transaction_count > 0
+    assert transaction_count.count > 0
 
 
 def test_get_block_transaction_count_by_height():
     previous_height = client.get_height() - 1
     transaction_count = client.get_block_transaction_count_by_height(previous_height)
-    print(transaction_count)
-    assert transaction_count > 0
+    print(transaction_count.count)
+    assert transaction_count.count > 0
 
 
 def test_get_transaction_from_block_height():

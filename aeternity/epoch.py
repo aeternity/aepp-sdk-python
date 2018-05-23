@@ -190,7 +190,7 @@ class EpochClient:
         self._active_config_idx = (self._active_config_idx) + 1 % len(self._configs)
         logger.info(f'Trying next connection to: {self._get_active_config()}')
         self._connection = Connection(config=self._get_active_config())
-        
+
     def update_top_block(self):
         self._top_block = self.get_height()
 
@@ -427,7 +427,7 @@ class EpochClient:
         return self.cli.post_spend(body=body)
 
     def send_signed_transaction(self, encoded_signed_transaction):
-        return self.cli.send_tx(tx=encoded_signed_transaction)
+        return self.cli.post_tx(body={"tx": encoded_signed_transaction})
 
 
 class EpochSubscription():
