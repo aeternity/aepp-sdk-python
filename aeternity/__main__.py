@@ -8,131 +8,14 @@ import os
 import logging
 
 import requests
-import argparse
+
+from aeternity.aens import AEName
+from aeternity.epoch import EpochClient, AENSException, AException
+from aeternity.config import Config
+from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
+from aeternity.signing import KeyPair
 
 logging.basicConfig(format='%(message)s', level=logging.INFO)
-
-
-def cmd_noop(args=None):
-    """no operations"""
-    print("exec noop", args)
-
-
-cmds = [
-    {
-        "name": "wallet create",
-        "target": "noop",
-        "help": "run operations on a wallet",
-        "opts": [
-            {
-                "names": ["-f", "--key-path"],
-                "help": "path of the wallet to create",
-                "required": True
-            }
-        ],
-    },
-    {
-        "name": "wallet info",
-        "target": "noop",
-        "help": "get informations of a wallet",
-        "opts": [
-            {
-                "names": ["-p", "--pubkey"],
-                "help": "path of the wallet to create",
-                "required": True
-            },
-        ],
-    },
-    {
-        "name": "name_available",
-        "target": "noop",
-        "help": "create a new wallet",
-    },
-    {
-        "name": "name_register",
-        "target": "noop",
-        "help": "get informations of a wallet",
-    },
-    {
-        "name": "name_status",
-        "target": "noop",
-        "help": "get informations of a wallet",
-    },
-    {
-        "name": "name_update",
-        "target": "noop",
-        "help": "get informations of a wallet",
-    },
-    {
-        "name": "name_revoke",
-        "target": "noop",
-        "help": "get informations of a wallet",
-    },
-    {
-        "name": "name_transfer",
-        "target": "noop",
-        "help": "get informations of a wallet",
-    },
-    {
-        "name": "oracle register",
-        "target": "noop",
-        "help": "create a new wallet",
-    },
-    {
-        "name": "oracle query",
-        "target": "noop",
-        "help": "get informations of a wallet",
-    },
-    {
-        "name": "balance",
-        "target": "noop",
-        "help": "Returns the balance of pubkey or the balance of the node's pubkey",
-        "opts": [
-                {
-                    "names": ["-p", "--pubkey"],
-                    "help": "check the balance of pubkey"
-                },
-        ]
-    },
-    {
-        "name": "height",
-        "target": "noop",
-        "help": "Returns the highest block numeber in the chain",
-    },
-]
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--debug", action="store_true", help="enable debug logging")
-subparsers = parser.add_subparsers()
-subparsers.required = True
-subparsers.dest = 'command'
-# register all the commands
-for c in cmds:
-    subp = subparsers.add_parser(c['name'], help=c['help'])
-    subp.set_defaults(func=getattr(sys.modules[__name__], f"cmd_{c.get('target')}"))
-    # add the sub arguments
-    for sa in c.get('opts', []):
-        subp.add_argument(*sa['names'],
-                          help=sa['help'],
-                          action=sa.get('action'),
-                          default=sa.get('default'),
-                          required=sa.get('required', False))
-
-# parse the arguments
-args = parser.parse_args()
-# call the command with our args
-args.func(args)
-# 
-sys.exit(0)
-
-#     ___   _____     ______     ______   _________  _____  _____  ________  ________
-#   .'   `.|_   _|   |_   _ `. .' ____ \ |  _   _  ||_   _||_   _||_   __  ||_   __  |
-#  /  .-.  \ | |       | | `. \| (___ \_||_/ | | \_|  | |    | |    | |_ \_|  | |_ \_|
-#  | |   | | | |   _   | |  | | _.____`.     | |      | '    ' |    |  _|     |  _|
-#  \  `-'  /_| |__/ | _| |_.' /| \____) |   _| |_      \ \__/ /    _| |_     _| |_
-#   `.___.'|________||______.'  \______.'  |_____|      `.__.'    |_____|   |_____|
-#
 
 
 def print_usage():
@@ -333,7 +216,7 @@ def aens(args, force=False):
 
         try:
             name.validate_pointer(receipient)
-        except:
+        except Exception:
             print(
                 'Invalid parameter for <receipient_address>\n'
                 '(note: make sure to wrap the address in single quotes on the shell)'
@@ -355,7 +238,7 @@ class CLIOracle(Oracle):
             except KeyboardInterrupt:
                 print('Cancelled, oracle will not respond to query.')
                 raise NoOracleResponse()
-            except:
+            except Exception:
                 print('Invalid JSON. Please retry or press ctrl-c to cancel')
 
 
@@ -368,7 +251,6 @@ class CLIOracleQuery(OracleQuery):
     def on_response(self, response, query):
         self.response_received = True
         self.last_response = response
-
 
 
 def cli_args_to_kwargs(cli_args, args):
@@ -430,11 +312,12 @@ def oracle(args, force=False):
             except KeyboardInterrupt:
                 print('Interrupted by user')
                 sys.exit(1)
-            except:
+            except Exception:
                 print('Invalid json-query, please try again (ctrl-c to exit)')
     else:
         stderr('Unknown oracle command: %s' % command)
         sys.exit(1)
+
 
 def balance(args):
     if len(args) >= 2:
@@ -553,7 +436,7 @@ elif main_arg == 'inspect':
             block = client.get_block_by_hash(block_id)
         else:
             block = client.get_block_by_height(block_id)
-        print(pretty_block(block))
+        print(block)
     elif inspect_what == 'transaction' or inspect_what == 'tx':
         transaction_hash = args[2]
         if not transaction_hash.startswith('th$'):
