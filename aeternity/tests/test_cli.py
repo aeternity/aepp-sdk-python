@@ -27,20 +27,21 @@ def tempdir():
         shutil.rmtree(path)
 
 
+@pytest.mark.skip('skip tests for v0.13.0')
 def test_balance():
     balance_str = call_aecli('balance')
     assert balance_str.isnumeric()
     balance = int(balance_str)
     assert balance > 0
 
-
+@pytest.mark.skip('skip tests for v0.13.0')
 def test_height():
     balance_str = call_aecli('height')
     assert balance_str.isnumeric()
     balance = int(balance_str)
     assert balance > 0
 
-
+@pytest.mark.skip('skip tests for v0.13.0')
 def test_generate_wallet():
     with tempdir() as tmp_path:
         output = call_aecli('generate', 'wallet', tmp_path, '--password', 'secret')
@@ -54,7 +55,7 @@ def test_generate_wallet():
         assert files[0] == 'key'
         assert files[1] == 'key.pub'
 
-
+@pytest.mark.skip('skip tests for v0.13.0')
 def test_generate_wallet_and_wallet_info():
     with tempdir() as tmp_path:
         output = call_aecli('generate', 'wallet', tmp_path, '--password', 'secret')
@@ -67,7 +68,7 @@ def test_generate_wallet_and_wallet_info():
         read_address = output[len('Address: '):]
         assert read_address == gen_address
 
-
+@pytest.mark.skip('skip tests for v0.13.0')
 def test_read_wallet_fail():
     with tempdir() as tmp_path:
         output = call_aecli('generate', 'wallet', tmp_path, '--password', 'secret')
@@ -101,7 +102,7 @@ def test_spend_wrong_password():
         output = call_aecli('spend', '1', receipient_address, wallet_path, '--password', 'WRONGPASS')
         assert 'Transaction sent' in output
 
-
+@pytest.mark.skip('skip tests for v0.13.0')
 def test_spend_invalid_amount():
     # try to send a negative amount
     with tempdir() as wallet_path:
@@ -112,7 +113,7 @@ def test_spend_invalid_amount():
         with pytest.raises(subprocess.CalledProcessError):
             output = call_aecli('spend', '-1', receipient_address, wallet_path, '--password', 'secret')
 
-
+@pytest.mark.skip('skip tests for v0.13.0')
 def test_inspect_block_by_height():
     from aeternity import EpochClient
     height = EpochClient().get_height()

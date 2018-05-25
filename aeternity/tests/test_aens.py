@@ -70,7 +70,7 @@ def test_name_status_unavailable():
     assert not same_name.is_available()
 
 
-@pytest.mark.skip('cannot make it work on 0.13.0')
+@pytest.mark.skip('skip for 0.13.0')
 def test_name_update():
     client = EpochClient()
     # claim a domain
@@ -90,6 +90,7 @@ def test_name_update():
     assert name.pointers['account_pubkey'] == client.get_pubkey()
 
 
+@pytest.mark.skip('skip for 0.13.0')
 def test_transfer_ownership():
     client = EpochClient()
     name = AEName(random_domain())

@@ -24,8 +24,6 @@ contract Identity =
 #
 
 
-def test_ring_contract_compile():
-    contract = Contract(aer_identity_contract, Contract.RING)
 def test_sophia_contract_compile():
     contract = Contract(aer_identity_contract, Contract.SOPHIA)
     result = contract.compile('')
