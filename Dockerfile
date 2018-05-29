@@ -5,7 +5,8 @@ FROM python:3-slim
 
 USER root
 
-ADD requirements.txt /
+COPY requirements.txt /
+COPY aeternity /app
 RUN apt-get update && apt-get install build-essential  -y \
 	&& pip install -r requirements.txt \
 	&& pip install pytest
