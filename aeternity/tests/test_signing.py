@@ -2,7 +2,6 @@
 from aeternity.tests import PUBLIC_KEY, PRIVATE_KEY
 from aeternity.epoch import EpochClient
 from aeternity.signing import KeyPair
-import aeternity
 
 
 def test_create_transaction_signing():

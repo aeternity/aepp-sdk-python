@@ -3,24 +3,10 @@ import pytest
 
 from aeternity.epoch import EpochClient
 from aeternity.oracle import Oracle, OracleQuery
-from aeternity.config import Config, ConfigException
-
 
 logger = logging.getLogger(__name__)
 # to run this test in other environments set the env vars as specified in the
 # config.py
-try:
-    # if there are no env vars set for the config, this call will fail
-    Config()
-except ConfigException:
-    # in this case we create a default config that should work on the dev
-    # machines.
-    Config.set_defaults(Config(
-        external_host='localhost:3013',
-        internal_host='localhost:3113',
-        websocket_host='localhost:3114'
-    ))
-
 
 logging.basicConfig(level=logging.DEBUG)
 

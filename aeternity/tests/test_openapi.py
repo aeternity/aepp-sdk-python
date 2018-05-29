@@ -1,5 +1,4 @@
 import pytest
-from urllib.parse import urlparse
 from aeternity.openapi import OpenAPICli
 from aeternity.tests import NODE_URL, PUBLIC_KEY
 

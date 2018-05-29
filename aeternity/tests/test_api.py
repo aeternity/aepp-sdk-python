@@ -1,5 +1,3 @@
-from pytest import fail
-
 from aeternity.tests import PUBLIC_KEY
 from aeternity.epoch import EpochClient
 
