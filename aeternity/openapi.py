@@ -42,7 +42,7 @@ class OpenAPICli(object):
         "boolean": "bool",
     }
 
-    def __init__(self, specs_path, url="http://127.0.0.1:3013", url_internal="http://127.0.0.1:3113"):
+    def __init__(self, specs_path, url, url_internal):
         if not os.path.exists(specs_path):
             raise FileNotFoundError(f"Open api specification file not found: {specs_path}")
         with open(specs_path) as fp:

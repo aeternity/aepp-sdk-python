@@ -50,22 +50,6 @@ class Contract:
         except OpenAPIClientException as e:
             raise ContractError(e)
 
-
-    def encode_calldata(self, function, arg):
-        data = self.client.external_http_post(
-            'contract/encode-calldata',
-            json={
-                'abi': 'evm',
-                'code': self.code,
-                'function': function,
-                'arg': arg,
-            }
-        )
-        error = data.get('reason')
-        if error:
-            raise ContractError(error)
-        return data['calldata']
-
     def encode_calldata(self, function, arg, abi=EVM):
         try:
             data = self.client.cli.encode_calldata(body=dict(

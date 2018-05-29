@@ -178,7 +178,7 @@ class EpochClient:
         if not os.path.exists(swagger_file):
             raise Exception(f"node version {configs[0].node_version} not supported")
         # instantiate the request client
-        self.cli = OpenAPICli(swagger_file, url=configs[0].http_api_url)
+        self.cli = OpenAPICli(swagger_file, configs[0].http_api_url, configs[0].internal_api_url)
 
     def _get_active_config(self):
         return self._configs[self._active_config_idx]
