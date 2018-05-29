@@ -32,7 +32,7 @@ pipeline {
 
   post {
     always {
-      junit 'test-results.xml'
+      junit '/app/test-results.xml'
       sh 'docker-compose -H localhost:2376 down -v ||:'
     }
   }
