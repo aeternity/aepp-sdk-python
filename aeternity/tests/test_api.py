@@ -3,19 +3,14 @@ from aeternity.epoch import EpochClient
 
 # from aeternity.exceptions import TransactionNotFoundException
 
-client = None
-
-
-def setup_module(module):
-    global client
-    client = EpochClient()
-
 
 def test_get_balance():
+    client = EpochClient()
     assert client.get_balance(account_pubkey=PUBLIC_KEY) > 0
 
 
 def test_get_transactions():
+    client = EpochClient()
     trans = client.get_transactions(account_pubkey=PUBLIC_KEY)
     assert len(trans) > 0
     # assert type(trans[0]) == Transaction
@@ -39,12 +34,14 @@ def test_get_info():
 
 
 def test_get_latest_block():
+    client = EpochClient()
     block = client.get_latest_block()
     # assert type(block) == BlockWithTx
     assert block.height > 0
 
 
 def test_get_block_by_heigt():
+    client = EpochClient()
     height = client.get_height()
     block = client.get_block_by_height(height)
     # assert type(block) == BlockWithTx
@@ -52,6 +49,7 @@ def test_get_block_by_heigt():
 
 
 def test_get_block_by_hash():
+    client = EpochClient()
     latest_block = client.get_latest_block()
     block = client.get_block_by_hash(latest_block.hash)
     # TODO: The following check should not fail. I feel that's a problem with
@@ -61,6 +59,7 @@ def test_get_block_by_hash():
 
 
 def test_get_genesis_block():
+    client = EpochClient()
     genesis_block = client.get_genesis_block()
     zero_height_block = client.get_block_by_height(0)  # these should be equivalent
     # assert type(genesis_block) == BlockWithTx
@@ -79,6 +78,7 @@ def test_get_pending_block():
 
 
 def test_get_block_transaction_count_by_hash():
+    client = EpochClient()
     block = client.get_latest_block()
     print(block)
     assert block.hash is not None
@@ -88,6 +88,7 @@ def test_get_block_transaction_count_by_hash():
 
 
 def test_get_block_transaction_count_by_height():
+    client = EpochClient()
     previous_height = client.get_height() - 1
     transaction_count = client.get_block_transaction_count_by_height(previous_height)
     print(transaction_count.count)
@@ -110,6 +111,7 @@ def test_get_missing_transaction_from_block_height():
 
 
 def test_get_transactions_in_block_range():
+    client = EpochClient()
     height = client.get_height()
     result = client.get_transactions_in_block_range(height - 5, height)
     assert len(result) > 1
