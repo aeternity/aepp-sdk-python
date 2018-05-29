@@ -23,7 +23,7 @@ pipeline {
         withCredentials([usernamePassword(credentialsId: 'genesis-wallet',
                                           usernameVariable: 'WALLET_PUB',
                                           passwordVariable: 'WALLET_PRIV')]) {
-          sh "docker-compose -p ${env.BUILD_TAG} -H localhost:2376 run sdk sudo -u docker pytest --junitxml test-results.xml aeternity/tests"
+          sh "docker-compose -p ${env.BUILD_TAG} -H localhost:2376 run sdk pytest --junitxml test-results.xml aeternity/tests"
           // sh 'docker-compose -H localhost:2376 run sdk yarn test-jenkins'
         }
       }
@@ -34,6 +34,7 @@ pipeline {
     always {
       junit 'test-results.xml'
       // archive 'dist/*'
+      sh 'docker-compose -H localhost:2376 run sdk rm -rf .pytest_cache ||:'
       sh 'docker-compose -H localhost:2376 down -v ||:'
     }
   }
