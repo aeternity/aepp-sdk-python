@@ -10,8 +10,6 @@ services:
     environment:
       - WALLET_PRIV=${WALLET_PRIV}
       - WALLET_PUB=${WALLET_PUB}
-    volumes:
-      - .:/app
 
   node:
     image: aeternity/epoch:${TAG}

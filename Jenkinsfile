@@ -33,8 +33,6 @@ pipeline {
   post {
     always {
       junit 'test-results.xml'
-      // archive 'dist/*'
-      sh 'docker-compose -H localhost:2376 run sdk rm -rf .pytest_cache ||:'
       sh 'docker-compose -H localhost:2376 down -v ||:'
     }
   }
