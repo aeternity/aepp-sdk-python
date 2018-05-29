@@ -33,6 +33,7 @@ pipeline {
   post {
     always {
       junit '/app/test-results.xml'
+      ah 'rm -rf .pytest_cache aeternity/__pycache__ aeternity/tests/__pycache__'
       sh 'docker-compose -H localhost:2376 down -v ||:'
     }
   }
