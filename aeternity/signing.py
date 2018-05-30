@@ -126,6 +126,8 @@ class KeyPair:
         :return: a keypair object or raise error if the public key doesnt match
         """
         k = bytes.fromhex(private)
+        # the private key string is composed with [private_key+pyblic_key]
+        # https://blog.mozilla.org/warner/2011/11/29/ed25519-keys/
         signing_key = SigningKey(seed=k[0:32], encoder=encoding.RawEncoder)
         kp = KeyPair(signing_key, signing_key.verify_key)
         assert kp.get_address() == public

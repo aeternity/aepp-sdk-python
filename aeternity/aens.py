@@ -103,7 +103,6 @@ class AEName:
             response = self.client.cli.get_name(name=self.domain)
             self.status = NameStatus.CLAIMED
             self.name_ttl = response.name_ttl
-            print("update: ", response)
             self.pointers = json.loads(response.pointers)
         except OpenAPIClientException:
             # e.g. if the status is already PRECLAIMED or CLAIMED, don't reset
@@ -147,7 +146,6 @@ class AEName:
             fee=fee,
             account=keypair.get_address(),
         ))
-        print("preclaim:", preclaim_transaction)
         signed_transaction, b58signature = keypair.sign_transaction(preclaim_transaction)
         self.client.send_signed_transaction(signed_transaction)
         self.status = AEName.Status.PRECLAIMED
@@ -183,7 +181,6 @@ class AEName:
             name_salt=self.preclaim_salt,
             fee=fee,
         ))
-        print("claim:", claim_transaction)
         signed_transaction, b58signature = keypair.sign_transaction(claim_transaction)
         self.client.send_signed_transaction(signed_transaction)
         self.status = AEName.Status.CLAIMED

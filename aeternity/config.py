@@ -68,7 +68,6 @@ class Config:
 
         self.name_url = f'{self.api_url}/name'
         self.pubkey = None
-        print(f"{self.api_url}/version")
         # retrieve the version of the node we are connecting to
         r = requests.get(f"{self.api_url}/v2/version").json()
         self.node_version = r['version']

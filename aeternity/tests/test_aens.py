@@ -70,6 +70,7 @@ def test_name_status_unavailable():
     assert not same_name.is_available()
 
 
+# TODO: enable the test check for pointers
 @pytest.mark.skip('skip for 0.13.0')
 def test_name_update():
     client = EpochClient()
@@ -90,6 +91,7 @@ def test_name_update():
     assert name.pointers['account_pubkey'] == client.get_pubkey()
 
 
+# TODO: enable the test check for pointers
 @pytest.mark.skip('skip for 0.13.0')
 def test_transfer_ownership():
     client = EpochClient()

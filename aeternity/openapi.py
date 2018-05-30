@@ -56,7 +56,7 @@ class OpenAPICli(object):
         first_cap_re = re.compile('(.)([A-Z][a-z]+)')
         all_cap_re = re.compile('([a-z0-9])([A-Z])')
 
-        def c2s(name):
+        def p2s(name):
             s1 = first_cap_re.sub(r'\1_\2', name)
             return all_cap_re.sub(r'\1_\2', s1).lower()
 
@@ -79,7 +79,7 @@ class OpenAPICli(object):
                 # get if is an internal or external endpoint
                 endpoint_url = self.base_url_internal if "internal" in func.get("tags", []) else self.base_url
                 api = Api(
-                    name=c2s(func['operationId']),
+                    name=p2s(func['operationId']),
                     doc=func.get("description"),
                     params=[],
                     responses={},
@@ -162,7 +162,7 @@ class OpenAPICli(object):
             else:
                 http_reply = requests.post(target_endpoint, params=query_params, json=post_body)
                 api_response = api.responses.get(http_reply.status_code, None)
-            # unknow error
+            # unknown error
             if api_response is None:
                 raise OpenAPIClientException(f"Unknown error {http_reply.status_code} - {http_reply.text}")
             # success

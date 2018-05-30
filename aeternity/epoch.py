@@ -43,7 +43,7 @@ class EpochRequestError(Exception):
     pass
 
 
-# #
+# # TODO: remove commented code
 # # Datatypes used for API responses:
 # #
 
@@ -351,6 +351,7 @@ class EpochClient:
                                                  exclude_tx_types=','.join(exclude_tx_types),)
 
     def get_version(self):
+        # TODO: to be implemented
         # return Version(**self.external_http_get('version'))
         pass
 
