@@ -1,26 +1,12 @@
-import random
-import string
-
 import logging
+import pytest
+
+from aeternity.epoch import EpochClient
+from aeternity.oracle import Oracle, OracleQuery
+
 logger = logging.getLogger(__name__)
-
-from aeternity import Config, EpochClient, Oracle, OracleQuery
-from aeternity.config import ConfigException
-
 # to run this test in other environments set the env vars as specified in the
 # config.py
-try:
-    # if there are no env vars set for the config, this call will fail
-    Config()
-except ConfigException:
-    # in this case we create a default config that should work on the dev
-    # machines.
-    Config.set_defaults(Config(
-        external_host='localhost:3013',
-        internal_host='localhost:3113',
-        websocket_host='localhost:3114'
-    ))
-
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -44,11 +30,12 @@ class WeatherQuery(OracleQuery):
         self.response_received = True
 
 
+@pytest.mark.skip('skip tests for v0.13.0')
 def test_oracle_registration():
     client = EpochClient()
     weather_oracle = WeatherOracle(
         query_format="{'city': str}",
-        response_format= "{'temp_c': int}",
+        response_format="{'temp_c': int}",
         default_query_fee=0,
         default_fee=10,
         default_ttl=50,
@@ -59,6 +46,8 @@ def test_oracle_registration():
     client.listen_until(weather_oracle.is_ready, timeout=5)
     assert weather_oracle.oracle_id is not None
 
+
+@pytest.mark.skip('skip tests for v0.13.0')
 def test_oracle_query_received():
     client = EpochClient()
     weather_oracle = WeatherOracle(

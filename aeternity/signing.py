@@ -1,13 +1,12 @@
 import os
 
-from hashlib import sha256
-
 import base58
 import rlp
 from Crypto.Cipher import AES
-from Crypto.Hash import SHA256
-from ecdsa import SECP256k1, SigningKey
-import ecdsa
+import nacl
+from nacl import encoding
+from nacl.signing import SigningKey
+from nacl.hash import blake2b
 
 # RLP version number
 # https://github.com/aeternity/protocol/blob/epoch-v0.10.1/serializations.md#binary-serialization
@@ -22,6 +21,7 @@ TAG_SPEND_TX = 12
 class SignableTransaction:
 
     def __init__(self, tx_json_data):
+
         self.tx_hash = tx_json_data['tx_hash']
         self.tx = tx_json_data['tx']
         self.tx_unsigned = base58.b58decode_check(tx_json_data['tx'][3:])
@@ -49,8 +49,8 @@ class KeyPair:
 
     def get_address(self):
         """get the keypair public_key base58 encoded and prefixed (ak$...)"""
-        pub_key = self.verifying_key.to_string()
-        return 'ak$' + base58.b58encode_check(b'\x04' + pub_key)
+        pub_key = self.verifying_key.encode(encoder=nacl.encoding.RawEncoder)
+        return self._base58_encode("ak", pub_key)
 
     def get_private_key(self):
         """get the private key hex encoded"""
@@ -58,26 +58,45 @@ class KeyPair:
 
     def sign_transaction_message(self, message):
         """sign a message with using the private key"""
-        signature = self.signing_key.sign(message, sigencode=ecdsa.util.sigencode_der)
-        return signature
+        return self.signing_key.sign(message).signature
 
     def sign_verify(self, message, signature):
-        """verifify message signature, raise an error if the message cannot be verified"""
-        assert self.verifying_key.verify(signature, message, sigdecode=ecdsa.util.sigdecode_der)
+        """verify message signature, raise an error if the message cannot be verified"""
+        assert self.verifying_key.verify(signature, message)
 
     def encode_transaction_message(self, unsigned_tx, signatures):
         """prepare a signed transaction message"""
         tag = bytes([TAG_SIGNED_TX])
         vsn = bytes([VSN])
         payload = rlp.encode([tag, vsn, signatures, unsigned_tx])
-        return f"tx${base58.b58encode_check(payload)}"
+        return self._base58_encode("tx", payload)
+
+    def tx_hash_from_signed_encoded(self, signed_encoded):
+        """generate the hash from a signed and encoded transaction"""
+        signed = self._base58_decode(signed_encoded)
+        return self._encode_tx_hash(blake2b(data=signed, digest_size=32, encoder=nacl.encoding.RawEncoder))
 
     def sign_transaction(self, transaction):
-        signature = self.sign_transaction_message(message=transaction.tx_unsigned)
-        tx_encoded = self.encode_transaction_message(transaction.tx_unsigned, [signature])
-        self.sign_verify(transaction.tx_unsigned, signature)
-        b58_signature = 'sg$' + base58.b58encode_check(signature)
+        """sign a transaction"""
+        tx_decoded = self._base58_decode(transaction.tx)
+        signature = self.signing_key.sign(tx_decoded).signature
+        # self.sign_verify(tx_decoded, signature)
+        # encode the transaction message with the signature
+        tx_encoded = self.encode_transaction_message(tx_decoded, [signature])
+        b58_signature = self._base58_encode("sg", signature)
         return tx_encoded, b58_signature
+
+    def _base58_decode(self, encoded):
+        """decode a base58 epoch string to bytes
+        it works with all the string like tx$..., sg$..., ak$....
+        """
+        if encoded[2] != '$':
+            raise ValueError('Invalid hash')
+        return base58.b58decode_check(encoded[3:])
+
+    def _base58_encode(self, prefix, data):
+        """crete a base58 encoded string with a prefix, ex: ak$encoded_data, th$encoded_data,..."""
+        return f"{prefix}${base58.b58encode_check(data)}"
 
     def save_to_folder(self, folder, password):
         enc_key = self._encrypt_key(self.signing_key.to_string(), password)
@@ -95,8 +114,8 @@ class KeyPair:
 
     @classmethod
     def generate(cls):
-        key = SigningKey.generate(curve=SECP256k1, hashfunc=sha256)
-        return KeyPair(signing_key=key, verifying_key=key.get_verifying_key())
+        signing_key = SigningKey.generate()
+        return KeyPair(signing_key=signing_key, verifying_key=signing_key.verify_key)
 
     @classmethod
     def from_public_private_key_strings(cls, public, private):
@@ -106,17 +125,13 @@ class KeyPair:
         :param private: the hex encoded private key
         :return: a keypair object or raise error if the public key doesnt match
         """
-        pk = bytes.fromhex(private)
-        signing_key = SigningKey.from_string(pk, curve=SECP256k1, hashfunc=sha256)
-        kp = KeyPair(signing_key, signing_key.get_verifying_key())
+        k = bytes.fromhex(private)
+        # the private key string is composed with [private_key+pyblic_key]
+        # https://blog.mozilla.org/warner/2011/11/29/ed25519-keys/
+        signing_key = SigningKey(seed=k[0:32], encoder=encoding.RawEncoder)
+        kp = KeyPair(signing_key, signing_key.verify_key)
         assert kp.get_address() == public
         return kp
-
-    @classmethod
-    def sha256(cls, data):
-        hash = SHA256.new()
-        hash.update(data)
-        return hash.digest()
 
     @classmethod
     def _encrypt_key(cls, key_string, password):

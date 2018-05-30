@@ -9,10 +9,10 @@ import logging
 
 import requests
 
-from aeternity import EpochClient, AEName, Oracle, Config
-from aeternity.exceptions import AENSException, AException
-from aeternity.formatter import pretty_block
-from aeternity.oracle import NoOracleResponse, OracleQuery
+from aeternity.aens import AEName
+from aeternity.epoch import EpochClient, AENSException, AException
+from aeternity.config import Config
+from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
 from aeternity.signing import KeyPair
 
 logging.basicConfig(format='%(message)s', level=logging.INFO)
@@ -48,7 +48,7 @@ Usage:
             Removes this domain from the block chain (incurs fees!)
     name transfer <domain.aet> <receipient_address> [--force]
             Transfers a domain to another user
-    
+
     oracle register [--query-format] [--response-format] [--default-query-fee]
                     [--default-fee] [--default-ttl] [--default-query-ttl]
                     [--default-response-ttl]
@@ -56,7 +56,7 @@ Usage:
     oracle query [--oracle-pubkey] [--query-fee] [--query-ttl] [--response-ttl]
                  [--fee]
             You will be prompted for any non-provided argument
- 
+
 The `--force` will suppress any questions before performing the action.
 
 You can override the standard connection ports using the following environment
@@ -73,6 +73,7 @@ docker-compose setup, specify --docker for the right URLs to be formed.
 ''')
     sys.exit(1)
 
+
 def stderr(*args):
     for message in args:
         sys.stderr.write(message)
@@ -87,6 +88,7 @@ def prompt(message, skip):
     if input(message + ' [y/N]') != 'y':
         print('cancelled')
         sys.exit(0)
+
 
 args = sys.argv[1:]
 
@@ -113,6 +115,7 @@ def popargs(d, key, default=_no_popargs_default, boolean=False):
         else:
             raise
 
+
 external_host = popargs(args, '--external-host', None)
 internal_host = popargs(args, '--internal-host', None)
 websocket_host = popargs(args, '--websocket-host', None)
@@ -133,6 +136,7 @@ client = EpochClient(configs=config)
 
 
 main_arg = args[0]
+
 
 def aens(args, force=False):
     command = args[1]
@@ -212,7 +216,7 @@ def aens(args, force=False):
 
         try:
             name.validate_pointer(receipient)
-        except:
+        except Exception:
             print(
                 'Invalid parameter for <receipient_address>\n'
                 '(note: make sure to wrap the address in single quotes on the shell)'
@@ -234,7 +238,7 @@ class CLIOracle(Oracle):
             except KeyboardInterrupt:
                 print('Cancelled, oracle will not respond to query.')
                 raise NoOracleResponse()
-            except:
+            except Exception:
                 print('Invalid JSON. Please retry or press ctrl-c to cancel')
 
 
@@ -247,7 +251,6 @@ class CLIOracleQuery(OracleQuery):
     def on_response(self, response, query):
         self.response_received = True
         self.last_response = response
-
 
 
 def cli_args_to_kwargs(cli_args, args):
@@ -309,11 +312,12 @@ def oracle(args, force=False):
             except KeyboardInterrupt:
                 print('Interrupted by user')
                 sys.exit(1)
-            except:
+            except Exception:
                 print('Invalid json-query, please try again (ctrl-c to exit)')
     else:
         stderr('Unknown oracle command: %s' % command)
         sys.exit(1)
+
 
 def balance(args):
     if len(args) >= 2:
@@ -432,7 +436,7 @@ elif main_arg == 'inspect':
             block = client.get_block_by_hash(block_id)
         else:
             block = client.get_block_by_height(block_id)
-        print(pretty_block(block))
+        print(block)
     elif inspect_what == 'transaction' or inspect_what == 'tx':
         transaction_hash = args[2]
         if not transaction_hash.startswith('th$'):

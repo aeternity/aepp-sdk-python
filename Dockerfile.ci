@@ -5,7 +5,11 @@ FROM python:3-slim
 
 USER root
 
-ADD requirements.txt /
-RUN apt-get update && apt-get install build-essential  -y \
-	&& pip install -r requirements.txt \
+COPY requirements.txt /requirements.txt
+RUN apt-get update && apt-get -y install build-essential curl libltdl7 git \
+	&& pip install -r /requirements.txt \
 	&& pip install pytest
+
+WORKDIR /app
+
+RUN curl -L https://github.com/docker/compose/releases/download/1.21.2/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose

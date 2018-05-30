@@ -55,19 +55,22 @@ class Config:
 
             )
 
-        internal_host_suffix = 'internal/' if docker_semantics else ''
-
+        internal_host_suffix = '/internal/' if docker_semantics else ''
         # set the schema for http connection
-        url_schema = 'http'
-        if secure_connection:
-            url_schema = 'https'
+        url_schema = 'http' if not secure_connection else 'https'
 
         self.websocket_url = f'ws://{self.websocket_host_port}/websocket'
-        self.http_api_url = f'{url_schema}://{self.external_host_port}/v2'
-        self.internal_api_url = f'{url_schema}://{self.internal_host_port}/{internal_host_suffix}v2'
+        # TODO: deprecated
+        self.http_api_url = f'{url_schema}://{self.external_host_port}'
+        # enpoint urls
+        self.api_url_internal = f'{url_schema}://{self.internal_host_port}{internal_host_suffix}'
+        self.api_url = f'{url_schema}://{self.external_host_port}'
 
-        self.name_url = f'{self.http_api_url}/name'
+        self.name_url = f'{self.api_url}/name'
         self.pubkey = None
+        # retrieve the version of the node we are connecting to
+        r = requests.get(f"{self.api_url}/v2/version").json()
+        self.node_version = r['version']
 
     def __str__(self):
         ws = self.websocket_host_port
@@ -81,7 +84,7 @@ class Config:
 
     @property
     def pubkey_url(self):
-        return f'{self.internal_api_url}/account/pub-key'
+        return f'{self.api_url_internal}/account/pub-key'
 
     def get_pubkey(self):
         if self.pubkey is None:

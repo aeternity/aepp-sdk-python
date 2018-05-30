@@ -5,11 +5,15 @@ from _blake2 import blake2b
 import base58
 from base58 import b58encode_check
 
-from aeternity.exceptions import NameNotAvailable, PreclaimFailed, TooEarlyClaim, ClaimFailed, AENSException, \
-    UpdateError, MissingPreclaim, InsufficientFundsException, AException
+from aeternity.exceptions import NameNotAvailable, PreclaimFailed, TooEarlyClaim, MissingPreclaim
 from aeternity.oracle import Oracle
 from aeternity.epoch import EpochClient
-from aeternity.signing import SignableTransaction
+from aeternity.openapi import OpenAPIClientException
+
+
+# max number of block into the future that the name is going to be available
+# https://github.com/aeternity/protocol/blob/epoch-v0.13.0/AENS.md#update
+MAX_NAME_TTL = 36000
 
 
 class NameStatus:
@@ -56,7 +60,8 @@ class AEName:
         # and also:
         # https://github.com/ethereum/EIPs/blob/master/EIPS/eip-137.md#namehash-algorithm
         labels = name.split(b'.')
-        hash_func = lambda data: blake2b(data, digest_size=32).digest()
+
+        def hash_func(data): return blake2b(data, digest_size=32).digest()
         hashed = b'\x00' * 32
         while labels:
             hashed = hash_func(hashed + hash_func(labels[0]))
@@ -94,16 +99,16 @@ class AEName:
 
     def update_status(self):
         try:
-            response = self.client.external_http_get('name', params={'name': self.domain})
+            # use the openapi client inside the epoch client
+            response = self.client.cli.get_name(name=self.domain)
             self.status = NameStatus.CLAIMED
-            self.name_ttl = response['name_ttl']
-            self.pointers = json.loads(response['pointers'])
-        except NameNotAvailable:
+            self.name_ttl = response.name_ttl
+            self.pointers = json.loads(response.pointers)
+        except OpenAPIClientException:
             # e.g. if the status is already PRECLAIMED or CLAIMED, don't reset
             # it to AVAILABLE.
             if self.status == NameStatus.UNKNOWN:
                 self.status = NameStatus.AVAILABLE
-
 
     def is_available(self):
         self.update_status()
@@ -120,15 +125,9 @@ class AEName:
         self.claim_blocking(keypair, fee=claim_fee)
 
     def _get_commitment_hash(self, salt):
-        response = self.client.external_http_get(
-            'commitment-hash',
-            params={
-                'name': self.domain,
-                'salt': salt
-            }
-        )
+        response = self.client.cli.get_commitment_hash(name=self.domain, salt=salt)
         try:
-            return response['commitment']
+            return response.commitment
         except KeyError:
             raise PreclaimFailed(response)
 
@@ -142,19 +141,15 @@ class AEName:
 
         commitment_hash = self._get_commitment_hash(self.preclaim_salt)
 
-        preclaim_transaction = self.client.external_http_post(
-            '/tx/name/preclaim',
-            json=dict(
-                commitment=commitment_hash,
-                fee=fee,
-                account=keypair.get_address(),
-            )
-        )
-        signable_preclaim_tx = SignableTransaction(preclaim_transaction)
-        signed_transaction, b58signature = keypair.sign_transaction(signable_preclaim_tx)
+        preclaim_transaction = self.client.cli.post_name_preclaim(body=dict(
+            commitment=commitment_hash,
+            fee=fee,
+            account=keypair.get_address(),
+        ))
+        signed_transaction, b58signature = keypair.sign_transaction(preclaim_transaction)
         self.client.send_signed_transaction(signed_transaction)
         self.status = AEName.Status.PRECLAIMED
-        return preclaim_transaction['tx_hash'], self.preclaim_salt
+        return preclaim_transaction.tx_hash, self.preclaim_salt
 
     def claim_blocking(self, keypair, fee=1):
         try:
@@ -180,22 +175,25 @@ class AEName:
                 'Use `claim_blocking` if you have a lot of time on your hands'
             )
 
-        claim_transaction = self.client.external_http_post(
-            '/tx/name/claim',
-            json=dict(
-                account=keypair.get_address(),
-                name=AEName._encode_name(self.domain),
-                name_salt=self.preclaim_salt,
-                fee=fee,
-            )
-        )
-        signable_claim_tx = SignableTransaction(claim_transaction)
-        signed_transaction, b58signature = keypair.sign_transaction(signable_claim_tx)
+        claim_transaction = self.client.cli.post_name_claim(body=dict(
+            account=keypair.get_address(),
+            name=AEName._encode_name(self.domain),
+            name_salt=self.preclaim_salt,
+            fee=fee,
+        ))
+        signed_transaction, b58signature = keypair.sign_transaction(claim_transaction)
         self.client.send_signed_transaction(signed_transaction)
         self.status = AEName.Status.CLAIMED
-        return claim_transaction['tx_hash'], self.preclaim_salt
+        return claim_transaction.tx_hash, self.preclaim_salt
 
-    def update(self, keypair, target, ttl=50, name_ttl=600000, fee=1):
+    def _get_pointers_json(self, target):
+        if target.startswith('ak'):
+            pointers = {'account_pubkey': target}
+        else:
+            pointers = {'oracle_pubkey': target}
+        return json.dumps(pointers)
+
+    def update(self, keypair, target, ttl=200, name_ttl=60000, fee=1):
         assert self.status == NameStatus.CLAIMED, 'Must be claimed to update pointer'
 
         if isinstance(target, Oracle):
@@ -203,57 +201,41 @@ class AEName:
                 raise ValueError('You must register the oracle before using it as target')
             target = target.oracle_id
 
-        if target.startswith('ak'):
-            pointers = {'account_pubkey': target}
-        else:
-            pointers = {'oracle_pubkey': target}
-
-        update_transaction = self.client.external_http_post(
-            'tx/name/update',
-            json=dict(
-                account=keypair.get_address(),
-                name_hash=AEName.calculate_name_hash(self.domain),
-                name_ttl=name_ttl,
-                pointers=json.dumps(pointers),
-                ttl=ttl,
-                fee=fee,
-            )
-        )
-
-        signable_update_tx = SignableTransaction(update_transaction)
-        signed_transaction, b58signature = keypair.sign_transaction(signable_update_tx)
+        update_transaction = self.client.cli.post_name_update(body=dict(
+            account=keypair.get_address(),
+            name_hash=AEName.calculate_name_hash(self.domain),
+            name_ttl=name_ttl,
+            pointers=self._get_pointers_json(target),
+            ttl=ttl,
+            fee=fee,
+        ))
+        signed_transaction, b58signature = keypair.sign_transaction(update_transaction)
         self.client.send_signed_transaction(signed_transaction)
-        self.pointers = pointers
+        self.pointers = self._get_pointers_json(target),
         return signed_transaction
 
-    def transfer_ownership(self, keypair, receipient_pubkey, fee=1):
-        transfer_transaction = self.client.external_http_post(
-            'tx/name/transfer',
-            json=dict(
-                account=keypair.get_address(),
-                name_hash=self.get_name_hash(),
-                recipient_pubkey=receipient_pubkey,
-                fee=fee,
-            )
-        )
+    def transfer_ownership(self, keypair, receipient_pubkey, fee=1, name_ttl=600000,):
+        transfer_transaction = self.client.cli.post_name_transfer(body=dict(
+            account=keypair.get_address(),
+            name_hash=self.get_name_hash(),
+            recipient_pubkey=receipient_pubkey,
+            fee=fee,
 
-        signable_transfer_tx = SignableTransaction(transfer_transaction)
-        signed_transaction, b58signature = keypair.sign_transaction(signable_transfer_tx)
+        ))
+
+        signed_transaction, b58signature = keypair.sign_transaction(transfer_transaction)
         self.client.send_signed_transaction(signed_transaction)
         self.status = NameStatus.TRANSFERRED
         return signed_transaction
 
     def revoke(self, keypair, fee=1):
-        revoke_transaction = self.client.external_http_post(
-            'tx/name/revoke',
-            json=dict(
-                account=keypair.get_address(),
-                name_hash=self.get_name_hash(),
-                fee=fee,
-            )
-        )
-        signable_revoke_tx = SignableTransaction(revoke_transaction)
-        signed_transaction, b58signature = keypair.sign_transaction(signable_revoke_tx)
+        revoke_transaction = self.client.cli.post_name_revoke(body=dict(
+            account=keypair.get_address(),
+            name_hash=self.get_name_hash(),
+            fee=fee,
+        ))
+
+        signed_transaction, b58signature = keypair.sign_transaction(revoke_transaction)
         self.client.send_signed_transaction(signed_transaction)
         self.status = NameStatus.REVOKED
         return signed_transaction
