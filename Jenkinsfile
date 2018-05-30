@@ -36,7 +36,7 @@ pipeline {
   post {
     always {
       junit 'test-results.xml'
-      sh "${env.DOCKER_COMPOSE} rund sdk git clean -fdx"
+      sh "${env.DOCKER_COMPOSE} run sdk git clean -fdx"
       sh "${env.DOCKER_COMPOSE} down -v ||:"
     }
   }
