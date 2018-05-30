@@ -27,7 +27,7 @@ pipeline {
         withCredentials([usernamePassword(credentialsId: 'genesis-wallet',
                                           usernameVariable: 'WALLET_PUB',
                                           passwordVariable: 'WALLET_PRIV')]) {
-          sh "${env.DOCKER_COMPOSE} run -u jenkins sdk pytest --junitxml test-results.xml aeternity/tests"
+          sh "${env.DOCKER_COMPOSE} run sdk pytest --junitxml test-results.xml aeternity/tests"
         }
       }
     }
@@ -36,6 +36,7 @@ pipeline {
   post {
     always {
       junit 'test-results.xml'
+      sh "${env.DOCKER_COMPOSE} rund sdk git clean -fdx"
       sh "${env.DOCKER_COMPOSE} down -v ||:"
     }
   }

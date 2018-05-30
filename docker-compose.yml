@@ -11,8 +11,6 @@ services:
       - WALLET_PRIV=${WALLET_PRIV}
       - WALLET_PUB=${WALLET_PUB}
     volumes:
-      - /etc/passwd:/etc/passwd:ro
-      - /etc/group:/etc/group:ro
       - .:/app
 
   node:
