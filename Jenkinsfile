@@ -10,6 +10,10 @@ pipeline {
     }
   }
 
+  environment {
+    DOCKER_COMPOSE = "docker-compose -p ${env.BUILD_TAG} -H localhost:2376"
+  }
+
   stages {
     // stage('Build') {
     //   steps {
@@ -23,7 +27,7 @@ pipeline {
         withCredentials([usernamePassword(credentialsId: 'genesis-wallet',
                                           usernameVariable: 'WALLET_PUB',
                                           passwordVariable: 'WALLET_PRIV')]) {
-          sh "docker-compose -p ${env.BUILD_TAG} -H localhost:2376 run sdk pytest --junitxml test-results.xml aeternity/tests"
+          sh "${env.DOCKER_COMPOSE} run -u jenkins sdk pytest --junitxml test-results.xml aeternity/tests"
         }
       }
     }
@@ -32,8 +36,7 @@ pipeline {
   post {
     always {
       junit 'test-results.xml'
-      sh 'rm -rf .pytest_cache aeternity/__pycache__ aeternity/tests/__pycache__'
-      sh "docker-compose -p ${env.BUILD_TAG} -H localhost:2376 down -v ||:"
+      sh "${env.DOCKER_COMPOSE} down -v ||:"
     }
   }
 }
