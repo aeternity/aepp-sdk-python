@@ -5,9 +5,9 @@ FROM python:3-slim
 
 USER root
 
-COPY requirements.txt /requirements.txt
+COPY . /app
 RUN apt-get update && apt-get -y install build-essential curl libltdl7 \
-	&& pip install -r /requirements.txt \
+	&& pip install -r /app/requirements.txt \
 	&& pip install pytest
 
 WORKDIR /app
