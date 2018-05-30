@@ -1,12 +1,14 @@
-from aeternity.epoch import BlockWithTx, Transaction, AENSClaimTx, AENSPreclaimTx
+from aeternity.epoch import BlockWithTx, Transaction, AENSClaimTx, AENSPreclaimTx, GenericTx
 
 
 def pretty_account(account_hash):
     return account_hash[:8] + '...' + account_hash[-6:]
 
 
-def pretty_transaction(tx:Transaction):
+def pretty_transaction(tx: Transaction):
     info = ''
+    if type(tx) == GenericTx:
+        return tx.tx
     if type(tx.tx) == AENSClaimTx:
         account = pretty_account(tx.tx.account)
         info = f'name: {tx.tx.name} account: {account}'
@@ -16,7 +18,7 @@ def pretty_transaction(tx:Transaction):
     return f'TX: {tx.tx.type} {info} {tx.hash}'
 
 
-def pretty_block(block:BlockWithTx):
+def pretty_block(block: BlockWithTx):
     transactions = '\n    '.join(pretty_transaction(tx) for tx in block.transactions)
     return f'''BLOCK: height {block.height} hash: {block.hash}
 transactions:

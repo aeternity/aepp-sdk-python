@@ -3,3 +3,7 @@ venv
 **/*.pyc
 .pytest_cache
 /epoch/
+.vscode
+aepp_sdk.egg-info
+dist
+build

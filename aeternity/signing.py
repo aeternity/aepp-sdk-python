@@ -1,22 +1,45 @@
 import os
-from collections import namedtuple
-
-from hashlib import sha256
 
 import base58
-import msgpack
+import rlp
 from Crypto.Cipher import AES
-from Crypto.Hash import SHA256
-from ecdsa import SECP256k1, SigningKey, VerifyingKey
-import ecdsa
+import nacl
+from nacl import encoding
+from nacl.signing import SigningKey
+from nacl.hash import blake2b
+
+# RLP version number
+# https://github.com/aeternity/protocol/blob/epoch-v0.10.1/serializations.md#binary-serialization
+VSN = 1
+
+# The list of tags can be found here:
+# https://github.com/aeternity/protocol/blob/epoch-v0.10.1/serializations.md#table-of-object-tags
+TAG_SIGNED_TX = 11
+TAG_SPEND_TX = 12
 
 
 class SignableTransaction:
+
     def __init__(self, tx_json_data):
-        self.tx_json_data = tx_json_data
+
         self.tx_hash = tx_json_data['tx_hash']
-        self.tx_msg_packed = base58.b58decode_check(tx_json_data['tx'][3:])
-        self.tx_unpacked = msgpack.unpackb(self.tx_msg_packed)
+        self.tx = tx_json_data['tx']
+        self.tx_unsigned = base58.b58decode_check(tx_json_data['tx'][3:])
+        self.tx_decoded = rlp.decode(self.tx_unsigned)
+
+        # decode a transaction
+        def btoi(byts):
+            return int.from_bytes(byts, byteorder='big')
+
+        self.tag = btoi(self.tx_decoded[0])
+        self.vsn = btoi(self.tx_decoded[1])
+        self.fields = {}
+        if self.tag == TAG_SPEND_TX:
+            self.fields['sender'] = base58.b58encode_check(self.tx_decoded[2])
+            self.fields['recipient'] = base58.b58encode_check(self.tx_decoded[3])
+            self.fields['amount'] = btoi(self.tx_decoded[4])
+            self.fields['fee'] = btoi(self.tx_decoded[5])
+            self.fields['nonce'] = btoi(self.tx_decoded[6])
 
 
 class KeyPair:
@@ -25,37 +48,65 @@ class KeyPair:
         self.verifying_key = verifying_key
 
     def get_address(self):
-        pub_key = self.verifying_key.to_string()
-        return 'ak$' + base58.b58encode_check(b'\x04' + pub_key)
+        """get the keypair public_key base58 encoded and prefixed (ak$...)"""
+        pub_key = self.verifying_key.encode(encoder=nacl.encoding.RawEncoder)
+        return self._base58_encode("ak", pub_key)
 
-    def encode_transaction_message(self, unpacked_tx, signatures):
-        if not isinstance(signatures, list):
-            signatures = [signatures]
-        message = [
-            b"sig_tx",  # SIG_TX_TYPE
-            1,          # VSN
-            unpacked_tx,
-            signatures
-        ]
-        str = base58.b58encode_check(msgpack.packb(message, use_bin_type=True))
-        return "tx$" + str
+    def get_private_key(self):
+        """get the private key hex encoded"""
+        return self.signing_key.to_string().hex()
 
-    def sign_transaction_message(self, msgpacked_tx):
-        return self.signing_key.sign(msgpacked_tx, sigencode=ecdsa.util.sigencode_der)
+    def sign_transaction_message(self, message):
+        """sign a message with using the private key"""
+        return self.signing_key.sign(message).signature
+
+    def sign_verify(self, message, signature):
+        """verify message signature, raise an error if the message cannot be verified"""
+        assert self.verifying_key.verify(signature, message)
+
+    def encode_transaction_message(self, unsigned_tx, signatures):
+        """prepare a signed transaction message"""
+        tag = bytes([TAG_SIGNED_TX])
+        vsn = bytes([VSN])
+        payload = rlp.encode([tag, vsn, signatures, unsigned_tx])
+        return self._base58_encode("tx", payload)
+
+    def tx_hash_from_signed_encoded(self, signed_encoded):
+        """generate the hash from a signed and encoded transaction"""
+        signed = self._base58_decode(signed_encoded)
+        return self._encode_tx_hash(blake2b(data=signed, digest_size=32, encoder=nacl.encoding.RawEncoder))
 
     def sign_transaction(self, transaction):
-        signature = self.sign_transaction_message(msgpacked_tx=transaction.tx_msg_packed)
-        encoded_msg = self.encode_transaction_message(transaction.tx_unpacked, [signature])
-        b58_signature = 'sg$' + base58.b58encode_check(signature)
-        return encoded_msg, b58_signature
+        """sign a transaction"""
+        tx_decoded = self._base58_decode(transaction.tx)
+        signature = self.signing_key.sign(tx_decoded).signature
+        # self.sign_verify(tx_decoded, signature)
+        # encode the transaction message with the signature
+        tx_encoded = self.encode_transaction_message(tx_decoded, [signature])
+        b58_signature = self._base58_encode("sg", signature)
+        return tx_encoded, b58_signature
 
-    def save_to_folder(self, folder):
+    def _base58_decode(self, encoded):
+        """decode a base58 epoch string to bytes
+        it works with all the string like tx$..., sg$..., ak$....
+        """
+        if encoded[2] != '$':
+            raise ValueError('Invalid hash')
+        return base58.b58decode_check(encoded[3:])
+
+    def _base58_encode(self, prefix, data):
+        """crete a base58 encoded string with a prefix, ex: ak$encoded_data, th$encoded_data,..."""
+        return f"{prefix}${base58.b58encode_check(data)}"
+
+    def save_to_folder(self, folder, password):
+        enc_key = self._encrypt_key(self.signing_key.to_string(), password)
+        enc_key_pub = self._encrypt_key(self.verifying_key.to_string(), password)
         if not os.path.exists(folder):
             os.makedirs(folder)
         with open(os.path.join(folder, 'key'), 'wb') as fh:
-            fh.write(self.signing_key.to_string())
+            fh.write(enc_key)
         with open(os.path.join(folder, 'key.pub'), 'wb') as fh:
-            fh.write(self.verifying_key.to_string())
+            fh.write(enc_key_pub)
 
     #
     # initializers
@@ -63,19 +114,32 @@ class KeyPair:
 
     @classmethod
     def generate(cls):
-        key = SigningKey.generate(curve=SECP256k1, hashfunc=sha256)
-        return KeyPair(signing_key=key, verifying_key=key.get_verifying_key())
+        signing_key = SigningKey.generate()
+        return KeyPair(signing_key=signing_key, verifying_key=signing_key.verify_key)
 
     @classmethod
     def from_public_private_key_strings(cls, public, private):
-        signing_key = SigningKey.from_string(private, curve=SECP256k1, hashfunc=sha256)
-        return KeyPair(signing_key, signing_key.get_verifying_key())
+        """create a keypair from a aet address and private key string
+
+        :param public: the aet address, used to verify the private key
+        :param private: the hex encoded private key
+        :return: a keypair object or raise error if the public key doesnt match
+        """
+        k = bytes.fromhex(private)
+        # the private key string is composed with [private_key+pyblic_key]
+        # https://blog.mozilla.org/warner/2011/11/29/ed25519-keys/
+        signing_key = SigningKey(seed=k[0:32], encoder=encoding.RawEncoder)
+        kp = KeyPair(signing_key, signing_key.verify_key)
+        assert kp.get_address() == public
+        return kp
 
     @classmethod
-    def sha256(cls, data):
-        hash = SHA256.new()
-        hash.update(data)
-        return hash.digest()
+    def _encrypt_key(cls, key_string, password):
+        if isinstance(password, str):
+            password = password.encode('utf-8')
+        aes = AES.new(cls.sha256(password))
+        encrypted_key = aes.encrypt(key_string)
+        return encrypted_key
 
     @classmethod
     def _decrypt_key(cls, key_content, password):

@@ -1,14 +1,18 @@
 import json
 import sys
+from contextlib import contextmanager
 
 from getpass import getpass
 
 import os
 import logging
 
-from aeternity import EpochClient, AEName, Oracle, Config
-from aeternity.exceptions import AENSException, AException
-from aeternity.oracle import NoOracleResponse, OracleQuery
+import requests
+
+from aeternity.aens import AEName
+from aeternity.epoch import EpochClient, AENSException, AException
+from aeternity.config import Config
+from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
 from aeternity.signing import KeyPair
 
 logging.basicConfig(format='%(message)s', level=logging.INFO)
@@ -21,9 +25,9 @@ Usage:
         Returns the balance of pubkey or the balance of the node's pubkey
     height
         returns the top block number
-    generate wallet --path <path>
+    generate wallet <path> [--password <password>]
         creates a new wallet
-    spend <amount> <receipient> <wallet-path>
+    spend <amount> <receipient> <wallet-path> [--password <password>]
         send money to another account. The folder at wallet-path must contain
         key and key.pub
     wallet info <wallet-path>
@@ -44,7 +48,7 @@ Usage:
             Removes this domain from the block chain (incurs fees!)
     name transfer <domain.aet> <receipient_address> [--force]
             Transfers a domain to another user
-    
+
     oracle register [--query-format] [--response-format] [--default-query-fee]
                     [--default-fee] [--default-ttl] [--default-query-ttl]
                     [--default-response-ttl]
@@ -52,7 +56,7 @@ Usage:
     oracle query [--oracle-pubkey] [--query-fee] [--query-ttl] [--response-ttl]
                  [--fee]
             You will be prompted for any non-provided argument
- 
+
 The `--force` will suppress any questions before performing the action.
 
 You can override the standard connection ports using the following environment
@@ -69,6 +73,7 @@ docker-compose setup, specify --docker for the right URLs to be formed.
 ''')
     sys.exit(1)
 
+
 def stderr(*args):
     for message in args:
         sys.stderr.write(message)
@@ -83,6 +88,7 @@ def prompt(message, skip):
     if input(message + ' [y/N]') != 'y':
         print('cancelled')
         sys.exit(0)
+
 
 args = sys.argv[1:]
 
@@ -109,6 +115,7 @@ def popargs(d, key, default=_no_popargs_default, boolean=False):
         else:
             raise
 
+
 external_host = popargs(args, '--external-host', None)
 internal_host = popargs(args, '--internal-host', None)
 websocket_host = popargs(args, '--websocket-host', None)
@@ -129,6 +136,7 @@ client = EpochClient(configs=config)
 
 
 main_arg = args[0]
+
 
 def aens(args, force=False):
     command = args[1]
@@ -208,7 +216,7 @@ def aens(args, force=False):
 
         try:
             name.validate_pointer(receipient)
-        except:
+        except Exception:
             print(
                 'Invalid parameter for <receipient_address>\n'
                 '(note: make sure to wrap the address in single quotes on the shell)'
@@ -230,7 +238,7 @@ class CLIOracle(Oracle):
             except KeyboardInterrupt:
                 print('Cancelled, oracle will not respond to query.')
                 raise NoOracleResponse()
-            except:
+            except Exception:
                 print('Invalid JSON. Please retry or press ctrl-c to cancel')
 
 
@@ -243,7 +251,6 @@ class CLIOracleQuery(OracleQuery):
     def on_response(self, response, query):
         self.response_received = True
         self.last_response = response
-
 
 
 def cli_args_to_kwargs(cli_args, args):
@@ -305,11 +312,12 @@ def oracle(args, force=False):
             except KeyboardInterrupt:
                 print('Interrupted by user')
                 sys.exit(1)
-            except:
+            except Exception:
                 print('Invalid json-query, please try again (ctrl-c to exit)')
     else:
         stderr('Unknown oracle command: %s' % command)
         sys.exit(1)
+
 
 def balance(args):
     if len(args) >= 2:
@@ -327,18 +335,23 @@ def height():
     print(client.get_height())
 
 
-def spend(amount, receipient, keypair_folder, password):
-    keypair = KeyPair.read_from_dir(keypair_folder, password)
-    EpochClient().spend(keypair, receipient, amount)
-
-
-def read_keypair(wallet_path):
+def read_keypair(wallet_path, password=None):
     if not os.path.exists(wallet_path):
         stderr(f'Path to wallet "{wallet_path}" does not exist!')
         sys.exit(1)
-    password = getpass('Wallet password: ')
+    if password is None:
+        password = getpass('Wallet password: ')
     keypair = KeyPair.read_from_dir(wallet_path, password)
     return keypair
+
+
+@contextmanager
+def handle_connection_failure():
+    try:
+        yield
+    except requests.exceptions.ConnectionError:
+        print('Unable to connect to node')
+        sys.exit(1)
 
 
 # allow using the --force parameter anywhere
@@ -356,37 +369,63 @@ elif main_arg == 'balance':
 elif main_arg == 'height':
     height()
 elif main_arg == 'spend':
+    password = popargs(args, '--password', None)
     if len(args) != 4:
         print('You must specify <amount>, <receipient> and <wallet-path>. '
               'Tip: escape the receipient address in single quotes to make '
               'sure that your shell does not get confused with the dollar-sign')
         sys.exit(1)
-    password = getpass('Wallet password: ')
-    amount, address, wallet_path = args[1:]
-    KeyPair.read_from_dir(wallet_path, password)
-    result = spend(amount, address, wallet_path, password)
+    if password is None:
+        password = getpass('Wallet password: ')
+    amount, receipient, wallet_path = args[1:]
+    amount = int(amount)
+    if amount < 0:
+        print('Invalid amount')
+        sys.exit(1)
+    keypair = KeyPair.read_from_dir(wallet_path, password)
+    with handle_connection_failure():
+        response, tx_hash = EpochClient().spend(keypair, receipient, amount)
+    if response == {}:
+        print(
+            'An error occurred, your transaction was not completed. Please check'
+            'the logs of the node to diagnose the problem.'
+        )
+        sys.exit(1)
+
     print(
-        'Transaction sent. Your balance will change once it was included in '
+        'Transaction sent. Your balance will change once it is included in '
         'the blockchain.'
     )
-    sys.exit(1)
+    print(f'TxHash: {tx_hash}')
+    sys.exit(0)
 elif main_arg == 'generate':
-    # generate wallet
+    # args[1] is the string 'wallet'
+    password = popargs(args, '--password', None)
+    if password is None:
+        print('DO NOT LOSE THE PASSWORD YOU ARE GOING TO TYPE NOW FOR YOUR'
+              'WALLET. LOSING THIS PASSWORD WILL RESULT IN LOSING ACCESS TO YOUR'
+              'WALLET, AND ALL ASSOCIATED ENTITIES (NAMES, TOKENS, ORACLE AND FUNDS)!')
+        password = getpass('New Wallet password: ')
     keypair = KeyPair.generate()
     try:
-        path = popargs(args, '--path')
+        path = args[2]
     except ValueError:
-        print('You must specify the --path argument')
+        print('You must specify the <path> argument')
         sys.exit(1)
-    keypair.save_to_folder(path)
+    keypair.save_to_folder(path, password)
     address = keypair.get_address()
-    print('You wallet has been generated:')
+    print('Your wallet has been generated:')
     print('Address: %s' % address)
     print('Saved to: %s' % path)
 elif main_arg == 'wallet':
-    wallet_path = args[2]
-    keypair = read_keypair(wallet_path)
-    print('Address: %s' % keypair.get_address())
+    if args[1] == 'info':
+        wallet_path = args[2]
+        password = popargs(args, '--password', None)
+        keypair = read_keypair(wallet_path, password)
+        print('Address: %s' % keypair.get_address())
+    else:
+        stderr('Unknown command')
+        sys.exit(1)
 elif main_arg == 'inspect':
     inspect_what = args[1]
     if inspect_what == 'block':

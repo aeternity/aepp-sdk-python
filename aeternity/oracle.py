@@ -249,5 +249,3 @@ class Oracle(EpochSubscription):
 
     def handle_response_sent(self, message):
         logger.debug('Sending of response acknowledged by node. %s' % message)
-
-
