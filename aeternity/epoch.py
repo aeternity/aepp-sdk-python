@@ -7,7 +7,7 @@ import time
 import websocket
 
 from aeternity.config import Config
-from aeternity.exceptions import NameNotAvailable, InsufficientFundsException, TransactionNotFoundException
+from aeternity.exceptions import NameNotAvailable, InsufficientFundsException, TransactionNotFoundException, TransactionHashMismatch
 from aeternity.signing import KeyPair
 from aeternity.openapi import OpenAPICli
 
@@ -233,10 +233,22 @@ class EpochClient:
         self._connection.send(message)
 
     def spend(self, keypair, recipient_pubkey, amount):
-        transaction = self.create_spend_transaction(recipient_pubkey, amount, sender=keypair)
-        signed_transaction, signature = keypair.sign_transaction(transaction)
-        resp = self.send_signed_transaction(signed_transaction)
-        return resp, transaction.tx_hash
+        """create and execute a spend transaction"""
+        transaction = self.create_spend_transaction(keypair.get_address(), recipient_pubkey, amount)
+        tx = self.post_transaction(keypair, transaction)
+        return tx, tx.tx_hash
+
+    def post_transaction(self, keypair, transaction):
+        """
+        post a transaction to the chain
+        :return: the signed_transaction
+        """
+        signed_transaction, b58signature = keypair.sign_transaction(transaction)
+        tx_hash = KeyPair.compute_tx_hash(signed_transaction)
+        signed_transaction_reply = self.send_signed_transaction(signed_transaction)
+        if signed_transaction_reply.tx_hash != tx_hash:
+            raise TransactionHashMismatch(f"Transaction hash doesn't match, expected {tx_hash} got {signed_transaction_reply.tx_hash}")
+        return signed_transaction_reply
 
     def send_and_receive(self, message):
         """

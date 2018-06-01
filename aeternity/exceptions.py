@@ -41,3 +41,8 @@ class InsufficientFundsException(AException):
 
 class TransactionNotFoundException(AException):
     pass
+
+
+class TransactionHashMismatch(AException):
+    """Raised when the computed transaction hash differs from the one retrieved by the chain"""
+    pass
