@@ -167,10 +167,9 @@ class AEName:
             fee=fee,
             account=keypair.get_address(),
         ))
-        signed_transaction, b58signature = keypair.sign_transaction(preclaim_transaction)
-        signed_transaction_reply = self.client.send_signed_transaction(signed_transaction)
+        signed_tx = self.client.post_transaction(keypair, preclaim_transaction)
         self.status = AEName.Status.PRECLAIMED
-        return signed_transaction_reply.tx_hash, self.preclaim_salt
+        return signed_tx.tx_hash, self.preclaim_salt
 
     def claim_blocking(self, keypair, fee=1):
         try:
@@ -203,9 +202,9 @@ class AEName:
             fee=fee,
         ))
 
-        tx_hash = self.client.post_transaction(keypair, claim_transaction)
+        signed_tx = self.client.post_transaction(keypair, claim_transaction)
         self.status = AEName.Status.CLAIMED
-        return tx_hash, self.preclaim_salt
+        return signed_tx.tx_hash, self.preclaim_salt
 
     def _get_pointers_json(self, target):
         if target.startswith('ak'):
@@ -230,15 +229,13 @@ class AEName:
             ttl=ttl,
             fee=fee,
         ))
-        tx = self.client.post_transaction(keypair, update_transaction)
-        signed_transaction, b58signature = keypair.sign_transaction(update_transaction)
-        self.client.send_signed_transaction(signed_transaction)
-        print(tx)
-        # self.pointers = self._get_pointers_json(target),
-        # TODO: why this one returns the whole transaction?
-        return signed_transaction
+        return self.client.post_transaction(keypair, update_transaction)
 
     def transfer_ownership(self, keypair, receipient_pubkey, fee=1, name_ttl=600000,):
+        """
+        transfer ownership of a name
+        :return: the transaction
+        """
         transfer_transaction = self.client.cli.post_name_transfer(body=dict(
             account=keypair.get_address(),
             name_hash=self.get_name_hash(),
@@ -246,21 +243,20 @@ class AEName:
             fee=fee,
 
         ))
-
-        signed_transaction, b58signature = keypair.sign_transaction(transfer_transaction)
-        self.client.send_signed_transaction(signed_transaction)
+        signed_tx = self.client.post_transaction(keypair, transfer_transaction)
         self.status = NameStatus.TRANSFERRED
-        # TODO: why this one returns the whole transaction?
-        return signed_transaction
+        return signed_tx
 
     def revoke(self, keypair, fee=1):
+        """
+        transfer ownership of a name
+        :return: the transaction
+        """
         revoke_transaction = self.client.cli.post_name_revoke(body=dict(
             account=keypair.get_address(),
             name_hash=self.get_name_hash(),
             fee=fee,
         ))
-
-        signed_transaction, b58signature = keypair.sign_transaction(revoke_transaction)
-        self.client.send_signed_transaction(signed_transaction)
+        signed_tx = self.client.post_transaction(keypair, revoke_transaction)
         self.status = NameStatus.REVOKED
-        return signed_transaction
+        return signed_tx
