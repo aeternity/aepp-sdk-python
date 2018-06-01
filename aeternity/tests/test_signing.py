@@ -30,5 +30,3 @@ def test_create_transaction_signing():
     spend_tx = next(tx for tx in all_transactions if (tx['tx']['type']) == 'spend_tx')
     print(json.dumps(spend_tx, indent=2))
     assert spend_tx['signatures'][0] == b58signature
-
-

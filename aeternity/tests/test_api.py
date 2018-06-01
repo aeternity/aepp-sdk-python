@@ -113,7 +113,7 @@ def test_get_missing_transaction_from_block_height():
 
 
 def test_get_transactions_in_block_range():
-    client = EpochClient()  
+    client = EpochClient()
     height = client.get_height()
     result = client.get_transactions_in_block_range(height - 5, height)
     assert len(result) > 1
