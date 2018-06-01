@@ -3,6 +3,7 @@ import os
 import base58
 import rlp
 from Crypto.Cipher import AES
+from Crypto.Hash import SHA256
 import nacl
 from nacl import encoding
 from nacl.signing import SigningKey
@@ -148,3 +149,9 @@ class KeyPair:
             os.path.join(directory, 'key'),
             password
         )
+
+    @classmethod
+    def sha256(cls, data):
+        hash = SHA256.new()
+        hash.update(data)
+        return hash.digest()
