@@ -1,7 +1,6 @@
 import random
 import string
 
-import pytest
 from pytest import raises
 
 from aeternity.epoch import EpochClient
@@ -70,12 +69,11 @@ def test_name_status_unavailable():
     assert not same_name.is_available()
 
 
-# TODO: enable the test check for pointers
-@pytest.mark.skip('skip for 0.13.0')
 def test_name_update():
     client = EpochClient()
     # claim a domain
     domain = random_domain()
+    print(f"domain is {domain}")
     name = AEName(domain)
     print("Claim name ", domain)
     name.full_claim_blocking(keypair)
@@ -88,11 +86,11 @@ def test_name_update():
     name.update_status()
     print("claimed name", name)
     assert name.pointers != [], 'Pointers should not be empty'
-    assert name.pointers['account_pubkey'] == client.get_pubkey()
+    assert name.pointers['account_pubkey'] == keypair.get_address()
 
 
 # TODO: enable the test check for pointers
-@pytest.mark.skip('skip for 0.13.0')
+
 def test_transfer_ownership():
     client = EpochClient()
     name = AEName(random_domain())

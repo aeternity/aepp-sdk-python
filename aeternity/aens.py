@@ -13,7 +13,8 @@ from aeternity.openapi import OpenAPIClientException
 
 # max number of block into the future that the name is going to be available
 # https://github.com/aeternity/protocol/blob/epoch-v0.13.0/AENS.md#update
-MAX_NAME_TTL = 36000
+MAX_TTL = 36000
+DEFAULT_NAME_TTL = 60000
 
 
 class NameStatus:
@@ -103,6 +104,7 @@ class AEName:
             response = self.client.cli.get_name(name=self.domain)
             self.status = NameStatus.CLAIMED
             self.name_ttl = response.name_ttl
+            print("update", response)
             self.pointers = json.loads(response.pointers)
         except OpenAPIClientException:
             # e.g. if the status is already PRECLAIMED or CLAIMED, don't reset
@@ -118,11 +120,30 @@ class AEName:
         self.update_status()
         return self.status == NameStatus.CLAIMED
 
-    def full_claim_blocking(self, keypair, preclaim_fee=1, claim_fee=1):
+    def full_claim_blocking(self, keypair, preclaim_fee=1, claim_fee=1, update_fee=1, ttl=MAX_TTL, name_ttl=DEFAULT_NAME_TTL, target=None):
+        """
+        execute a name claim and updates the pointer to it.
+
+        It executes:
+        1. preclaim
+        2. claim
+        3. pointers update
+
+        :param keypair: the keypair of the account registering the name
+        :param preclaim_fee: the fee for the preclaiming operation
+        :param claim_fee: the fee for the claiming operation
+        :param update_fee: the fee for the update operation
+        :param ttl: the ttl for the name (in blocks)
+        :param name_ttl: TODO: what is name ttl?
+        :param target: the public key to associate the name to (pointers)
+        """
         if not self.is_available():
             raise NameNotAvailable(self.domain)
         self.preclaim(keypair, fee=preclaim_fee)
         self.claim_blocking(keypair, fee=claim_fee)
+        if target is None:
+            target = keypair.get_address()
+        self.update(keypair, target, fee=update_fee, ttl=ttl, name_ttl=name_ttl)
 
     def _get_commitment_hash(self, salt):
         response = self.client.cli.get_commitment_hash(name=self.domain, salt=salt)
@@ -181,10 +202,10 @@ class AEName:
             name_salt=self.preclaim_salt,
             fee=fee,
         ))
-        signed_transaction, b58signature = keypair.sign_transaction(claim_transaction)
-        signed_transaction_reply = self.client.send_signed_transaction(signed_transaction)
+
+        tx_hash = self.client.post_transaction(keypair, claim_transaction)
         self.status = AEName.Status.CLAIMED
-        return signed_transaction_reply.tx_hash, self.preclaim_salt
+        return tx_hash, self.preclaim_salt
 
     def _get_pointers_json(self, target):
         if target.startswith('ak'):
@@ -193,7 +214,7 @@ class AEName:
             pointers = {'oracle_pubkey': target}
         return json.dumps(pointers)
 
-    def update(self, keypair, target, ttl=200, name_ttl=60000, fee=1):
+    def update(self, keypair, target, ttl=MAX_TTL, name_ttl=DEFAULT_NAME_TTL, fee=1):
         assert self.status == NameStatus.CLAIMED, 'Must be claimed to update pointer'
 
         if isinstance(target, Oracle):
@@ -209,9 +230,12 @@ class AEName:
             ttl=ttl,
             fee=fee,
         ))
+        tx = self.client.post_transaction(keypair, update_transaction)
         signed_transaction, b58signature = keypair.sign_transaction(update_transaction)
         self.client.send_signed_transaction(signed_transaction)
-        self.pointers = self._get_pointers_json(target),
+        print(tx)
+        # self.pointers = self._get_pointers_json(target),
+        # TODO: why this one returns the whole transaction?
         return signed_transaction
 
     def transfer_ownership(self, keypair, receipient_pubkey, fee=1, name_ttl=600000,):
@@ -226,6 +250,7 @@ class AEName:
         signed_transaction, b58signature = keypair.sign_transaction(transfer_transaction)
         self.client.send_signed_transaction(signed_transaction)
         self.status = NameStatus.TRANSFERRED
+        # TODO: why this one returns the whole transaction?
         return signed_transaction
 
     def revoke(self, keypair, fee=1):
