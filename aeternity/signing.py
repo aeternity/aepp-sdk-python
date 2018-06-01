@@ -18,31 +18,23 @@ TAG_SIGNED_TX = 11
 TAG_SPEND_TX = 12
 
 
-class SignableTransaction:
+def _base58_decode(encoded):
+    """decode a base58 epoch string to bytes
+    it works with all the string like tx$..., sg$..., ak$....
+    """
+    if encoded[2] != '$':
+        raise ValueError('Invalid hash')
+    return base58.b58decode_check(encoded[3:])
 
-    def __init__(self, tx_json_data):
 
-        self.tx_hash = tx_json_data['tx_hash']
-        self.tx = tx_json_data['tx']
-        self.tx_unsigned = base58.b58decode_check(tx_json_data['tx'][3:])
-        self.tx_decoded = rlp.decode(self.tx_unsigned)
-
-        # decode a transaction
-        def btoi(byts):
-            return int.from_bytes(byts, byteorder='big')
-
-        self.tag = btoi(self.tx_decoded[0])
-        self.vsn = btoi(self.tx_decoded[1])
-        self.fields = {}
-        if self.tag == TAG_SPEND_TX:
-            self.fields['sender'] = base58.b58encode_check(self.tx_decoded[2])
-            self.fields['recipient'] = base58.b58encode_check(self.tx_decoded[3])
-            self.fields['amount'] = btoi(self.tx_decoded[4])
-            self.fields['fee'] = btoi(self.tx_decoded[5])
-            self.fields['nonce'] = btoi(self.tx_decoded[6])
+def _base58_encode(prefix, data):
+    """crete a base58 encoded string with a prefix, ex: ak$encoded_data, th$encoded_data,..."""
+    return f"{prefix}${base58.b58encode_check(data)}"
 
 
 class KeyPair:
+    """Implement private/public key functionalities"""
+
     def __init__(self, signing_key, verifying_key):
         self.signing_key = signing_key
         self.verifying_key = verifying_key
@@ -50,7 +42,7 @@ class KeyPair:
     def get_address(self):
         """get the keypair public_key base58 encoded and prefixed (ak$...)"""
         pub_key = self.verifying_key.encode(encoder=nacl.encoding.RawEncoder)
-        return self._base58_encode("ak", pub_key)
+        return _base58_encode("ak", pub_key)
 
     def get_private_key(self):
         """get the private key hex encoded"""
@@ -69,34 +61,17 @@ class KeyPair:
         tag = bytes([TAG_SIGNED_TX])
         vsn = bytes([VSN])
         payload = rlp.encode([tag, vsn, signatures, unsigned_tx])
-        return self._base58_encode("tx", payload)
-
-    def tx_hash_from_signed_encoded(self, signed_encoded):
-        """generate the hash from a signed and encoded transaction"""
-        signed = self._base58_decode(signed_encoded)
-        return self._encode_tx_hash(blake2b(data=signed, digest_size=32, encoder=nacl.encoding.RawEncoder))
+        return _base58_encode("tx", payload)
 
     def sign_transaction(self, transaction):
         """sign a transaction"""
-        tx_decoded = self._base58_decode(transaction.tx)
+        tx_decoded = _base58_decode(transaction.tx)
         signature = self.signing_key.sign(tx_decoded).signature
         # self.sign_verify(tx_decoded, signature)
         # encode the transaction message with the signature
         tx_encoded = self.encode_transaction_message(tx_decoded, [signature])
-        b58_signature = self._base58_encode("sg", signature)
+        b58_signature = _base58_encode("sg", signature)
         return tx_encoded, b58_signature
-
-    def _base58_decode(self, encoded):
-        """decode a base58 epoch string to bytes
-        it works with all the string like tx$..., sg$..., ak$....
-        """
-        if encoded[2] != '$':
-            raise ValueError('Invalid hash')
-        return base58.b58decode_check(encoded[3:])
-
-    def _base58_encode(self, prefix, data):
-        """crete a base58 encoded string with a prefix, ex: ak$encoded_data, th$encoded_data,..."""
-        return f"{prefix}${base58.b58encode_check(data)}"
 
     def save_to_folder(self, folder, password):
         enc_key = self._encrypt_key(self.signing_key.to_string(), password)
@@ -111,6 +86,15 @@ class KeyPair:
     #
     # initializers
     #
+
+    @classmethod
+    def compute_tx_hash(cls, singed_transaction):
+        """
+        generate the hash from a signed and encoded transaction
+        :param signed_transaction: a encoded signed transaction
+        """
+        signed = _base58_decode(singed_transaction)
+        return _base58_encode("th", blake2b(data=signed, digest_size=32, encoder=nacl.encoding.RawEncoder))
 
     @classmethod
     def generate(cls):

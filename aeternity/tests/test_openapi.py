@@ -7,7 +7,7 @@ client, priv_key, pub_key = None, None, None
 
 def test_generatedcli():
     # open client
-    client = OpenAPICli("./assets/swagger/0.13.0.json", NODE_URL, NODE_URL_INTERNAL)
+    client = OpenAPICli("./assets/swagger/0.14.0.json", NODE_URL, NODE_URL_INTERNAL)
     calls = [
         {
             "name": "get_top",

@@ -4,12 +4,16 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 ### Added
+- Transaction hash validation
 
 ### Changed
+- Update to epoch v0.14.0
+- Execute linting before 
 
 ### Removed
 
 ### Fixed
+- Test executions
 
 ## [0.13.0-0.1.0]
 ### Added

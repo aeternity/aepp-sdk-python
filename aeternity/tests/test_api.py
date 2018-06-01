@@ -21,7 +21,7 @@ def test_get_transactions():
 def test_get_version():
     # version_info = client.get_version()
     # assert type(version_info) == Version
-    # assert version_info.version == '0.13.0'
+    # assert version_info.version == '0.14.0'
     pass
 
 
@@ -79,12 +79,14 @@ def test_get_pending_block():
 
 def test_get_block_transaction_count_by_hash():
     client = EpochClient()
+    # get the latest block
     block = client.get_latest_block()
     print(block)
     assert block.hash is not None
-    transaction_count = client.get_block_transaction_count_by_hash(block.hash)
-    print(transaction_count)
-    assert transaction_count.count > 0
+    # get the transaction count that should be a number >= 0
+    txs_count = client.get_block_transaction_count_by_hash(block.hash)
+    print(txs_count)
+    assert txs_count.count >= 0
 
 
 def test_get_block_transaction_count_by_height():
@@ -111,7 +113,7 @@ def test_get_missing_transaction_from_block_height():
 
 
 def test_get_transactions_in_block_range():
-    client = EpochClient()  
+    client = EpochClient()
     height = client.get_height()
     result = client.get_transactions_in_block_range(height - 5, height)
     assert len(result) > 1
