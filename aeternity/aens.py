@@ -147,9 +147,9 @@ class AEName:
             account=keypair.get_address(),
         ))
         signed_transaction, b58signature = keypair.sign_transaction(preclaim_transaction)
-        self.client.send_signed_transaction(signed_transaction)
+        signed_transaction_reply = self.client.send_signed_transaction(signed_transaction)
         self.status = AEName.Status.PRECLAIMED
-        return preclaim_transaction.tx_hash, self.preclaim_salt
+        return signed_transaction_reply.tx_hash, self.preclaim_salt
 
     def claim_blocking(self, keypair, fee=1):
         try:
@@ -182,9 +182,9 @@ class AEName:
             fee=fee,
         ))
         signed_transaction, b58signature = keypair.sign_transaction(claim_transaction)
-        self.client.send_signed_transaction(signed_transaction)
+        signed_transaction_reply = self.client.send_signed_transaction(signed_transaction)
         self.status = AEName.Status.CLAIMED
-        return claim_transaction.tx_hash, self.preclaim_salt
+        return signed_transaction_reply.tx_hash, self.preclaim_salt
 
     def _get_pointers_json(self, target):
         if target.startswith('ak'):
