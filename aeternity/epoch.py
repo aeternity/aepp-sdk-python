@@ -363,13 +363,10 @@ class EpochClient:
                                                  exclude_tx_types=','.join(exclude_tx_types),)
 
     def get_version(self):
-        # TODO: to be implemented
-        # return Version(**self.external_http_get('version'))
-        pass
+        return self.cli.get_version()
 
     def get_info(self):
-        # TODO: write test for this one
-        pass
+        return self.cli.get_info()
 
     def get_peers(self):
         # this is a debugging function
