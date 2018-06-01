@@ -189,6 +189,12 @@ class EpochClient:
     def listen(self):
         self.listen_until(lambda: False)
 
+    def compute_absolute_ttl(self, ttl):
+        """compute the absolute ttl by adding the ttl to the current height of the chain"""
+        assert ttl > 0
+        h = self.get_height()
+        return h + ttl
+
     #
     # API functions
     #
