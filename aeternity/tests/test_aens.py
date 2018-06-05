@@ -62,7 +62,7 @@ def test_name_status_unavailable():
     # claim a domain
     domain = random_domain()
     occupy_name = AEName(domain)
-    occupy_name.full_claim_blocking(keypair)
+    occupy_name.full_claim_blocking(keypair, name_ttl=10)
     # wait for the state to propagate in the block chain
     EpochClient().wait_for_next_block()
     same_name = AEName(domain)
@@ -76,7 +76,7 @@ def test_name_update():
     print(f"domain is {domain}")
     name = AEName(domain)
     print("Claim name ", domain)
-    name.full_claim_blocking(keypair)
+    name.full_claim_blocking(keypair, name_ttl=10)
     print("got next block")
     client.wait_for_next_block()
     print("got next block")
@@ -94,7 +94,7 @@ def test_name_update():
 def test_transfer_ownership():
     client = EpochClient()
     name = AEName(random_domain())
-    name.full_claim_blocking(keypair)
+    name.full_claim_blocking(keypair, name_ttl=10)
     assert name.status == AEName.Status.CLAIMED
     client.wait_for_next_block()
 
@@ -109,7 +109,7 @@ def test_transfer_ownership():
     client.wait_for_next_block()
     # try changing the target using that new keypair
     name.update_status()
-    name.update(new_key_pair, target=new_key_pair.get_address())
+    name.update(new_key_pair, target=new_key_pair.get_address(), name_ttl=10)
     client.wait_for_next_block()
     name.update_status()
     assert name.pointers != [], 'Pointers should not be empty'
@@ -127,7 +127,7 @@ def test_transfer_ownership():
 def test_revocation():
     domain = random_domain()
     name = AEName(domain)
-    name.full_claim_blocking(keypair)
+    name.full_claim_blocking(keypair, name_ttl=10)
     EpochClient().wait_for_next_block()
     name.revoke(keypair=keypair)
     assert name.status == AEName.Status.REVOKED

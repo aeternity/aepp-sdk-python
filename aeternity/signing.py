@@ -33,6 +33,31 @@ def _base58_encode(prefix, data):
     return f"{prefix}${base58.b58encode_check(data)}"
 
 
+def _blacke2b_digest(data):
+    """create a blacke2b 32 bit raw encoded digest"""
+    return blake2b(data=data, digest_size=32, encoder=nacl.encoding.RawEncoder)
+
+
+def encode(prefix, data):
+    """encode data using the default encoding/decoding algorithm and prepending the prefix"""
+    return _base58_encode(prefix, data)
+
+
+def decode(data):
+    """decode data using the default encoding/decoding algorithm"""
+    return _base58_decode(data)
+
+
+def hash(data):
+    """run the default hashing algorihtm"""
+    return _blacke2b_digest(data)
+
+
+def hash_encode(prefix, data):
+    """run the default hashing + digest algorihtms"""
+    return _base58_encode(prefix, hash(data))
+
+
 class KeyPair:
     """Implement private/public key functionalities"""
 
