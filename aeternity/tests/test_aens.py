@@ -21,6 +21,14 @@ def random_domain(length=10):
     return rand_str + '.aet'
 
 
+def test_committment():
+    domain = random_domain()
+    name = AEName(domain)
+    cl = name._get_commitment_hash()
+    cr = name.client.cli.get_commitment_hash(name=name.domain, salt=name.preclaim_salt)
+    assert cl == cr.commitment
+
+
 def test_name_validation_fails():
     with raises(ValueError):
         AEName('test.lol')

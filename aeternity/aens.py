@@ -139,12 +139,12 @@ class AEName:
             target = keypair.get_address()
         self.update(keypair, target, fee=update_fee, name_ttl=name_ttl, client_ttl=name_ttl)
 
-    def _get_commitment_hash(self, salt):
-        response = self.client.cli.get_commitment_hash(name=self.domain, salt=salt)
-        try:
-            return response.commitment
-        except KeyError:
-            raise PreclaimFailed(response)
+    def _get_commitment_hash(self):
+        """Calculate the commitment hash"""
+        self.preclaim_salt = random.randint(0, 2**64)
+        name_digest = hash(data=self.domain.encode("ascii"))
+        commitment = hash_encode("cm", name_digest + self.preclaim_salt.to_bytes(32, 'big'))
+        return commitment
 
     def preclaim(self, keypair, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
         """
