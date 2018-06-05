@@ -4,6 +4,21 @@ import requests
 from collections import MutableSequence
 
 
+# max number of block into the future that the name is going to be available
+# https://github.com/aeternity/protocol/blob/epoch-v0.13.0/AENS.md#update
+# https://github.com/aeternity/protocol/blob/44a93d3aab957ca820183c3520b9daf6b0fedff4/AENS.md#aens-entry
+NAME_MAX_TLL = 50000
+NAME_DEFAULT_TTL = 60000
+# default relative ttl in number of blocks  for executing transaction on the chain
+DEFAULT_TX_TTL = 10
+# default fee for posting transacrtion
+DEFAULT_FEE = 1
+# contracts
+CONTRACT_DEFAULT_GAS = 1
+CONTRACT_DEFAULT_GAS_PRICE = 1
+CONTRACT_DEFAULT_VM_VERSION = 1
+
+
 class ConfigException(Exception):
     pass
 
