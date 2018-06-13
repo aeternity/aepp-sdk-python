@@ -9,6 +9,7 @@ from aeternity.config import Config
 from aeternity.exceptions import NameNotAvailable, InsufficientFundsException, TransactionNotFoundException, TransactionHashMismatch
 from aeternity.signing import KeyPair
 from aeternity.openapi import OpenAPICli
+from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE
 
 logger = logging.getLogger(__name__)
 
@@ -118,9 +119,9 @@ class EpochClient:
         self.update_top_block()
         self._connection.send(message)
 
-    def spend(self, keypair, recipient_pubkey, amount):
+    def spend(self, keypair, recipient_pubkey, amount, tx_ttl=DEFAULT_TX_TTL):
         """create and execute a spend transaction"""
-        transaction = self.create_spend_transaction(keypair.get_address(), recipient_pubkey, amount)
+        transaction = self.create_spend_transaction(keypair.get_address(), recipient_pubkey, amount, tx_ttl=tx_ttl)
         tx = self.post_transaction(keypair, transaction)
         return tx, tx.tx_hash
 
@@ -309,7 +310,7 @@ class EpochClient:
             exclude_tx_types=exclude_tx_types
         )
 
-    def create_spend_transaction(self, sender_pubkey, recipient_pubkey, amount, fee=1, nonce=0, payload="payload"):
+    def create_spend_transaction(self, sender_pubkey, recipient_pubkey, amount, tx_ttl=DEFAULT_TX_TTL, fee=DEFAULT_FEE, nonce=0, payload="payload"):
         """
         create a spend transaction
         :param sender: the public key of the sender
@@ -317,12 +318,16 @@ class EpochClient:
         :param amount: the amount to send
         :param fee: the fee for the transaction
         """
+        # compute the absolute ttl
+        ttl = self.compute_absolute_ttl(tx_ttl)
+        # send the update transaction
         body = {
             "recipient_pubkey": recipient_pubkey,
             "amount": amount,
             "fee":  fee,
             "sender": sender_pubkey,
             "payload": payload,
+            "ttl": ttl,
         }
         if nonce > 0:
             body['nonce'] = nonce
