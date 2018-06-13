@@ -42,7 +42,7 @@ class OpenAPICli(object):
         "boolean": "bool",
     }
 
-    def __init__(self, specs_path, url, url_internal):
+    def __init__(self, specs_path, url, url_internal=None):
         if not os.path.exists(specs_path):
             raise FileNotFoundError(f"Open api specification file not found: {specs_path}")
         with open(specs_path) as fp:
@@ -63,7 +63,12 @@ class OpenAPICli(object):
         # prepare the baseurl
         base_path = self.api_def.get('basePath', '/')
         self.base_url = f"{url}{base_path}"
-        self.base_url_internal = f"{url_internal}{base_path}"
+        if url_internal is None:
+            # do not build internal endpoints
+            self.skip_tags.append("internal")
+        else:
+            self.base_url_internal = f"{url_internal}{base_path}"
+
         # parse the api
         # definition of a field
         FieldDef = namedtuple("FieldDef", ["required", "type", "values", "minimum", "maximum", "default"])
