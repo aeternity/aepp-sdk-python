@@ -190,13 +190,14 @@ class AEName:
                 'You must wait for one block to call claim.'
                 'Use `claim_blocking` if you have a lot of time on your hands'
             )
-
+        # compute the absolute ttl
+        ttl = self.client.compute_absolute_ttl(tx_ttl)
         claim_transaction = self.client.cli.post_name_claim(body=dict(
             account=keypair.get_address(),
             name=AEName._encode_name(self.domain),
             name_salt=self.preclaim_salt,
             fee=fee,
-            ttl=self.client.compute_absolute_ttl(tx_ttl)
+            ttl=ttl
         ))
 
         signed_tx = self.client.post_transaction(keypair, claim_transaction)
