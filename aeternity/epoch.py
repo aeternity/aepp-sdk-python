@@ -1,7 +1,6 @@
 import json
 from collections import defaultdict
 import logging
-import os
 
 import time
 import websocket
@@ -64,12 +63,8 @@ class EpochClient:
         self._top_block = None
         self._retry = retry
 
-        # find out the version of the node we are connecting to
-        swagger_file = f'assets/swagger/{configs[0].node_version}.json'
-        if not os.path.exists(swagger_file):
-            raise Exception(f"node version {configs[0].node_version} not supported")
         # instantiate the request client
-        self.cli = OpenAPICli(swagger_file, configs[0].api_url, configs[0].api_url_internal)
+        self.cli = OpenAPICli(configs[0].api_url, configs[0].api_url_internal)
 
     def _get_active_config(self):
         return self._configs[self._active_config_idx]

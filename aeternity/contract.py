@@ -1,7 +1,8 @@
 from aeternity.epoch import EpochClient
 from aeternity.aevm import pretty_bytecode
 from aeternity.openapi import OpenAPIClientException
-from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE, CONTRACT_DEFAULT_GAS, CONTRACT_DEFAULT_GAS_PRICE, CONTRACT_DEFAULT_VM_VERSION
+from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE
+from aeternity.config import CONTRACT_DEFAULT_GAS, CONTRACT_DEFAULT_GAS_PRICE, CONTRACT_DEFAULT_VM_VERSION, CONTRACT_DEFAULT_DEPOSIT
 
 
 class ContractError(Exception):
@@ -75,8 +76,8 @@ class Contract:
 
     def tx_create(self, keypair,
                   amount=1,
-                  deposit=10,
-                  call_data="",
+                  deposit=CONTRACT_DEFAULT_DEPOSIT,
+                  init_state="()",
                   gas=CONTRACT_DEFAULT_GAS,
                   gas_price=CONTRACT_DEFAULT_GAS_PRICE,
                   fee=DEFAULT_FEE,
@@ -86,6 +87,7 @@ class Contract:
         try:
             ttl = self.client.compute_absolute_ttl(tx_ttl)
             compiled_code = self.compile()
+            call_data = self.encode_calldata("init", init_state, abi=self.SOPHIA)
             contract_transaction = self.client.cli.post_contract_create(body=dict(
                 owner=keypair.get_address(),
                 amount=amount,
@@ -102,6 +104,19 @@ class Contract:
             return contract_transaction.contract_address, tx
         except OpenAPIClientException as e:
             raise ContractError(e)
+
+    def tx_create_wait(self, keypair,
+                       amount=1,
+                       deposit=CONTRACT_DEFAULT_DEPOSIT,
+                       init_state="()",
+                       gas=CONTRACT_DEFAULT_GAS,
+                       gas_price=CONTRACT_DEFAULT_GAS_PRICE,
+                       fee=DEFAULT_FEE,
+                       vm_version=CONTRACT_DEFAULT_VM_VERSION,
+                       tx_ttl=DEFAULT_TX_TTL):
+        c, tx = self.tx_create(keypair, amount, deposit, init_state, gas, gas_price, fee, vm_version, tx_ttl)
+        self.client.wait_for_next_block()
+        return c, tx
 
     def compile(self, options=''):
         """Compile a sophia contract from source and return byte code"""

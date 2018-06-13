@@ -42,11 +42,10 @@ class OpenAPICli(object):
         "boolean": "bool",
     }
 
-    def __init__(self, specs_path, url, url_internal=None):
-        if not os.path.exists(specs_path):
-            raise FileNotFoundError(f"Open api specification file not found: {specs_path}")
-        with open(specs_path) as fp:
-            self.api_def = json.load(fp)
+    def __init__(self, url, url_internal=None):
+        # load the openapi json file from the node
+        self.api_def = requests.get(f"{url}/api").json()
+
         # check open_api_version
         if self.api_def.get('swagger', 'x') not in self.open_api_versions:
             raise OpenAPIException(f"Unsupported Open API specification version {self.api_def.get('swagger')}")
