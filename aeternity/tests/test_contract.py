@@ -3,7 +3,6 @@ from pytest import raises
 
 from aeternity.contract import Contract, ContractError
 from aeternity.tests import KEYPAIR
-from aeternity import signing
 
 aer_identity_contract = '''
 contract Identity =
