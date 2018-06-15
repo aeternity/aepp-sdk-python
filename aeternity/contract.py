@@ -42,35 +42,13 @@ class Contract:
                 vm_version=vm_version,
                 ttl=ttl
             ))
-            return contract_reply
-        except OpenAPIClientException as e:
-            raise ContractError(e)
-
-    def tx_call_compute(self, contract_address, keypair, function, arg,
-                        amount=10,
-                        gas=CONTRACT_DEFAULT_GAS,
-                        gas_price=CONTRACT_DEFAULT_GAS_PRICE,
-                        fee=DEFAULT_FEE,
-                        vm_version=CONTRACT_DEFAULT_VM_VERSION,
-                        tx_ttl=DEFAULT_TX_TTL):
-        """Call a sophia contract (shortcut for tx_call)"""
-        call_data = self.encode_calldata(function, arg, abi=self.SOPHIA)
-        try:
-            ttl = self.client.compute_absolute_ttl(tx_ttl)
-            contract_reply = self.client.cli.post_contract_call(body=dict(
-                call_data=call_data,
-                caller=keypair.get_address(),
-                contract=contract_address,
-                amount=amount,
-                fee=fee,
-                gas=gas,
-                gas_price=gas_price,
-                vm_version=vm_version,
-                function=function,
-                argument=arg,
-                ttl=ttl
-            ))
-            return contract_reply
+            # post transaction
+            signed_tx = self.client.post_transaction(keypair, contract_reply)
+            # wait for transcation to be mined
+            self.client.wait_for_next_block()
+            # unsigend transaciton of the call
+            call_obj = self.client.cli.get_contract_call_from_tx(tx_hash=signed_tx.tx_hash)
+            return call_obj
         except OpenAPIClientException as e:
             raise ContractError(e)
 
