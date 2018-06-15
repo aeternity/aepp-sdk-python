@@ -1,7 +1,6 @@
 import json
 from collections import defaultdict
 import logging
-import os
 
 import time
 import websocket
@@ -10,6 +9,7 @@ from aeternity.config import Config
 from aeternity.exceptions import NameNotAvailable, InsufficientFundsException, TransactionNotFoundException, TransactionHashMismatch
 from aeternity.signing import KeyPair
 from aeternity.openapi import OpenAPICli
+from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE
 
 logger = logging.getLogger(__name__)
 
@@ -43,115 +43,6 @@ class EpochRequestError(Exception):
     pass
 
 
-# # TODO: remove commented code
-# # Datatypes used for API responses:
-# #
-
-# AccountBalance = namedtuple('AccountBalance', [
-#     'pub_key', 'balance'
-# ])
-
-# # Wrapper Datatype for all transactions
-# Transaction = namedtuple('Transaction', [
-#     'block_hash', 'block_height', 'hash', 'signatures', 'tx', 'data_schema'
-# ])
-# #
-# # Transaction types:
-# #
-# CoinbaseTx = namedtuple('CoinbaseTx', [
-#     'block_height', 'account', 'data_schema', 'type', 'vsn', 'reward'
-# ])
-# AENSClaimTx = namedtuple('AENSClaimTx', [
-#     'account', 'fee', 'name', 'name_salt', 'nonce', 'type', 'vsn'
-# ])
-# AENSPreclaimTx = namedtuple('AENSPreclaimTx', [
-#     'account', 'commitment', 'fee', 'nonce', 'type', 'vsn'
-# ])
-# AENSTransferTx = namedtuple('AENSTransferTx', [
-#     'account', 'fee', 'name_hash', 'nonce', 'recipient_pubkey', 'type', 'vsn'
-# ])
-# AENSUpdateTX = namedtuple('AENSUpdateTx', [
-#     'account', 'fee', 'name_hash', 'name_ttl', 'nonce', 'pointers', 'ttl',
-#     'type', 'vsn'
-# ])
-# SpendTx = namedtuple('SpendTx', [
-#     'data_schema', 'type', 'vsn', 'amount', 'fee', 'nonce', 'recipient', 'sender'
-# ])
-# AEOQueryTx = namedtuple('AEOQueryTx', [
-#     'data_schema', 'fee', 'nonce', 'oracle', 'query', 'query_fee', 'query_ttl',
-#     'response_ttl', 'sender', 'type', 'vsn'
-# ])
-# AEOResponseTx = namedtuple('AEOResponseTx', [
-#     'data_schema', 'fee', 'nonce', 'oracle', 'query_id', 'response', 'type', 'vsn'
-# ])
-# AEORegisterTx = namedtuple('AEORegisterTx', [
-#     'account', 'data_schema', 'fee', 'nonce', 'query_fee', 'query_spec',
-#     'response_spec', 'ttl', 'type', 'vsn'
-# ])
-# GenericTx = namedtuple('GenericTx', ['tx'])
-
-
-# Version = namedtuple('Version', [
-#     'genesis_hash', 'revision', 'version'
-# ])
-# EpochInfo = namedtuple('EpochInfo', [
-#     'last_30_blocks_time'
-# ])
-# LastBlockInfo = namedtuple('BlockInfo', [
-#     'difficulty', 'height', 'time', 'time_delta_to_parent'
-# ])
-# BlockWithTx = namedtuple('BlockWithTx', [
-#     'data_schema', 'hash', 'height', 'nonce', 'pow', 'prev_hash', 'state_hash',
-#     'target', 'time', 'transactions', 'txs_hash', 'version'
-# ])
-
-# # NewTransaction is the container when creating a transaction using the epoch
-# # node, which then can be signed offline
-# NewTransaction = namedtuple('NewTransaction', ['tx', 'tx_hash'])
-
-
-# transaction_type_mapping = {
-#     'coinbase_tx': CoinbaseTx,
-#     'aec_coinbase_tx': CoinbaseTx,
-#     'aec_spend_tx': SpendTx,
-#     'spend_tx': SpendTx,
-#     'aens_claim_tx': AENSClaimTx,
-#     'aens_preclaim_tx': AENSPreclaimTx,
-#     'aens_transfer_tx': AENSTransferTx,
-#     'aens_update_tx': AENSUpdateTX,
-#     'aeo_query_tx': AEOQueryTx,
-#     'aeo_register_tx': AEORegisterTx,
-#     'aeo_response_tx': AEOResponseTx,
-# }
-
-
-# def transaction_from_dict(data):
-#     if set(data.keys()) == {'tx'}:
-#         return GenericTx(**data)
-
-#     tx_type = data['tx']['type']
-#     try:
-#         tx = transaction_type_mapping[tx_type](**data['tx'])
-#     except KeyError:
-#         raise ValueError(f'Cannot deserialize transaction of type {tx_type}')
-
-#     data = data.copy()  # don't mutate the input
-#     data['tx'] = tx
-#     if 'data_schema' not in data:
-#         data['data_schema'] = None
-#         # TODO: The API should provide a data_schema for all objects
-#         logger.debug('Deserialized transaction without data_schema!')
-#     return Transaction(**data)
-
-
-# def block_from_dict(data):
-#     data = data.copy()  # dont mutate the input
-#     data['transactions'] = [
-#         transaction_from_dict(tx) for tx in data.get('transactions', [])
-#     ]
-#     return BlockWithTx(**data)
-
-
 class EpochClient:
     next_block_poll_interval_sec = 0.01
 
@@ -173,12 +64,8 @@ class EpochClient:
         self._top_block = None
         self._retry = retry
 
-        # find out the version of the node we are connecting to
-        swagger_file = f'assets/swagger/{configs[0].node_version}.json'
-        if not os.path.exists(swagger_file):
-            raise Exception(f"node version {configs[0].node_version} not supported")
         # instantiate the request client
-        self.cli = OpenAPICli(swagger_file, configs[0].http_api_url, configs[0].api_url_internal)
+        self.cli = OpenAPICli(configs[0].api_url, configs[0].api_url_internal)
 
     def _get_active_config(self):
         return self._configs[self._active_config_idx]
@@ -232,9 +119,9 @@ class EpochClient:
         self.update_top_block()
         self._connection.send(message)
 
-    def spend(self, keypair, recipient_pubkey, amount):
+    def spend(self, keypair, recipient_pubkey, amount, tx_ttl=DEFAULT_TX_TTL):
         """create and execute a spend transaction"""
-        transaction = self.create_spend_transaction(keypair.get_address(), recipient_pubkey, amount)
+        transaction = self.create_spend_transaction(keypair.get_address(), recipient_pubkey, amount, tx_ttl=tx_ttl)
         tx = self.post_transaction(keypair, transaction)
         return tx, tx.tx_hash
 
@@ -297,6 +184,12 @@ class EpochClient:
 
     def listen(self):
         self.listen_until(lambda: False)
+
+    def compute_absolute_ttl(self, ttl):
+        """compute the absolute ttl by adding the ttl to the current height of the chain"""
+        assert ttl > 0
+        h = self.get_height()
+        return h + ttl
 
     #
     # API functions
@@ -363,13 +256,10 @@ class EpochClient:
                                                  exclude_tx_types=','.join(exclude_tx_types),)
 
     def get_version(self):
-        # TODO: to be implemented
-        # return Version(**self.external_http_get('version'))
-        pass
+        return self.cli.get_version()
 
     def get_info(self):
-        # TODO: write test for this one
-        pass
+        return self.cli.get_info()
 
     def get_peers(self):
         # this is a debugging function
@@ -420,7 +310,7 @@ class EpochClient:
             exclude_tx_types=exclude_tx_types
         )
 
-    def create_spend_transaction(self, sender_pubkey, recipient_pubkey, amount, fee=1, nonce=0, payload="payload"):
+    def create_spend_transaction(self, sender_pubkey, recipient_pubkey, amount, tx_ttl=DEFAULT_TX_TTL, fee=DEFAULT_FEE, nonce=0, payload="payload"):
         """
         create a spend transaction
         :param sender: the public key of the sender
@@ -428,12 +318,16 @@ class EpochClient:
         :param amount: the amount to send
         :param fee: the fee for the transaction
         """
+        # compute the absolute ttl
+        ttl = self.compute_absolute_ttl(tx_ttl)
+        # send the update transaction
         body = {
             "recipient_pubkey": recipient_pubkey,
             "amount": amount,
             "fee":  fee,
             "sender": sender_pubkey,
             "payload": payload,
+            "ttl": ttl,
         }
         if nonce > 0:
             body['nonce'] = nonce

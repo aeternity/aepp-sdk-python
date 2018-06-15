@@ -3,6 +3,7 @@ import os
 import base58
 import rlp
 from Crypto.Cipher import AES
+from Crypto.Hash import SHA256
 import nacl
 from nacl import encoding
 from nacl.signing import SigningKey
@@ -30,6 +31,31 @@ def _base58_decode(encoded):
 def _base58_encode(prefix, data):
     """crete a base58 encoded string with a prefix, ex: ak$encoded_data, th$encoded_data,..."""
     return f"{prefix}${base58.b58encode_check(data)}"
+
+
+def _blacke2b_digest(data):
+    """create a blacke2b 32 bit raw encoded digest"""
+    return blake2b(data=data, digest_size=32, encoder=nacl.encoding.RawEncoder)
+
+
+def encode(prefix, data):
+    """encode data using the default encoding/decoding algorithm and prepending the prefix"""
+    return _base58_encode(prefix, data)
+
+
+def decode(data):
+    """decode data using the default encoding/decoding algorithm"""
+    return _base58_decode(data)
+
+
+def hash(data):
+    """run the default hashing algorihtm"""
+    return _blacke2b_digest(data)
+
+
+def hash_encode(prefix, data):
+    """run the default hashing + digest algorihtms"""
+    return _base58_encode(prefix, hash(data))
 
 
 class KeyPair:
@@ -148,3 +174,9 @@ class KeyPair:
             os.path.join(directory, 'key'),
             password
         )
+
+    @classmethod
+    def sha256(cls, data):
+        hash = SHA256.new()
+        hash.update(data)
+        return hash.digest()

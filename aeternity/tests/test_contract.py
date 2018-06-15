@@ -2,26 +2,44 @@ import pytest
 from pytest import raises
 
 from aeternity.contract import Contract, ContractError
-
+from aeternity.tests import KEYPAIR
 
 aer_identity_contract = '''
-
 contract Identity =
-  function main (x:int) = x
-
+  type state = ()
+  function main(x : int) = x
 '''
 
 broken_contract = '''
-
 contract Identity =
   BROKEN state = ()
   function main(x : int) = x
-
 '''
 
 #
 # SOPHIA
 #
+
+
+def test_sophia_contract_tx_create():
+    contract = Contract(aer_identity_contract, Contract.SOPHIA)
+    address, tx = contract.tx_create(KEYPAIR, gas=1000)
+    assert address is not None
+    assert len(address) > 0
+
+
+def test_sophia_contract_tx_call():
+    contract = Contract(aer_identity_contract, Contract.SOPHIA)
+    address, tx = contract.tx_create_wait(KEYPAIR, gas=1000)
+    print("contract: ", address)
+    print("tx contract: ", tx)
+
+    result = contract.tx_call(address, KEYPAIR, 'main', '42')
+    assert result is not None
+    assert result.return_type == 'ok'
+    assert result.return_value.lower() == f'0x{hex(42)[2:].zfill(64).lower()}'
+
+# test contracts
 
 
 def test_sophia_contract_compile():

@@ -3,12 +3,7 @@ import json
 import logging
 import re
 
-import os
 import requests
-import sys
-
-# this is just a hack to get this example to import a parent folder:
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
 
 from aeternity import Config
 from aeternity import EpochClient
@@ -36,6 +31,7 @@ class OraclefJean(Oracle):
             "awesome"
 
     """
+
     def _error(self, message, data=None):
         if data is None:
             data = {}
@@ -78,7 +74,7 @@ class OraclefJean(Oracle):
             return self._error('malformed query')
         try:
             json_data = requests.get(url).json()
-        except:
+        except Exception:
             return self._error('request/json error')
         try:
             ret_data = self._jq_traverse(jq, json_data)

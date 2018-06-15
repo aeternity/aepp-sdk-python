@@ -5,3 +5,4 @@ base58==0.2.5
 PyNaCl==1.2.1
 pycrypto==2.6.1
 websocket_client==0.48.0
+flake8==3.5.0

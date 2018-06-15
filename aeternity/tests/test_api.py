@@ -1,5 +1,6 @@
-from aeternity.tests import PUBLIC_KEY
+from aeternity.tests import PUBLIC_KEY, EPOCH_VERSION
 from aeternity.epoch import EpochClient
+import pytest
 
 # from aeternity.exceptions import TransactionNotFoundException
 
@@ -19,18 +20,15 @@ def test_get_transactions():
 
 
 def test_get_version():
-    # version_info = client.get_version()
-    # assert type(version_info) == Version
-    # assert version_info.version == '0.14.0'
-    pass
+    client = EpochClient()
+    assert client.get_version() == EPOCH_VERSION
 
 
+@pytest.mark.skip("it is not a published method")
 def test_get_info():
-    # info = aeternity.EpochClient().get_info()
-    # assert type(info) == EpochInfo
-    # assert type(info.last_30_blocks_time[0]) == LastBlockInfo
-    # assert info.last_30_blocks_time[0].time_delta_to_parent > 0
-    pass
+    client = EpochClient()
+    info = client.get_info()
+    assert info.last_30_blocks_time[0].time_delta_to_parent > 0
 
 
 def test_get_latest_block():
@@ -94,7 +92,7 @@ def test_get_block_transaction_count_by_height():
     previous_height = client.get_height() - 1
     transaction_count = client.get_block_transaction_count_by_height(previous_height)
     print(transaction_count.count)
-    assert transaction_count.count > 0
+    assert transaction_count.count >= 0
 
 
 def test_get_transaction_from_block_height():
