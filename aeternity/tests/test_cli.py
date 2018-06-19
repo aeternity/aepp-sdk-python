@@ -4,6 +4,7 @@ import subprocess
 import os
 import tempfile
 from contextlib import contextmanager
+from . import NODE_URL, NODE_URL_INTERNAL, KEYPAIR
 
 import pytest
 
@@ -12,7 +13,7 @@ aecli_exe = os.path.join(current_folder, '..', '..', 'aecli')
 
 
 def call_aecli(*params):
-    args = [aecli_exe] + list(params)
+    args = [aecli_exe, '-u', NODE_URL, '-i', NODE_URL_INTERNAL] + list(params)
     output = subprocess.check_output(args).decode('ascii')
     return output.strip()
 
@@ -27,10 +28,11 @@ def tempdir():
         shutil.rmtree(path)
 
 
-@pytest.mark.skip('skip tests for v0.13.0')
 def test_balance():
-    balance_str = call_aecli('balance')
+    balance_str = call_aecli('wallet', 'balance', '-a', KEYPAIR.get_address())
+    balance_str_1 = call_aecli('wallet', 'balance')
     assert balance_str.isnumeric()
+    assert balance_str == balance_str_1
     balance = int(balance_str)
     assert balance > 0
 
