@@ -145,7 +145,6 @@ class KeyPair:
         if key_string.startswith('ak$'):
             return decode(key_string.strip())
         return bytes.fromhex(key_string.strip())
-        
 
     @classmethod
     def from_private_key_string(cls, key_string):
