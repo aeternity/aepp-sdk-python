@@ -1,6 +1,7 @@
 
 
 import requests
+import sys
 from collections import MutableSequence
 
 
@@ -10,6 +11,7 @@ from collections import MutableSequence
 NAME_MAX_TLL = 50000
 NAME_DEFAULT_TTL = 60000
 # default relative ttl in number of blocks  for executing transaction on the chain
+MAX_TX_TTL = sys.maxsize
 DEFAULT_TX_TTL = 10
 # default fee for posting transacrtion
 DEFAULT_FEE = 1
@@ -40,8 +42,11 @@ class Config:
         self.name_url = f'{self.api_url}/name'
         self.pubkey = None
         # retrieve the version of the node we are connecting to
-        r = requests.get(f"{self.api_url}/v2/version").json()
-        self.node_version = r['version']
+        try:
+            r = requests.get(f"{self.api_url}/v2/version").json()
+            self.node_version = r['version']
+        except requests.exceptions.ConnectionError as e:
+            raise ConfigException(f"Error connecting to the epoch node at {self.api_url}, connection unavailable")
 
     def __str__(self):
         return f'ws:{self.websocket_url} ext:{self.api_url} int:{self.api_url_internal}'
