@@ -412,8 +412,15 @@ def chain():
 
 @chain.command('height')
 def chain_height():
-    print("height chain")
-    pass
+    data = _epoch_cli().get_height()
+    _pp(("Chain block height", data))
+
+
+@chain.command('version')
+def chain_version():
+    data = _epoch_cli().get_version()
+    _pp(("Epoch node version", data))
+
 
 
 # run the client
