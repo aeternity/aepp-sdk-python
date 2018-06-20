@@ -326,23 +326,73 @@ def contract_call():
 def inspect():
     pass
 
+# GenericBlock(
+# data_schema='BlockWithJSONTxs',
+# hash='bh$2DH536qiypijKZo6R2FXwGMSxWamAr4LjUddaSUr2wmegyZe3c',
+# height= 28614,
+# miner='ak$BpwWtzwJpfGe6AmusjQ9a5aqKF784nXkB2apoHPmNmrJTnPdn',
+# nonce=7443988857842585374,
+# pow=[1802, 2118, 2567, 3316, 3824, 4270, 5331, 5761, 7093, 7186, 10612, 11260, 12087, 13901, 14738, 15678, 16208, 16748, 17423, 17560, 20218, 20695, 20733, 22011, 22204, 22668, 22712, 24071, 24977, 25193, 25491, 26516, 26517, 26608, 27650, 29138, 29203, 29647, 29844, 30036, 30755, 31080],
+# prev_hash='bh$581YGw7yHs84CehapxY53z2idBzjX1H787vzBQpKcWKcRjbbQ',
+# state_hash='bs$E9iPk1MGhGiFntRVG8EZJ1C4VQ85vcqHDC6EC1GGrxwLoLeDA',
+# target=537726470,
+# time=1529522697102,
+# transactions=[],
+# txs_hash='bx$11111111111111111111111111111111273Yts',
+# version= 14)
 
-@inspect.command('block')
-def inspect_block():
-    print("block inspect")
-    pass
+
+@inspect.command('block', help='The block hash to inspect (ex. bh$...)')
+@click.argument('block_hash')
+def inspect_block(ctx, block_hash):
+    _check_prefix(block_hash, "bh")
+    data = _epoch_cli().get_block_by_hash(block_hash)
+    _pp([
+        ('Block hash', data.hash),
+        ('Block height', data.height),
+        ('Miner', data.miner),
+        ('Transactions', len(data.transactions)),
+    ])
 
 
-@inspect.command('transaction')
-def inspect_transaction():
-    print("transaction inspect")
-    pass
+@inspect.command('height', help='The height of the chain to inspect (ex. 14352)')
+@click.argument('chain_height', default=1)
+def inspect_block(chain_height):
+    data = _epoch_cli().get_block_by_height(chain_height)
+    _pp([
+        ('Block hash', data.hash),
+        ('Block height', data.height),
+        ('Miner', data.miner),
+        ('Transactions', len(data.transactions)),
+    ])
 
 
-@inspect.command('account')
-def inspect_account():
-    print("account inspect")
-    pass
+@inspect.command('transaction', help='The transaction hash to inspect (ex. th$...)')
+@click.argument('tx_hash')
+def inspect_transaction(tx_hash):
+    _check_prefix(tx_hash, "th")
+    data = _epoch_cli().get_transaction_by_transaction_hash(tx_hash, tx_encoding='json')
+    _pp([
+        ('Block hash', data.transaction['block_hash']),
+        ('Block height', data.transaction['block_height']),
+        ('Block hash', data.transaction['block_hash']),
+        ('Signatures', data.transaction['signatures']),
+        ('Sender account', data.transaction['tx']['sender']),
+        ('Recipient account', data.transaction['tx']['recipient']),
+        ('Amount', data.transaction['tx']['amount']),
+        ('TTL', data.transaction['tx']['ttl'])
+    ])
+
+
+@inspect.command('account', help='The address of the account to inspect (ex. ak$...)')
+@click.argument('account')
+def inspect_account(account):
+    _check_prefix(account, "ak")
+    try:
+        data = _epoch_cli().get_balance(account)
+        _pp(("Account balance", data))
+    except Exception as e:
+        print(e)
 
 
 #     _____ _           _
