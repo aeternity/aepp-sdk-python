@@ -72,7 +72,9 @@ class KeyPair:
 
     def get_private_key(self):
         """get the private key hex encoded"""
-        return self.signing_key.to_string().hex()
+        pk = self.signing_key.encode(encoder=nacl.encoding.HexEncoder).decode('utf-8')
+        pb = self.verifying_key.encode(encoder=nacl.encoding.HexEncoder).decode('utf-8')
+        return f"{pk}{pb}"
 
     def sign_transaction_message(self, message):
         """sign a message with using the private key"""
@@ -106,8 +108,8 @@ class KeyPair:
         :param password: the password to encrypt the private key
         :param name:     filename of the signing key in folder, default 'key'
         """
-        enc_key = self._encrypt_key(self.signing_key, password)
-        enc_key_pub = self._encrypt_key(self.verifying_key, password)
+        enc_key = self._encrypt_key(self.signing_key.encode(encoder=nacl.encoding.HexEncoder), password)
+        enc_key_pub = self._encrypt_key(self.verifying_key.encode(encoder=nacl.encoding.HexEncoder), password)
         if not os.path.exists(folder):
             os.makedirs(folder)
         with open(os.path.join(folder, name), 'wb') as fh:
@@ -142,6 +144,7 @@ class KeyPair:
     @classmethod
     def _raw_key(cls, key_string):
         """decode a key with different method between signing and addresses"""
+        key_string = str(key_string)
         if key_string.startswith('ak$'):
             return decode(key_string.strip())
         return bytes.fromhex(key_string.strip())
@@ -173,29 +176,30 @@ class KeyPair:
         return kp
 
     @classmethod
-    def _encrypt_key(cls, key, password):
+    def _encrypt_key(cls, key_hexstring, password):
         """
         Encrypt a signing key string with the provided password
 
-        :param key:        the key to encode
+        :param key:        the key to encode in hex string
         :param password:   the password to use for encryption
         """
-        key_string = key
-        if isinstance(key, str):
-            key_string = key.hex()
         if isinstance(password, str):
             password = password.encode('utf-8')
         aes = AES.new(cls.sha256(password))
-        encrypted_key = aes.encrypt(key_string)
+        encrypted_key = aes.encrypt(key_hexstring)
         return encrypted_key
 
     @classmethod
     def _decrypt_key(cls, key_content, password):
+        """
+        Decrypt a key using password
+        :return: the string that was encrypted
+        """
         if isinstance(password, str):
             password = password.encode('utf-8')
         aes = AES.new(cls.sha256(password))
         decrypted_key = aes.decrypt(key_content)
-        return decrypted_key
+        return decrypted_key.decode("utf-8")
 
     @classmethod
     def read_from_files(cls, public_key_file, private_key_file, password):
