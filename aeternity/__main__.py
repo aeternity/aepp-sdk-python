@@ -129,53 +129,82 @@ def cli(ctx, url, url_internal, url_websocket, quiet, verbose):
 
 @cli.group()
 @click.pass_context
-@click.option('--key-file', '-f', default='sign_key', envvar='WALLET_SIGN_KEY_PATH', help='Path to the wallet signin key')
-@click.option('--key', '-k', default=None, envvar='WALLET_SIGN_KEY', help='Encoded signing key')
-def wallet(ctx, key_file, key):
-    if key is not None:
-        ctx.obj[CTX_KEYPAIR] = KeyPair.from_private_key_string(key)
-    else:
-        print(f"using key at {key_file}")
-        ctx.obj[CTX_KEYPAIR] = KeyPair.read_from_private_key(key_file)
-    pass
+@click.argument('key_path', default='sign_key', envvar='WALLET_SIGN_KEY_PATH')
+def wallet(ctx, key_path):
+    ctx.obj[CTX_KEY_PATH] = key_path
 
 
 @wallet.command('create')
-@click.option('--key-file', '-f', default='sign_key', help='Path to the wallet signin key')
-@click.password_option()
-def wallet_create(key_file, password):
+@click.pass_context
+def wallet_create(ctx):
     kp = KeyPair.generate()
-    kp.save_to_file(key_file, password)
-    print("wallet generated:")
-    print(f"signing key: {key_file}")
-    print(f"public key:  {key_file}")
-    pass
+    kf = ctx.obj.get(CTX_KEY_PATH)
+    if os.path.exists(kf):
+        click.confirm(f'Key file {kf} already exists, overwrite?', abort=True)
+    password = click.prompt("Enter the wallet password", default='', hide_input=True)
+    kp.save_to_file(kf, password)
+    _pp([
+        ('Wallet address', kp.get_address()),
+        ('Wallet path', os.path.abspath(kf))
+    ], title='Wallet created')
+
+
+@wallet.command('save', help='Save a private keys string to a password protected file wallet')
+@click.argument("private_key")
+@click.pass_context
+def wallet_save(ctx, private_key):
+    try:
+        kp = KeyPair.from_private_key_string(private_key)
+        kf = ctx.obj.get(CTX_KEY_PATH)
+        if os.path.exists(kf):
+            click.confirm(f'Key file {kf} already exists, overwrite?', abort=True)
+        password = click.prompt("Enter the wallet password", default='', hide_input=True)
+        kp.save_to_file(kf, password)
+        _pp([
+            ('Wallet address', kp.get_address()),
+            ('Wallet path', os.path.abspath(kf))
+        ], title='Wallet saved')
+    except Exception as e:
+        _ppe(e)
 
 
 @wallet.command('info')
-@click.pass_context
-def wallet_info(ctx):
-    kp, epoch_cli = _get_ctx(ctx)
-    balance = epoch_cli.get_balance(kp.get_address())
-    print(f"Epoch node:         localhost")
-    print(f"Account Public key: {kp.get_address() : <20}")
-    print(f"Balance:            {balance : <20}")
+def wallet_info():
+    kp, kf = _keypair()
+    _pp([
+        ('Wallet address', kp.get_address()),
+        ('Wallet path', kf)
+    ])
 
 
 @wallet.command('balance')
-@click.pass_context
-@click.option('--account-key', '-a', default=None, help='Account to check the balance of')
-def wallet_balance(ctx, account_key):
-    kp, epoch_cli = _get_ctx(ctx)
-    target = account_key if account_key is not None else kp.get_address()
-    balance = epoch_cli.get_balance(target)
-    print(balance)
+def wallet_balance():
+    kp, _ = _keypair()
+    try:
+        balance = _epoch_cli().get_balance(kp.get_address())
+        _pp(
+            ("Account balance", balance)
+        )
+    except Exception as e:
+        _ppe(e)
 
 
 @wallet.command('spend')
-def wallet_spend():
-    print("spend wallet")
-    pass
+@click.argument('recipient_account', required=True)
+@click.argument('amount', required=True, default=1)
+@click.option('--ttl', default=MAX_TX_TTL, help="Validity of the spend transaction in number of blocks (default forever)")
+def wallet_spend(recipient_account, amount, ttl):
+    kp, _ = _keypair()
+    try:
+        _check_prefix(recipient_account, "ak")
+        data = _epoch_cli().spend(kp, recipient_account, amount, tx_ttl=ttl)
+        _pp([
+            ("Sender account", kp.get_address()),
+            ("Recipient account", recipient_account),
+            ("Transaction hash", data[1])
+        ], title='Transaction posted to the chain')
+    except Exception as e:
+        _ppe(e)
 
 #    _   _
 #   | \ | |
