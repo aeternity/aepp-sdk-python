@@ -1,8 +1,10 @@
 import logging
 import click
+import os
+import traceback
 
 from aeternity.epoch import EpochClient
-from aeternity.config import Config as EpochConfig
+from aeternity.config import Config, MAX_TX_TTL, ConfigException
 # from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
 from aeternity.signing import KeyPair
 
@@ -10,34 +12,110 @@ from aeternity.signing import KeyPair
 logging.basicConfig(format='%(message)s', level=logging.INFO)
 
 
-CTX_EPOCH_CLI = 'epoch_cli'
-CTX_KEYPAIR = 'wallet_keypair'
+CTX_EPOCH_URL = 'EPOCH_URL'
+CTX_EPOCH_URL_INTERNAL = 'EPOCH_URL_INTERNAL'
+CTX_EPOCH_URL_WEBSOCKET = 'EPOCH_URL_WEBSOCKET'
+CTX_KEY_PATH = 'KEY_PATH'
+CTX_VERBOSE = 'VERBOSE'
+CTX_QUIET = 'QUIET'
 
 
-def _get_ctx(ctx):
-    return (
-        ctx.obj.get(CTX_KEYPAIR),
-        ctx.obj.get(CTX_EPOCH_CLI)
-    )
+def _epoch_cli():
+    try:
+        ctx = click.get_current_context()
+        # set the default configuration
+        Config.set_defaults(Config(
+            external_url=ctx.obj.get(CTX_EPOCH_URL),
+            internal_url=ctx.obj.get(CTX_EPOCH_URL_INTERNAL),
+            websocket_url=ctx.obj.get(CTX_EPOCH_URL_WEBSOCKET)
+        ))
+    except ConfigException as e:
+        print("Configuration error: ", e)
+        exit(1)
+    # load the epoch client
+    return EpochClient()
+
+
+def _keypair():
+    """
+    utility function to get the keypair from the click context
+    :return: (keypair, keypath)
+    """
+    ctx = click.get_current_context()
+    kf = ctx.obj.get(CTX_KEY_PATH)
+    if not os.path.exists(kf):
+        print(f'Key file {kf} does not exits.')
+        exit(1)
+    try:
+        password = click.prompt("Enter the wallet password", default='', hide_input=True)
+        return KeyPair.read_from_private_key(kf, password), os.path.abspath(kf)
+    except Exception:
+        print("Invalid password")
+        exit(1)
+
+
+def _check_prefix(data, prefix):
+    """
+    helper method to check the validity of a prefix
+    """
+    if not data.startswith(f"{prefix}$"):
+        if prefix == 'ak':
+            print("Invalid account address, it shoudld be like: ak$....")
+        if prefix == 'th':
+            print("Invalid transaction hash, it shoudld be like: th$....")
+        if prefix == 'bh':
+            print("Invalid block hash, it shoudld be like: bh$....")
+        exit(1)
+
+
+def _print(header, value):
+    print(f" {header.ljust(53, '_')} \n\n{value}\n")
+
+
+def _pp(data, title=None):
+    """
+    pretty printer
+    :param data: single enty or list of key-value tuples
+    :param title: optional title
+    :param quiet: if true print only the values
+    """
+    ctx = click.get_current_context()
+    if title is not None:
+        print(title)
+    if not isinstance(data, list):
+        data = [data]
+    for kv in data:
+        if ctx.obj.get(CTX_QUIET, False):
+            print(kv[1])
+        else:
+            print(f"{kv[0].ljust(30, '_')} {kv[1]}")
+
+
+def _ppe(error):
+    """pretty printer for errors"""
+    ctx = click.get_current_context()
+    print(error)
+    if ctx.obj.get(CTX_VERBOSE, True):
+        traceback.print_exc()
 
 
 # the priority for the url selection is PARAM, ENV, DEFAULT
+
+
 @click.group()
 @click.pass_context
 @click.version_option()
 @click.option('--url', '-u', default='http://localhost:3013', envvar='EPOCH_URL', help='Epoch node url')
 @click.option('--url-internal', '-i', default='http://localhost:3113', envvar='EPOCH_URL_INTERNAL')
 @click.option('--url-websocket', '-w', default='ws://localhost:3013', envvar='EPOCH_URL_WEBSOCKET')
-def cli(ctx, url, url_internal, url_websocket):
-    # set the default configuration
-    EpochConfig.set_defaults(EpochConfig(
-        external_url=url,
-        internal_url=url_internal,
-        websocket_url=url_websocket
-    ))
-    # load the epoch client
-    ctx.obj[CTX_EPOCH_CLI] = EpochClient()
-    pass  # Entry Point
+@click.option('--quiet', '-q', default=False, is_flag=True, help='Print only results')
+@click.option('--verbose', '-v', is_flag=True, default=False, help='Print verbose data')
+def cli(ctx, url, url_internal, url_websocket, quiet, verbose):
+    ctx.obj[CTX_EPOCH_URL] = url
+    ctx.obj[CTX_EPOCH_URL_INTERNAL] = url_internal
+    ctx.obj[CTX_EPOCH_URL_WEBSOCKET] = url_websocket
+    ctx.obj[CTX_QUIET] = quiet
+    ctx.obj[CTX_VERBOSE] = verbose
 
 #   __          __   _ _      _
 #   \ \        / /  | | |    | |
