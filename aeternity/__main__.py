@@ -235,7 +235,7 @@ def wallet_spend(recipient_account, amount, ttl, password):
 #
 
 
-@cli.group()
+@cli.group(help="Handle name lifecycle")
 def name():
     pass
 
@@ -284,7 +284,7 @@ def name_transfer():
 #    \____/|_|  \__,_|\___|_|\___||___/
 #
 #
-@cli.group()
+@cli.group(help="Interact with oracles")
 def oracle():
     pass
 
@@ -309,12 +309,12 @@ def oracle_query():
 #    \_____\___/|_| |_|\__|_|  \__,_|\___|\__|___/
 #
 #
-@cli.group()
+@cli.group("Compile, deploy and execute contracts")
 def contract():
     pass
 
 
-@contract.command('compile')
+@contract.command('compile', help="Compile a contract")
 @click.argument("contract_file")
 def contract_compile(contract_file):
     try:
@@ -365,7 +365,7 @@ def contract_call(ctx, key_path, contract_address, function, params):
         pass
     except Exception as e:
         print(e)
-    
+
 
 #    _____                           _
 #   |_   _|                         | |
@@ -377,12 +377,12 @@ def contract_call(ctx, key_path, contract_address, function, params):
 #                   |_|
 
 
-@cli.group()
+@cli.group(help="Get information on transactions, blocks, etc...")
 def inspect():
     pass
 
 
-@inspect.command('block', help='The block hash to inspect (ex. bh$...)')
+@inspect.command('block', help='The block hash to inspect (eg: bh$...)')
 @click.argument('block_hash')
 def inspect_block(block_hash):
     _check_prefix(block_hash, "bh")
@@ -397,7 +397,7 @@ def inspect_block(block_hash):
         print("> ", t.get("hash"))
 
 
-@inspect.command('height', help='The height of the chain to inspect (ex. 14352)')
+@inspect.command('height', help='The height of the chain to inspect (eg: 14352)')
 @click.argument('chain_height', default=1)
 def inspect_block(chain_height):
     data = _epoch_cli().get_block_by_height(chain_height)
@@ -411,7 +411,7 @@ def inspect_block(chain_height):
         print("> ", t.get("hash"))
 
 
-@inspect.command('transaction', help='The transaction hash to inspect (ex. th$...)')
+@inspect.command('transaction', help='The transaction hash to inspect (eg: th$...)')
 @click.argument('tx_hash')
 def inspect_transaction(tx_hash):
     _check_prefix(tx_hash, "th")
@@ -428,7 +428,7 @@ def inspect_transaction(tx_hash):
     ])
 
 
-@inspect.command('account', help='The address of the account to inspect (ex. ak$...)')
+@inspect.command('account', help='The address of the account to inspect (eg: ak$...)')
 @click.argument('account')
 def inspect_account(account):
     _check_prefix(account, "ak")
@@ -449,7 +449,7 @@ def inspect_account(account):
 #
 
 
-@cli.group()
+@cli.group(help="Interact with the blockchain")
 def chain():
     pass
 
@@ -469,7 +469,6 @@ def chain_version():
 
 # run the client
 cli(obj={})
-
 exit(0)
 
 
