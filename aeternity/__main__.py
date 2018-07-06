@@ -7,6 +7,7 @@ from aeternity.epoch import EpochClient
 from aeternity.config import Config, MAX_TX_TTL, ConfigException
 # from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
 from aeternity.signing import KeyPair
+from aeternity.contract import Contract
 
 
 logging.basicConfig(format='%(message)s', level=logging.INFO)
@@ -296,21 +297,57 @@ def contract():
 
 
 @contract.command('compile')
-def contract_compile():
-    print("compile contract")
-    pass
+@click.argument("contract_file")
+def contract_compile(contract_file):
+    try:
+        with open(contract_file) as fp:
+            c = fp.read()
+            print(c)
+            contract = Contract(fp.read(), Contract.SOPHIA, client=_epoch_cli())
+            result = contract.compile('')
+            _pp([
+                ("contract", result)
+            ])
+    except Exception as e:
+        print(e)
 
 
-@contract.command('deploy')
-def contract_deploy():
-    print("deploy contract")
-    pass
+@contract.command('deploy', help='Deploy a contract on the chain')
+@click.argument("contract_file")
+# TODO: what is gas here
+@click.option("--gas", default=1000, help='amount of gas to deploy the contract')
+def contract_deploy(contract_file, gas):
+    try:
+        with open(contract_file) as fp:
+            contract = Contract(fp.read(), Contract.SOPHIA, client=_epoch_cli())
+            kp, _ = _keypair()
+            address, tx = contract.tx_create(kp, gas=gas)
+            _pp([
+                ("Contract address", address),
+                ("Transaction hash", tx.tx_hash),
+            ])
+    except Exception as e:
+        print(e)
 
 
-@contract.command('call')
-def contract_call():
-    print("call contract")
-    pass
+@contract.command('call', help='Execute a function of the contract')
+@click.pass_context
+@click.argument('key_path', default='sign_key', envvar='WALLET_SIGN_KEY_PATH')
+@click.argument("contract_address")
+@click.argument("function")
+@click.argument("params")
+def contract_call(ctx, key_path, contract_address, function, params):
+    try:
+        ctx.obj[CTX_KEY_PATH] = key_path
+        kp = _keypair()
+        result = contract.tx_call(contract_address, kp, function, params)
+        if result.return_type == 'ok':
+            print(result)
+        print("call contract")
+        pass
+    except Exception as e:
+        print(e)
+    
 
 #    _____                           _
 #   |_   _|                         | |
