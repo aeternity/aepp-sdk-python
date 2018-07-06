@@ -59,6 +59,11 @@ def _check_prefix(data, prefix):
     """
     helper method to check the validity of a prefix
     """
+
+    if len(data) < 3:
+        print("Invalid input, likely you forgot to escape the $ sign (use \\$)")
+        exit(1)
+
     if not data.startswith(f"{prefix}$"):
         if prefix == 'ak':
             print("Invalid account address, it shoudld be like: ak$....")
@@ -67,6 +72,12 @@ def _check_prefix(data, prefix):
         if prefix == 'bh':
             print("Invalid block hash, it shoudld be like: bh$....")
         exit(1)
+
+
+def _verbose():
+    """tell if the command has the verbose flag"""
+    ctx = click.get_current_context()
+    return ctx.obj.get(CTX_VERBOSE, False)
 
 
 def _print(header, value):
@@ -363,25 +374,10 @@ def contract_call(ctx, key_path, contract_address, function, params):
 def inspect():
     pass
 
-# GenericBlock(
-# data_schema='BlockWithJSONTxs',
-# hash='bh$2DH536qiypijKZo6R2FXwGMSxWamAr4LjUddaSUr2wmegyZe3c',
-# height= 28614,
-# miner='ak$BpwWtzwJpfGe6AmusjQ9a5aqKF784nXkB2apoHPmNmrJTnPdn',
-# nonce=7443988857842585374,
-# pow=[1802, 2118, 2567, 3316, 3824, 4270, 5331, 5761, 7093, 7186, 10612, 11260, 12087, 13901, 14738, 15678, 16208, 16748, 17423, 17560, 20218, 20695, 20733, 22011, 22204, 22668, 22712, 24071, 24977, 25193, 25491, 26516, 26517, 26608, 27650, 29138, 29203, 29647, 29844, 30036, 30755, 31080],
-# prev_hash='bh$581YGw7yHs84CehapxY53z2idBzjX1H787vzBQpKcWKcRjbbQ',
-# state_hash='bs$E9iPk1MGhGiFntRVG8EZJ1C4VQ85vcqHDC6EC1GGrxwLoLeDA',
-# target=537726470,
-# time=1529522697102,
-# transactions=[],
-# txs_hash='bx$11111111111111111111111111111111273Yts',
-# version= 14)
-
 
 @inspect.command('block', help='The block hash to inspect (ex. bh$...)')
 @click.argument('block_hash')
-def inspect_block(ctx, block_hash):
+def inspect_block(block_hash):
     _check_prefix(block_hash, "bh")
     data = _epoch_cli().get_block_by_hash(block_hash)
     _pp([
@@ -390,6 +386,8 @@ def inspect_block(ctx, block_hash):
         ('Miner', data.miner),
         ('Transactions', len(data.transactions)),
     ])
+    for t in data.transactions:
+        print("> ", t.get("hash"))
 
 
 @inspect.command('height', help='The height of the chain to inspect (ex. 14352)')
@@ -402,6 +400,8 @@ def inspect_block(chain_height):
         ('Miner', data.miner),
         ('Transactions', len(data.transactions)),
     ])
+    for t in data.transactions:
+        print("> ", t.get("hash"))
 
 
 @inspect.command('transaction', help='The transaction hash to inspect (ex. th$...)')
