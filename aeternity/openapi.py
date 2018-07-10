@@ -1,5 +1,3 @@
-import json
-import os
 import re
 import requests
 import keyword
@@ -42,11 +40,10 @@ class OpenAPICli(object):
         "boolean": "bool",
     }
 
-    def __init__(self, specs_path, url, url_internal):
-        if not os.path.exists(specs_path):
-            raise FileNotFoundError(f"Open api specification file not found: {specs_path}")
-        with open(specs_path) as fp:
-            self.api_def = json.load(fp)
+    def __init__(self, url, url_internal=None):
+        # load the openapi json file from the node
+        self.api_def = requests.get(f"{url}/api").json()
+
         # check open_api_version
         if self.api_def.get('swagger', 'x') not in self.open_api_versions:
             raise OpenAPIException(f"Unsupported Open API specification version {self.api_def.get('swagger')}")
@@ -63,7 +60,12 @@ class OpenAPICli(object):
         # prepare the baseurl
         base_path = self.api_def.get('basePath', '/')
         self.base_url = f"{url}{base_path}"
-        self.base_url_internal = f"{url_internal}{base_path}"
+        if url_internal is None:
+            # do not build internal endpoints
+            self.skip_tags.append("internal")
+        else:
+            self.base_url_internal = f"{url_internal}{base_path}"
+
         # parse the api
         # definition of a field
         FieldDef = namedtuple("FieldDef", ["required", "type", "values", "minimum", "maximum", "default"])
@@ -162,6 +164,8 @@ class OpenAPICli(object):
             else:
                 http_reply = requests.post(target_endpoint, params=query_params, json=post_body)
                 api_response = api.responses.get(http_reply.status_code, None)
+                # TODO: only for debug
+                # print(f">>>>method {target_endpoint} >> reply >> {http_reply.text}", )
             # unknown error
             if api_response is None:
                 raise OpenAPIClientException(f"Unknown error {http_reply.status_code} - {http_reply.text}")

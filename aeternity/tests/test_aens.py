@@ -1,7 +1,6 @@
 import random
 import string
 
-import pytest
 from pytest import raises
 
 from aeternity.epoch import EpochClient
@@ -20,6 +19,14 @@ keypair = KeyPair.from_public_private_key_strings(PUBLIC_KEY, PRIVATE_KEY)
 def random_domain(length=10):
     rand_str = ''.join(random.choice(string.ascii_letters) for _ in range(length))
     return rand_str + '.aet'
+
+
+def test_committment():
+    domain = random_domain()
+    name = AEName(domain)
+    cl = name._get_commitment_hash()
+    cr = name.client.cli.get_commitment_hash(name=name.domain, salt=name.preclaim_salt)
+    assert cl == cr.commitment
 
 
 def test_name_validation_fails():
@@ -63,40 +70,39 @@ def test_name_status_unavailable():
     # claim a domain
     domain = random_domain()
     occupy_name = AEName(domain)
-    occupy_name.full_claim_blocking(keypair)
+    occupy_name.full_claim_blocking(keypair, name_ttl=70)
     # wait for the state to propagate in the block chain
     EpochClient().wait_for_next_block()
     same_name = AEName(domain)
     assert not same_name.is_available()
 
 
-# TODO: enable the test check for pointers
-@pytest.mark.skip('skip for 0.13.0')
 def test_name_update():
     client = EpochClient()
     # claim a domain
     domain = random_domain()
+    print(f"domain is {domain}")
     name = AEName(domain)
     print("Claim name ", domain)
-    name.full_claim_blocking(keypair)
+    name.full_claim_blocking(keypair, name_ttl=70)
     print("got next block")
-    client.wait_for_next_block()
+    client.wait_n_blocks(2)
     print("got next block")
     assert not AEName(domain).is_available(), 'The name should be claimed now'
     name.update_status()
-    client.wait_for_next_block()
+    client.wait_n_blocks(2)
     name.update_status()
     print("claimed name", name)
     assert name.pointers != [], 'Pointers should not be empty'
-    assert name.pointers['account_pubkey'] == client.get_pubkey()
+    assert name.pointers['account_pubkey'] == keypair.get_address()
 
 
 # TODO: enable the test check for pointers
-@pytest.mark.skip('skip for 0.13.0')
+
 def test_transfer_ownership():
     client = EpochClient()
     name = AEName(random_domain())
-    name.full_claim_blocking(keypair)
+    name.full_claim_blocking(keypair, name_ttl=70)
     assert name.status == AEName.Status.CLAIMED
     client.wait_for_next_block()
 
@@ -111,7 +117,7 @@ def test_transfer_ownership():
     client.wait_for_next_block()
     # try changing the target using that new keypair
     name.update_status()
-    name.update(new_key_pair, target=new_key_pair.get_address())
+    name.update(new_key_pair, target=new_key_pair.get_address(), name_ttl=10)
     client.wait_for_next_block()
     name.update_status()
     assert name.pointers != [], 'Pointers should not be empty'
@@ -129,7 +135,7 @@ def test_transfer_ownership():
 def test_revocation():
     domain = random_domain()
     name = AEName(domain)
-    name.full_claim_blocking(keypair)
+    name.full_claim_blocking(keypair, name_ttl=10)
     EpochClient().wait_for_next_block()
     name.revoke(keypair=keypair)
     assert name.status == AEName.Status.REVOKED

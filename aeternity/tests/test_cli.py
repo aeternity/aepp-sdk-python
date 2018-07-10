@@ -1,9 +1,12 @@
 import shutil
 import subprocess
+from subprocess import CalledProcessError
 
 import os
 import tempfile
 from contextlib import contextmanager
+from aeternity.epoch import EpochClient
+from . import NODE_URL, NODE_URL_INTERNAL, KEYPAIR
 
 import pytest
 
@@ -12,7 +15,7 @@ aecli_exe = os.path.join(current_folder, '..', '..', 'aecli')
 
 
 def call_aecli(*params):
-    args = [aecli_exe] + list(params)
+    args = [aecli_exe, '-u', NODE_URL, '-i', NODE_URL_INTERNAL] + list(params)
     output = subprocess.check_output(args).decode('ascii')
     return output.strip()
 
@@ -27,30 +30,24 @@ def tempdir():
         shutil.rmtree(path)
 
 
-@pytest.mark.skip('skip tests for v0.13.0')
 def test_balance():
-    balance_str = call_aecli('balance')
+    balance_str = call_aecli('--quiet', 'inspect', 'account',  KEYPAIR.get_address())
     assert balance_str.isnumeric()
     balance = int(balance_str)
     assert balance > 0
 
 
-@pytest.mark.skip('skip tests for v0.13.0')
 def test_height():
-    balance_str = call_aecli('height')
+    balance_str = call_aecli('--quiet', 'chain', 'height')
     assert balance_str.isnumeric()
     balance = int(balance_str)
     assert balance > 0
 
 
-@pytest.mark.skip('skip tests for v0.13.0')
 def test_generate_wallet():
     with tempdir() as tmp_path:
-        output = call_aecli('generate', 'wallet', tmp_path, '--password', 'secret')
-        lines = output.split('\n')
-        assert lines[0] == 'Your wallet has been generated:'
-        assert lines[1].startswith('Address: ak$')
-        assert lines[2].startswith('Saved to: ')
+        wallet_key = os.path.join(tmp_path, 'key')
+        call_aecli('wallet', wallet_key, 'create', '--password', 'secret', '--force')
         # make sure the folder contains the keys
         files = sorted(os.listdir(tmp_path))
         assert len(files) == 2
@@ -58,40 +55,41 @@ def test_generate_wallet():
         assert files[1] == 'key.pub'
 
 
-@pytest.mark.skip('skip tests for v0.13.0')
 def test_generate_wallet_and_wallet_info():
     with tempdir() as tmp_path:
-        output = call_aecli('generate', 'wallet', tmp_path, '--password', 'secret')
-        gen_address_line = output.split('\n')[1]
-        assert gen_address_line.startswith('Address: ')
-        gen_address = gen_address_line[len('Address: '):]
+        wallet_path = os.path.join(tmp_path, 'key')
+        output = call_aecli('--quiet', 'wallet', wallet_path, 'create', '--password', 'secret')
+        gen_address = output.split('\n')[1]
         assert gen_address.startswith('ak$')
-        output = call_aecli('wallet', 'info', tmp_path, '--password', 'secret')
-        assert output.startswith('Address: ')
-        read_address = output[len('Address: '):]
+        read_address = call_aecli('--quiet', 'wallet', wallet_path, 'address', '--password', 'secret')
+        assert read_address.startswith('ak$')
         assert read_address == gen_address
 
 
-@pytest.mark.skip('skip tests for v0.13.0')
 def test_read_wallet_fail():
+
     with tempdir() as tmp_path:
-        output = call_aecli('generate', 'wallet', tmp_path, '--password', 'secret')
-        gen_address = output.split('\n')[1][len('Address: '):]
-        output = call_aecli('wallet', 'info', tmp_path, '--password', 'WRONGPASS')
-        read_address = output[len('Address: '):]
-        # TODO I guess this should fail more spectacularly. Just getting "another"
-        # TODO wallet is a really subtle error state...
-        assert gen_address != read_address
+        wallet_path = os.path.join(tmp_path, 'key')
+        output = call_aecli('--quiet', 'wallet', wallet_path, 'create', '--password', 'secret')
+        gen_address = output.split('\n')[1]
+        try:
+            read_address = call_aecli('--quiet', 'wallet', wallet_path, 'address', '--password', 'WRONGPASS')
+            assert gen_address != read_address
+        except CalledProcessError:
+            # this is fine because invalid passwords exists the command with retcode 1
+            pass
 
 
 @pytest.mark.skip('Cannot spend using a waller without balance. We have to mine into that wallet somehow')
 def test_spend():
-    with tempdir() as wallet_path:
-        output = call_aecli('generate', 'wallet', wallet_path, '--password', 'whatever')
-        receipient_address = output.split('\n')[1][len('Address: '):]
-    with tempdir() as wallet_path:
-        call_aecli('generate', 'wallet', wallet_path, '--password', 'secret')
-        output = call_aecli('spend', '1', receipient_address, wallet_path, '--password', 'secret')
+    with tempdir() as tmp_path:
+        wallet_path = os.path.join(tmp_path, 'key')
+        call_aecli('wallet', wallet_path, 'create',  '--password', 'whatever')
+        receipient_address = call_aecli('-q', 'wallet', wallet_path, 'address',  '--password', 'whatever')
+    with tempdir() as tmp_path:
+        wallet_path = os.path.join(tmp_path, 'key')
+        call_aecli('wallet', wallet_path, 'create', '--password', 'secret')
+        output = call_aecli('wallet', wallet_path, 'spend', receipient_address, '1', '--password', 'secret')
         assert 'Transaction sent' in output
 
 
@@ -107,31 +105,39 @@ def test_spend_wrong_password():
         assert 'Transaction sent' in output
 
 
-@pytest.mark.skip('skip tests for v0.13.0')
 def test_spend_invalid_amount():
     # try to send a negative amount
-    with tempdir() as wallet_path:
-        output = call_aecli('generate', 'wallet', wallet_path, '--password', 'whatever')
-        receipient_address = output.split('\n')[1][len('Address: '):]
-    with tempdir() as wallet_path:
-        call_aecli('generate', 'wallet', wallet_path, '--password', 'secret')
+    with tempdir() as tmp_path:
+        wallet_path = os.path.join(tmp_path, 'key')
+        output = call_aecli('--quiet', 'wallet', wallet_path, 'create', '--password', 'whatever')
+        receipient_address = output.split('\n')[1]
+    with tempdir() as tmp_path:
+        wallet_path = os.path.join(tmp_path, 'key')
+        output = call_aecli('--quiet', 'wallet', wallet_path, 'create', '--password', 'secret')
         with pytest.raises(subprocess.CalledProcessError):
-            output = call_aecli('spend', '-1', receipient_address, wallet_path, '--password', 'secret')
+            output = call_aecli('wallet', wallet_path, 'spend', receipient_address, '-1', '--password', 'secret')
 
 
-@pytest.mark.skip('skip tests for v0.13.0')
 def test_inspect_block_by_height():
-    from aeternity import EpochClient
     height = EpochClient().get_height()
-    output = call_aecli('inspect', 'block', str(height))
-    print(output)
-    assert False
+    output = call_aecli('--quiet', 'inspect', 'height', str(height))
+    lines = output.split('\n')
+    assert lines[0].startswith("bh$")
+    assert lines[1] == str(height)
 
 
-@pytest.mark.skip('NOT IMPLEMENTED YET')
 def test_inspect_block_by_hash():
-    # TODO
-    raise NotImplementedError()
+    height = EpochClient().get_height()
+    output = call_aecli('--quiet', 'inspect', 'height', str(height))
+    lines = output.split('\n')
+    # retrieve the block hash
+    block_hash = lines[0]
+    output = call_aecli('--quiet', 'inspect', 'block', block_hash)
+    blines = output.split('\n')
+    assert lines[0] == blines[0]
+    assert lines[1] == blines[1]
+    assert lines[2] == blines[2]
+    assert lines[3] == blines[3]
 
 
 @pytest.mark.skip('NOT IMPLEMENTED YET')

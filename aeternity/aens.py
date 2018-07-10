@@ -1,19 +1,12 @@
 import json
 import random
-from _blake2 import blake2b
 
-import base58
-from base58 import b58encode_check
-
-from aeternity.exceptions import NameNotAvailable, PreclaimFailed, TooEarlyClaim, MissingPreclaim
+from aeternity.exceptions import NameNotAvailable, TooEarlyClaim, MissingPreclaim  # ,PreclaimFailed
 from aeternity.oracle import Oracle
 from aeternity.epoch import EpochClient
 from aeternity.openapi import OpenAPIClientException
-
-
-# max number of block into the future that the name is going to be available
-# https://github.com/aeternity/protocol/blob/epoch-v0.13.0/AENS.md#update
-MAX_NAME_TTL = 36000
+from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE, NAME_MAX_TLL, NAME_DEFAULT_TTL
+from aeternity.signing import hash, hash_encode, encode
 
 
 class NameStatus:
@@ -60,14 +53,11 @@ class AEName:
         # and also:
         # https://github.com/ethereum/EIPs/blob/master/EIPS/eip-137.md#namehash-algorithm
         labels = name.split(b'.')
-
-        def hash_func(data): return blake2b(data, digest_size=32).digest()
         hashed = b'\x00' * 32
         while labels:
-            hashed = hash_func(hashed + hash_func(labels[0]))
+            hashed = hash(hashed + hash(labels[0]))
             labels = labels[1:]
-        b58hash = base58.b58encode_check(hashed)
-        return f'nm${b58hash}'
+        return encode("nm", hashed)
 
     @classmethod
     def validate_pointer(cls, pointer):
@@ -118,53 +108,79 @@ class AEName:
         self.update_status()
         return self.status == NameStatus.CLAIMED
 
-    def full_claim_blocking(self, keypair, preclaim_fee=1, claim_fee=1):
+    def full_claim_blocking(self, keypair,
+                            preclaim_fee=DEFAULT_FEE,
+                            claim_fee=DEFAULT_FEE,
+                            update_fee=DEFAULT_FEE,
+                            name_ttl=NAME_MAX_TLL,
+                            client_ttl=NAME_DEFAULT_TTL, target=None,
+                            tx_ttl=DEFAULT_TX_TTL):
+        """
+        execute a name claim and updates the pointer to it.
+
+        It executes:
+        1. preclaim
+        2. claim
+        3. pointers update
+
+        :param keypair: the keypair of the account registering the name
+        :param preclaim_fee: the fee for the preclaiming operation
+        :param claim_fee: the fee for the claiming operation
+        :param update_fee: the fee for the update operation
+        :param tx_ttl: the ttl for the transaction
+        :param name_ttl: the ttl of the name (in blocks)
+        :param target: the public key to associate the name to (pointers)
+        """
         if not self.is_available():
             raise NameNotAvailable(self.domain)
-        self.preclaim(keypair, fee=preclaim_fee)
-        self.claim_blocking(keypair, fee=claim_fee)
+        self.preclaim(keypair, fee=preclaim_fee, tx_ttl=tx_ttl)
+        self.claim_blocking(keypair, fee=claim_fee, tx_ttl=tx_ttl)
+        if target is None:
+            target = keypair.get_address()
+        self.update(keypair, target, fee=update_fee, name_ttl=name_ttl, client_ttl=name_ttl)
 
-    def _get_commitment_hash(self, salt):
-        response = self.client.cli.get_commitment_hash(name=self.domain, salt=salt)
-        try:
-            return response.commitment
-        except KeyError:
-            raise PreclaimFailed(response)
+    def _get_commitment_hash(self):
+        """Calculate the commitment hash"""
+        self.preclaim_salt = random.randint(0, 2**64)
+        name_digest = hash(data=self.domain.encode("ascii"))
+        commitment = hash_encode("cm", name_digest + self.preclaim_salt.to_bytes(32, 'big'))
+        return commitment
 
-    def preclaim(self, keypair, fee=1, salt=None,):
+    def preclaim(self, keypair, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
+        """
+        Execute a name preclaim
+        """
         # check which block we used to create the preclaim
         self.preclaimed_block_height = self.client.get_height()
-        if salt is not None:
-            self.preclaim_salt = salt
-        else:
-            self.preclaim_salt = random.randint(0, 2**64)
-
-        commitment_hash = self._get_commitment_hash(self.preclaim_salt)
-
+        # calculate the commitment hash
+        commitment_hash = self._get_commitment_hash()
+        # compute the absolute ttl
+        ttl = self.client.compute_absolute_ttl(tx_ttl)
+        # preclaim
         preclaim_transaction = self.client.cli.post_name_preclaim(body=dict(
             commitment=commitment_hash,
             fee=fee,
             account=keypair.get_address(),
+            ttl=ttl
         ))
-        signed_transaction, b58signature = keypair.sign_transaction(preclaim_transaction)
-        self.client.send_signed_transaction(signed_transaction)
+        signed_tx = self.client.post_transaction(keypair, preclaim_transaction)
         self.status = AEName.Status.PRECLAIMED
-        return preclaim_transaction.tx_hash, self.preclaim_salt
+        return signed_tx.tx_hash, self.preclaim_salt
 
-    def claim_blocking(self, keypair, fee=1):
+    def claim_blocking(self, keypair, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
         try:
-            self.claim(keypair, fee=fee)
+            self.claim(keypair, fee=fee, tx_ttl=tx_ttl)
         except TooEarlyClaim:
             self.client.wait_for_next_block()
-            self.claim(keypair, fee=fee)
+            self.claim(keypair, fee=fee, tx_ttl=tx_ttl)
 
     @classmethod
     def _encode_name(cls, name):
         if isinstance(name, str):
             name = name.encode('ascii')
-        return 'nm$' + b58encode_check(name)
+        return encode('nm', name)
 
-    def claim(self, keypair, fee=1):
+    def claim(self, keypair, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
         if self.preclaimed_block_height is None:
             raise MissingPreclaim('You must call preclaim before claiming a name')
 
@@ -174,17 +190,19 @@ class AEName:
                 'You must wait for one block to call claim.'
                 'Use `claim_blocking` if you have a lot of time on your hands'
             )
-
+        # compute the absolute ttl
+        ttl = self.client.compute_absolute_ttl(tx_ttl)
         claim_transaction = self.client.cli.post_name_claim(body=dict(
             account=keypair.get_address(),
             name=AEName._encode_name(self.domain),
             name_salt=self.preclaim_salt,
             fee=fee,
+            ttl=ttl
         ))
-        signed_transaction, b58signature = keypair.sign_transaction(claim_transaction)
-        self.client.send_signed_transaction(signed_transaction)
+
+        signed_tx = self.client.post_transaction(keypair, claim_transaction)
         self.status = AEName.Status.CLAIMED
-        return claim_transaction.tx_hash, self.preclaim_salt
+        return signed_tx.tx_hash, self.preclaim_salt
 
     def _get_pointers_json(self, target):
         if target.startswith('ak'):
@@ -193,7 +211,11 @@ class AEName:
             pointers = {'oracle_pubkey': target}
         return json.dumps(pointers)
 
-    def update(self, keypair, target, ttl=200, name_ttl=60000, fee=1):
+    def update(self, keypair, target,
+               name_ttl=NAME_MAX_TLL,
+               client_ttl=NAME_DEFAULT_TTL,
+               fee=DEFAULT_FEE,
+               tx_ttl=DEFAULT_TX_TTL):
         assert self.status == NameStatus.CLAIMED, 'Must be claimed to update pointer'
 
         if isinstance(target, Oracle):
@@ -201,41 +223,54 @@ class AEName:
                 raise ValueError('You must register the oracle before using it as target')
             target = target.oracle_id
 
+        # compute the absolute ttl
+        ttl = self.client.compute_absolute_ttl(tx_ttl)
+        # send the update transaction
         update_transaction = self.client.cli.post_name_update(body=dict(
             account=keypair.get_address(),
             name_hash=AEName.calculate_name_hash(self.domain),
+            client_ttl=client_ttl,
             name_ttl=name_ttl,
             pointers=self._get_pointers_json(target),
             ttl=ttl,
             fee=fee,
         ))
-        signed_transaction, b58signature = keypair.sign_transaction(update_transaction)
-        self.client.send_signed_transaction(signed_transaction)
-        self.pointers = self._get_pointers_json(target),
-        return signed_transaction
+        return self.client.post_transaction(keypair, update_transaction)
 
-    def transfer_ownership(self, keypair, receipient_pubkey, fee=1, name_ttl=600000,):
+    def transfer_ownership(self, keypair, receipient_pubkey,
+                           fee=DEFAULT_FEE,
+                           name_ttl=NAME_DEFAULT_TTL,
+                           tx_ttl=DEFAULT_TX_TTL):
+        """
+        transfer ownership of a name
+        :return: the transaction
+        """
+        # compute the absolute ttl
+        ttl = self.client.compute_absolute_ttl(tx_ttl)
         transfer_transaction = self.client.cli.post_name_transfer(body=dict(
             account=keypair.get_address(),
             name_hash=self.get_name_hash(),
             recipient_pubkey=receipient_pubkey,
+            ttl=ttl,
             fee=fee,
-
         ))
-
-        signed_transaction, b58signature = keypair.sign_transaction(transfer_transaction)
-        self.client.send_signed_transaction(signed_transaction)
+        signed_tx = self.client.post_transaction(keypair, transfer_transaction)
         self.status = NameStatus.TRANSFERRED
-        return signed_transaction
+        return signed_tx
 
-    def revoke(self, keypair, fee=1):
+    def revoke(self, keypair, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
+        """
+        transfer ownership of a name
+        :return: the transaction
+        """
+        # compute the absolute ttl
+        ttl = self.client.compute_absolute_ttl(tx_ttl)
         revoke_transaction = self.client.cli.post_name_revoke(body=dict(
             account=keypair.get_address(),
             name_hash=self.get_name_hash(),
             fee=fee,
+            ttl=ttl
         ))
-
-        signed_transaction, b58signature = keypair.sign_transaction(revoke_transaction)
-        self.client.send_signed_transaction(signed_transaction)
+        signed_tx = self.client.post_transaction(keypair, revoke_transaction)
         self.status = NameStatus.REVOKED
-        return signed_transaction
+        return signed_tx

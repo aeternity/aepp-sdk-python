@@ -1,5 +1,6 @@
-from aeternity.tests import PUBLIC_KEY
+from aeternity.tests import PUBLIC_KEY, EPOCH_VERSION
 from aeternity.epoch import EpochClient
+import pytest
 
 # from aeternity.exceptions import TransactionNotFoundException
 
@@ -19,18 +20,15 @@ def test_get_transactions():
 
 
 def test_get_version():
-    # version_info = client.get_version()
-    # assert type(version_info) == Version
-    # assert version_info.version == '0.13.0'
-    pass
+    client = EpochClient()
+    assert client.get_version() == EPOCH_VERSION
 
 
+@pytest.mark.skip("it is not a published method")
 def test_get_info():
-    # info = aeternity.EpochClient().get_info()
-    # assert type(info) == EpochInfo
-    # assert type(info.last_30_blocks_time[0]) == LastBlockInfo
-    # assert info.last_30_blocks_time[0].time_delta_to_parent > 0
-    pass
+    client = EpochClient()
+    info = client.get_info()
+    assert info.last_30_blocks_time[0].time_delta_to_parent > 0
 
 
 def test_get_latest_block():
@@ -79,12 +77,14 @@ def test_get_pending_block():
 
 def test_get_block_transaction_count_by_hash():
     client = EpochClient()
+    # get the latest block
     block = client.get_latest_block()
     print(block)
     assert block.hash is not None
-    transaction_count = client.get_block_transaction_count_by_hash(block.hash)
-    print(transaction_count)
-    assert transaction_count.count > 0
+    # get the transaction count that should be a number >= 0
+    txs_count = client.get_block_transaction_count_by_hash(block.hash)
+    print(txs_count)
+    assert txs_count.count >= 0
 
 
 def test_get_block_transaction_count_by_height():
@@ -92,7 +92,7 @@ def test_get_block_transaction_count_by_height():
     previous_height = client.get_height() - 1
     transaction_count = client.get_block_transaction_count_by_height(previous_height)
     print(transaction_count.count)
-    assert transaction_count.count > 0
+    assert transaction_count.count >= 0
 
 
 def test_get_transaction_from_block_height():
@@ -111,7 +111,7 @@ def test_get_missing_transaction_from_block_height():
 
 
 def test_get_transactions_in_block_range():
-    client = EpochClient()  
+    client = EpochClient()
     height = client.get_height()
     result = client.get_transactions_in_block_range(height - 5, height)
     assert len(result) > 1

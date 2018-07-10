@@ -1,17 +1,14 @@
 #!/usr/bin/env python
 import json
 import logging
-import sys
-import os
 
-# this is just a hack to get this example to import a parent folder:
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
 
 from aeternity import Config
 from aeternity import EpochClient
 from aeternity import OracleQuery
 
 logging.basicConfig(level=logging.DEBUG)
+
 
 class AeternityInUSDOracleQuery(OracleQuery):
     def on_response(self, message, query):
