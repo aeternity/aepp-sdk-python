@@ -70,7 +70,7 @@ def test_name_status_unavailable():
     # claim a domain
     domain = random_domain()
     occupy_name = AEName(domain)
-    occupy_name.full_claim_blocking(keypair, name_ttl=10)
+    occupy_name.full_claim_blocking(keypair, name_ttl=50)
     # wait for the state to propagate in the block chain
     EpochClient().wait_for_next_block()
     same_name = AEName(domain)

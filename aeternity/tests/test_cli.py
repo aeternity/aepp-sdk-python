@@ -5,6 +5,7 @@ from subprocess import CalledProcessError
 import os
 import tempfile
 from contextlib import contextmanager
+from aeternity.epoch import EpochClient
 from . import NODE_URL, NODE_URL_INTERNAL, KEYPAIR
 
 import pytest
@@ -104,31 +105,39 @@ def test_spend_wrong_password():
         assert 'Transaction sent' in output
 
 
-@pytest.mark.skip('skip tests for v0.13.0')
 def test_spend_invalid_amount():
     # try to send a negative amount
-    with tempdir() as wallet_path:
-        output = call_aecli('generate', 'wallet', wallet_path, '--password', 'whatever')
-        receipient_address = output.split('\n')[1][len('Address: '):]
-    with tempdir() as wallet_path:
-        call_aecli('generate', 'wallet', wallet_path, '--password', 'secret')
+    with tempdir() as tmp_path:
+        wallet_path = os.path.join(tmp_path, 'key')
+        output = call_aecli('--quiet', 'wallet', wallet_path, 'create', '--password', 'whatever')
+        receipient_address = output.split('\n')[1]
+    with tempdir() as tmp_path:
+        wallet_path = os.path.join(tmp_path, 'key')
+        output = call_aecli('--quiet', 'wallet', wallet_path, 'create', '--password', 'secret')
         with pytest.raises(subprocess.CalledProcessError):
-            output = call_aecli('spend', '-1', receipient_address, wallet_path, '--password', 'secret')
+            output = call_aecli('wallet', wallet_path, 'spend', receipient_address, '-1', '--password', 'secret')
 
 
-@pytest.mark.skip('skip tests for v0.13.0')
 def test_inspect_block_by_height():
-    from aeternity import EpochClient
     height = EpochClient().get_height()
-    output = call_aecli('inspect', 'block', str(height))
-    print(output)
-    assert False
+    output = call_aecli('--quiet', 'inspect', 'height', str(height))
+    lines = output.split('\n')
+    assert lines[0].startswith("bh$")
+    assert lines[1] == str(height)
 
 
-@pytest.mark.skip('NOT IMPLEMENTED YET')
 def test_inspect_block_by_hash():
-    # TODO
-    raise NotImplementedError()
+    height = EpochClient().get_height()
+    output = call_aecli('--quiet', 'inspect', 'height', str(height))
+    lines = output.split('\n')
+    # retrieve the block hash
+    block_hash = lines[0]
+    output = call_aecli('--quiet', 'inspect', 'block', block_hash)
+    blines = output.split('\n')
+    assert lines[0] == blines[0]
+    assert lines[1] == blines[1]
+    assert lines[2] == blines[2]
+    assert lines[3] == blines[3]
 
 
 @pytest.mark.skip('NOT IMPLEMENTED YET')

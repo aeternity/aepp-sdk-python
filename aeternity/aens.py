@@ -127,8 +127,8 @@ class AEName:
         :param preclaim_fee: the fee for the preclaiming operation
         :param claim_fee: the fee for the claiming operation
         :param update_fee: the fee for the update operation
-        :param ttl: the ttl for the name (in blocks)
-        :param name_ttl: TODO: what is name ttl?
+        :param tx_ttl: the ttl for the transaction
+        :param name_ttl: the ttl of the name (in blocks)
         :param target: the public key to associate the name to (pointers)
         """
         if not self.is_available():
