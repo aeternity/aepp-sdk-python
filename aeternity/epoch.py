@@ -288,18 +288,18 @@ class EpochClient:
 
         return self.cli.get_block_txs_count_by_height(height=height, tx_types=tx_types, exclude_tx_types=exclude_tx_types)
 
-    def get_transaction_by_transaction_hash(self, tx_hash):
+    def get_transaction_by_transaction_hash(self, tx_hash, tx_encoding='message_pack'):
         assert tx_hash.startswith('th$'), 'A transaction hash must start with "th$"'
-        return self.cli.get_tx(tx_hash=tx_hash)
+        return self.cli.get_tx(tx_hash=tx_hash, tx_encoding=tx_encoding)
 
-    def get_transaction_from_block_height(self, height, tx_index):
-        return self.cli.get_transaction_from_block_height(height=height, tx_index=tx_index)
+    def get_transaction_from_block_height(self, height, tx_index, tx_encoding='message_pack'):
+        return self.cli.get_transaction_from_block_height(height=height, tx_index=tx_index, tx_encoding=tx_encoding)
 
-    def get_transaction_from_block_hash(self, block_hash, tx_index):
-        return self.cli.get_transaction_from_block_hash(hash=block_hash, tx_index=tx_index)
+    def get_transaction_from_block_hash(self, block_hash, tx_index, tx_encoding='message_pack'):
+        return self.cli.get_transaction_from_block_hash(hash=block_hash, tx_index=tx_index, tx_encoding=tx_encoding)
 
-    def get_transaction_from_latest_block(self, tx_idx):
-        return self.get_transaction_from_block_hash('latest', tx_idx)
+    def get_transaction_from_latest_block(self, tx_idx, tx_encoding='message_pack'):
+        return self.get_transaction_from_block_hash('latest', tx_idx, tx_encoding=tx_encoding)
 
     def get_transactions_in_block_range(self, from_height, to_height, tx_types=None, exclude_tx_types=None):
         '''Get transactions list from a block range by height'''
