@@ -86,11 +86,11 @@ def test_name_update():
     print("Claim name ", domain)
     name.full_claim_blocking(keypair, name_ttl=70)
     print("got next block")
-    client.wait_for_next_block()
+    client.wait_n_blocks(2)
     print("got next block")
     assert not AEName(domain).is_available(), 'The name should be claimed now'
     name.update_status()
-    client.wait_for_next_block()
+    client.wait_n_blocks(2)
     name.update_status()
     print("claimed name", name)
     assert name.pointers != [], 'Pointers should not be empty'
