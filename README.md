@@ -7,8 +7,7 @@ navigation: 6
 # aepp-sdk-python
 
 ## Introduction
-This repo is for tools and notes for working with æternity when you're running
-an Epoch node on your local machine.
+[This repo](https://github.com/aeternity/aepp-sdk-python) is for tools and notes for working with æternity when you're running an Epoch node on your local machine.
 
 [Follow these installation notes for a three-node linux setup with fast mining settings](https://github.com/aeternity/aepp-sdk-python/blob/master/INSTALL.md)
 
@@ -30,60 +29,30 @@ See below for programmatic usage
 You can launch the command line tool using
 
 ```
-python -m aeternity
+./acecli
 ```
 
 Available commands:
 
 ```
-aeternity cli tool:
-Usage:
-    balance [pubkey]
-        Returns the balance of pubkey or the balance of the node's pubkey
-    height
-        returns the top block number
-    generate wallet --path <path>
-        creates a new wallet
-    spend <amount> <receipient> <wallet-path>
-        send money to another account. The folder at wallet-path must contain
-        key and key.pub
-    wallet info <wallet-path>
-        prints info about your wallet (address in base58)
-    inspect block <block height | block hash | "latest">
-        prints the contents of a block
-    inspect transaction <transaction hash>
-        prints the contents of a transaction
-    aens available <domain.aet>
-            Check Domain availablity
-    aens register <domain.aet> [--force]
-            Register a domain (incurs fees!)
-    aens status <domain.aet>
-            Checks the status of a domain
-    aens update <domain.aet> <address>
-            Updates where the name points to
-    aens revoke <domain.aet> [--force]
-            Removes this domain from the block chain (incurs fees!)
-    aens transfer <domain.aet> <receipient_address> [--force]
-            Transfers a domain to another user
-    
-    oracle register [--query-format] [--response-format] [--default-query-fee]
-                    [--default-fee] [--default-ttl] [--default-query-ttl]
-                    [--default-response-ttl]
-            You will be prompted for any non-provided argument
-    oracle query [--oracle-pubkey] [--query-fee] [--query-ttl] [--response-ttl]
-                 [--fee]
-            You will be prompted for any non-provided argument
- 
-The `--force` will suppress any questions before performing the action.
+Usage: aecli [OPTIONS] COMMAND [ARGS]...
 
-You can override the standard connection ports using the following environment
-variables:
-    AE_EXTERNAL_HOST, AE_EXTERNAL_PORT, AE_INTERNAL_HOST, AE_INTERNAL_PORT,
-    AE_WEBSOCKET_HOST and AE_WEBSOCKET_PORT
-or using the command line parameters:
-    --external-host
-    --internal-host
-    --websocket-host
+Options:
+  --version                 Show the version and exit.
+  -u, --url TEXT            Epoch node url
+  -i, --url-internal TEXT
+  -w, --url-websocket TEXT
+  -q, --quiet               Print only results
+  -v, --verbose             Print verbose data
+  --help                    Show this message and exit.
+
+Commands:
+  Compile, deploy and execute contracts
+  chain                           Interact with the blockchain
+  inspect                         Get information on transactions, blocks,...
+  name                            Handle name lifecycle
+  oracle                          Interact with oracles
+  wallet                          Handle wallet operations
 ```
 
 ## Programmatic Usage
