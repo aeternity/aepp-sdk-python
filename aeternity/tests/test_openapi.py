@@ -89,42 +89,6 @@ def test_generatedcli():
                 }
             ]
         },
-        {
-            "method": "get_account_transactions",
-            "scenarios": [
-                {
-                    "name": "ok",
-                    "params": {
-                      "account_pubkey": PUBLIC_KEY
-                    },
-                    "wantErr": False
-                },
-                {
-                    "name": "ok limit",
-                    "params": {
-                        "account_pubkey": PUBLIC_KEY,
-                        "limit": 10,
-                    },
-                    "wantErr": False
-                },
-                {
-                    "name": " limit out of range",
-                    "params": {
-                        "account_pubkey": PUBLIC_KEY,
-                        "limit": 2000,
-                    },
-                    "wantErr": True
-                },
-                {
-                    "name": " invalid paramter type",
-                    "params": {
-                        "account_pubkey": PUBLIC_KEY,
-                        "limit": "10",
-                    },
-                    "wantErr": True
-                }
-            ]
-        },
     ]
 
     for a in client.get_api_methods():

@@ -10,15 +10,6 @@ def test_get_balance():
     assert client.get_balance(account_pubkey=PUBLIC_KEY) > 0
 
 
-def test_get_transactions():
-    client = EpochClient()
-    trans = client.get_transactions(account_pubkey=PUBLIC_KEY)
-    assert len(trans) > 0
-    # assert type(trans[0]) == Transaction
-    # all_transaction_types = set(transaction_type_mapping.values())
-    # assert type(trans[0].tx) in all_transaction_types
-
-
 def test_get_version():
     client = EpochClient()
     assert client.get_version() == EPOCH_VERSION

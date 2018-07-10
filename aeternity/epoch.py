@@ -236,25 +236,6 @@ class EpochClient:
             params['exclude_tx_types'] = ','.join(exclude_tx_types)
         return params
 
-    def get_transactions(
-            self,
-            account_pubkey=None,
-            offset=None,
-            limit=None,
-            tx_types=[],
-            exclude_tx_types=[],
-    ):
-        """
-        get the transactions of the account `account_pubkey`. If left empty, gets
-        the transactions of this node's account.
-        """
-        return self.cli.get_account_transactions(account_pubkey=account_pubkey,
-                                                 tx_encoding='json',
-                                                 offset=offset,
-                                                 limit=limit,
-                                                 tx_types=','.join(tx_types),
-                                                 exclude_tx_types=','.join(exclude_tx_types),)
-
     def get_version(self):
         return self.cli.get_version()
 
