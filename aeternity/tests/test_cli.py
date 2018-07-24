@@ -5,6 +5,7 @@ from subprocess import CalledProcessError
 import os
 import tempfile
 from contextlib import contextmanager
+import aeternity
 from aeternity.epoch import EpochClient
 from . import NODE_URL, NODE_URL_INTERNAL, KEYPAIR
 
@@ -30,21 +31,26 @@ def tempdir():
         shutil.rmtree(path)
 
 
-def test_balance():
+def test_cli_version():
+    version_str = call_aecli('--version')
+    assert version_str == f"aecli, version {aeternity.__version__}"
+
+
+def test_cli_balance():
     balance_str = call_aecli('--quiet', 'inspect', 'account',  KEYPAIR.get_address())
     assert balance_str.isnumeric()
     balance = int(balance_str)
     assert balance > 0
 
 
-def test_height():
+def test_cli_height():
     balance_str = call_aecli('--quiet', 'chain', 'height')
     assert balance_str.isnumeric()
     balance = int(balance_str)
     assert balance > 0
 
 
-def test_generate_wallet():
+def test_cli_generate_wallet():
     with tempdir() as tmp_path:
         wallet_key = os.path.join(tmp_path, 'key')
         call_aecli('wallet', wallet_key, 'create', '--password', 'secret', '--force')
@@ -55,7 +61,7 @@ def test_generate_wallet():
         assert files[1] == 'key.pub'
 
 
-def test_generate_wallet_and_wallet_info():
+def test_cli_generate_wallet_and_wallet_info():
     with tempdir() as tmp_path:
         wallet_path = os.path.join(tmp_path, 'key')
         output = call_aecli('--quiet', 'wallet', wallet_path, 'create', '--password', 'secret')
@@ -66,7 +72,7 @@ def test_generate_wallet_and_wallet_info():
         assert read_address == gen_address
 
 
-def test_read_wallet_fail():
+def test_cli_read_wallet_fail():
 
     with tempdir() as tmp_path:
         wallet_path = os.path.join(tmp_path, 'key')
@@ -81,7 +87,7 @@ def test_read_wallet_fail():
 
 
 @pytest.mark.skip('Cannot spend using a waller without balance. We have to mine into that wallet somehow')
-def test_spend():
+def test_cli_spend():
     with tempdir() as tmp_path:
         wallet_path = os.path.join(tmp_path, 'key')
         call_aecli('wallet', wallet_path, 'create',  '--password', 'whatever')
@@ -95,7 +101,7 @@ def test_spend():
 
 @pytest.mark.skip('We currently cannot verify if the transaction failed because of a wrong password or some other error '
                   '(e.g. no balance)')
-def test_spend_wrong_password():
+def test_cli_spend_wrong_password():
     with tempdir() as wallet_path:
         output = call_aecli('generate', 'wallet', wallet_path, '--password', 'whatever')
         receipient_address = output.split('\n')[1][len('Address: '):]
@@ -105,7 +111,7 @@ def test_spend_wrong_password():
         assert 'Transaction sent' in output
 
 
-def test_spend_invalid_amount():
+def test_cli_spend_invalid_amount():
     # try to send a negative amount
     with tempdir() as tmp_path:
         wallet_path = os.path.join(tmp_path, 'key')
@@ -118,7 +124,7 @@ def test_spend_invalid_amount():
             output = call_aecli('wallet', wallet_path, 'spend', receipient_address, '-1', '--password', 'secret')
 
 
-def test_inspect_block_by_height():
+def test_cli_inspect_block_by_height():
     height = EpochClient().get_height()
     output = call_aecli('--quiet', 'inspect', 'height', str(height))
     lines = output.split('\n')
@@ -126,7 +132,7 @@ def test_inspect_block_by_height():
     assert lines[1] == str(height)
 
 
-def test_inspect_block_by_hash():
+def test_cli_inspect_block_by_hash():
     height = EpochClient().get_height()
     output = call_aecli('--quiet', 'inspect', 'height', str(height))
     lines = output.split('\n')
@@ -141,24 +147,23 @@ def test_inspect_block_by_hash():
 
 
 @pytest.mark.skip('NOT IMPLEMENTED YET')
-def test_inspect_block_by_latest():
+def test_cli_inspect_block_by_latest():
     # TODO
     raise NotImplementedError()
 
 
 @pytest.mark.skip('NOT IMPLEMENTED YET')
-def test_inspect_block_by_invalid_arg():
+def test_cli_inspect_block_by_invalid_arg():
     # TODO
     raise NotImplementedError()
 
 
 @pytest.mark.skip('NOT IMPLEMENTED YET')
-def test_inspect_transaction_by_hash():
+def test_cli_inspect_transaction_by_hash():
     # TODO
     raise NotImplementedError()
 
 
-@pytest.mark.skip('NOT IMPLEMENTED YET')
-def test_check_name_available():
-    # TODO
-    raise NotImplementedError()
+def test_cli_name_status():
+    output = call_aecli('--quiet', 'inspect', 'name', 'whatever.aet')
+    assert output == "AVAILABLE"

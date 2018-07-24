@@ -94,6 +94,10 @@ class EpochClient:
                 break
 
     def wait_for_next_block(self, polling_interval=None):
+        """
+        blocking method to wait for the next block to be mined
+        shortcut for self.wait_n_blocks(1, polling_interval=polling_interval)
+        """
         self.wait_n_blocks(1, polling_interval=polling_interval)
 
     def dispatch_message(self, message):
@@ -223,7 +227,7 @@ class EpochClient:
         """
         assert not (height is not None and block_hash is not None), "Can only set either height or hash!"
         balance = self.cli.get_account_balance(
-            account_pubkey=account_pubkey, height=height, block_hash=block_hash
+            address=account_pubkey, height=height, block_hash=block_hash
         )
         return balance.balance
 
@@ -247,8 +251,8 @@ class EpochClient:
         # TODO: whi is this here?
         raise NotImplementedError()
 
-    def get_block_by_height(self, height):
-        return self.cli.get_block_by_height(height=height)
+    def get_key_block_by_height(self, height):
+        return self.cli.get_key_block_by_height(height=height)
 
     def get_block_by_hash(self, hash):
         return self.cli.get_block_by_hash(hash=hash)
@@ -270,6 +274,11 @@ class EpochClient:
         return self.cli.get_block_txs_count_by_height(height=height, tx_types=tx_types, exclude_tx_types=exclude_tx_types)
 
     def get_transaction_by_transaction_hash(self, tx_hash, tx_encoding='message_pack'):
+        """
+        Retrieve a transaction by it's hash
+        :param tx_hash: the hash of the transaction
+        :param tx_encoding: the encoding of the reply
+        """
         assert tx_hash.startswith('th$'), 'A transaction hash must start with "th$"'
         return self.cli.get_tx(tx_hash=tx_hash, tx_encoding=tx_encoding)
 
@@ -281,15 +290,6 @@ class EpochClient:
 
     def get_transaction_from_latest_block(self, tx_idx, tx_encoding='message_pack'):
         return self.get_transaction_from_block_hash('latest', tx_idx, tx_encoding=tx_encoding)
-
-    def get_transactions_in_block_range(self, from_height, to_height, tx_types=None, exclude_tx_types=None):
-        '''Get transactions list from a block range by height'''
-        return self.cli.get_txs_list_from_block_range_by_height(
-            _from=from_height,
-            to=to_height,
-            tx_types=tx_types,
-            exclude_tx_types=exclude_tx_types
-        )
 
     def create_spend_transaction(self, sender_pubkey, recipient_pubkey, amount, tx_ttl=DEFAULT_TX_TTL, fee=DEFAULT_FEE, nonce=0, payload="payload"):
         """

@@ -39,8 +39,8 @@ def test_generatedcli():
             ]
         },
         {
-            "name": "get_block_by_height",
-            "method": "get_block_by_height",
+            "name": "get_key_block_by_height",
+            "method": "get_key_block_by_height",
             "scenarios": [
                 {
                     "name": "ok ",
@@ -69,14 +69,14 @@ def test_generatedcli():
                 {
                     "name": "ok",
                     "params": {
-                      "account_pubkey": PUBLIC_KEY
+                      "address": PUBLIC_KEY
                     },
                     "wantErr": False
                 },
                 {
                     "name": "ok",
                     "params": {
-                        "account_pubkey": "xxxx"
+                        "address": "xxxx"
                     },
                     "wantErr": True
                 },
