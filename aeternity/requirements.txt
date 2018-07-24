@@ -1,9 +1,0 @@
-pytest==3.5.0
-base58==0.2.5
-click==6.7
-rlp==0.6.0
-PyNaCl==1.2.1
-requests==2.18.4
-pycrypto==2.6.1
-nacl==0.0.0
-websocket_client==0.48.0
