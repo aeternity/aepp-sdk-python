@@ -3,11 +3,14 @@ import click
 import os
 import traceback
 
+from aeternity import __version__
+
 from aeternity.epoch import EpochClient
 from aeternity.config import Config, MAX_TX_TTL, ConfigException
 # from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
 from aeternity.signing import KeyPair
 from aeternity.contract import Contract
+from aeternity.aens import AEName
 
 
 logging.basicConfig(format='%(message)s', level=logging.INFO)
@@ -19,6 +22,7 @@ CTX_EPOCH_URL_WEBSOCKET = 'EPOCH_URL_WEBSOCKET'
 CTX_KEY_PATH = 'KEY_PATH'
 CTX_VERBOSE = 'VERBOSE'
 CTX_QUIET = 'QUIET'
+CTX_AET_DOMAIN = 'AET_NAME'
 
 
 def _epoch_cli():
@@ -112,9 +116,8 @@ def _ppe(error):
         traceback.print_exc()
 
 
+# Commands
 # the priority for the url selection is PARAM, ENV, DEFAULT
-
-
 @click.group()
 @click.pass_context
 @click.version_option()
@@ -123,6 +126,7 @@ def _ppe(error):
 @click.option('--url-websocket', '-w', default='ws://localhost:3013', envvar='EPOCH_URL_WEBSOCKET')
 @click.option('--quiet', '-q', default=False, is_flag=True, help='Print only results')
 @click.option('--verbose', '-v', is_flag=True, default=False, help='Print verbose data')
+@click.version_option(version=__version__)
 def cli(ctx, url, url_internal, url_websocket, quiet, verbose):
     ctx.obj[CTX_EPOCH_URL] = url
     ctx.obj[CTX_EPOCH_URL_INTERNAL] = url_internal
@@ -235,26 +239,28 @@ def wallet_spend(recipient_account, amount, ttl, password):
 #
 
 
-@cli.group(help="Handle name lifecycle")
-def name():
-    pass
+@wallet.group(help="Handle name lifecycle")
+@click.argument('domain')
+@click.pass_context
+def name(ctx, domain):
+    ctx.obj[CTX_AET_DOMAIN] = domain
 
 
-@name.command('info')
-def name_info():
-    print("info name")
-    pass
-
-
-@name.command('register')
-def name_register():
-    print("register name")
-    pass
-
-
-@name.command('status')
-def name_status():
-    print("status name")
+@name.command('claim', help="Claim a domain name")
+@click.option("--name-ttl", default=100, help='Lifetime of the claim in blocks')
+@click.pass_context
+def name_register(ctx, name_ttl):
+    # retrieve the domain from the context
+    domain = ctx.obj.get(CTX_AET_DOMAIN)
+    # retrieve the keypair
+    kp, _ = _keypair()
+    name = AEName(domain)
+    name.update_status()
+    if name.status != AEName.Status.AVAILABLE:
+        print("Domain not available")
+        exit(0)
+    name.full_claim_blocking(kp, name_ttl=name_ttl)
+    print(f"Name {domain} claimed")
     pass
 
 
@@ -333,7 +339,7 @@ def contract_compile(contract_file):
 @contract.command('deploy', help='Deploy a contract on the chain')
 @click.argument("contract_file")
 # TODO: what is gas here
-@click.option("--gas", default=1000, help='amount of gas to deploy the contract')
+@click.option("--gas", default=1000, help='Amount of gas to deploy the contract')
 def contract_deploy(contract_file, gas):
     try:
         with open(contract_file) as fp:
@@ -397,10 +403,10 @@ def inspect_block(block_hash):
         print("> ", t.get("hash"))
 
 
-@inspect.command('height', help='The height of the chain to inspect (eg: 14352)')
+@inspect.command('height', help='The height of the chain to inspect (eg:14352)')
 @click.argument('chain_height', default=1)
 def inspect_height(chain_height):
-    data = _epoch_cli().get_block_by_height(chain_height)
+    data = _epoch_cli().get_key_block_by_height(chain_height)
     _pp([
         ('Block hash', data.hash),
         ('Block height', data.height),
@@ -435,6 +441,21 @@ def inspect_account(account):
     try:
         data = _epoch_cli().get_balance(account)
         _pp(("Account balance", data))
+    except Exception as e:
+        print(e)
+
+
+@inspect.command('name', help='The name to inspect (eg: mydomain.aet)')
+@click.argument('domain')
+def inspect_name(domain):
+    try:
+        name = AEName(domain)
+        name.update_status()
+        _pp([
+            ('Status', name.status),
+            ('Pointers', name.pointers),
+            ('TTL', name.name_ttl)
+        ])
     except Exception as e:
         print(e)
 
