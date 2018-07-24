@@ -146,6 +146,11 @@ def test_cli_inspect_block_by_hash():
     assert lines[3] == blines[3]
 
 
+def test_cli_inspect_name():
+    output = call_aecli('--quiet', 'inspect', 'name', 'whatever.aet')
+    assert output == "AVAILABLE"
+
+
 @pytest.mark.skip('NOT IMPLEMENTED YET')
 def test_cli_inspect_block_by_latest():
     # TODO
@@ -162,8 +167,3 @@ def test_cli_inspect_block_by_invalid_arg():
 def test_cli_inspect_transaction_by_hash():
     # TODO
     raise NotImplementedError()
-
-
-def test_cli_name_status():
-    output = call_aecli('--quiet', 'inspect', 'name', 'whatever.aet')
-    assert output == "AVAILABLE"
