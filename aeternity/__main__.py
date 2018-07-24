@@ -451,11 +451,11 @@ def inspect_name(domain):
     try:
         name = AEName(domain)
         name.update_status()
-        _pp([
-            ('Status', name.status),
-            ('Pointers', name.pointers),
-            ('TTL', name.name_ttl)
-        ])
+        info = [('Status', name.status)]
+        if len(name.pointers) > 0:
+            info.append(('Pointers', name.pointers))
+            info.append(('TTL', name.name_ttl))
+        _pp(info)
     except Exception as e:
         print(e)
 
