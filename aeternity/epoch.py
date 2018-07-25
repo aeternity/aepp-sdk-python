@@ -275,7 +275,7 @@ class EpochClient:
 
     def get_transaction_by_transaction_hash(self, tx_hash, tx_encoding='message_pack'):
         """
-        Retrieve a transaction by it's hash
+        Retrieve a transaction by its hash
         :param tx_hash: the hash of the transaction
         :param tx_encoding: the encoding of the reply
         """

@@ -13,7 +13,9 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 - paramater `account_pubkey` is now `account` in API calls
 
 ### Removed
+- Compatibility with epoch < 0.18.0
 - `get_transactions_in_block_range` since has been removed from the API 
+
 
 ## [0.15.0.1]
 
