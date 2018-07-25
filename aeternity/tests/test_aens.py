@@ -99,7 +99,7 @@ def test_name_update():
 
 # TODO: enable the test check for pointers
 
-def test_transfer_ownership():
+def test_name_transfer_ownership():
     client = EpochClient()
     name = AEName(random_domain())
     name.full_claim_blocking(keypair, name_ttl=70)
@@ -132,7 +132,7 @@ def test_transfer_ownership():
 #         name.transfer_ownership('ak$deadbeef')
 
 
-def test_revocation():
+def test_name_revocation():
     domain = random_domain()
     name = AEName(domain)
     name.full_claim_blocking(keypair, name_ttl=10)

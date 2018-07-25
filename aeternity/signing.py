@@ -2,8 +2,9 @@ import os
 import pathlib
 import base58
 import rlp
-from Crypto.Cipher import AES
-from Crypto.Hash import SHA256
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import nacl
 from nacl import encoding
 from nacl.signing import SigningKey
@@ -185,8 +186,14 @@ class KeyPair:
         """
         if isinstance(password, str):
             password = password.encode('utf-8')
-        aes = AES.new(cls.sha256(password))
-        encrypted_key = aes.encrypt(key_hexstring)
+
+        key = cls.sha256(password)
+        encryptor = Cipher(
+            algorithms.AES(key),
+            modes.ECB(),
+            backend=default_backend()
+        ).encryptor()
+        encrypted_key = encryptor.update(key_hexstring) + encryptor.finalize()
         return encrypted_key
 
     @classmethod
@@ -197,8 +204,15 @@ class KeyPair:
         """
         if isinstance(password, str):
             password = password.encode('utf-8')
-        aes = AES.new(cls.sha256(password))
-        decrypted_key = aes.decrypt(key_content)
+
+        key = cls.sha256(password)
+        decryptor = Cipher(
+            algorithms.AES(key),
+            modes.ECB(),
+            backend=default_backend()
+        ).decryptor()
+
+        decrypted_key = decryptor.update(key_content) + decryptor.finalize()
         return decrypted_key.decode("utf-8")
 
     @classmethod
@@ -225,6 +239,6 @@ class KeyPair:
 
     @classmethod
     def sha256(cls, data):
-        hash = SHA256.new()
-        hash.update(data)
-        return hash.digest()
+        digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
+        digest.update(data)
+        return digest.finalize()

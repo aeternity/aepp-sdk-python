@@ -18,15 +18,9 @@ def test_create_transaction_signing():
     result = client.send_signed_transaction(signed_transaction)
     assert result is not None
     assert result.tx_hash is not None
+    print(result)
 
     # make sure this works for very short block times
     client.wait_for_next_block(polling_interval=0.01)
-    next_block = client.get_latest_block()
-    next_next_block = client.get_latest_block()
-    all_transactions = next_block.transactions + next_next_block.transactions
-    import json
-    print(json.dumps(all_transactions, indent=2))
-    # find the transaction that is the spend transaction we just submitted
-    spend_tx = next(tx for tx in all_transactions if (tx['tx']['type']) == 'spend_tx')
-    print(json.dumps(spend_tx, indent=2))
-    assert spend_tx['signatures'][0] == b58signature
+    spend_tx = client.get_transaction_by_transaction_hash(result.tx_hash, tx_encoding='json')
+    assert spend_tx.transaction['signatures'][0] == b58signature
