@@ -449,7 +449,7 @@ def inspect_account(account):
 @click.argument('domain')
 def inspect_name(domain):
     try:
-        name = AEName(domain)
+        name = AEName(domain, client=_epoch_cli())
         name.update_status()
         info = [('Status', name.status)]
         if len(name.pointers) > 0:
