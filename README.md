@@ -29,7 +29,7 @@ See below for programmatic usage
 You can launch the command line tool using
 
 ```
-./acecli
+./aecli
 ```
 
 Available commands:
