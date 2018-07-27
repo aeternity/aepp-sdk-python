@@ -39,8 +39,8 @@ def test_generatedcli():
             ]
         },
         {
-            "name": "get_block_by_height",
-            "method": "get_block_by_height",
+            "name": "get_key_block_by_height",
+            "method": "get_key_block_by_height",
             "scenarios": [
                 {
                     "name": "ok ",
@@ -69,14 +69,14 @@ def test_generatedcli():
                 {
                     "name": "ok",
                     "params": {
-                      "account_pubkey": PUBLIC_KEY
+                      "address": PUBLIC_KEY
                     },
                     "wantErr": False
                 },
                 {
                     "name": "ok",
                     "params": {
-                        "account_pubkey": "xxxx"
+                        "address": "xxxx"
                     },
                     "wantErr": True
                 },
@@ -84,42 +84,6 @@ def test_generatedcli():
                     "name": "err missing parameter required",
                     "params": {
                         "height": 12,
-                    },
-                    "wantErr": True
-                }
-            ]
-        },
-        {
-            "method": "get_account_transactions",
-            "scenarios": [
-                {
-                    "name": "ok",
-                    "params": {
-                      "account_pubkey": PUBLIC_KEY
-                    },
-                    "wantErr": False
-                },
-                {
-                    "name": "ok limit",
-                    "params": {
-                        "account_pubkey": PUBLIC_KEY,
-                        "limit": 10,
-                    },
-                    "wantErr": False
-                },
-                {
-                    "name": " limit out of range",
-                    "params": {
-                        "account_pubkey": PUBLIC_KEY,
-                        "limit": 2000,
-                    },
-                    "wantErr": True
-                },
-                {
-                    "name": " invalid paramter type",
-                    "params": {
-                        "account_pubkey": PUBLIC_KEY,
-                        "limit": "10",
                     },
                     "wantErr": True
                 }

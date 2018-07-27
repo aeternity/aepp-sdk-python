@@ -22,6 +22,7 @@ chain:
 
 mining:
     autostart: true
+    beneficiary: "ak$25MZX3BXYP32YDPGWsJqYZ6CgWnqD93VdpCYaTk6KsThEbeFJX"
     cuckoo:
         miner:
             executable: mean16s-generic

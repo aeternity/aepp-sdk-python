@@ -7,9 +7,7 @@ navigation: 6
 # aepp-sdk-python
 
 ## Introduction
-[This repo](https://github.com/aeternity/aepp-sdk-python) is for tools and notes for working with æternity when you're running an Epoch node on your local machine.
-
-[Follow these installation notes for a three-node linux setup with fast mining settings](https://github.com/aeternity/aepp-sdk-python/blob/master/INSTALL.md)
+[This repo](https://github.com/aeternity/aepp-sdk-python) is for developing apps for the æternity blockchain in Python. Please see the [main dev site](https://dev.aepps.com) for instructions on accessing the testnet, and for running a local æternity node.
 
 ## Installation
 The SDK required Python 3. For out of the box use, it is recommended to use
@@ -29,7 +27,7 @@ See below for programmatic usage
 You can launch the command line tool using
 
 ```
-./acecli
+./aecli
 ```
 
 Available commands:
