@@ -5,11 +5,14 @@ import logging
 import time
 import websocket
 
+from aeternity import __version__
 from aeternity.config import Config
 from aeternity.exceptions import NameNotAvailable, InsufficientFundsException, TransactionNotFoundException, TransactionHashMismatch
 from aeternity.signing import KeyPair
 from aeternity.openapi import OpenAPICli
 from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE
+
+import deprecation
 
 logger = logging.getLogger(__name__)
 
@@ -208,10 +211,18 @@ class EpochClient:
         pub_key = self.internal_http_get('account/pub-key')
         return pub_key['pub_key']
 
+    @deprecation.deprecated(deprecated_in="0.18.0.3",
+                            current_version=__version__,
+                            details="Use the get_top instead")
     def get_height(self):
         top = self.cli.get_top()
         logging.debug(f"get_height: {top}")
         return top.height
+
+    def get_top(self):
+        top = self.cli.get_top()
+        logging.debug(f"get_height: {top}")
+        return top
 
     def get_balance(self, account_pubkey=None, height=None, block_hash=None):
         """
