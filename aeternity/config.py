@@ -21,6 +21,10 @@ CONTRACT_DEFAULT_GAS_PRICE = 1
 CONTRACT_DEFAULT_DEPOSIT = 4
 CONTRACT_DEFAULT_VM_VERSION = 1
 
+# params
+# can be message_pack or json
+PARAM_DEFAULT_ENCODING = 'json'
+
 
 class ConfigException(Exception):
     pass

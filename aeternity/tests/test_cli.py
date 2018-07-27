@@ -43,11 +43,13 @@ def test_cli_balance():
     assert balance > 0
 
 
-def test_cli_height():
-    balance_str = call_aecli('--quiet', 'chain', 'height')
-    assert balance_str.isnumeric()
-    balance = int(balance_str)
-    assert balance > 0
+def test_cli_top():
+    output = call_aecli('--quiet', 'chain', 'top')
+    lines = output.split('\n')
+    assert lines[0].startswith('bh$')  # block hash
+    assert int(lines[1]) > 0  # block height
+    assert lines[2].startswith('bs$')  # block state
+    assert len(lines) == 7
 
 
 def test_cli_generate_wallet():
