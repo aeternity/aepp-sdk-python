@@ -2,7 +2,17 @@
 All notable changes to this project will be documented in this file. This change
 log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
-## [Unreleased - 0.18.0.1]
+## [Unreleased]
+
+
+## [0.18.0.2]
+
+### Added
+- Explicit requirement for python > 3.5
+- Bundle command line client in the package
+
+
+## [0.18.0.1]
 
 ### Added
 - Command line command to claim and inspect names
