@@ -501,12 +501,18 @@ def chain():
 
 @chain.command('top')
 def chain_top():
+    """
+    Print the information of the top block of the chain.
+    """
     data = _epoch_cli().get_top()
     _p_block(data)
 
 
 @chain.command('version')
 def chain_version():
+    """
+    Print the epoch node version.
+    """
     data = _epoch_cli().get_version()
     _pp(("Epoch node version", data))
 
