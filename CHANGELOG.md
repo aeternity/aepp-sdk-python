@@ -2,7 +2,10 @@
 All notable changes to this project will be documented in this file. This change
 log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
-## [Unreleased - 0.18.0.2]
+## [Unreleased]
+
+
+## [0.18.0.2]
 
 ### Added
 - Explicit requirement for python > 3.5
