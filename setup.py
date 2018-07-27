@@ -41,14 +41,27 @@ setup(
     license='ISC',
     scripts=['aecli'],
     packages=find_packages(),
-    install_requires=[],
+    install_requires=[
+        'base58 == 0.2.5',
+        'click == 6.7',
+        'cryptography == 2.2.2',
+        'deprecation==2.0.5',
+        'flake8 == 3.5.0',
+        'rlp == 0.6.0',
+        'PyNaCl == 1.2.1',
+        'requests == 2.18.4',
+        'websocket_client == 0.48.0',
+    ],
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 3.5',
+        'Development Status :: 4 - Beta',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
     ],
     zip_safe=False,
-    tests_require=["nose"],
+    tests_require=[
+        'pytest==3.5.0'
+    ],
 )

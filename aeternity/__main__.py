@@ -12,6 +12,8 @@ from aeternity.signing import KeyPair
 from aeternity.contract import Contract
 from aeternity.aens import AEName
 
+from datetime import datetime, timezone
+
 
 logging.basicConfig(format='%(message)s', level=logging.INFO)
 
@@ -89,7 +91,7 @@ def _print(header, value):
     print(f" {header.ljust(53, '_')} \n\n{value}\n")
 
 
-def _pp(data, title=None):
+def _pp(data, title=None, prefix=''):
     """
     pretty printer
     :param data: single enty or list of key-value tuples
@@ -105,7 +107,8 @@ def _pp(data, title=None):
         if ctx.obj.get(CTX_QUIET, False):
             print(kv[1])
         else:
-            print(f"{kv[0].ljust(30, '_')} {kv[1]}")
+            label = f"{prefix}{kv[0]}"
+            print(f"{label.ljust(30, '_')} {kv[1]}")
 
 
 def _ppe(error):
@@ -116,18 +119,62 @@ def _ppe(error):
         traceback.print_exc()
 
 
+def _p_block(block):
+    """Print info of a block """
+    block_info = [
+        ('Block hash', block.hash),
+        ('Block height', block.height),
+        ('State hash', block.state_hash),
+        ('Miner', block.miner if hasattr(block, 'miner') else 'n/a'),
+        ('Time', datetime.fromtimestamp(block.time / 1000, timezone.utc).isoformat('T')),
+        ('Previous block hash', block.prev_hash),
+        ('Transactions', len(block.transactions) if hasattr(block, 'transactions') else 0)
+    ]
+    _pp(block_info)
+    if hasattr(block, 'transactions'):
+        for tx in block.transactions:
+            _pp(('Tx Hash', tx.get('hash')), prefix='>  ')
+            _pp(('Signatures', tx.get('signatures')), prefix='   ')
+            _pp(('Sender', tx.get('tx', {}).get('sender')), prefix='   ')
+            _pp(('Recipient', tx.get('tx', {}).get('recipient')), prefix='   ')
+            _pp(('Amount', tx.get('tx', {}).get('amount')), prefix='   ')
+
+
+def _p_tx(tx):
+    """Print info of a transactions"""
+    _pp([
+        ('Block hash', tx.get('block_hash')),
+        ('Block height', tx.get('block_height')),
+        ('Signatures', tx.get('signatures')),
+        ('Sender account', tx.get('tx', {}).get('sender')),
+        ('Recipient account', tx.get('tx', {}).get('recipient')),
+        ('Amount', tx.get('tx', {}).get('amount')),
+        ('TTL', tx.get('tx', {}).get('ttl'))
+    ])
+
+
 # Commands
+CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+
 # the priority for the url selection is PARAM, ENV, DEFAULT
+
+
 @click.group()
 @click.pass_context
 @click.version_option()
-@click.option('--url', '-u', default='http://localhost:3013', envvar='EPOCH_URL', help='Epoch node url')
-@click.option('--url-internal', '-i', default='http://localhost:3113', envvar='EPOCH_URL_INTERNAL')
-@click.option('--url-websocket', '-w', default='ws://localhost:3013', envvar='EPOCH_URL_WEBSOCKET')
+@click.option('--url', '-u', default='https://sdk-testnet.aepps.com', envvar='EPOCH_URL', help='Epoch node url', metavar='URL')
+@click.option('--url-internal', '-i', default='https://sdk-testnet.aepps.com/internal', envvar='EPOCH_URL_INTERNAL', metavar='URL')
+@click.option('--url-websocket', '-w', default='ws://sdk-testnet.aepps.com', envvar='EPOCH_URL_WEBSOCKET', metavar='URL')
 @click.option('--quiet', '-q', default=False, is_flag=True, help='Print only results')
 @click.option('--verbose', '-v', is_flag=True, default=False, help='Print verbose data')
 @click.version_option(version=__version__)
 def cli(ctx, url, url_internal, url_websocket, quiet, verbose):
+    """
+    Welcome to the aecli client.
+
+    The client is to interact with an epoch node.
+
+    """
     ctx.obj[CTX_EPOCH_URL] = url
     ctx.obj[CTX_EPOCH_URL_INTERNAL] = url_internal
     ctx.obj[CTX_EPOCH_URL_WEBSOCKET] = url_websocket
@@ -222,9 +269,9 @@ def wallet_spend(recipient_account, amount, ttl, password):
         _check_prefix(recipient_account, "ak")
         data = _epoch_cli().spend(kp, recipient_account, amount, tx_ttl=ttl)
         _pp([
+            ("Transaction hash", data[1]),
             ("Sender account", kp.get_address()),
             ("Recipient account", recipient_account),
-            ("Transaction hash", data[1])
         ], title='Transaction posted to the chain')
     except Exception as e:
         _ppe(e)
@@ -393,45 +440,22 @@ def inspect():
 def inspect_block(block_hash):
     _check_prefix(block_hash, "bh")
     data = _epoch_cli().get_block_by_hash(block_hash)
-    _pp([
-        ('Block hash', data.hash),
-        ('Block height', data.height),
-        ('Miner', data.miner),
-        ('Transactions', len(data.transactions)),
-    ])
-    for t in data.transactions:
-        print("> ", t.get("hash"))
+    _p_block(data)
 
 
 @inspect.command('height', help='The height of the chain to inspect (eg:14352)')
 @click.argument('chain_height', default=1)
 def inspect_height(chain_height):
     data = _epoch_cli().get_key_block_by_height(chain_height)
-    _pp([
-        ('Block hash', data.hash),
-        ('Block height', data.height),
-        ('Miner', data.miner),
-        ('Transactions', len(data.transactions)),
-    ])
-    for t in data.transactions:
-        print("> ", t.get("hash"))
+    _p_block(data)
 
 
 @inspect.command('transaction', help='The transaction hash to inspect (eg: th$...)')
 @click.argument('tx_hash')
 def inspect_transaction(tx_hash):
     _check_prefix(tx_hash, "th")
-    data = _epoch_cli().get_transaction_by_transaction_hash(tx_hash, tx_encoding='json')
-    _pp([
-        ('Block hash', data.transaction['block_hash']),
-        ('Block height', data.transaction['block_height']),
-        ('Block hash', data.transaction['block_hash']),
-        ('Signatures', data.transaction['signatures']),
-        ('Sender account', data.transaction['tx']['sender']),
-        ('Recipient account', data.transaction['tx']['recipient']),
-        ('Amount', data.transaction['tx']['amount']),
-        ('TTL', data.transaction['tx']['ttl'])
-    ])
+    data = _epoch_cli().get_transaction_by_transaction_hash(tx_hash)
+    _p_tx(data.transaction)
 
 
 @inspect.command('account', help='The address of the account to inspect (eg: ak$...)')
@@ -475,14 +499,20 @@ def chain():
     pass
 
 
-@chain.command('height')
-def chain_height():
-    data = _epoch_cli().get_height()
-    _pp(("Chain block height", data))
+@chain.command('top')
+def chain_top():
+    """
+    Print the information of the top block of the chain.
+    """
+    data = _epoch_cli().get_top()
+    _p_block(data)
 
 
 @chain.command('version')
 def chain_version():
+    """
+    Print the epoch node version.
+    """
     data = _epoch_cli().get_version()
     _pp(("Epoch node version", data))
 

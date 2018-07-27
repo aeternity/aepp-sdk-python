@@ -4,6 +4,15 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.18.0.4]
+
+### Changed
+- Improve consistency on the output of the command line client
+
+## [0.18.0.3]
+
+### Fixed
+- Transitive dependency installation when installing with pip
 
 ## [0.18.0.2]
 
