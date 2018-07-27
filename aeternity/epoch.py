@@ -10,7 +10,7 @@ from aeternity.config import Config
 from aeternity.exceptions import NameNotAvailable, InsufficientFundsException, TransactionNotFoundException, TransactionHashMismatch
 from aeternity.signing import KeyPair
 from aeternity.openapi import OpenAPICli
-from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE
+from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE, PARAM_DEFAULT_ENCODING
 
 import deprecation
 
@@ -281,10 +281,9 @@ class EpochClient:
         return self.cli.get_block_txs_count_by_hash(hash=_hash, tx_types=tx_types, exclude_tx_types=exclude_tx_types)
 
     def get_block_transaction_count_by_height(self, height, tx_types=None, exclude_tx_types=None):
-
         return self.cli.get_block_txs_count_by_height(height=height, tx_types=tx_types, exclude_tx_types=exclude_tx_types)
 
-    def get_transaction_by_transaction_hash(self, tx_hash, tx_encoding='message_pack'):
+    def get_transaction_by_transaction_hash(self, tx_hash, tx_encoding=PARAM_DEFAULT_ENCODING):
         """
         Retrieve a transaction by its hash
         :param tx_hash: the hash of the transaction
@@ -293,13 +292,13 @@ class EpochClient:
         assert tx_hash.startswith('th$'), 'A transaction hash must start with "th$"'
         return self.cli.get_tx(tx_hash=tx_hash, tx_encoding=tx_encoding)
 
-    def get_transaction_from_block_height(self, height, tx_index, tx_encoding='message_pack'):
+    def get_transaction_from_block_height(self, height, tx_index, tx_encoding=PARAM_DEFAULT_ENCODING):
         return self.cli.get_transaction_from_block_height(height=height, tx_index=tx_index, tx_encoding=tx_encoding)
 
-    def get_transaction_from_block_hash(self, block_hash, tx_index, tx_encoding='message_pack'):
+    def get_transaction_from_block_hash(self, block_hash, tx_index, tx_encoding=PARAM_DEFAULT_ENCODING):
         return self.cli.get_transaction_from_block_hash(hash=block_hash, tx_index=tx_index, tx_encoding=tx_encoding)
 
-    def get_transaction_from_latest_block(self, tx_idx, tx_encoding='message_pack'):
+    def get_transaction_from_latest_block(self, tx_idx, tx_encoding=PARAM_DEFAULT_ENCODING):
         return self.get_transaction_from_block_hash('latest', tx_idx, tx_encoding=tx_encoding)
 
     def create_spend_transaction(self, sender_pubkey, recipient_pubkey, amount, tx_ttl=DEFAULT_TX_TTL, fee=DEFAULT_FEE, nonce=0, payload="payload"):
