@@ -9,15 +9,22 @@ class ContractError(Exception):
     pass
 
 
+# contract lifecicle is
+# compile contract (get the bytecode)
+# deploy the contract (get the address)
+# encode the calldata (get the )
 class Contract:
     EVM = 'evm'
     SOPHIA = 'sophia'
 
-    def __init__(self, code, abi, client=None):
+    def __init__(self, contract_source, abi=SOPHIA, client=None, contract_bytecode=None):
         if client is None:
             client = EpochClient()
         self.client = client
-        self.code = code
+        self.contract_source = contract_source
+        self.contract_bytecode = contract_bytecode
+        if self.contract_bytecode is None:
+            self.contract_bytecode = self.compile(self.contract_source)
         self.abi = abi
 
     def tx_call(self, contract_address, keypair, function, arg,
@@ -52,7 +59,8 @@ class Contract:
         except OpenAPIClientException as e:
             raise ContractError(e)
 
-    def tx_create(self, keypair,
+    def tx_create(self,
+                  keypair,
                   amount=1,
                   deposit=CONTRACT_DEFAULT_DEPOSIT,
                   init_state="()",
@@ -61,10 +69,12 @@ class Contract:
                   fee=DEFAULT_FEE,
                   vm_version=CONTRACT_DEFAULT_VM_VERSION,
                   tx_ttl=DEFAULT_TX_TTL):
-        """:return: contract_address """
+        """
+        Create a contract and deploy it to the chain
+        :return: contract_address
+        """
         try:
             ttl = self.client.compute_absolute_ttl(tx_ttl)
-            compiled_code = self.compile()
             call_data = self.encode_calldata("init", init_state, abi=self.SOPHIA)
             contract_transaction = self.client.cli.post_contract_create(body=dict(
                 owner=keypair.get_address(),
@@ -75,7 +85,7 @@ class Contract:
                 gas_price=gas_price,
                 vm_version=vm_version,
                 call_data=call_data,
-                code=compiled_code,
+                code=self.contract_bytecode,
                 ttl=ttl
             ))
             tx = self.client.post_transaction(keypair, contract_transaction)
@@ -96,30 +106,32 @@ class Contract:
         self.client.wait_for_next_block()
         return c, tx
 
-    def compile(self, options=''):
-        """Compile a sophia contract from source and return byte code"""
+    def compile(self, code, options=''):
+        """
+        Compile a sophia contract from source
+        :param code: the source code of the the contract
+        :param options: additional options for the contract TODO: link the documentation for the options
+        :return: the contract bytecode
+        """
         try:
             data = self.client.cli.compile_contract(body=dict(
-                code=self.code,
+                code=code,
                 options=options
             ))
             return data.bytecode
         except OpenAPIClientException as e:
             raise ContractError(e)
 
-    def get_pretty_bytecode(self, options=''):
-        bytecode = self.compile(options=options)
-        return pretty_bytecode(bytecode)
+    def get_pretty_bytecode(self, code, options=''):
+        return pretty_bytecode(self.contract_bytecode)
 
     def call(self, function, arg):
         '''"Call a sophia function with a given name and argument in the given
         bytecode off chain.'''
-
-        compiled_code = self.compile()
         try:
             # see: /epoch/lib/aehttp-0.1.0/src/aehttp_dispatch_ext.erl
             data = self.client.cli.call_contract(body=dict(
-                code=compiled_code,
+                code=self.contract_bytecode,
                 function=function,
                 arg=arg,
                 abi=self.abi,
@@ -128,14 +140,34 @@ class Contract:
         except OpenAPIClientException as e:
             raise ContractError(e)
 
-    def encode_calldata(self, function, arg, abi=EVM):
+    def encode_calldata(self, function, arg, abi=SOPHIA):
+        """
+        Encode the function and arguments of a contract call.
+        """
         try:
             data = self.client.cli.encode_calldata(body=dict(
                 abi=abi,
-                code=self.code,
+                code=self.contract_bytecode,
                 function=function,
                 arg=arg,
             ))
             return data.calldata
+        except OpenAPIClientException as e:
+            raise ContractError(e)
+
+    def decode_data(self, data, sophia_type):
+        """
+        Decode the result of a contract computation
+        :param data: the result returned by a contract execution
+        :param sophia_type: the expected type of the result
+
+        :return: a tuple of (value, type)
+        """
+        try:
+            reply = self.client.cli.decode_data(body={
+                "data": data,
+                "sophia-type": sophia_type,
+            })
+            return reply.data.get('value'), reply.data.get('type', 'word')
         except OpenAPIClientException as e:
             raise ContractError(e)
