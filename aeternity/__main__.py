@@ -104,11 +104,14 @@ def _pp(data, title=None, prefix=''):
     if not isinstance(data, list):
         data = [data]
     for kv in data:
+        value = kv[1] if kv[1] is not None else 'N/A'
+        if isinstance(value, list):
+            value = ', '.join(value)
         if ctx.obj.get(CTX_QUIET, False):
-            print(kv[1])
+            print(value)
         else:
             label = f"{prefix}{kv[0]}"
-            print(f"{label.ljust(30, '_')} {kv[1]}")
+            print(f"{label.ljust(30, '_')} {value}")
 
 
 def _ppe(error):
@@ -453,9 +456,12 @@ def inspect_height(chain_height):
 @inspect.command('transaction', help='The transaction hash to inspect (eg: th$...)')
 @click.argument('tx_hash')
 def inspect_transaction(tx_hash):
-    _check_prefix(tx_hash, "th")
-    data = _epoch_cli().get_transaction_by_transaction_hash(tx_hash)
-    _p_tx(data.transaction)
+    try:
+        _check_prefix(tx_hash, "th")
+        data = _epoch_cli().get_transaction_by_transaction_hash(tx_hash)
+        _p_tx(data.transaction)
+    except Exception as e:
+        print(e)
 
 
 @inspect.command('account', help='The address of the account to inspect (eg: ak$...)')
