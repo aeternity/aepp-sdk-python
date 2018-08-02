@@ -297,21 +297,26 @@ def name(ctx, domain):
 
 
 @name.command('claim', help="Claim a domain name")
-@click.option("--name-ttl", default=100, help='Lifetime of the claim in blocks')
+@click.option("--name-ttl", default=100, help='Lifetime of the claim in blocks (default 100)')
+@click.option("--ttl", default=100, help='Lifetime of the claim request in blocks (default 100)')
 @click.pass_context
-def name_register(ctx, name_ttl):
-    # retrieve the domain from the context
-    domain = ctx.obj.get(CTX_AET_DOMAIN)
-    # retrieve the keypair
-    kp, _ = _keypair()
-    name = AEName(domain)
-    name.update_status()
-    if name.status != AEName.Status.AVAILABLE:
-        print("Domain not available")
-        exit(0)
-    name.full_claim_blocking(kp, name_ttl=name_ttl)
-    print(f"Name {domain} claimed")
-    pass
+def name_register(ctx, name_ttl, ttl):
+    try:
+        # retrieve the domain from the context
+        domain = ctx.obj.get(CTX_AET_DOMAIN)
+        # retrieve the keypair
+        kp, _ = _keypair()
+        name = AEName(domain, client=_epoch_cli())
+        name.update_status()
+        if name.status != AEName.Status.AVAILABLE:
+            print("Domain not available")
+            exit(0)
+        tx = name.full_claim_blocking(kp, name_ttl=name_ttl, tx_ttl=ttl)
+        _pp([
+            ("Transaction hash", tx.tx_hash),
+        ], title=f"Name {domain} claimed")
+    except Exception as e:
+        _ppe(e)
 
 
 @name.command('update')
