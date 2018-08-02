@@ -538,7 +538,7 @@ def inspect_name(domain):
 
 @inspect.command('deploy', help='The contract deploy descriptor to inspect')
 @click.argument('contract_deploy_descriptor')
-def inspect_name(contract_deploy_descriptor):
+def inspect_deploy(contract_deploy_descriptor):
     """
     Inspect a contract deploy file that has been generated with the command
     aecli wallet X contract CONTRACT_SOURCE deploy
