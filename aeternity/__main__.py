@@ -2,6 +2,7 @@ import logging
 import click
 import os
 import traceback
+import sys
 
 from aeternity import __version__
 
@@ -119,13 +120,15 @@ def _ppe(error):
         traceback.print_exc()
 
 
-def _p_block(block):
+def _p_block(block, title=None):
     """Print info of a block """
+    if title is not None:
+        print(title)
     block_info = [
         ('Block hash', block.hash),
         ('Block height', block.height),
         ('State hash', block.state_hash),
-        ('Miner', block.miner if hasattr(block, 'miner') else 'n/a'),
+        ('Miner', block.miner if hasattr(block, 'miner') else 'N/A'),
         ('Time', datetime.fromtimestamp(block.time / 1000, timezone.utc).isoformat('T')),
         ('Previous block hash', block.prev_hash),
         ('Transactions', len(block.transactions) if hasattr(block, 'transactions') else 0)
@@ -520,6 +523,36 @@ def chain_version():
     """
     data = _epoch_cli().get_version()
     _pp(("Epoch node version", data))
+
+
+@chain.command('play')
+@click.option('--height', type=int, help="From which height should play the chain (default top)")
+@click.option('--block-hash', help="From which block should play the chain (default top)")
+@click.option('--limit', '-l', type=int, default=sys.maxsize, help="Limit the number of block to print")
+def chain_play(height, block_hash, limit):
+    """
+    play the blockchain backwards
+    """
+    if block_hash is not None:
+        _check_prefix(block_hash, "bh")
+        b = _epoch_cli().get_block_by_hash(block_hash)
+    elif height is not None:
+        b = _epoch_cli().get_key_block_by_height(height)
+    else:
+        b = _epoch_cli().get_top()
+    # check the limit
+    limit = limit if limit > 0 else 0
+    while b is not None and limit > 0:
+        try:
+            _p_block(b, title=' >>>>> ')
+            limit -= 1
+            if limit <= 0:
+                break
+            b = _epoch_cli().get_block_by_hash(b.prev_hash)
+        except Exception as e:
+            _ppe(e)
+            b = None
+            pass
 
 
 # run the client
