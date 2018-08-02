@@ -398,10 +398,10 @@ def contract():
 def contract_deploy(contract_file, gas):
     """
     Deploy a contract to the chain and create a deploy descriptor
-    with the contract informations that can be use to invoke the contract 
+    with the contract informations that can be use to invoke the contract
     later on.
 
-    The generated descriptor will be created in the same folde of the contract 
+    The generated descriptor will be created in the same folde of the contract
     source file. Multiple deploy of the same contract file will generate different
     deploy descriptor
     """
