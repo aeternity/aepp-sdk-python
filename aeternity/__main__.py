@@ -547,13 +547,16 @@ def inspect_deploy(contract_deploy_descriptor):
         with open(contract_deploy_descriptor) as fp:
             contract = json.load(fp)
             _pp([
-                ('source', contract.get('source', 'N/A')),
-                ('bytecode', contract.get('bytecode', 'N/A')),
-                ('address', contract.get('address', 'N/A')),
-                ('transaction', contract.get('transaction', 'N/A')),
-                ('author_address', contract.get('author_address', 'N/A')),
-                ('created_at', contract.get('created_at', 'N/A')),
+                ('Source', contract.get('source', 'N/A')),
+                ('Bytecode', contract.get('bytecode', 'N/A')),
+                ('Address', contract.get('address', 'N/A')),
+                ('Transaction', contract.get('transaction', 'N/A')),
+                ('Owner', contract.get('owner', 'N/A')),
+                ('Created_at', contract.get('created_at', 'N/A')),
             ])
+            data = _epoch_cli().get_transaction_by_transaction_hash(contract.get('transaction', 'N/A'))
+            print("Transaction")
+            _p_tx(data.transaction)
     except Exception as e:
         print(e)
 
