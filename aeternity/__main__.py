@@ -394,7 +394,7 @@ def contract():
 @contract.command('deploy', help='Deploy a contract on the chain')
 @click.argument("contract_file")
 # TODO: what is gas here
-@click.option("--gas", default=1000, help='Amount of gas to deploy the contract')
+@click.option("--gas", default=40000000, help='Amount of gas to deploy the contract')
 def contract_deploy(contract_file, gas):
     """
     Deploy a contract to the chain and create a deploy descriptor
@@ -414,15 +414,15 @@ def contract_deploy(contract_file, gas):
 
             # save the contract data
             contract_data = {
-                'source': contract.contract_source,
-                'bytecode': contract.contract_bytecode,
+                'source': contract.source_code,
+                'bytecode': contract.bytecode,
                 'address': address,
                 'transaction': tx.tx_hash,
-                'author_address': kp.get_address(),
+                'owner': kp.get_address(),
                 'created_at': datetime.now().isoformat('T')
             }
             # write the contract data to a file
-            deploy_descriptor = f"{contract_file}.deploy.{address[3:9]}.json"
+            deploy_descriptor = f"{contract_file}.deploy.{address[3:]}.json"
             with open(deploy_descriptor, 'w') as fw:
                 json.dump(contract_data, fw, indent=2)
             _pp([
@@ -449,8 +449,8 @@ def contract_call(ctx, deploy_descriptor, function, params, return_type):
             address = contract.get('address')
 
             kp, _ = _keypair()
-            contract = Contract(source, contract_bytecode=bytecode, client=_epoch_cli())
-            result = contract.tx_call(address, kp, function, params, gas=40000000)
+            contract = Contract(source, bytecode=bytecode, contract_address=address, client=_epoch_cli())
+            result = contract.tx_call(kp, function, params, gas=40000000)
             _pp([
                 ('Contract address', result.contract_address),
                 ('Gas price', result.gas_price),

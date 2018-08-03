@@ -13,35 +13,39 @@ class ContractError(Exception):
 # compile contract (get the bytecode)
 # deploy the contract (get the address)
 # encode the calldata (get the )
+
+
 class Contract:
     EVM = 'evm'
     SOPHIA = 'sophia'
 
-    def __init__(self, contract_source, abi=SOPHIA, client=None, contract_bytecode=None):
+    def __init__(self, source_code,  abi=SOPHIA, client=None, bytecode=None, contract_address=None):
         if client is None:
             client = EpochClient()
         self.client = client
-        self.contract_source = contract_source
-        self.contract_bytecode = contract_bytecode
-        if self.contract_bytecode is None:
-            self.contract_bytecode = self.compile(self.contract_source)
+        self.source_code = source_code
+        self.bytecode = bytecode
+        self.contract_address = contract_address
+        if self.bytecode is None:
+            self.bytecode = self.compile(self.source_code)
         self.abi = abi
 
-    def tx_call(self, contract_address, keypair, function, arg,
+    def tx_call(self, keypair, function, arg,
                 amount=10,
                 gas=CONTRACT_DEFAULT_GAS,
                 gas_price=CONTRACT_DEFAULT_GAS_PRICE,
                 fee=DEFAULT_FEE,
                 vm_version=CONTRACT_DEFAULT_VM_VERSION,
-                tx_ttl=DEFAULT_TX_TTL):
+                tx_ttl=DEFAULT_TX_TTL,
+                abi=SOPHIA):
         """Call a sophia contract"""
-        call_data = self.encode_calldata(function, arg, abi=self.SOPHIA)
+        call_data = self.encode_calldata(function, arg, abi=abi)
         try:
             ttl = self.client.compute_absolute_ttl(tx_ttl)
             contract_reply = self.client.cli.post_contract_call(body=dict(
                 call_data=call_data,
                 caller=keypair.get_address(),
-                contract=contract_address,
+                contract=self.contract_address,
                 amount=amount,
                 fee=fee,
                 gas=gas,
@@ -68,14 +72,15 @@ class Contract:
                   gas_price=CONTRACT_DEFAULT_GAS_PRICE,
                   fee=DEFAULT_FEE,
                   vm_version=CONTRACT_DEFAULT_VM_VERSION,
-                  tx_ttl=DEFAULT_TX_TTL):
+                  tx_ttl=DEFAULT_TX_TTL,
+                  abi=SOPHIA):
         """
         Create a contract and deploy it to the chain
         :return: contract_address
         """
         try:
             ttl = self.client.compute_absolute_ttl(tx_ttl)
-            call_data = self.encode_calldata("init", init_state, abi=self.SOPHIA)
+            call_data = self.encode_calldata("init", init_state, abi=abi)
             contract_transaction = self.client.cli.post_contract_create(body=dict(
                 owner=keypair.get_address(),
                 amount=amount,
@@ -85,11 +90,13 @@ class Contract:
                 gas_price=gas_price,
                 vm_version=vm_version,
                 call_data=call_data,
-                code=self.contract_bytecode,
+                code=self.bytecode,
                 ttl=ttl
             ))
+            # store the contract address in the instance variabl
+            self.contract_address = contract_transaction.contract_address
             tx = self.client.post_transaction(keypair, contract_transaction)
-            return contract_transaction.contract_address, tx
+            return self.contract_address, tx
         except OpenAPIClientException as e:
             raise ContractError(e)
 
@@ -103,7 +110,8 @@ class Contract:
                        vm_version=CONTRACT_DEFAULT_VM_VERSION,
                        tx_ttl=DEFAULT_TX_TTL):
         c, tx = self.tx_create(keypair, amount, deposit, init_state, gas, gas_price, fee, vm_version, tx_ttl)
-        self.client.wait_for_next_block()
+
+        self.client.wait_n_blocks(2)
         return c, tx
 
     def compile(self, code, options=''):
@@ -123,7 +131,7 @@ class Contract:
             raise ContractError(e)
 
     def get_pretty_bytecode(self, code, options=''):
-        return pretty_bytecode(self.contract_bytecode)
+        return pretty_bytecode(self.bytecode)
 
     def call(self, function, arg):
         '''"Call a sophia function with a given name and argument in the given
@@ -131,7 +139,7 @@ class Contract:
         try:
             # see: /epoch/lib/aehttp-0.1.0/src/aehttp_dispatch_ext.erl
             data = self.client.cli.call_contract(body=dict(
-                code=self.contract_bytecode,
+                code=self.bytecode,
                 function=function,
                 arg=arg,
                 abi=self.abi,
@@ -147,7 +155,7 @@ class Contract:
         try:
             data = self.client.cli.encode_calldata(body=dict(
                 abi=abi,
-                code=self.contract_bytecode,
+                code=self.bytecode,
                 function=function,
                 arg=arg,
             ))
