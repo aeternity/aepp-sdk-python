@@ -331,21 +331,67 @@ def name_register(ctx, name_ttl, ttl):
 
 
 @name.command('update')
-def name_update():
-    print("update name")
-    pass
+@click.pass_context
+@click.argument('address')
+@click.option("--name-ttl", default=100, help='Lifetime of the claim in blocks (default 100)')
+@click.option("--ttl", default=100, help='Lifetime of the claim request in blocks (default 100)')
+def name_update(ctx, address, name_ttl, ttl):
+    """
+    Update a name pointer
+    """
+    # retrieve the domain from the context
+    domain = ctx.obj.get(CTX_AET_DOMAIN)
+    # retrieve the keypair
+    kp, _ = _keypair()
+    name = AEName(domain)
+    name.update_status()
+    if name.status != AEName.Status.CLAIMED:
+        print(f"Domain is {name.status} and cannot be transferred")
+        exit(0)
+    tx = name.update(kp, target=address, name_ttl=name_ttl, tx_ttl=ttl)
+    _pp([
+        ('Transaction hash', tx.tx_hash)
+    ], title=f"Name {domain} status {name.status}")
 
 
 @name.command('revoke')
-def name_revoke():
-    print("revoke name")
-    pass
+@click.pass_context
+def name_revoke(ctx):
+    # retrieve the domain from the context
+    domain = ctx.obj.get(CTX_AET_DOMAIN)
+    # retrieve the keypair
+    kp, _ = _keypair()
+    name = AEName(domain)
+    name.update_status()
+    if name.status == AEName.Status.AVAILABLE:
+        print("Domain is available, nothing to revoke")
+        exit(0)
+    tx = name.revoke(kp)
+    _pp([
+        ('Transaction hash', tx.tx_hash)
+    ], title=f"Name {domain} status {name.status}")
 
 
 @name.command('transfer')
-def name_transfer():
-    print("transfer name")
-    pass
+@click.pass_context
+@click.argument('address')
+def name_transfer(ctx, address):
+    """
+    Transfer a name to another account
+    """
+    # retrieve the domain from the context
+    domain = ctx.obj.get(CTX_AET_DOMAIN)
+    # retrieve the keypair
+    kp, _ = _keypair()
+    name = AEName(domain)
+    name.update_status()
+    if name.status != AEName.Status.CLAIMED:
+        print(f"Domain is {name.status} and cannot be transferred")
+        exit(0)
+    tx = name.transfer_ownership(kp, address)
+    _pp([
+        ('Transaction hash', tx.tx_hash)
+    ], title=f"Name {domain} status {name.status}")
 
 
 #     ____                 _
