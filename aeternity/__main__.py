@@ -184,6 +184,17 @@ def cli(ctx, url, url_internal, url_websocket, quiet, verbose):
     ctx.obj[CTX_QUIET] = quiet
     ctx.obj[CTX_VERBOSE] = verbose
 
+
+@cli.command('config', help="Print the client configuration")
+@click.pass_context
+def config(ctx):
+    _pp([
+        ("Epoch URL", ctx.obj.get(CTX_EPOCH_URL)),
+        ("Epoch internal URL", ctx.obj.get(CTX_EPOCH_URL_INTERNAL, 'N/A')),
+        ("Epoch websocket URL", ctx.obj.get(CTX_EPOCH_URL_WEBSOCKET, 'N/A')),
+    ], title="aecli settings")
+
+
 #   __          __   _ _      _
 #   \ \        / /  | | |    | |
 #    \ \  /\  / /_ _| | | ___| |_ ___
