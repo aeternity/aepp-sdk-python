@@ -34,8 +34,9 @@ class AEName:
         self.preclaimed_commitment_hash = None
         self.preclaim_salt = None
         # set after claimed
+        self.name_hash = None
         self.name_ttl = 0
-        self.pointers = []
+        self.pointers = None
 
     @property
     def b58_name(self):
@@ -93,6 +94,7 @@ class AEName:
             response = self.client.cli.get_name(name=self.domain)
             self.status = NameStatus.CLAIMED
             self.name_ttl = response.name_ttl
+            self.name_hash = response.name_hash
             self.pointers = json.loads(response.pointers)
         except OpenAPIClientException:
             # e.g. if the status is already PRECLAIMED or CLAIMED, don't reset
