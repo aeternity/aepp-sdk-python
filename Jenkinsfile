@@ -11,7 +11,7 @@ pipeline {
   }
 
   environment {
-    DOCKER_COMPOSE = "docker-compose -p ${env.BUILD_TAG} -H localhost:2376"
+    DOCKER_COMPOSE = "docker-compose -p ${env.BUILD_TAG} -H 127.0.0.1:2376"
   }
 
   stages {
