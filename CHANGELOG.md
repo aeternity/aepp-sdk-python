@@ -4,6 +4,15 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.18.0.5]
+
+### Added
+- Command `chain play` to explore the blocks of the chain automatically
+
+### Fixed
+- Name claiming ignores the epoch url and uses always the local chain
+
+
 ## [0.18.0.4]
 
 ### Changed

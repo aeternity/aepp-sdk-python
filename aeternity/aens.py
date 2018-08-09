@@ -137,7 +137,8 @@ class AEName:
         self.claim_blocking(keypair, fee=claim_fee, tx_ttl=tx_ttl)
         if target is None:
             target = keypair.get_address()
-        self.update(keypair, target, fee=update_fee, name_ttl=name_ttl, client_ttl=name_ttl)
+        signed_tx = self.update(keypair, target, fee=update_fee, name_ttl=name_ttl, client_ttl=name_ttl)
+        return signed_tx
 
     def _get_commitment_hash(self):
         """Calculate the commitment hash"""
