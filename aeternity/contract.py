@@ -19,16 +19,27 @@ class Contract:
     EVM = 'evm'
     SOPHIA = 'sophia'
 
-    def __init__(self, source_code,  abi=SOPHIA, client=None, bytecode=None, contract_address=None):
+    def __init__(self, source_code, bytecode=None, address=None, abi=SOPHIA, client=None):
+        """
+        Initialize a contract object
+
+        if bytecode is not provided it will be computed using the compile command.
+
+        :param source_code: the source code of the contract
+        :param bytecode: the bytecode of the contract
+        :param address: the address of the contract
+        :param abi: the abi, default 'sofia'
+        :param client: the epoch client to use
+        """
         if client is None:
             client = EpochClient()
         self.client = client
+        self.abi = abi
         self.source_code = source_code
         self.bytecode = bytecode
-        self.contract_address = contract_address
+        self.address = address
         if self.bytecode is None:
             self.bytecode = self.compile(self.source_code)
-        self.abi = abi
 
     def tx_call(self, keypair, function, arg,
                 amount=10,
@@ -36,16 +47,15 @@ class Contract:
                 gas_price=CONTRACT_DEFAULT_GAS_PRICE,
                 fee=DEFAULT_FEE,
                 vm_version=CONTRACT_DEFAULT_VM_VERSION,
-                tx_ttl=DEFAULT_TX_TTL,
-                abi=SOPHIA):
+                tx_ttl=DEFAULT_TX_TTL):
         """Call a sophia contract"""
-        call_data = self.encode_calldata(function, arg, abi=abi)
+        call_data = self.encode_calldata(function, arg)
         try:
             ttl = self.client.compute_absolute_ttl(tx_ttl)
             contract_reply = self.client.cli.post_contract_call(body=dict(
                 call_data=call_data,
                 caller=keypair.get_address(),
-                contract=self.contract_address,
+                contract=self.address,
                 amount=amount,
                 fee=fee,
                 gas=gas,
@@ -72,15 +82,14 @@ class Contract:
                   gas_price=CONTRACT_DEFAULT_GAS_PRICE,
                   fee=DEFAULT_FEE,
                   vm_version=CONTRACT_DEFAULT_VM_VERSION,
-                  tx_ttl=DEFAULT_TX_TTL,
-                  abi=SOPHIA):
+                  tx_ttl=DEFAULT_TX_TTL):
         """
         Create a contract and deploy it to the chain
-        :return: contract_address
+        :return: address
         """
         try:
             ttl = self.client.compute_absolute_ttl(tx_ttl)
-            call_data = self.encode_calldata("init", init_state, abi=abi)
+            call_data = self.encode_calldata("init", init_state)
             contract_transaction = self.client.cli.post_contract_create(body=dict(
                 owner=keypair.get_address(),
                 amount=amount,
@@ -94,9 +103,9 @@ class Contract:
                 ttl=ttl
             ))
             # store the contract address in the instance variabl
-            self.contract_address = contract_transaction.contract_address
+            self.address = contract_transaction.contract_address
             tx = self.client.post_transaction(keypair, contract_transaction)
-            return self.contract_address, tx
+            return tx
         except OpenAPIClientException as e:
             raise ContractError(e)
 
@@ -109,10 +118,10 @@ class Contract:
                        fee=DEFAULT_FEE,
                        vm_version=CONTRACT_DEFAULT_VM_VERSION,
                        tx_ttl=DEFAULT_TX_TTL):
-        c, tx = self.tx_create(keypair, amount, deposit, init_state, gas, gas_price, fee, vm_version, tx_ttl)
+        tx = self.tx_create(keypair, amount, deposit, init_state, gas, gas_price, fee, vm_version, tx_ttl)
 
         self.client.wait_n_blocks(2)
-        return c, tx
+        return tx
 
     def compile(self, code, options=''):
         """
@@ -148,17 +157,18 @@ class Contract:
         except OpenAPIClientException as e:
             raise ContractError(e)
 
-    def encode_calldata(self, function, arg, abi=SOPHIA):
+    def encode_calldata(self, function, arg):
         """
         Encode the function and arguments of a contract call.
         """
         try:
             data = self.client.cli.encode_calldata(body=dict(
-                abi=abi,
+                abi=self.abi,
                 code=self.bytecode,
                 function=function,
                 arg=arg,
             ))
+            print(data)
             return data.calldata
         except OpenAPIClientException as e:
             raise ContractError(e)

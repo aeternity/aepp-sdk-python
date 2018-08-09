@@ -23,18 +23,19 @@ contract Identity =
 
 def test_sophia_contract_tx_create():
     contract = Contract(aer_identity_contract)
-    address, tx = contract.tx_create(KEYPAIR, gas=10000)
-    assert address is not None
-    assert len(address) > 0
+    contract.tx_create(KEYPAIR, gas=10000)
+    assert contract.address is not None
+    assert len(contract.address) > 0
+    assert contract.address.startswith('ct')
 
 
 def test_sophia_contract_tx_call():
     contract = Contract(aer_identity_contract)
-    address, tx = contract.tx_create_wait(KEYPAIR, gas=10000)
-    print("contract: ", address)
+    tx = contract.tx_create_wait(KEYPAIR, gas=10000)
+    print("contract: ", contract.address)
     print("tx contract: ", tx)
 
-    result = contract.tx_call(address, KEYPAIR, 'main', '42')
+    result = contract.tx_call(KEYPAIR, 'main', '42')
     assert result is not None
     assert result.return_type == 'ok'
     assert result.return_value.lower() == f'0x{hex(42)[2:].zfill(64).lower()}'
@@ -49,9 +50,8 @@ def test_sophia_contract_tx_call():
 
 def test_sophia_contract_compile():
     contract = Contract(aer_identity_contract)
-    result = contract.compile('')
-    assert result is not None
-    assert result.startswith('0x')
+    assert contract is not None
+    assert contract.bytecode.startswith('0x')
 
 
 def test_sophia_contract_call():
@@ -65,30 +65,25 @@ def test_sophia_encode_calldata():
     contract = Contract(aer_identity_contract)
     result = contract.encode_calldata('main', '1')
     assert result is not None
-    assert result == 'main1'
+    assert result.startswith('0x')
 
 
 def test_sophia_broken_contract_compile():
-    contract = Contract(broken_contract)
     with raises(ContractError):
-        result = contract.compile('')
-        print(result)
+        contract = Contract(broken_contract)
+        print(contract.source_code)
 
 
 def test_sophia_broken_contract_call():
-    contract = Contract(broken_contract)
     with raises(ContractError):
+        contract = Contract(broken_contract)
         result = contract.call('IdentityBroken.main', '1')
         print(result)
 
-# TODO For some reason encoding the calldata for the broken contract does not raise an exception
 
-
-@pytest.mark.skip('For some reason encoding the calldata for the broken contract '
-                  'does not raise an exception')
 def test_sophia_broken_encode_calldata():
-    contract = Contract(broken_contract)
     with raises(ContractError):
+        contract = Contract(broken_contract)
         result = contract.encode_calldata('IdentityBroken.main', '1')
         print(result)
 
@@ -99,10 +94,9 @@ def test_sophia_broken_encode_calldata():
 
 def test_evm_contract_compile():
     contract = Contract(aer_identity_contract, abi=Contract.EVM)
-    result = contract.compile()
-    print(result)
-    assert result is not None
-    assert result.startswith('0x')
+    print(contract)
+    assert contract.bytecode is not None
+    assert contract.bytecode.startswith('0x')
 
 # TODO This call fails with an out of gas exception
 
@@ -123,21 +117,21 @@ def test_evm_encode_calldata():
 
 
 def test_evm_broken_contract_compile():
-    contract = Contract(broken_contract, abi=Contract.EVM)
     with raises(ContractError):
-        result = contract.compile('')
-        print(result)
+        contract = Contract(broken_contract, abi=Contract.EVM)
+        print(contract.source_code)
 
 
 def test_evm_broken_contract_call():
-    contract = Contract(broken_contract, abi=Contract.EVM)
     with raises(ContractError):
+        contract = Contract(broken_contract, abi=Contract.EVM)
         result = contract.call('IdentityBroken.main', '1')
         print(result)
 
 
 def test_evm_broken_encode_calldata():
-    contract = Contract(broken_contract, abi=Contract.EVM)
-    # with raises(AException):
-    result = contract.encode_calldata('IdentityBroken.main', '1')
-    print(result)
+    with raises(ContractError):
+        contract = Contract(broken_contract, abi=Contract.EVM)
+        # with raises(AException):
+        result = contract.encode_calldata('IdentityBroken.main', '1')
+        print(result)

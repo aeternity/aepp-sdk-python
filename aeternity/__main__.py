@@ -418,23 +418,23 @@ def contract_deploy(contract_file, gas):
             code = fp.read()
             contract = Contract(code, client=_epoch_cli())
             kp, _ = _keypair()
-            address, tx = contract.tx_create(kp, gas=gas)
+            tx = contract.tx_create(kp, gas=gas)
 
             # save the contract data
             contract_data = {
                 'source': contract.source_code,
                 'bytecode': contract.bytecode,
-                'address': address,
+                'address': contract.address,
                 'transaction': tx.tx_hash,
                 'owner': kp.get_address(),
                 'created_at': datetime.now().isoformat('T')
             }
             # write the contract data to a file
-            deploy_descriptor = f"{contract_file}.deploy.{address[3:]}.json"
+            deploy_descriptor = f"{contract_file}.deploy.{contract.address[3:]}.json"
             with open(deploy_descriptor, 'w') as fw:
                 json.dump(contract_data, fw, indent=2)
             _pp([
-                ("Contract address", address),
+                ("Contract address", contract.address),
                 ("Transaction hash", tx.tx_hash),
                 ("Deploy descriptor", deploy_descriptor),
             ])
