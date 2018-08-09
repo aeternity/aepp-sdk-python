@@ -103,9 +103,7 @@ Transactions__________________ 0
 The æternity naming system allows you to register a name for your account (or oracle).
 
 ```
-
-```
-$ aecli -u localhost:3013 wallet mywallet name 'newby.aet' claim
+$ aecli wallet mywallet name 'newby.aet' claim
 Enter the wallet password []: 
 Name newby.aet claimed
 Transaction hash______________ th$vmucE7sFSc8QjWBAJwkh2drN3jKwtSd7KYtYzjL6Bfg1x8kyq
