@@ -188,6 +188,17 @@ def cli(ctx, url, url_internal, url_websocket, quiet, verbose):
     ctx.obj[CTX_QUIET] = quiet
     ctx.obj[CTX_VERBOSE] = verbose
 
+
+@cli.command('config', help="Print the client configuration")
+@click.pass_context
+def config(ctx):
+    _pp([
+        ("Epoch URL", ctx.obj.get(CTX_EPOCH_URL)),
+        ("Epoch internal URL", ctx.obj.get(CTX_EPOCH_URL_INTERNAL, 'N/A')),
+        ("Epoch websocket URL", ctx.obj.get(CTX_EPOCH_URL_WEBSOCKET, 'N/A')),
+    ], title="aecli settings")
+
+
 #   __          __   _ _      _
 #   \ \        / /  | | |    | |
 #    \ \  /\  / /_ _| | | ___| |_ ___
@@ -324,21 +335,67 @@ def name_register(ctx, name_ttl, ttl):
 
 
 @name.command('update')
-def name_update():
-    print("update name")
-    pass
+@click.pass_context
+@click.argument('address')
+@click.option("--name-ttl", default=100, help='Lifetime of the claim in blocks (default 100)')
+@click.option("--ttl", default=100, help='Lifetime of the claim request in blocks (default 100)')
+def name_update(ctx, address, name_ttl, ttl):
+    """
+    Update a name pointer
+    """
+    # retrieve the domain from the context
+    domain = ctx.obj.get(CTX_AET_DOMAIN)
+    # retrieve the keypair
+    kp, _ = _keypair()
+    name = AEName(domain)
+    name.update_status()
+    if name.status != AEName.Status.CLAIMED:
+        print(f"Domain is {name.status} and cannot be transferred")
+        exit(0)
+    tx = name.update(kp, target=address, name_ttl=name_ttl, tx_ttl=ttl)
+    _pp([
+        ('Transaction hash', tx.tx_hash)
+    ], title=f"Name {domain} status {name.status}")
 
 
 @name.command('revoke')
-def name_revoke():
-    print("revoke name")
-    pass
+@click.pass_context
+def name_revoke(ctx):
+    # retrieve the domain from the context
+    domain = ctx.obj.get(CTX_AET_DOMAIN)
+    # retrieve the keypair
+    kp, _ = _keypair()
+    name = AEName(domain)
+    name.update_status()
+    if name.status == AEName.Status.AVAILABLE:
+        print("Domain is available, nothing to revoke")
+        exit(0)
+    tx = name.revoke(kp)
+    _pp([
+        ('Transaction hash', tx.tx_hash)
+    ], title=f"Name {domain} status {name.status}")
 
 
 @name.command('transfer')
-def name_transfer():
-    print("transfer name")
-    pass
+@click.pass_context
+@click.argument('address')
+def name_transfer(ctx, address):
+    """
+    Transfer a name to another account
+    """
+    # retrieve the domain from the context
+    domain = ctx.obj.get(CTX_AET_DOMAIN)
+    # retrieve the keypair
+    kp, _ = _keypair()
+    name = AEName(domain)
+    name.update_status()
+    if name.status != AEName.Status.CLAIMED:
+        print(f"Domain is {name.status} and cannot be transferred")
+        exit(0)
+    tx = name.transfer_ownership(kp, address)
+    _pp([
+        ('Transaction hash', tx.tx_hash)
+    ], title=f"Name {domain} status {name.status}")
 
 
 #     ____                 _
@@ -457,10 +514,10 @@ def contract_call(ctx, deploy_descriptor, function, params, return_type):
             address = contract.get('address')
 
             kp, _ = _keypair()
-            contract = Contract(source, bytecode=bytecode, contract_address=address, client=_epoch_cli())
+            contract = Contract(source, bytecode=bytecode, address=address, client=_epoch_cli())
             result = contract.tx_call(kp, function, params, gas=40000000)
             _pp([
-                ('Contract address', result.contract_address),
+                ('Contract address', contract.address),
                 ('Gas price', result.gas_price),
                 ('Gas used', result.gas_used),
                 ('Return value (encoded)', result.return_value),
@@ -535,11 +592,13 @@ def inspect_name(domain):
     try:
         name = AEName(domain, client=_epoch_cli())
         name.update_status()
-        info = [('Status', name.status)]
-        if len(name.pointers) > 0:
-            info.append(('Pointers', name.pointers))
-            info.append(('TTL', name.name_ttl))
-        _pp(info)
+        _pp([
+            ('Status', name.status),
+            ('Name hash', name.name_hash),
+            ('Pointers', name.pointers),
+            ('TTL', name.name_ttl),
+        ])
+
     except Exception as e:
         print(e)
 

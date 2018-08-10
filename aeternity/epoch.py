@@ -221,7 +221,7 @@ class EpochClient:
 
     def get_top(self):
         top = self.cli.get_top()
-        logging.debug(f"get_height: {top}")
+        logging.debug(f"get_top: {top}")
         return top
 
     def get_balance(self, account_pubkey=None, height=None, block_hash=None):

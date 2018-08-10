@@ -150,7 +150,7 @@ def test_cli_inspect_block_by_hash():
 
 def test_cli_inspect_name():
     output = call_aecli('--quiet', 'inspect', 'name', 'whatever.aet')
-    assert output == "AVAILABLE"
+    assert output == "AVAILABLE\nN/A\nN/A\n0"
 
 
 @pytest.mark.skip('NOT IMPLEMENTED YET')
