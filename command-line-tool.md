@@ -2,11 +2,20 @@
 
 ## Introduction
 
-The `aecli` command line tool is there to provide a simple way to interact with æternity. Here we give a quick introduction to its use.
+All of our SDKs will ultimately feature an identical command line tool which provides a simple way to interact with æternity. Here we give a quick introduction to its use in the Python SDK. Here we show how it's used with the main sdk testnet, so you don't need to run your own node. If you want to do that then just modify the environment variable `EPOCH_URL` to point at your own node.
+
+## Setting up
+
+The instructions for setting up the aecli are in the Python SDK release notes. From here on in we'll assume that you've gone through the steps there, and have put the location of `aecli` into your `PATH` variable.
+
+export the location of the sdk-testnet node like this:
+```
+export EPOCH_URL='https://sdk-testnet.aepps.com'
+```
 
 ## Generating a wallet
 
-In order to do anything with æternity you'll need a wallet, and some tokens. The first step is to make yourself a wallet:
+In order to do anything with æternity you'll need a wallet, and some tokens. The first step is to make yourself a wallet, called `mywallet`:
 ```
 $ aecli wallet mywallet create
 Enter the wallet password []: 
@@ -14,17 +23,21 @@ Wallet created
 Wallet address________________ ak$wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR
 Wallet path___________________ /home/newby/projects/aeternity/aepp-sdk-python/mywallet
 $ 
-```T
+```
 
-Next you'll need some tokens. If you don't want to mine, you'll have to get someone to transfer you some--fortunately we're here to do that. Send an email with your public key (wallet address, starting with `ak$` above) to aepp-dev@aeternity.com and we'll transfer you some tokens so you can start to interact with the public nodes.
+Note that we don't set a password on any of the wallets in this example.
 
-Now you have the tokens, check your balance:
+Next you'll need some tokens. We've set up a web page at http://XXXXXXXXXXX which you can use to transfer yourself tokens, 250 at a time. Go there now and give yourself some tokens. 
+
+Now you have transferred yourself tokens, check your balance:
 
 ```
-$ aecli -u http://localhost:3013 wallet mywallet balance
+$ aecli wallet mywallet balance
 Enter the wallet password []: 
 Account balance_______________ 1000
 ```
+
+Remember that you may have to wait a short while for the tokens to show up.
 
 Assuming all went well, you are now in a position to use all of æternity's features. Even if not, you can still inspect the blockchain.
 
@@ -63,21 +76,59 @@ Previous block hash___________ bh$2NmrYNBUXYyvYVZEHNkS8qCsXmdBtaEXPUt15B2SPf3reS
 Transactions__________________ 0
 $ 
 ```
-and so on. TODO: examples with transactions
-
+and so on. We can even watch the chain in real time with the `play` command:
 ```
-$ aecli -u http://localhost:3013 inspect account 'ak$wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR'
-Account balance_______________ 993
+$ aecli chain play
+ >>>>> 
+Block hash____________________ bh$LKALmVkVaqJyqSv9JnYWwDh9QCf8LbbpXyYarB8vP5TqJ4bvL
+Block height__________________ 86223
+State hash____________________ bs$yAd7PuriwAUqwLexYuLxLqAA5aNcdiAU3Sdou4eYBdbVVkAW1
+Miner_________________________ ak$BpwWtzwJpfGe6AmusjQ9a5aqKF784nXkB2apoHPmNmrJTnPdn
+Time__________________________ 2018-08-09T11:33:15.866000+00:00
+Previous block hash___________ bh$NnH3UUz2J7LoWdUZi9A1p3KYTtzXeQJ2tQQB2yUnkhU3gj3rv
+Transactions__________________ 0
+ >>>>> 
+Block hash____________________ bh$NnH3UUz2J7LoWdUZi9A1p3KYTtzXeQJ2tQQB2yUnkhU3gj3rv
+Block height__________________ 86222
+State hash____________________ bs$bPGmETN5kNt9cTCUbGjyAJ7wDYkCvgFz9V6xGQ8k3w1SpG9aR
+Miner_________________________ ak$289g2REG4ZoavYGWhgz2p2Wq6FVXnsPurgM8UEe2UdXNXz5CXf
+Time__________________________ 2018-08-09T11:33:11.853000+00:00
+Previous block hash___________ bh$2jvmSTG1uZMwhaCW8J8Ug1Ddoy4EuQmzBFFeCDhs3CZDG8zuSW
+Transactions__________________ 0
 ```
+(and so on).
 
 ## Naming, or, I am not a number, I am a free man!
 
 The æternity naming system allows you to register a name for your account (or oracle).
 
 ```
-$ aecli -u localhost:3013 wallet mywallet name 'newby.aet' claim
+$ aecli wallet mywallet name 'newby.aet' claim
 Enter the wallet password []: 
 Name newby.aet claimed
+Transaction hash______________ th$vmucE7sFSc8QjWBAJwkh2drN3jKwtSd7KYtYzjL6Bfg1x8kyq
+```
+
+Let's inspect the transaction:
+
+```
+$ aecli inspect transaction 'th$vmucE7sFSc8QjWBAJwkh2drN3jKwtSd7KYtYzjL6Bfg1x8kyq'
+Block hash____________________ bh$2nvF8jTk9aPZoq3YzaYhGhMuXL8FxptvKpyZ2p73Bjb5EAjtYH
+Block height__________________ 86229
+Signatures____________________ ['sg$GfYm6uBp8bGpghAptWReqb3cX6kyRQzSZdLh74LzKKtyoTninWpvhs6JMAo1CiTDmi5E7A3b2ztC3beBq3sMVoprmxRCC']
+Sender account________________ None
+Recipient account_____________ None
+Amount________________________ None
+TTL___________________________ 86238
+```
+
+and check out the name we registered, to ensure we have it:
+
+```
+$ aecli inspect name newby.aet
+Status________________________ CLAIMED
+Pointers______________________ {'account_pubkey': 'ak$wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR'}
+TTL___________________________ 86329
 ```
 
 ## Making a new account and transferring tokens to it
@@ -90,94 +141,17 @@ Enter the wallet password []:
 Wallet created
 Wallet address________________ ak$gqYTvEBEivy2bk8MWYYNqXX2LvMRYho5i43YhPc6iiJNt6wwc
 Wallet path___________________ /home/newby/projects/aeternity/aepp-sdk-python/secondwallet
-$ aecli wallet ./secondwallet
-Usage: aecli wallet [OPTIONS] [KEY_PATH] COMMAND [ARGS]...
-
-Error: Missing command.
-$ aecli wallet 
-Usage: aecli wallet [OPTIONS] [KEY_PATH] COMMAND [ARGS]...
-
-  Handle wallet operations
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  address  Print the wallet address (public key)
-  balance  Get the balance of a wallet
-  create   Create a new wallet
-  name     Handle name lifecycle
-  save     Save a private keys string to a password...
-  spend    Create a transaction to another wallet
-$ aecli -u localhost:3013 wallet ./mywallet balance
-Enter the wallet password []: 
-No connection adapters were found for 'localhost:3013/v2/version'
-$ aecli -u http://localhost:3013 wallet ./mywallet balance
-Enter the wallet password []: 
-Account balance_______________ 993
-$ aecli -u http://localhost:3013 wallet ./mywallet spend 'ak$gqYTvEBEivy2bk8MWYYNqXX2LvMRYho5i43YhPc6iiJNt6wwc' 500
-Enter the wallet password []: 
-Transaction posted to the chain
-Transaction hash______________ th$1N5ZXmjcyAPXfnKZoH3nuVvtWBjeuTiDMfMQpuTMhjvfcmJJV
-Sender account________________ ak$wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR
-Recipient account_____________ ak$gqYTvEBEivy2bk8MWYYNqXX2LvMRYho5i43YhPc6iiJNt6wwc
-$ aecli -u http://localhost:3013 wallet ./mywallet balance
-Enter the wallet password []: 
-Account balance_______________ 993
-$ aecli -u http://localhost:3013 wallet ./mywallet balance
-Enter the wallet password []: 
-Account balance_______________ 993
-$ aecli chain top
-Block hash____________________ bh$2ZTaes1v6sfVbva5sNFjwAUkM5LQj1C4WGMScQgJ8KvGzuS9D2
-Block height__________________ 42809
-State hash____________________ bs$ccQ93AstkCD11zKfVS3ZKt3gqnyseFNUUcAqNQQDrP8VHGYKp
-Miner_________________________ ak$2gH5J6a8gif9Yx7y73WKVB9rPUYCnpTter7PiT3qu4ZfxWhDyG
-Time__________________________ 2018-08-01T11:09:21.444000+00:00
-Previous block hash___________ bh$2sKfDkuqJrfutjd6E5UJp6pdEBNdYsYRR8ZxLt52PqVodDoCpc
-Transactions__________________ 0
-$ aecli -u http://localhost:3013 chain top
-Block hash____________________ bh$2QRNqZjYayRZa4mbt1TGDxqyHrGdrXXsK3XpvHrEGGNV6PZdfv
-Block height__________________ 2344
-State hash____________________ bs$2QNVM5uko3f8cvXSxiNoY8Ts8W5P2HGWeUrhWcs7PDKpdwebdv
-Miner_________________________ ak$2rK74oqqcNwKUgswoeg5SVMhgzd8Zayo4GtMy1yFgKxuG1UkQZ
-Time__________________________ 2018-08-01T11:09:07.914000+00:00
-Previous block hash___________ bh$2fedqenHVsZ3fD5JFYQmR46j7suaQsz18Tneo4GXBJB4ujGjTY
-Transactions__________________ 0
-$ aecli -u http://localhost:3013 chain top
-Block hash____________________ bh$JR2tCLHztZmHycbtMHtwQVuGzFBR3GVrXH2SjKwrL8NUs8qkL
-Block height__________________ 2345
-State hash____________________ bs$GHfVndrvX6XYXazKrh2573434CNvn7eeEQwyJk1oCZmWJB6Qt
-Miner_________________________ ak$2rK74oqqcNwKUgswoeg5SVMhgzd8Zayo4GtMy1yFgKxuG1UkQZ
-Time__________________________ 2018-08-01T11:09:40.462000+00:00
-Previous block hash___________ bh$2QRNqZjYayRZa4mbt1TGDxqyHrGdrXXsK3XpvHrEGGNV6PZdfv
-Transactions__________________ 0
-$ aecli -u http://localhost:3013 wallet ./mywallet balance
-Enter the wallet password []: 
-Account balance_______________ 993
-$ aecli -u http://localhost:3013 wallet ./mywallet balance
-Enter the wallet password []: 
-Account balance_______________ 993
-$ aecli -u http://localhost:3013 wallet ./secondwallet balance
+$ aecli wallet secondwallet balance
 Enter the wallet password []: 
 Error: Block or account not found
-$ aecli -u http://localhost:3013 wallet ./mywallet spend 
-Usage: aecli wallet spend [OPTIONS] RECIPIENT_ACCOUNT AMOUNT
-
-Error: Missing argument "recipient_account".
-$ aecli -u http://localhost:3013 wallet ./mywallet spend 'ak$gqYTvEBEivy2bk8MWYYNqXX2LvMRYho5i43YhPc6iiJNt6wwc' 101Enter the wallet password []: 
-Transaction posted to the chain
-Transaction hash______________ th$21gaWzJ34RooA2pgyPXA4xLf37BSpV9y6sx1CyqLEYKE85v6P7
-Sender account________________ ak$wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR
-Recipient account_____________ ak$gqYTvEBEivy2bk8MWYYNqXX2LvMRYho5i43YhPc6iiJNt6wwc
-$ aecli -u http://localhost:3013 wallet ./secondwallet balance
-Enter the wallet password []: 
-Error: Block or account not found
-$ aecli -u http://localhost:3013 wallet ./mywallet spend 'ak$gqYTvEBEivy2bk8MWYYNqXX2LvMRYho5i43YhPc6iiJNt6wwc' 101
+$ aecli wallet mywallet spend 'ak$2MgcVUMneuZshmoMkNKuWqsa1GhakSKoBFhe37crpuVAWcYtRA' 125
 Enter the wallet password []: 
 Transaction posted to the chain
-Transaction hash______________ th$2YVT5c2VznvenzFfW2PArBvEv9ic3tDgqgCr9cC6tcs5Lp6RbD
+Transaction hash______________ th$29hPH2jNrZu1kfdmNhE991GaXzRD2QfJGek3xaXVbJZJWGsfQ2
 Sender account________________ ak$wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR
-Recipient account_____________ ak$gqYTvEBEivy2bk8MWYYNqXX2LvMRYho5i43YhPc6iiJNt6wwc
-$ 
+Recipient account_____________ ak$2MgcVUMneuZshmoMkNKuWqsa1GhakSKoBFhe37crpuVAWcYtRA
+$ aecli wallet secondwallet balance
+Enter the wallet password []: 
+Account balance_______________ 125
 ```
 

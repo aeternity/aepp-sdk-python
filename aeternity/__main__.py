@@ -2,6 +2,7 @@ import logging
 import click
 import os
 import traceback
+import json
 import sys
 
 from aeternity import __version__
@@ -105,11 +106,14 @@ def _pp(data, title=None, prefix=''):
     if not isinstance(data, list):
         data = [data]
     for kv in data:
+        value = kv[1] if kv[1] is not None else 'N/A'
+        if isinstance(value, list):
+            value = ', '.join(value)
         if ctx.obj.get(CTX_QUIET, False):
-            print(kv[1])
+            print(value)
         else:
             label = f"{prefix}{kv[0]}"
-            print(f"{label.ljust(30, '_')} {kv[1]}")
+            print(f"{label.ljust(30, '_')} {value}")
 
 
 def _ppe(error):
@@ -427,40 +431,69 @@ def oracle_query():
 #    \_____\___/|_| |_|\__|_|  \__,_|\___|\__|___/
 #
 #
-@cli.group("Compile, deploy and execute contracts")
-def contract():
+@cli.group('contract', help="Compile contracts")
+def contract_off_chain():
     pass
 
 
-@contract.command('compile', help="Compile a contract")
+@contract_off_chain.command(help="Compile a contract")
 @click.argument("contract_file")
 def contract_compile(contract_file):
     try:
         with open(contract_file) as fp:
-            c = fp.read()
-            print(c)
-            contract = Contract(fp.read(), Contract.SOPHIA, client=_epoch_cli())
-            result = contract.compile('')
+            code = fp.read()
+            contract = Contract(Contract.SOPHIA, client=_epoch_cli())
+            result = contract.compile(code)
             _pp([
-                ("contract", result)
+                ("bytecode", result)
             ])
     except Exception as e:
         print(e)
 
 
+@wallet.group('contract', help='Deploy and execute contracts on the chain')
+def contract():
+    pass
+
+
 @contract.command('deploy', help='Deploy a contract on the chain')
 @click.argument("contract_file")
 # TODO: what is gas here
-@click.option("--gas", default=1000, help='Amount of gas to deploy the contract')
+@click.option("--gas", default=40000000, help='Amount of gas to deploy the contract')
 def contract_deploy(contract_file, gas):
+    """
+    Deploy a contract to the chain and create a deploy descriptor
+    with the contract informations that can be use to invoke the contract
+    later on.
+
+    The generated descriptor will be created in the same folde of the contract
+    source file. Multiple deploy of the same contract file will generate different
+    deploy descriptor
+    """
     try:
         with open(contract_file) as fp:
-            contract = Contract(fp.read(), Contract.SOPHIA, client=_epoch_cli())
+            code = fp.read()
+            contract = Contract(code, client=_epoch_cli())
             kp, _ = _keypair()
-            address, tx = contract.tx_create(kp, gas=gas)
+            tx = contract.tx_create(kp, gas=gas)
+
+            # save the contract data
+            contract_data = {
+                'source': contract.source_code,
+                'bytecode': contract.bytecode,
+                'address': contract.address,
+                'transaction': tx.tx_hash,
+                'owner': kp.get_address(),
+                'created_at': datetime.now().isoformat('T')
+            }
+            # write the contract data to a file
+            deploy_descriptor = f"{contract_file}.deploy.{contract.address[3:]}.json"
+            with open(deploy_descriptor, 'w') as fw:
+                json.dump(contract_data, fw, indent=2)
             _pp([
-                ("Contract address", address),
+                ("Contract address", contract.address),
                 ("Transaction hash", tx.tx_hash),
+                ("Deploy descriptor", deploy_descriptor),
             ])
     except Exception as e:
         print(e)
@@ -468,19 +501,35 @@ def contract_deploy(contract_file, gas):
 
 @contract.command('call', help='Execute a function of the contract')
 @click.pass_context
-@click.argument('key_path', default='sign_key', envvar='WALLET_SIGN_KEY_PATH')
-@click.argument("contract_address")
+@click.argument("deploy_descriptor")
 @click.argument("function")
 @click.argument("params")
-def contract_call(ctx, key_path, contract_address, function, params):
+@click.option("--return-type", default='string', help='The data type of the contract output (default string)')
+def contract_call(ctx, deploy_descriptor, function, params, return_type):
     try:
-        ctx.obj[CTX_KEY_PATH] = key_path
-        kp = _keypair()
-        result = contract.tx_call(contract_address, kp, function, params)
-        if result.return_type == 'ok':
-            print(result)
-        print("call contract")
-        pass
+        with open(deploy_descriptor) as fp:
+            contract = json.load(fp)
+            source = contract.get('source')
+            bytecode = contract.get('bytecode')
+            address = contract.get('address')
+
+            kp, _ = _keypair()
+            contract = Contract(source, bytecode=bytecode, contract_address=address, client=_epoch_cli())
+            result = contract.tx_call(kp, function, params, gas=40000000)
+            _pp([
+                ('Contract address', result.contract_address),
+                ('Gas price', result.gas_price),
+                ('Gas used', result.gas_used),
+                ('Return value (encoded)', result.return_value),
+            ])
+            if result.return_type == 'ok':
+                value, remote_type = contract.decode_data(result.return_value, return_type)
+                _pp([
+                    ('Return value', value),
+                    ('Return remote type', remote_type),
+                ])
+
+            pass
     except Exception as e:
         print(e)
 
@@ -518,9 +567,12 @@ def inspect_height(chain_height):
 @inspect.command('transaction', help='The transaction hash to inspect (eg: th$...)')
 @click.argument('tx_hash')
 def inspect_transaction(tx_hash):
-    _check_prefix(tx_hash, "th")
-    data = _epoch_cli().get_transaction_by_transaction_hash(tx_hash)
-    _p_tx(data.transaction)
+    try:
+        _check_prefix(tx_hash, "th")
+        data = _epoch_cli().get_transaction_by_transaction_hash(tx_hash)
+        _p_tx(data.transaction)
+    except Exception as e:
+        print(e)
 
 
 @inspect.command('account', help='The address of the account to inspect (eg: ak$...)')
@@ -547,6 +599,31 @@ def inspect_name(domain):
             ('TTL', name.name_ttl),
         ])
 
+    except Exception as e:
+        print(e)
+
+
+@inspect.command('deploy', help='The contract deploy descriptor to inspect')
+@click.argument('contract_deploy_descriptor')
+def inspect_deploy(contract_deploy_descriptor):
+    """
+    Inspect a contract deploy file that has been generated with the command
+    aecli wallet X contract CONTRACT_SOURCE deploy
+    """
+    try:
+        with open(contract_deploy_descriptor) as fp:
+            contract = json.load(fp)
+            _pp([
+                ('Source', contract.get('source', 'N/A')),
+                ('Bytecode', contract.get('bytecode', 'N/A')),
+                ('Address', contract.get('address', 'N/A')),
+                ('Transaction', contract.get('transaction', 'N/A')),
+                ('Owner', contract.get('owner', 'N/A')),
+                ('Created_at', contract.get('created_at', 'N/A')),
+            ])
+            data = _epoch_cli().get_transaction_by_transaction_hash(contract.get('transaction', 'N/A'))
+            print("Transaction")
+            _p_tx(data.transaction)
     except Exception as e:
         print(e)
 

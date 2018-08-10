@@ -82,18 +82,18 @@ class EpochClient:
         self._connection = Connection(config=self._get_active_config())
 
     def update_top_block(self):
-        self._top_block = self.get_height()
+        self._top_block = self.get_top()
 
-    def wait_n_blocks(self, block_count, polling_interval=None):
+    def wait_n_blocks(self, block_count, polling_interval=1):
         self.update_top_block()
-        current_block = self.get_height()
-        target_block = current_block + block_count
+        current_block = self.get_top()
+        target_block = current_block.height + block_count
         if polling_interval is None:
             polling_interval = self.next_block_poll_interval_sec
         while True:
             time.sleep(polling_interval)
             self.update_top_block()
-            if self._top_block >= target_block:
+            if self._top_block.height >= target_block:
                 break
 
     def wait_for_next_block(self, polling_interval=None):
