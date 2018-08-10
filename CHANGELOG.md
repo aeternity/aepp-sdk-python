@@ -12,6 +12,9 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 ### Fixed
 - Name claiming ignores the epoch url and uses always the local chain
 
+### Changed
+- Update cryptography library to 2.3 [CVE-2018-10903](https://nvd.nist.gov/vuln/detail/CVE-2018-10903)
+
 
 ## [0.18.0.4]
 
