@@ -514,10 +514,10 @@ def contract_call(ctx, deploy_descriptor, function, params, return_type):
             address = contract.get('address')
 
             kp, _ = _keypair()
-            contract = Contract(source, bytecode=bytecode, contract_address=address, client=_epoch_cli())
+            contract = Contract(source, bytecode=bytecode, address=address, client=_epoch_cli())
             result = contract.tx_call(kp, function, params, gas=40000000)
             _pp([
-                ('Contract address', result.contract_address),
+                ('Contract address', contract.address),
                 ('Gas price', result.gas_price),
                 ('Gas used', result.gas_used),
                 ('Return value (encoded)', result.return_value),

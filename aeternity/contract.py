@@ -168,7 +168,6 @@ class Contract:
                 function=function,
                 arg=arg,
             ))
-            print(data)
             return data.calldata
         except OpenAPIClientException as e:
             raise ContractError(e)
