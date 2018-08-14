@@ -2,6 +2,8 @@ import logging
 import click
 import os
 import traceback
+import json
+import sys
 
 from aeternity import __version__
 
@@ -104,11 +106,14 @@ def _pp(data, title=None, prefix=''):
     if not isinstance(data, list):
         data = [data]
     for kv in data:
+        value = kv[1] if kv[1] is not None else 'N/A'
+        if isinstance(value, list):
+            value = ', '.join(value)
         if ctx.obj.get(CTX_QUIET, False):
-            print(kv[1])
+            print(value)
         else:
             label = f"{prefix}{kv[0]}"
-            print(f"{label.ljust(30, '_')} {kv[1]}")
+            print(f"{label.ljust(30, '_')} {value}")
 
 
 def _ppe(error):
@@ -119,13 +124,15 @@ def _ppe(error):
         traceback.print_exc()
 
 
-def _p_block(block):
+def _p_block(block, title=None):
     """Print info of a block """
+    if title is not None:
+        print(title)
     block_info = [
         ('Block hash', block.hash),
         ('Block height', block.height),
         ('State hash', block.state_hash),
-        ('Miner', block.miner if hasattr(block, 'miner') else 'n/a'),
+        ('Miner', block.miner if hasattr(block, 'miner') else 'N/A'),
         ('Time', datetime.fromtimestamp(block.time / 1000, timezone.utc).isoformat('T')),
         ('Previous block hash', block.prev_hash),
         ('Transactions', len(block.transactions) if hasattr(block, 'transactions') else 0)
@@ -180,6 +187,17 @@ def cli(ctx, url, url_internal, url_websocket, quiet, verbose):
     ctx.obj[CTX_EPOCH_URL_WEBSOCKET] = url_websocket
     ctx.obj[CTX_QUIET] = quiet
     ctx.obj[CTX_VERBOSE] = verbose
+
+
+@cli.command('config', help="Print the client configuration")
+@click.pass_context
+def config(ctx):
+    _pp([
+        ("Epoch URL", ctx.obj.get(CTX_EPOCH_URL)),
+        ("Epoch internal URL", ctx.obj.get(CTX_EPOCH_URL_INTERNAL, 'N/A')),
+        ("Epoch websocket URL", ctx.obj.get(CTX_EPOCH_URL_WEBSOCKET, 'N/A')),
+    ], title="aecli settings")
+
 
 #   __          __   _ _      _
 #   \ \        / /  | | |    | |
@@ -294,39 +312,90 @@ def name(ctx, domain):
 
 
 @name.command('claim', help="Claim a domain name")
-@click.option("--name-ttl", default=100, help='Lifetime of the claim in blocks')
+@click.option("--name-ttl", default=100, help='Lifetime of the claim in blocks (default 100)')
+@click.option("--ttl", default=100, help='Lifetime of the claim request in blocks (default 100)')
 @click.pass_context
-def name_register(ctx, name_ttl):
+def name_register(ctx, name_ttl, ttl):
+    try:
+        # retrieve the domain from the context
+        domain = ctx.obj.get(CTX_AET_DOMAIN)
+        # retrieve the keypair
+        kp, _ = _keypair()
+        name = AEName(domain, client=_epoch_cli())
+        name.update_status()
+        if name.status != AEName.Status.AVAILABLE:
+            print("Domain not available")
+            exit(0)
+        tx = name.full_claim_blocking(kp, name_ttl=name_ttl, tx_ttl=ttl)
+        _pp([
+            ("Transaction hash", tx.tx_hash),
+        ], title=f"Name {domain} claimed")
+    except Exception as e:
+        _ppe(e)
+
+
+@name.command('update')
+@click.pass_context
+@click.argument('address')
+@click.option("--name-ttl", default=100, help='Lifetime of the claim in blocks (default 100)')
+@click.option("--ttl", default=100, help='Lifetime of the claim request in blocks (default 100)')
+def name_update(ctx, address, name_ttl, ttl):
+    """
+    Update a name pointer
+    """
     # retrieve the domain from the context
     domain = ctx.obj.get(CTX_AET_DOMAIN)
     # retrieve the keypair
     kp, _ = _keypair()
     name = AEName(domain)
     name.update_status()
-    if name.status != AEName.Status.AVAILABLE:
-        print("Domain not available")
+    if name.status != AEName.Status.CLAIMED:
+        print(f"Domain is {name.status} and cannot be transferred")
         exit(0)
-    name.full_claim_blocking(kp, name_ttl=name_ttl)
-    print(f"Name {domain} claimed")
-    pass
-
-
-@name.command('update')
-def name_update():
-    print("update name")
-    pass
+    tx = name.update(kp, target=address, name_ttl=name_ttl, tx_ttl=ttl)
+    _pp([
+        ('Transaction hash', tx.tx_hash)
+    ], title=f"Name {domain} status {name.status}")
 
 
 @name.command('revoke')
-def name_revoke():
-    print("revoke name")
-    pass
+@click.pass_context
+def name_revoke(ctx):
+    # retrieve the domain from the context
+    domain = ctx.obj.get(CTX_AET_DOMAIN)
+    # retrieve the keypair
+    kp, _ = _keypair()
+    name = AEName(domain)
+    name.update_status()
+    if name.status == AEName.Status.AVAILABLE:
+        print("Domain is available, nothing to revoke")
+        exit(0)
+    tx = name.revoke(kp)
+    _pp([
+        ('Transaction hash', tx.tx_hash)
+    ], title=f"Name {domain} status {name.status}")
 
 
 @name.command('transfer')
-def name_transfer():
-    print("transfer name")
-    pass
+@click.pass_context
+@click.argument('address')
+def name_transfer(ctx, address):
+    """
+    Transfer a name to another account
+    """
+    # retrieve the domain from the context
+    domain = ctx.obj.get(CTX_AET_DOMAIN)
+    # retrieve the keypair
+    kp, _ = _keypair()
+    name = AEName(domain)
+    name.update_status()
+    if name.status != AEName.Status.CLAIMED:
+        print(f"Domain is {name.status} and cannot be transferred")
+        exit(0)
+    tx = name.transfer_ownership(kp, address)
+    _pp([
+        ('Transaction hash', tx.tx_hash)
+    ], title=f"Name {domain} status {name.status}")
 
 
 #     ____                 _
@@ -362,40 +431,69 @@ def oracle_query():
 #    \_____\___/|_| |_|\__|_|  \__,_|\___|\__|___/
 #
 #
-@cli.group("Compile, deploy and execute contracts")
-def contract():
+@cli.group('contract', help="Compile contracts")
+def contract_off_chain():
     pass
 
 
-@contract.command('compile', help="Compile a contract")
+@contract_off_chain.command(help="Compile a contract")
 @click.argument("contract_file")
 def contract_compile(contract_file):
     try:
         with open(contract_file) as fp:
-            c = fp.read()
-            print(c)
-            contract = Contract(fp.read(), Contract.SOPHIA, client=_epoch_cli())
-            result = contract.compile('')
+            code = fp.read()
+            contract = Contract(Contract.SOPHIA, client=_epoch_cli())
+            result = contract.compile(code)
             _pp([
-                ("contract", result)
+                ("bytecode", result)
             ])
     except Exception as e:
         print(e)
 
 
+@wallet.group('contract', help='Deploy and execute contracts on the chain')
+def contract():
+    pass
+
+
 @contract.command('deploy', help='Deploy a contract on the chain')
 @click.argument("contract_file")
 # TODO: what is gas here
-@click.option("--gas", default=1000, help='Amount of gas to deploy the contract')
+@click.option("--gas", default=40000000, help='Amount of gas to deploy the contract')
 def contract_deploy(contract_file, gas):
+    """
+    Deploy a contract to the chain and create a deploy descriptor
+    with the contract informations that can be use to invoke the contract
+    later on.
+
+    The generated descriptor will be created in the same folde of the contract
+    source file. Multiple deploy of the same contract file will generate different
+    deploy descriptor
+    """
     try:
         with open(contract_file) as fp:
-            contract = Contract(fp.read(), Contract.SOPHIA, client=_epoch_cli())
+            code = fp.read()
+            contract = Contract(code, client=_epoch_cli())
             kp, _ = _keypair()
-            address, tx = contract.tx_create(kp, gas=gas)
+            tx = contract.tx_create(kp, gas=gas)
+
+            # save the contract data
+            contract_data = {
+                'source': contract.source_code,
+                'bytecode': contract.bytecode,
+                'address': contract.address,
+                'transaction': tx.tx_hash,
+                'owner': kp.get_address(),
+                'created_at': datetime.now().isoformat('T')
+            }
+            # write the contract data to a file
+            deploy_descriptor = f"{contract_file}.deploy.{contract.address[3:]}.json"
+            with open(deploy_descriptor, 'w') as fw:
+                json.dump(contract_data, fw, indent=2)
             _pp([
-                ("Contract address", address),
+                ("Contract address", contract.address),
                 ("Transaction hash", tx.tx_hash),
+                ("Deploy descriptor", deploy_descriptor),
             ])
     except Exception as e:
         print(e)
@@ -403,19 +501,35 @@ def contract_deploy(contract_file, gas):
 
 @contract.command('call', help='Execute a function of the contract')
 @click.pass_context
-@click.argument('key_path', default='sign_key', envvar='WALLET_SIGN_KEY_PATH')
-@click.argument("contract_address")
+@click.argument("deploy_descriptor")
 @click.argument("function")
 @click.argument("params")
-def contract_call(ctx, key_path, contract_address, function, params):
+@click.argument("return_type")
+def contract_call(ctx, deploy_descriptor, function, params, return_type):
     try:
-        ctx.obj[CTX_KEY_PATH] = key_path
-        kp = _keypair()
-        result = contract.tx_call(contract_address, kp, function, params)
-        if result.return_type == 'ok':
-            print(result)
-        print("call contract")
-        pass
+        with open(deploy_descriptor) as fp:
+            contract = json.load(fp)
+            source = contract.get('source')
+            bytecode = contract.get('bytecode')
+            address = contract.get('address')
+
+            kp, _ = _keypair()
+            contract = Contract(source, bytecode=bytecode, address=address, client=_epoch_cli())
+            result = contract.tx_call(kp, function, params, gas=40000000)
+            _pp([
+                ('Contract address', contract.address),
+                ('Gas price', result.gas_price),
+                ('Gas used', result.gas_used),
+                ('Return value (encoded)', result.return_value),
+            ])
+            if result.return_type == 'ok':
+                value, remote_type = contract.decode_data(result.return_value, return_type)
+                _pp([
+                    ('Return value', value),
+                    ('Return remote type', remote_type),
+                ])
+
+            pass
     except Exception as e:
         print(e)
 
@@ -453,9 +567,12 @@ def inspect_height(chain_height):
 @inspect.command('transaction', help='The transaction hash to inspect (eg: th$...)')
 @click.argument('tx_hash')
 def inspect_transaction(tx_hash):
-    _check_prefix(tx_hash, "th")
-    data = _epoch_cli().get_transaction_by_transaction_hash(tx_hash)
-    _p_tx(data.transaction)
+    try:
+        _check_prefix(tx_hash, "th")
+        data = _epoch_cli().get_transaction_by_transaction_hash(tx_hash)
+        _p_tx(data.transaction)
+    except Exception as e:
+        print(e)
 
 
 @inspect.command('account', help='The address of the account to inspect (eg: ak$...)')
@@ -475,11 +592,38 @@ def inspect_name(domain):
     try:
         name = AEName(domain, client=_epoch_cli())
         name.update_status()
-        info = [('Status', name.status)]
-        if len(name.pointers) > 0:
-            info.append(('Pointers', name.pointers))
-            info.append(('TTL', name.name_ttl))
-        _pp(info)
+        _pp([
+            ('Status', name.status),
+            ('Name hash', name.name_hash),
+            ('Pointers', name.pointers),
+            ('TTL', name.name_ttl),
+        ])
+
+    except Exception as e:
+        print(e)
+
+
+@inspect.command('deploy', help='The contract deploy descriptor to inspect')
+@click.argument('contract_deploy_descriptor')
+def inspect_deploy(contract_deploy_descriptor):
+    """
+    Inspect a contract deploy file that has been generated with the command
+    aecli wallet X contract CONTRACT_SOURCE deploy
+    """
+    try:
+        with open(contract_deploy_descriptor) as fp:
+            contract = json.load(fp)
+            _pp([
+                ('Source', contract.get('source', 'N/A')),
+                ('Bytecode', contract.get('bytecode', 'N/A')),
+                ('Address', contract.get('address', 'N/A')),
+                ('Transaction', contract.get('transaction', 'N/A')),
+                ('Owner', contract.get('owner', 'N/A')),
+                ('Created_at', contract.get('created_at', 'N/A')),
+            ])
+            data = _epoch_cli().get_transaction_by_transaction_hash(contract.get('transaction', 'N/A'))
+            print("Transaction")
+            _p_tx(data.transaction)
     except Exception as e:
         print(e)
 
@@ -515,6 +659,36 @@ def chain_version():
     """
     data = _epoch_cli().get_version()
     _pp(("Epoch node version", data))
+
+
+@chain.command('play')
+@click.option('--height', type=int, help="From which height should play the chain (default top)")
+@click.option('--block-hash', help="From which block should play the chain (default top)")
+@click.option('--limit', '-l', type=int, default=sys.maxsize, help="Limit the number of block to print")
+def chain_play(height, block_hash, limit):
+    """
+    play the blockchain backwards
+    """
+    if block_hash is not None:
+        _check_prefix(block_hash, "bh")
+        b = _epoch_cli().get_block_by_hash(block_hash)
+    elif height is not None:
+        b = _epoch_cli().get_key_block_by_height(height)
+    else:
+        b = _epoch_cli().get_top()
+    # check the limit
+    limit = limit if limit > 0 else 0
+    while b is not None and limit > 0:
+        try:
+            _p_block(b, title=' >>>>> ')
+            limit -= 1
+            if limit <= 0:
+                break
+            b = _epoch_cli().get_block_by_hash(b.prev_hash)
+        except Exception as e:
+            _ppe(e)
+            b = None
+            pass
 
 
 # run the client

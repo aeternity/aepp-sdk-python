@@ -4,6 +4,20 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.18.0.5]
+
+### Added
+- Command `chain play` to explore the blocks of the chain automatically
+- Function is_valid_hash in signing module
+
+### Fixed
+- Name claiming ignores the epoch url and uses always the local chain
+
+### Changed
+- Update cryptography library to 2.3 [CVE-2018-10903](https://nvd.nist.gov/vuln/detail/CVE-2018-10903)
+- Contract call option return-type changed to mandatory argument in the cli
+
+
 ## [0.18.0.4]
 
 ### Changed
