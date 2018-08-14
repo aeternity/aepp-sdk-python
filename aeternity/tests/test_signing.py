@@ -1,10 +1,10 @@
 
 from aeternity.tests import PUBLIC_KEY, PRIVATE_KEY
 from aeternity.epoch import EpochClient
-from aeternity.signing import KeyPair
+from aeternity.signing import KeyPair, is_valid_hash
 
 
-def test_create_transaction_signing():
+def test_signing_create_transaction():
     client = EpochClient()
     # generate a new keypair
     new_keypair = KeyPair.generate()
@@ -24,3 +24,21 @@ def test_create_transaction_signing():
     client.wait_for_next_block(polling_interval=0.01)
     spend_tx = client.get_transaction_by_transaction_hash(result.tx_hash, tx_encoding='json')
     assert spend_tx.transaction['signatures'][0] == b58signature
+
+
+def test_signing_is_valid_hash():
+    # input (hash_str, prefix, expected output)
+    args = [
+        ('ak$me6L5SSXL4NLWv5EkQ7a16xaA145Br7oV4sz9JphZgsTsYwGC', None, True),
+        ('ak$me6L5SSXL4NLWv5EkQ7a16xaA145Br7oV4sz9JphZgsTsYwGC', 'ak', True),
+        ('ak$me6L5SSXL4NLWv5EkQ7a16xaA145Br7oV4sz9JphZgsTsYwGC', 'bh', False),
+        ('ak$me6L5SSXL4NLWv5EkQ7a16xaA145Br7oV4sz9JphZgsTsYwYC', None, False),
+        ('ak$me6L5SSXL4NLWv5EkQ7a18xaA145Br7oV4sz9JphZgsTsYwGC', None, False),
+        ('bh$vzUC2jVuAfpBC3tMAHhxwxJnTFymckNYeQ5TWZua1pydabqNu', None, True),
+        ('th$YqPSTzs73PiKFhFcALYWWu41uNLc6yp63ZC35jzzuJYA9PMui', None, True),
+    ]
+
+    for a in args:
+        got = is_valid_hash(a[0], a[1])
+        expected = a[2]
+        assert got == expected
