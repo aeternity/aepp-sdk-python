@@ -27,7 +27,7 @@ $
 
 Note that we don't set a password on any of the wallets in this example.
 
-Next you'll need some tokens. We've set up a web page at https://faucet.aepps.com/ which you can use to transfer yourself tokens, 250 at a time. Go there now and give yourself some tokens. 
+Next you'll need some tokens. We've set up a web page at [https://faucet.aepps.com/](https://faucet.aepps.com/) which you can use to transfer yourself tokens, 250 at a time. Go there now and give yourself some tokens. 
 
 Now you have transferred yourself tokens, check your balance:
 
