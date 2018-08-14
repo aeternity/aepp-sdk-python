@@ -130,7 +130,7 @@ class EpochClient:
         """create and execute a spend transaction"""
         transaction = self.create_spend_transaction(keypair.get_address(), recipient_pubkey, amount, tx_ttl=tx_ttl)
         tx = self.post_transaction(keypair, transaction)
-        return tx, tx.tx_hash
+        return tx
 
     def post_transaction(self, keypair, transaction):
         """

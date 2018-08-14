@@ -504,7 +504,7 @@ def contract_deploy(contract_file, gas):
 @click.argument("deploy_descriptor")
 @click.argument("function")
 @click.argument("params")
-@click.option("--return-type", default='string', help='The data type of the contract output (default string)')
+@click.argument("return_type")
 def contract_call(ctx, deploy_descriptor, function, params, return_type):
     try:
         with open(deploy_descriptor) as fp:
