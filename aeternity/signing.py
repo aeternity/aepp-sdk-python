@@ -96,10 +96,10 @@ class KeyPair:
         """sign a transaction"""
         tx_decoded = decode(transaction.tx)
         signature = self.signing_key.sign(tx_decoded).signature
+        b58_signature = encode("sg", signature)
         # self.sign_verify(tx_decoded, signature)
         # encode the transaction message with the signature
         tx_encoded = self.encode_transaction_message(tx_decoded, [signature])
-        b58_signature = encode("sg", signature)
         return tx_encoded, b58_signature
 
     def save_to_folder(self, folder, password, name='key'):
