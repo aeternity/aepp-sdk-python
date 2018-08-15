@@ -4,6 +4,11 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.18.0.6.1]
+
+### Fixed
+- Bump release version number
+
 ## [0.18.0.6]
 
 ### Added
