@@ -255,8 +255,14 @@ def wallet_save(ctx, private_key):
 
 @wallet.command('address', help="Print the wallet address (public key)")
 @click.option('--password', default=None, help="Read the password from the command line [WARN: this method is not secure]")
-def wallet_address(password):
+@click.option('--private-key', is_flag=True, help="Print the private key instead of the account address")
+def wallet_address(password, private_key):
     kp, kf = _keypair(password=password)
+    if private_key:
+        _pp([
+            ("Private key", kp.get_private_key()),
+        ])
+
     _pp([
         ('Wallet address', kp.get_address()),
     ])
@@ -287,7 +293,7 @@ def wallet_spend(recipient_account, amount, ttl, password):
         _check_prefix(recipient_account, "ak")
         data = _epoch_cli().spend(kp, recipient_account, amount, tx_ttl=ttl)
         _pp([
-            ("Transaction hash", data[1]),
+            ("Transaction hash", data.tx_hash),
             ("Sender account", kp.get_address()),
             ("Recipient account", recipient_account),
         ], title='Transaction posted to the chain')
