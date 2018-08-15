@@ -4,6 +4,16 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.18.0.6]
+
+### Added
+- Option `--private-key` to the `aecli wallet address` command 
+
+### Fixed
+- Error while printing the result of the spend command (aecli)
+- Possible index out of bound error in signing decode function
+
+
 ## [0.18.0.5]
 
 ### Added
