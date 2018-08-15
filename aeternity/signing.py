@@ -44,7 +44,7 @@ def decode(data):
     """decode data using the default encoding/decoding algorithm
     :param data: a encoded and prefixed string (ex tx$..., sg$..., ak$....)
     """
-    if data[2] != '$':
+    if len(data.strip()) < 3 or data[2] != '$':
         raise ValueError('Invalid hash')
     return _base58_decode(data[3:])
 
