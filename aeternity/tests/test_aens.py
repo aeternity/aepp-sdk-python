@@ -21,7 +21,7 @@ def random_domain(length=10):
     return rand_str + '.aet'
 
 
-def test_committment():
+def test_name_committment():
     domain = random_domain()
     name = AEName(domain)
     cl = name._get_commitment_hash()
