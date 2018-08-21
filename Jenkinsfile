@@ -30,7 +30,7 @@ pipeline {
     stage('Publish-Test') {
       when {
         beforeAgent true
-        branch 'feature/epoch-0.20.0'
+        branch 'develop'
       }
       steps {
         withCredentials([
@@ -45,8 +45,8 @@ pipeline {
 
     stage('Publish') {
       when {
+        buildingTag()
         beforeAgent true
-        branch 'maaster'
       }
       steps {
         withCredentials([
