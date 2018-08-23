@@ -12,7 +12,7 @@ NAME_MAX_TLL = 50000
 NAME_DEFAULT_TTL = 60000
 # default relative ttl in number of blocks  for executing transaction on the chain
 MAX_TX_TTL = sys.maxsize
-DEFAULT_TX_TTL = 10
+DEFAULT_TX_TTL = 100
 # default fee for posting transacrtion
 DEFAULT_FEE = 1
 # contracts

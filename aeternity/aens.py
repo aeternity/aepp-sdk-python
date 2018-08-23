@@ -6,7 +6,7 @@ from aeternity.oracle import Oracle
 from aeternity.epoch import EpochClient
 from aeternity.openapi import OpenAPIClientException
 from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE, NAME_MAX_TLL, NAME_DEFAULT_TTL
-from aeternity.signing import hash, hash_encode, encode
+from aeternity.signing import hash_encode, encode, namehash, namehash_encode
 
 
 class NameStatus:
@@ -38,27 +38,9 @@ class AEName:
         self.name_ttl = 0
         self.pointers = None
 
-    @property
-    def b58_name(self):
-        return self._encode_name(self.domain)
-
-    def get_name_hash(self):
-        return AEName.calculate_name_hash(self.domain)
-
     @classmethod
     def calculate_name_hash(cls, name):
-        if isinstance(name, str):
-            name = name.encode('ascii')
-        # see:
-        # https://github.com/aeternity/protocol/blob/master/AENS.md#hashing
-        # and also:
-        # https://github.com/ethereum/EIPs/blob/master/EIPS/eip-137.md#namehash-algorithm
-        labels = name.split(b'.')
-        hashed = b'\x00' * 32
-        while labels:
-            hashed = hash(hashed + hash(labels[0]))
-            labels = labels[1:]
-        return encode("nm", hashed)
+        return namehash_encode("nm", name)
 
     @classmethod
     def validate_pointer(cls, pointer):
@@ -145,8 +127,7 @@ class AEName:
     def _get_commitment_hash(self):
         """Calculate the commitment hash"""
         self.preclaim_salt = random.randint(0, 2**64)
-        name_digest = hash(data=self.domain.encode("ascii"))
-        commitment = hash_encode("cm", name_digest + self.preclaim_salt.to_bytes(32, 'big'))
+        commitment = hash_encode("cm", namehash(self.domain) + self.preclaim_salt.to_bytes(32, 'big'))
         return commitment
 
     def preclaim(self, keypair, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
@@ -252,7 +233,7 @@ class AEName:
         ttl = self.client.compute_absolute_ttl(tx_ttl)
         transfer_transaction = self.client.cli.post_name_transfer(body=dict(
             account=keypair.get_address(),
-            name_hash=self.get_name_hash(),
+            name_hash=self.calculate_name_hash(self.domain),
             recipient_pubkey=receipient_pubkey,
             ttl=ttl,
             fee=fee,
@@ -270,7 +251,7 @@ class AEName:
         ttl = self.client.compute_absolute_ttl(tx_ttl)
         revoke_transaction = self.client.cli.post_name_revoke(body=dict(
             account=keypair.get_address(),
-            name_hash=self.get_name_hash(),
+            name_hash=self.calculate_name_hash(self.domain),
             fee=fee,
             ttl=ttl
         ))
