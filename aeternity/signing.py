@@ -59,6 +59,25 @@ def hash_encode(prefix, data):
     return encode(prefix, hash(data))
 
 
+def namehash(name):
+    if isinstance(name, str):
+        name = name.encode('ascii')
+    # see:
+    # https://github.com/aeternity/protocol/blob/master/AENS.md#hashing
+    # and also:
+    # https://github.com/ethereum/EIPs/blob/master/EIPS/eip-137.md#namehash-algorithm
+    labels = name.split(b'.')
+    hashed = b'\x00' * 32
+    while labels:
+        hashed = hash(hashed + hash(labels[0]))
+        labels = labels[1:]
+    return hashed
+
+
+def namehash_encode(prefix, name):
+    return encode(prefix, namehash(name))
+
+
 def is_valid_hash(hash_str, prefix=None):
     """
     Validate an aeternity hash, optionally restrict to a specific prefix.

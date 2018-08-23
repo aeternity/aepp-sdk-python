@@ -6,9 +6,9 @@ FROM python:3-slim
 USER root
 
 COPY requirements.txt /requirements.txt
-RUN apt-get update && apt-get -y install build-essential curl libltdl7 git \
+RUN apt-get update && apt-get -y install build-essential curl libltdl7 git make \
 	&& pip install -r /requirements.txt \
-	&& pip install pytest
+	&& pip install pytest twine
 
 WORKDIR /app
 

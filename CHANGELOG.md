@@ -4,6 +4,14 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.20.0.1]
+
+### Changed
+- Use namehash to calculate name commitment hash
+
+### Removed
+- Compatibility with epoch v0.18.0
+
 ## [0.18.0.6.1]
 
 ### Fixed
