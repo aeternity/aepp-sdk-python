@@ -17,7 +17,7 @@ export EPOCH_URL='https://sdk-testnet.aepps.com'
 
 In order to do anything with æternity you'll need a wallet, and some tokens. The first step is to make yourself a wallet, called `mywallet`:
 ```
-$ aecli wallet mywallet create
+$ ./aecli wallet mywallet create
 Enter the wallet password []: 
 Wallet created
 Wallet address________________ ak$wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR
@@ -32,7 +32,7 @@ Next you'll need some tokens. We've set up a web page at [https://faucet.aepps.c
 Now you have transferred yourself tokens, check your balance:
 
 ```
-$ aecli wallet mywallet balance
+$ ./aecli wallet mywallet balance
 Enter the wallet password []: 
 Account balance_______________ 1000
 ```
@@ -45,7 +45,7 @@ Assuming all went well, you are now in a position to use all of æternity's feat
 
 First, take a look at the head of the chain:
 ```
-$ aecli chain top
+$ ./aecli chain top
 Block hash____________________ bh$zy7w2hLc7rYk7vLkc4YibErtJZitTrp1CBha2s9mAkKRBxr4h
 Block height__________________ 42640
 State hash____________________ bs$2XAzdJyzruidUbLDwUxcWViCKxXvV7jnBqrKywjcYUtf4sz55U
@@ -58,7 +58,7 @@ $
 
 From the previous block hash we can go backward through the chain:
 ```
-$ aecli inspect block 'bh$srwLRbwLLzuFWnXAvd4nEHSHoVZcTPGd1VFbjwKMSwNyMCJdf'
+$ ./aecli inspect block 'bh$srwLRbwLLzuFWnXAvd4nEHSHoVZcTPGd1VFbjwKMSwNyMCJdf'
 Block hash____________________ bh$srwLRbwLLzuFWnXAvd4nEHSHoVZcTPGd1VFbjwKMSwNyMCJdf
 Block height__________________ 42639
 State hash____________________ bs$2jNh89QB4167f7v5qnB2n9JWvb1m6787gyvkZjaUK6L4EGjJux
@@ -78,7 +78,7 @@ $
 ```
 and so on. We can even watch the chain in real time with the `play` command:
 ```
-$ aecli chain play
+$ ./aecli chain play
  >>>>> 
 Block hash____________________ bh$LKALmVkVaqJyqSv9JnYWwDh9QCf8LbbpXyYarB8vP5TqJ4bvL
 Block height__________________ 86223
@@ -103,7 +103,7 @@ Transactions__________________ 0
 The æternity naming system allows you to register a name for your account (or oracle).
 
 ```
-$ aecli wallet mywallet name 'newby.aet' claim
+$ ./aecli wallet mywallet name 'newby.aet' claim
 Enter the wallet password []: 
 Name newby.aet claimed
 Transaction hash______________ th$vmucE7sFSc8QjWBAJwkh2drN3jKwtSd7KYtYzjL6Bfg1x8kyq
@@ -112,7 +112,7 @@ Transaction hash______________ th$vmucE7sFSc8QjWBAJwkh2drN3jKwtSd7KYtYzjL6Bfg1x8
 Let's inspect the transaction:
 
 ```
-$ aecli inspect transaction 'th$vmucE7sFSc8QjWBAJwkh2drN3jKwtSd7KYtYzjL6Bfg1x8kyq'
+$ ./aecli inspect transaction 'th$vmucE7sFSc8QjWBAJwkh2drN3jKwtSd7KYtYzjL6Bfg1x8kyq'
 Block hash____________________ bh$2nvF8jTk9aPZoq3YzaYhGhMuXL8FxptvKpyZ2p73Bjb5EAjtYH
 Block height__________________ 86229
 Signatures____________________ ['sg$GfYm6uBp8bGpghAptWReqb3cX6kyRQzSZdLh74LzKKtyoTninWpvhs6JMAo1CiTDmi5E7A3b2ztC3beBq3sMVoprmxRCC']
@@ -125,7 +125,7 @@ TTL___________________________ 86238
 and check out the name we registered, to ensure we have it:
 
 ```
-$ aecli inspect name newby.aet
+$ ./aecli inspect name newby.aet
 Status________________________ CLAIMED
 Pointers______________________ {'account_pubkey': 'ak$wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR'}
 TTL___________________________ 86329
@@ -136,21 +136,21 @@ TTL___________________________ 86329
 Let's make a second wallet, and give it some tokens. First, make the new wallet
 
 ```
-$ aecli wallet ./secondwallet create
+$ ./aecli wallet ./secondwallet create
 Enter the wallet password []: 
 Wallet created
 Wallet address________________ ak$gqYTvEBEivy2bk8MWYYNqXX2LvMRYho5i43YhPc6iiJNt6wwc
 Wallet path___________________ /home/newby/projects/aeternity/aepp-sdk-python/secondwallet
-$ aecli wallet secondwallet balance
+$ ./aecli wallet secondwallet balance
 Enter the wallet password []: 
 Error: Block or account not found
-$ aecli wallet mywallet spend 'ak$2MgcVUMneuZshmoMkNKuWqsa1GhakSKoBFhe37crpuVAWcYtRA' 125
+$ ./aecli wallet mywallet spend 'ak$2MgcVUMneuZshmoMkNKuWqsa1GhakSKoBFhe37crpuVAWcYtRA' 125
 Enter the wallet password []: 
 Transaction posted to the chain
 Transaction hash______________ th$29hPH2jNrZu1kfdmNhE991GaXzRD2QfJGek3xaXVbJZJWGsfQ2
 Sender account________________ ak$wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR
 Recipient account_____________ ak$2MgcVUMneuZshmoMkNKuWqsa1GhakSKoBFhe37crpuVAWcYtRA
-$ aecli wallet secondwallet balance
+$ ./aecli wallet secondwallet balance
 Enter the wallet password []: 
 Account balance_______________ 125
 ```
