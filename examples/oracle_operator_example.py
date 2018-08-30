@@ -6,7 +6,7 @@ import re
 import requests
 
 from aeternity import Config
-from aeternity import EpochClient
+from aeternity.epoch import EpochClient
 from aeternity import Oracle
 
 
