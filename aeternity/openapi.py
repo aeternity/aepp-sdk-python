@@ -1,6 +1,7 @@
 import re
 import requests
 import keyword
+import json
 from collections import namedtuple
 
 
@@ -174,7 +175,9 @@ class OpenAPICli(object):
                 # parse the http_reply
                 if len(api_response.schema) == 0:
                     return {}
-                jr = http_reply.json()
+                # TODO: this is because some variables have dash character in it (v0.21.0)
+                # hopefully this will be removed in the next versions
+                jr = json.loads(http_reply.text.replace("-", "_"))
                 return namedtuple(api_response.schema, jr.keys())(**jr)
             # error
             raise OpenAPIClientException(f"Error: {api_response.desc}")
