@@ -654,7 +654,7 @@ def chain_top():
     """
     Print the information of the top block of the chain.
     """
-    data = _epoch_cli().get_top()
+    data = _epoch_cli().get_top_block()
     _p_block(data)
 
 
@@ -663,8 +663,18 @@ def chain_version():
     """
     Print the epoch node version.
     """
-    data = _epoch_cli().get_version()
-    _pp(("Epoch node version", data))
+    data = _epoch_cli().get_status()
+    _pp([
+        ("Epoch node version", data.node_version),
+        ("Epoch node revision", data.node_revision),
+        ("Difficulty", data.difficulty),
+        ("Genesis key block hash", data.genesis_key_block_hash),
+        ("Peers", data.peer_count),
+        ("Pending transactions", data.pending_transactions_count),
+        ("Solutions", data.solutions),
+        ("Listening", data.listening),
+        ("syncing", data.syncing),
+    ])
 
 
 @chain.command('play')
@@ -677,11 +687,11 @@ def chain_play(height, block_hash, limit):
     """
     if block_hash is not None:
         _check_prefix(block_hash, "bh")
-        b = _epoch_cli().get_block_by_hash(block_hash)
+        b = _epoch_cli().get_key_block_by_hash(hash=block_hash)
     elif height is not None:
         b = _epoch_cli().get_key_block_by_height(height)
     else:
-        b = _epoch_cli().get_top()
+        b = _epoch_cli().get_top_block()
     # check the limit
     limit = limit if limit > 0 else 0
     while b is not None and limit > 0:
@@ -690,7 +700,7 @@ def chain_play(height, block_hash, limit):
             limit -= 1
             if limit <= 0:
                 break
-            b = _epoch_cli().get_block_by_hash(b.prev_hash)
+            b = _epoch_cli().get_key_block_by_hash(hash=b.prev_hash)
         except Exception as e:
             _ppe(e)
             b = None
