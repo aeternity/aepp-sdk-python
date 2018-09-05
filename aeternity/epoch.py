@@ -70,6 +70,10 @@ class EpochClient:
         # instantiate the request client
         self.cli = OpenAPICli(configs[0].api_url, configs[0].api_url_internal)
 
+    # enable composition
+    def __getattr__(self, attr):
+        return getattr(self.cli, attr)
+
     def _get_active_config(self):
         return self._configs[self._active_config_idx]
 
