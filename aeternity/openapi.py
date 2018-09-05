@@ -30,7 +30,7 @@ class OpenAPICli(object):
     Generates a Opena API client
     """
     # skip tags
-    skip_tags = set(["obsolete", "debug"])
+    skip_tags = set(["obsolete"])
     # openapi versions
     open_api_versions = ["2.0"]
     # type mapping
