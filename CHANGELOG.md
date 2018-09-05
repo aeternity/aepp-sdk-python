@@ -4,6 +4,11 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.20.0.2]
+
+### Fixed
+- Pypi distributions contains debug messages
+
 ## [0.20.0.1]
 
 ### Changed
