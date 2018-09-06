@@ -175,6 +175,10 @@ class OpenAPICli(object):
                 # parse the http_reply
                 if len(api_response.schema) == 0:
                     return {}
+                if "inline_response_200" in api_response.schema:
+                    # this are raw values, doesnt make sense to parse into a dict
+                    raw = http_reply.json()
+                    return list(raw.values())[0]
                 # TODO: this is because some variables have dash character in it (v0.21.0)
                 # hopefully this will be removed in the next versions
                 jr = json.loads(http_reply.text.replace("-", "_"))
