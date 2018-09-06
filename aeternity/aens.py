@@ -1,4 +1,3 @@
-import json
 import random
 
 from aeternity.exceptions import NameNotAvailable, TooEarlyClaim, MissingPreclaim  # ,PreclaimFailed
@@ -73,11 +72,11 @@ class AEName:
     def update_status(self):
         try:
             # use the openapi client inside the epoch client
-            response = self.client.cli.get_name(name=self.domain)
+            response = self.client.get_name_entry_by_name(name=self.domain)
             self.status = NameStatus.CLAIMED
-            self.name_ttl = response.name_ttl
-            self.name_hash = response.name_hash
-            self.pointers = json.loads(response.pointers)
+            self.name_ttl = response.expires
+            self.name_hash = response.id
+            self.pointers = response.pointers
         except OpenAPIClientException:
             # e.g. if the status is already PRECLAIMED or CLAIMED, don't reset
             # it to AVAILABLE.
@@ -135,16 +134,16 @@ class AEName:
         Execute a name preclaim
         """
         # check which block we used to create the preclaim
-        self.preclaimed_block_height = self.client.get_height()
+        self.preclaimed_block_height = self.client.get_top_block().height
         # calculate the commitment hash
         commitment_hash = self._get_commitment_hash()
         # compute the absolute ttl
         ttl = self.client.compute_absolute_ttl(tx_ttl)
         # preclaim
         preclaim_transaction = self.client.cli.post_name_preclaim(body=dict(
-            commitment=commitment_hash,
+            commitment_id=commitment_hash,
             fee=fee,
-            account=keypair.get_address(),
+            account_id=keypair.get_address(),
             ttl=ttl
         ))
         signed_tx = self.client.post_transaction(keypair, preclaim_transaction)
@@ -168,7 +167,7 @@ class AEName:
         if self.preclaimed_block_height is None:
             raise MissingPreclaim('You must call preclaim before claiming a name')
 
-        current_block_height = self.client.get_height()
+        current_block_height = self.client.get_top_block().height
         if self.preclaimed_block_height >= current_block_height:
             raise TooEarlyClaim(
                 'You must wait for one block to call claim.'
@@ -177,7 +176,7 @@ class AEName:
         # compute the absolute ttl
         ttl = self.client.compute_absolute_ttl(tx_ttl)
         claim_transaction = self.client.cli.post_name_claim(body=dict(
-            account=keypair.get_address(),
+            account_id=keypair.get_address(),
             name=AEName._encode_name(self.domain),
             name_salt=self.preclaim_salt,
             fee=fee,
@@ -188,12 +187,22 @@ class AEName:
         self.status = AEName.Status.CLAIMED
         return signed_tx.tx_hash, self.preclaim_salt
 
-    def _get_pointers_json(self, target):
+    def _get_pointers(self, target):
         if target.startswith('ak'):
-            pointers = {'account_pubkey': target}
+            pointers = [
+                {
+                    'id': target,
+                    'key': 'account_pubkey'
+                }
+            ]
         else:
-            pointers = {'oracle_pubkey': target}
-        return json.dumps(pointers)
+            pointers = [
+              {
+                'id': target,
+                'key': 'oracle_pubkey'
+              }
+            ]
+        return pointers
 
     def update(self, keypair, target,
                name_ttl=NAME_MAX_TLL,
@@ -211,11 +220,11 @@ class AEName:
         ttl = self.client.compute_absolute_ttl(tx_ttl)
         # send the update transaction
         update_transaction = self.client.cli.post_name_update(body=dict(
-            account=keypair.get_address(),
-            name_hash=AEName.calculate_name_hash(self.domain),
+            account_id=keypair.get_address(),
+            name_id=AEName.calculate_name_hash(self.domain),
             client_ttl=client_ttl,
             name_ttl=name_ttl,
-            pointers=self._get_pointers_json(target),
+            pointers=self._get_pointers(target),
             ttl=ttl,
             fee=fee,
         ))
@@ -232,9 +241,9 @@ class AEName:
         # compute the absolute ttl
         ttl = self.client.compute_absolute_ttl(tx_ttl)
         transfer_transaction = self.client.cli.post_name_transfer(body=dict(
-            account=keypair.get_address(),
-            name_hash=self.calculate_name_hash(self.domain),
-            recipient_pubkey=receipient_pubkey,
+            account_id=keypair.get_address(),
+            name_id=self.calculate_name_hash(self.domain),
+            recipient_id=receipient_pubkey,
             ttl=ttl,
             fee=fee,
         ))
@@ -250,8 +259,8 @@ class AEName:
         # compute the absolute ttl
         ttl = self.client.compute_absolute_ttl(tx_ttl)
         revoke_transaction = self.client.cli.post_name_revoke(body=dict(
-            account=keypair.get_address(),
-            name_hash=self.calculate_name_hash(self.domain),
+            account_id=keypair.get_address(),
+            name_id=self.calculate_name_hash(self.domain),
             fee=fee,
             ttl=ttl
         ))
