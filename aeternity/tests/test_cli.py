@@ -46,7 +46,7 @@ def test_cli_balance():
 def test_cli_top():
     output = call_aecli('--quiet', 'chain', 'top')
     lines = output.split('\n')
-    assert lines[0].startswith('bh$')  # block hash
+    assert lines[0].startswith('kh$')  # block hash
     assert int(lines[1]) > 0  # block height
     assert lines[2].startswith('bs$')  # block state
     assert len(lines) == 7
@@ -127,15 +127,16 @@ def test_cli_spend_invalid_amount():
 
 
 def test_cli_inspect_block_by_height():
-    height = EpochClient().get_height()
+    height = EpochClient().get_current_key_block_height()
+    print(height)
     output = call_aecli('--quiet', 'inspect', 'height', str(height))
     lines = output.split('\n')
-    assert lines[0].startswith("bh$")
+    assert lines[0].startswith("kh$")
     assert lines[1] == str(height)
 
 
 def test_cli_inspect_block_by_hash():
-    height = EpochClient().get_height()
+    height = EpochClient().get_current_key_block_height()
     output = call_aecli('--quiet', 'inspect', 'height', str(height))
     lines = output.split('\n')
     # retrieve the block hash
