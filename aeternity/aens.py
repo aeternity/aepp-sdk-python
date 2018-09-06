@@ -134,7 +134,7 @@ class AEName:
         Execute a name preclaim
         """
         # check which block we used to create the preclaim
-        self.preclaimed_block_height = self.client.get_top_block().height
+        self.preclaimed_block_height = self.client.get_current_key_block_height()
         # calculate the commitment hash
         commitment_hash = self._get_commitment_hash()
         # compute the absolute ttl
@@ -167,7 +167,7 @@ class AEName:
         if self.preclaimed_block_height is None:
             raise MissingPreclaim('You must call preclaim before claiming a name')
 
-        current_block_height = self.client.get_top_block().height
+        current_block_height = self.client.get_current_key_block_height()
         if self.preclaimed_block_height >= current_block_height:
             raise TooEarlyClaim(
                 'You must wait for one block to call claim.'

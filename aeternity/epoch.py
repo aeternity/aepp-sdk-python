@@ -197,7 +197,7 @@ class EpochClient:
     def compute_absolute_ttl(self, ttl):
         """compute the absolute ttl by adding the ttl to the current height of the chain"""
         assert ttl > 0
-        top = self.get_top_block()
+        top = self.get_current_key_block_height()
         return top.height + ttl
 
     #
