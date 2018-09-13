@@ -1,6 +1,7 @@
 import re
 import requests
 import keyword
+import json
 from collections import namedtuple
 
 
@@ -30,7 +31,7 @@ class OpenAPICli(object):
     Generates a Opena API client
     """
     # skip tags
-    skip_tags = set(["obsolete", "debug"])
+    skip_tags = set(["obsolete"])
     # openapi versions
     open_api_versions = ["2.0"]
     # type mapping
@@ -174,7 +175,13 @@ class OpenAPICli(object):
                 # parse the http_reply
                 if len(api_response.schema) == 0:
                     return {}
-                jr = http_reply.json()
+                if "inline_response_200" in api_response.schema:
+                    # this are raw values, doesnt make sense to parse into a dict
+                    raw = http_reply.json()
+                    return list(raw.values())[0]
+                # TODO: this is because some variables have dash character in it (v0.21.0)
+                # hopefully this will be removed in the next versions
+                jr = json.loads(http_reply.text.replace("-", "_"))
                 return namedtuple(api_response.schema, jr.keys())(**jr)
             # error
             raise OpenAPIClientException(f"Error: {api_response.desc}")

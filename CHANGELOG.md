@@ -4,6 +4,11 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.21.0.1]
+
+### Removed
+- Compatiblity with epoch nodes version < 0.21.0
+
 ## [0.20.0.2]
 
 ### Fixed

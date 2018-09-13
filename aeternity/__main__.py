@@ -78,8 +78,8 @@ def _check_prefix(data, prefix):
             print("Invalid account address, it shoudld be like: ak$....")
         if prefix == 'th':
             print("Invalid transaction hash, it shoudld be like: th$....")
-        if prefix == 'bh':
-            print("Invalid block hash, it shoudld be like: bh$....")
+        if prefix in ('bh', 'kh'):
+            print("Invalid block hash, it shoudld be like: bh$...., kh$...")
         exit(1)
 
 
@@ -274,9 +274,9 @@ def wallet_balance(password):
     kp, _ = _keypair(password=password)
 
     try:
-        balance = _epoch_cli().get_balance(kp.get_address())
+        account = _epoch_cli().get_account_by_pubkey(pubkey=kp.get_address())
         _pp(
-            ("Account balance", balance)
+            ("Account balance", account.balance)
         )
     except Exception as e:
         _ppe(e)
@@ -558,15 +558,15 @@ def inspect():
 @inspect.command('block', help='The block hash to inspect (eg: bh$...)')
 @click.argument('block_hash')
 def inspect_block(block_hash):
-    _check_prefix(block_hash, "bh")
-    data = _epoch_cli().get_block_by_hash(block_hash)
+    _check_prefix(block_hash, "kh")
+    data = _epoch_cli().get_key_block_by_hash(hash=block_hash)
     _p_block(data)
 
 
 @inspect.command('height', help='The height of the chain to inspect (eg:14352)')
 @click.argument('chain_height', default=1)
 def inspect_height(chain_height):
-    data = _epoch_cli().get_key_block_by_height(chain_height)
+    data = _epoch_cli().get_key_block_by_height(height=chain_height)
     _p_block(data)
 
 
@@ -575,7 +575,7 @@ def inspect_height(chain_height):
 def inspect_transaction(tx_hash):
     try:
         _check_prefix(tx_hash, "th")
-        data = _epoch_cli().get_transaction_by_transaction_hash(tx_hash)
+        data = _epoch_cli().get_transaction_by_hash(hash=tx_hash)
         _p_tx(data.transaction)
     except Exception as e:
         print(e)
@@ -586,8 +586,8 @@ def inspect_transaction(tx_hash):
 def inspect_account(account):
     _check_prefix(account, "ak")
     try:
-        data = _epoch_cli().get_balance(account)
-        _pp(("Account balance", data))
+        data = _epoch_cli().get_account_by_pubkey(pubkey=account)
+        _pp(("Account balance", data.balance))
     except Exception as e:
         print(e)
 
@@ -627,7 +627,7 @@ def inspect_deploy(contract_deploy_descriptor):
                 ('Owner', contract.get('owner', 'N/A')),
                 ('Created_at', contract.get('created_at', 'N/A')),
             ])
-            data = _epoch_cli().get_transaction_by_transaction_hash(contract.get('transaction', 'N/A'))
+            data = _epoch_cli().get_transaction_by_hash(hash=contract.get('transaction', 'N/A'))
             print("Transaction")
             _p_tx(data.transaction)
     except Exception as e:
@@ -654,7 +654,7 @@ def chain_top():
     """
     Print the information of the top block of the chain.
     """
-    data = _epoch_cli().get_top()
+    data = _epoch_cli().get_top_block()
     _p_block(data)
 
 
@@ -663,8 +663,18 @@ def chain_version():
     """
     Print the epoch node version.
     """
-    data = _epoch_cli().get_version()
-    _pp(("Epoch node version", data))
+    data = _epoch_cli().get_status()
+    _pp([
+        ("Epoch node version", data.node_version),
+        ("Epoch node revision", data.node_revision),
+        ("Difficulty", data.difficulty),
+        ("Genesis key block hash", data.genesis_key_block_hash),
+        ("Peers", data.peer_count),
+        ("Pending transactions", data.pending_transactions_count),
+        ("Solutions", data.solutions),
+        ("Listening", data.listening),
+        ("syncing", data.syncing),
+    ])
 
 
 @chain.command('play')
@@ -677,11 +687,11 @@ def chain_play(height, block_hash, limit):
     """
     if block_hash is not None:
         _check_prefix(block_hash, "bh")
-        b = _epoch_cli().get_block_by_hash(block_hash)
+        b = _epoch_cli().get_key_block_by_hash(hash=block_hash)
     elif height is not None:
-        b = _epoch_cli().get_key_block_by_height(height)
+        b = _epoch_cli().get_key_block_by_height(height=height)
     else:
-        b = _epoch_cli().get_top()
+        b = _epoch_cli().get_top_block()
     # check the limit
     limit = limit if limit > 0 else 0
     while b is not None and limit > 0:
@@ -690,7 +700,7 @@ def chain_play(height, block_hash, limit):
             limit -= 1
             if limit <= 0:
                 break
-            b = _epoch_cli().get_block_by_hash(b.prev_hash)
+            b = _epoch_cli().get_key_block_by_hash(hash=b.prev_hash)
         except Exception as e:
             _ppe(e)
             b = None

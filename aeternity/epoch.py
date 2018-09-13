@@ -5,14 +5,12 @@ import logging
 import time
 import websocket
 
-from aeternity import __version__
 from aeternity.config import Config
 from aeternity.exceptions import NameNotAvailable, InsufficientFundsException, TransactionNotFoundException, TransactionHashMismatch
 from aeternity.signing import KeyPair
 from aeternity.openapi import OpenAPICli
-from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE, PARAM_DEFAULT_ENCODING
+from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE
 
-import deprecation
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +45,7 @@ class EpochRequestError(Exception):
 
 
 class EpochClient:
-    next_block_poll_interval_sec = 0.01
+    next_block_poll_interval_sec = 3
 
     exception_by_reason = {
         'Name not found': NameNotAvailable,
@@ -70,6 +68,10 @@ class EpochClient:
         # instantiate the request client
         self.cli = OpenAPICli(configs[0].api_url, configs[0].api_url_internal)
 
+    # enable composition
+    def __getattr__(self, attr):
+        return getattr(self.cli, attr)
+
     def _get_active_config(self):
         return self._configs[self._active_config_idx]
 
@@ -82,11 +84,11 @@ class EpochClient:
         self._connection = Connection(config=self._get_active_config())
 
     def update_top_block(self):
-        self._top_block = self.get_top()
+        self._top_block = self.get_top_block()
 
     def wait_n_blocks(self, block_count, polling_interval=1):
         self.update_top_block()
-        current_block = self.get_top()
+        current_block = self.get_top_block()
         target_block = current_block.height + block_count
         if polling_interval is None:
             polling_interval = self.next_block_poll_interval_sec
@@ -96,7 +98,7 @@ class EpochClient:
             if self._top_block.height >= target_block:
                 break
 
-    def wait_for_next_block(self, polling_interval=None):
+    def wait_for_next_block(self, polling_interval=1):
         """
         blocking method to wait for the next block to be mined
         shortcut for self.wait_n_blocks(1, polling_interval=polling_interval)
@@ -195,8 +197,8 @@ class EpochClient:
     def compute_absolute_ttl(self, ttl):
         """compute the absolute ttl by adding the ttl to the current height of the chain"""
         assert ttl > 0
-        h = self.get_height()
-        return h + ttl
+        height = self.get_current_key_block_height()
+        return height + ttl
 
     #
     # API functions
@@ -207,101 +209,7 @@ class EpochClient:
         keypair = KeyPair.generate()
         keypair.signing_key
 
-    def get_pubkey(self):
-        pub_key = self.internal_http_get('account/pub-key')
-        return pub_key['pub_key']
-
-    @deprecation.deprecated(deprecated_in="0.18.0.3",
-                            current_version=__version__,
-                            details="Use the get_top instead")
-    def get_height(self):
-        top = self.cli.get_top()
-        logging.debug(f"get_height: {top}")
-        return top.height
-
-    def get_top(self):
-        top = self.cli.get_top()
-        logging.debug(f"get_top: {top}")
-        return top
-
-    def get_balance(self, account_pubkey=None, height=None, block_hash=None):
-        """
-        get the balance of the account `account_pubkey`. If left empty, gets
-        the balance of this node's account.
-
-        To get a balance of the past use either the `height` or `hash` parameters
-
-        :param account_pubkey:
-        :param height:
-        :param block_hash:
-        :return:
-        """
-        assert not (height is not None and block_hash is not None), "Can only set either height or hash!"
-        balance = self.cli.get_account_balance(
-            address=account_pubkey, height=height, block_hash=block_hash
-        )
-        return balance.balance
-
-    @classmethod
-    def make_tx_types_params(cls, tx_types=None, exclude_tx_types=None):
-        params = {}
-        if tx_types is not None:
-            params['tx_types'] = ','.join(tx_types)
-        if exclude_tx_types is not None:
-            params['exclude_tx_types'] = ','.join(exclude_tx_types)
-        return params
-
-    def get_version(self):
-        return self.cli.get_version()
-
-    def get_info(self):
-        return self.cli.get_info()
-
-    def get_peers(self):
-        # this is a debugging function
-        # TODO: whi is this here?
-        raise NotImplementedError()
-
-    def get_key_block_by_height(self, height):
-        return self.cli.get_key_block_by_height(height=height)
-
-    def get_block_by_hash(self, hash):
-        return self.cli.get_block_by_hash(hash=hash)
-
-    def get_genesis_block(self):
-        return self.cli.get_block_genesis()
-
-    def get_latest_block(self):
-        return self.cli.get_block_latest()
-
-    def get_pending_block(self):
-        return self.cli.get_block_pending()
-
-    def get_block_transaction_count_by_hash(self, _hash, tx_types=None, exclude_tx_types=None):
-        return self.cli.get_block_txs_count_by_hash(hash=_hash, tx_types=tx_types, exclude_tx_types=exclude_tx_types)
-
-    def get_block_transaction_count_by_height(self, height, tx_types=None, exclude_tx_types=None):
-        return self.cli.get_block_txs_count_by_height(height=height, tx_types=tx_types, exclude_tx_types=exclude_tx_types)
-
-    def get_transaction_by_transaction_hash(self, tx_hash, tx_encoding=PARAM_DEFAULT_ENCODING):
-        """
-        Retrieve a transaction by its hash
-        :param tx_hash: the hash of the transaction
-        :param tx_encoding: the encoding of the reply
-        """
-        assert tx_hash.startswith('th$'), 'A transaction hash must start with "th$"'
-        return self.cli.get_tx(tx_hash=tx_hash, tx_encoding=tx_encoding)
-
-    def get_transaction_from_block_height(self, height, tx_index, tx_encoding=PARAM_DEFAULT_ENCODING):
-        return self.cli.get_transaction_from_block_height(height=height, tx_index=tx_index, tx_encoding=tx_encoding)
-
-    def get_transaction_from_block_hash(self, block_hash, tx_index, tx_encoding=PARAM_DEFAULT_ENCODING):
-        return self.cli.get_transaction_from_block_hash(hash=block_hash, tx_index=tx_index, tx_encoding=tx_encoding)
-
-    def get_transaction_from_latest_block(self, tx_idx, tx_encoding=PARAM_DEFAULT_ENCODING):
-        return self.get_transaction_from_block_hash('latest', tx_idx, tx_encoding=tx_encoding)
-
-    def create_spend_transaction(self, sender_pubkey, recipient_pubkey, amount, tx_ttl=DEFAULT_TX_TTL, fee=DEFAULT_FEE, nonce=0, payload="payload"):
+    def create_spend_transaction(self, sender_id, recipient_id, amount, payload="", tx_ttl=DEFAULT_TX_TTL, fee=DEFAULT_FEE, nonce=0):
         """
         create a spend transaction
         :param sender: the public key of the sender
@@ -313,10 +221,10 @@ class EpochClient:
         ttl = self.compute_absolute_ttl(tx_ttl)
         # send the update transaction
         body = {
-            "recipient_pubkey": recipient_pubkey,
+            "recipient_id": recipient_id,
             "amount": amount,
             "fee":  fee,
-            "sender": sender_pubkey,
+            "sender_id": sender_id,
             "payload": payload,
             "ttl": ttl,
         }
@@ -325,7 +233,10 @@ class EpochClient:
         return self.cli.post_spend(body=body)
 
     def send_signed_transaction(self, encoded_signed_transaction):
-        return self.cli.post_tx(body={"tx": encoded_signed_transaction})
+        """
+        Utility method to post a transaction to the chain
+        """
+        return self.cli.post_transaction(body={"tx": encoded_signed_transaction})
 
 
 class EpochSubscription():

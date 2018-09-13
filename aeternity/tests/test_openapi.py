@@ -10,8 +10,8 @@ def test_generatedcli():
     client = OpenAPICli(NODE_URL, NODE_URL_INTERNAL)
     calls = [
         {
-            "name": "get_top",
-            "method": "get_top",
+            "name": "get_top_block",
+            "method": "get_top_block",
             "scenarios": [
                 {
                     "name": "ok",
@@ -64,19 +64,19 @@ def test_generatedcli():
             ]
         },
         {
-            "method": "get_account_balance",
+            "method": "get_account_by_pubkey",
             "scenarios": [
                 {
                     "name": "ok",
                     "params": {
-                      "address": PUBLIC_KEY
+                      "pubkey": PUBLIC_KEY
                     },
                     "wantErr": False
                 },
                 {
                     "name": "ok",
                     "params": {
-                        "address": "xxxx"
+                        "pubkey": "xxxx"
                     },
                     "wantErr": True
                 },

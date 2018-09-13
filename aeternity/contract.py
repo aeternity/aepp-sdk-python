@@ -54,8 +54,8 @@ class Contract:
             ttl = self.client.compute_absolute_ttl(tx_ttl)
             contract_reply = self.client.cli.post_contract_call(body=dict(
                 call_data=call_data,
-                caller=keypair.get_address(),
-                contract=self.address,
+                caller_id=keypair.get_address(),
+                contract_id=self.address,
                 amount=amount,
                 fee=fee,
                 gas=gas,
@@ -68,7 +68,7 @@ class Contract:
             # wait for transcation to be mined
             self.client.wait_for_next_block()
             # unsigend transaciton of the call
-            call_obj = self.client.cli.get_contract_call_from_tx(tx_hash=signed_tx.tx_hash)
+            call_obj = self.client.cli.get_transaction_info_by_hash(hash=signed_tx.tx_hash)
             return call_obj
         except OpenAPIClientException as e:
             raise ContractError(e)
@@ -91,7 +91,7 @@ class Contract:
             ttl = self.client.compute_absolute_ttl(tx_ttl)
             call_data = self.encode_calldata("init", init_state)
             contract_transaction = self.client.cli.post_contract_create(body=dict(
-                owner=keypair.get_address(),
+                owner_id=keypair.get_address(),
                 amount=amount,
                 deposit=deposit,
                 fee=fee,
@@ -103,7 +103,7 @@ class Contract:
                 ttl=ttl
             ))
             # store the contract address in the instance variabl
-            self.address = contract_transaction.contract_address
+            self.address = contract_transaction.contract_id
             tx = self.client.post_transaction(keypair, contract_transaction)
             return tx
         except OpenAPIClientException as e:

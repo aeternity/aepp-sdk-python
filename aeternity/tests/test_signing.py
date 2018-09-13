@@ -12,7 +12,7 @@ def test_signing_create_transaction():
     # get the test keypair
     keypair = KeyPair.from_public_private_key_strings(PUBLIC_KEY, PRIVATE_KEY)
     # create a spend transaction
-    transaction = client.create_spend_transaction(PUBLIC_KEY, receiver_address, 321)
+    transaction = client.create_spend_transaction(PUBLIC_KEY, receiver_address, 321, payload="test payload")
     signed_transaction, b58signature = keypair.sign_transaction(transaction)
     # post the transaction
     result = client.send_signed_transaction(signed_transaction)
@@ -21,9 +21,9 @@ def test_signing_create_transaction():
     print(result)
 
     # make sure this works for very short block times
-    client.wait_for_next_block(polling_interval=0.01)
-    spend_tx = client.get_transaction_by_transaction_hash(result.tx_hash, tx_encoding='json')
-    assert spend_tx.transaction['signatures'][0] == b58signature
+    client.wait_for_next_block(5)
+    spend_tx = client.get_transaction_by_hash(hash=result.tx_hash)
+    assert spend_tx.signatures[0] == b58signature
 
 
 def test_signing_is_valid_hash():
