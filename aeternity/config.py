@@ -44,7 +44,7 @@ class Config:
         # retrieve the version of the node we are connecting to
         try:
             r = requests.get(f"{self.api_url}/v2/status").json()
-            self.node_version = r['node-version']
+            self.node_version = r['node_version']
         except requests.exceptions.ConnectionError as e:
             raise ConfigException(f"Error connecting to the epoch node at {self.api_url}, connection unavailable")
 
