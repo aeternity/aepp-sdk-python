@@ -1,7 +1,6 @@
 import re
 import requests
 import keyword
-import json
 from collections import namedtuple
 
 
