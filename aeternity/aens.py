@@ -51,10 +51,10 @@ class AEName:
 
     @classmethod
     def validate_address(cls, address, raise_exception=True):
-        if not address.startswith(('ak$', 'ok$')):
+        if not address.startswith(('ak_', 'ok_')):
             if raise_exception:
                 raise ValueError(
-                    'pointer addresses must start with in ak$'
+                    'pointer addresses must start with in ak_'
                 )
             return False
         return True

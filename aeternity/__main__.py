@@ -70,16 +70,16 @@ def _check_prefix(data, prefix):
     """
 
     if len(data) < 3:
-        print("Invalid input, likely you forgot to escape the $ sign (use \\$)")
+        print(f"Invalid input: '{data}'")
         exit(1)
 
-    if not data.startswith(f"{prefix}$"):
+    if not data.startswith(f"{prefix}_"):
         if prefix == 'ak':
-            print("Invalid account address, it shoudld be like: ak$....")
+            print("Invalid account address, it shoudld be like: ak_....")
         if prefix == 'th':
-            print("Invalid transaction hash, it shoudld be like: th$....")
+            print("Invalid transaction hash, it shoudld be like: th_....")
         if prefix in ('bh', 'kh'):
-            print("Invalid block hash, it shoudld be like: bh$...., kh$...")
+            print("Invalid block hash, it shoudld be like: bh_...., kh_...")
         exit(1)
 
 
@@ -555,7 +555,7 @@ def inspect():
     pass
 
 
-@inspect.command('block', help='The block hash to inspect (eg: bh$...)')
+@inspect.command('block', help='The block hash to inspect (eg: bh_...)')
 @click.argument('block_hash')
 def inspect_block(block_hash):
     _check_prefix(block_hash, "kh")
@@ -570,7 +570,7 @@ def inspect_height(chain_height):
     _p_block(data)
 
 
-@inspect.command('transaction', help='The transaction hash to inspect (eg: th$...)')
+@inspect.command('transaction', help='The transaction hash to inspect (eg: th_...)')
 @click.argument('tx_hash')
 def inspect_transaction(tx_hash):
     try:
@@ -581,7 +581,7 @@ def inspect_transaction(tx_hash):
         print(e)
 
 
-@inspect.command('account', help='The address of the account to inspect (eg: ak$...)')
+@inspect.command('account', help='The address of the account to inspect (eg: ak_...)')
 @click.argument('account')
 def inspect_account(account):
     _check_prefix(account, "ak")

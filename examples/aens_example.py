@@ -7,4 +7,4 @@ name = AEName('foobar.aet')
 if name.is_available():
     name.preclaim()
     name.claim_blocking()
-    name.update(target='ak$deadbeef')
+    name.update(target='ak_deadbeef')

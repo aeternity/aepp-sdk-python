@@ -46,9 +46,9 @@ def test_cli_balance():
 def test_cli_top():
     output = call_aecli('--quiet', 'chain', 'top')
     lines = output.split('\n')
-    assert lines[0].startswith('kh$')  # block hash
+    assert lines[0].startswith('kh_')  # block hash
     assert int(lines[1]) > 0  # block height
-    assert lines[2].startswith('bs$')  # block state
+    assert lines[2].startswith('bs_')  # block state
     assert len(lines) == 7
 
 
@@ -68,9 +68,9 @@ def test_cli_generate_wallet_and_wallet_info():
         wallet_path = os.path.join(tmp_path, 'key')
         output = call_aecli('--quiet', 'wallet', wallet_path, 'create', '--password', 'secret')
         gen_address = output.split('\n')[1]
-        assert gen_address.startswith('ak$')
+        assert gen_address.startswith('ak_')
         read_address = call_aecli('--quiet', 'wallet', wallet_path, 'address', '--password', 'secret')
-        assert read_address.startswith('ak$')
+        assert read_address.startswith('ak_')
         assert read_address == gen_address
 
 
@@ -131,7 +131,7 @@ def test_cli_inspect_block_by_height():
     print(height)
     output = call_aecli('--quiet', 'inspect', 'height', str(height))
     lines = output.split('\n')
-    assert lines[0].startswith("kh$")
+    assert lines[0].startswith("kh_")
     assert lines[1] == str(height)
 
 

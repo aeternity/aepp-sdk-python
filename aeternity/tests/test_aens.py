@@ -51,7 +51,7 @@ def test_name_status_availavle():
 
 
 def test_name_hashing():
-    assert AEName.calculate_name_hash('welghmolql.aet') == 'nm$2KrC4asc6fdv82uhXDwfiqB1TY2htjhnzwzJJKLxidyMymJRUQ'
+    assert AEName.calculate_name_hash('welghmolql.aet') == 'nm_2KrC4asc6fdv82uhXDwfiqB1TY2htjhnzwzJJKLxidyMymJRUQ'
 
 
 def test_name_claim_lifecycle():
@@ -133,7 +133,7 @@ def test_name_transfer_ownership():
 #     name.full_claim_blocking()
 #     client.wait_for_next_block()
 #     with raises(AENSException):
-#         name.transfer_ownership('ak$deadbeef')
+#         name.transfer_ownership('ak_deadbeef')
 
 
 def test_name_revocation():

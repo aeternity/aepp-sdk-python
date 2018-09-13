@@ -20,7 +20,7 @@ In order to do anything with æternity you'll need a wallet, and some tokens. Th
 $ aecli wallet mywallet create
 Enter the wallet password []: 
 Wallet created
-Wallet address________________ ak$wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR
+Wallet address________________ ak_wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR
 Wallet path___________________ /home/newby/projects/aeternity/aepp-sdk-python/mywallet
 $ 
 ```
@@ -46,33 +46,33 @@ Assuming all went well, you are now in a position to use all of æternity's feat
 First, take a look at the head of the chain:
 ```
 $ aecli chain top
-Block hash____________________ bh$zy7w2hLc7rYk7vLkc4YibErtJZitTrp1CBha2s9mAkKRBxr4h
+Block hash____________________ bh_zy7w2hLc7rYk7vLkc4YibErtJZitTrp1CBha2s9mAkKRBxr4h
 Block height__________________ 42640
-State hash____________________ bs$2XAzdJyzruidUbLDwUxcWViCKxXvV7jnBqrKywjcYUtf4sz55U
-Miner_________________________ ak$RTWrYQGzdq6bXEPsFn1PJp5SDBvkMNoDFxuCMwhk2t48XTdFx
+State hash____________________ bs_2XAzdJyzruidUbLDwUxcWViCKxXvV7jnBqrKywjcYUtf4sz55U
+Miner_________________________ ak_RTWrYQGzdq6bXEPsFn1PJp5SDBvkMNoDFxuCMwhk2t48XTdFx
 Time__________________________ 2018-08-01T10:23:59.714000+00:00
-Previous block hash___________ bh$srwLRbwLLzuFWnXAvd4nEHSHoVZcTPGd1VFbjwKMSwNyMCJdf
+Previous block hash___________ bh_srwLRbwLLzuFWnXAvd4nEHSHoVZcTPGd1VFbjwKMSwNyMCJdf
 Transactions__________________ 0
 $
 ```
 
 From the previous block hash we can go backward through the chain:
 ```
-$ aecli inspect block 'bh$srwLRbwLLzuFWnXAvd4nEHSHoVZcTPGd1VFbjwKMSwNyMCJdf'
-Block hash____________________ bh$srwLRbwLLzuFWnXAvd4nEHSHoVZcTPGd1VFbjwKMSwNyMCJdf
+$ aecli inspect block 'bh_srwLRbwLLzuFWnXAvd4nEHSHoVZcTPGd1VFbjwKMSwNyMCJdf'
+Block hash____________________ bh_srwLRbwLLzuFWnXAvd4nEHSHoVZcTPGd1VFbjwKMSwNyMCJdf
 Block height__________________ 42639
-State hash____________________ bs$2jNh89QB4167f7v5qnB2n9JWvb1m6787gyvkZjaUK6L4EGjJux
-Miner_________________________ ak$RTWrYQGzdq6bXEPsFn1PJp5SDBvkMNoDFxuCMwhk2t48XTdFx
+State hash____________________ bs_2jNh89QB4167f7v5qnB2n9JWvb1m6787gyvkZjaUK6L4EGjJux
+Miner_________________________ ak_RTWrYQGzdq6bXEPsFn1PJp5SDBvkMNoDFxuCMwhk2t48XTdFx
 Time__________________________ 2018-08-01T10:23:57.985000+00:00
-Previous block hash___________ bh$2oD2EdZrSdcnSu7vGbaH9wHf9g8WTSuqnDk9RxB2tVRU42kvXS
+Previous block hash___________ bh_2oD2EdZrSdcnSu7vGbaH9wHf9g8WTSuqnDk9RxB2tVRU42kvXS
 Transactions__________________ 0
-$ aecli inspect block 'bh$2oD2EdZrSdcnSu7vGbaH9wHf9g8WTSuqnDk9RxB2tVRU42kvXS'
-Block hash____________________ bh$2oD2EdZrSdcnSu7vGbaH9wHf9g8WTSuqnDk9RxB2tVRU42kvXS
+$ aecli inspect block 'bh_2oD2EdZrSdcnSu7vGbaH9wHf9g8WTSuqnDk9RxB2tVRU42kvXS'
+Block hash____________________ bh_2oD2EdZrSdcnSu7vGbaH9wHf9g8WTSuqnDk9RxB2tVRU42kvXS
 Block height__________________ 42638
-State hash____________________ bs$2iPSkLFEQHKagpiFMemm5W2vNXCagbbSKtdAmG5vz51PBr3YXb
-Miner_________________________ ak$2gH5J6a8gif9Yx7y73WKVB9rPUYCnpTter7PiT3qu4ZfxWhDyG
+State hash____________________ bs_2iPSkLFEQHKagpiFMemm5W2vNXCagbbSKtdAmG5vz51PBr3YXb
+Miner_________________________ ak_2gH5J6a8gif9Yx7y73WKVB9rPUYCnpTter7PiT3qu4ZfxWhDyG
 Time__________________________ 2018-08-01T10:23:52.290000+00:00
-Previous block hash___________ bh$2NmrYNBUXYyvYVZEHNkS8qCsXmdBtaEXPUt15B2SPf3reS7F8S
+Previous block hash___________ bh_2NmrYNBUXYyvYVZEHNkS8qCsXmdBtaEXPUt15B2SPf3reS7F8S
 Transactions__________________ 0
 $ 
 ```
@@ -80,20 +80,20 @@ and so on. We can even watch the chain in real time with the `play` command:
 ```
 $ aecli chain play
  >>>>> 
-Block hash____________________ bh$LKALmVkVaqJyqSv9JnYWwDh9QCf8LbbpXyYarB8vP5TqJ4bvL
+Block hash____________________ bh_LKALmVkVaqJyqSv9JnYWwDh9QCf8LbbpXyYarB8vP5TqJ4bvL
 Block height__________________ 86223
-State hash____________________ bs$yAd7PuriwAUqwLexYuLxLqAA5aNcdiAU3Sdou4eYBdbVVkAW1
-Miner_________________________ ak$BpwWtzwJpfGe6AmusjQ9a5aqKF784nXkB2apoHPmNmrJTnPdn
+State hash____________________ bs_yAd7PuriwAUqwLexYuLxLqAA5aNcdiAU3Sdou4eYBdbVVkAW1
+Miner_________________________ ak_BpwWtzwJpfGe6AmusjQ9a5aqKF784nXkB2apoHPmNmrJTnPdn
 Time__________________________ 2018-08-09T11:33:15.866000+00:00
-Previous block hash___________ bh$NnH3UUz2J7LoWdUZi9A1p3KYTtzXeQJ2tQQB2yUnkhU3gj3rv
+Previous block hash___________ bh_NnH3UUz2J7LoWdUZi9A1p3KYTtzXeQJ2tQQB2yUnkhU3gj3rv
 Transactions__________________ 0
  >>>>> 
-Block hash____________________ bh$NnH3UUz2J7LoWdUZi9A1p3KYTtzXeQJ2tQQB2yUnkhU3gj3rv
+Block hash____________________ bh_NnH3UUz2J7LoWdUZi9A1p3KYTtzXeQJ2tQQB2yUnkhU3gj3rv
 Block height__________________ 86222
-State hash____________________ bs$bPGmETN5kNt9cTCUbGjyAJ7wDYkCvgFz9V6xGQ8k3w1SpG9aR
-Miner_________________________ ak$289g2REG4ZoavYGWhgz2p2Wq6FVXnsPurgM8UEe2UdXNXz5CXf
+State hash____________________ bs_bPGmETN5kNt9cTCUbGjyAJ7wDYkCvgFz9V6xGQ8k3w1SpG9aR
+Miner_________________________ ak_289g2REG4ZoavYGWhgz2p2Wq6FVXnsPurgM8UEe2UdXNXz5CXf
 Time__________________________ 2018-08-09T11:33:11.853000+00:00
-Previous block hash___________ bh$2jvmSTG1uZMwhaCW8J8Ug1Ddoy4EuQmzBFFeCDhs3CZDG8zuSW
+Previous block hash___________ bh_2jvmSTG1uZMwhaCW8J8Ug1Ddoy4EuQmzBFFeCDhs3CZDG8zuSW
 Transactions__________________ 0
 ```
 (and so on).
@@ -106,16 +106,16 @@ The æternity naming system allows you to register a name for your account (or o
 $ aecli wallet mywallet name 'newby.aet' claim
 Enter the wallet password []: 
 Name newby.aet claimed
-Transaction hash______________ th$vmucE7sFSc8QjWBAJwkh2drN3jKwtSd7KYtYzjL6Bfg1x8kyq
+Transaction hash______________ th_vmucE7sFSc8QjWBAJwkh2drN3jKwtSd7KYtYzjL6Bfg1x8kyq
 ```
 
 Let's inspect the transaction:
 
 ```
-$ aecli inspect transaction 'th$vmucE7sFSc8QjWBAJwkh2drN3jKwtSd7KYtYzjL6Bfg1x8kyq'
-Block hash____________________ bh$2nvF8jTk9aPZoq3YzaYhGhMuXL8FxptvKpyZ2p73Bjb5EAjtYH
+$ aecli inspect transaction 'th_vmucE7sFSc8QjWBAJwkh2drN3jKwtSd7KYtYzjL6Bfg1x8kyq'
+Block hash____________________ bh_2nvF8jTk9aPZoq3YzaYhGhMuXL8FxptvKpyZ2p73Bjb5EAjtYH
 Block height__________________ 86229
-Signatures____________________ ['sg$GfYm6uBp8bGpghAptWReqb3cX6kyRQzSZdLh74LzKKtyoTninWpvhs6JMAo1CiTDmi5E7A3b2ztC3beBq3sMVoprmxRCC']
+Signatures____________________ ['sg_GfYm6uBp8bGpghAptWReqb3cX6kyRQzSZdLh74LzKKtyoTninWpvhs6JMAo1CiTDmi5E7A3b2ztC3beBq3sMVoprmxRCC']
 Sender account________________ None
 Recipient account_____________ None
 Amount________________________ None
@@ -127,7 +127,7 @@ and check out the name we registered, to ensure we have it:
 ```
 $ aecli inspect name newby.aet
 Status________________________ CLAIMED
-Pointers______________________ {'account_pubkey': 'ak$wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR'}
+Pointers______________________ {'account_pubkey': 'ak_wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR'}
 TTL___________________________ 86329
 ```
 
@@ -139,19 +139,18 @@ Let's make a second wallet, and give it some tokens. First, make the new wallet
 $ aecli wallet ./secondwallet create
 Enter the wallet password []: 
 Wallet created
-Wallet address________________ ak$gqYTvEBEivy2bk8MWYYNqXX2LvMRYho5i43YhPc6iiJNt6wwc
+Wallet address________________ ak_gqYTvEBEivy2bk8MWYYNqXX2LvMRYho5i43YhPc6iiJNt6wwc
 Wallet path___________________ /home/newby/projects/aeternity/aepp-sdk-python/secondwallet
 $ aecli wallet secondwallet balance
 Enter the wallet password []: 
 Error: Block or account not found
-$ aecli wallet mywallet spend 'ak$2MgcVUMneuZshmoMkNKuWqsa1GhakSKoBFhe37crpuVAWcYtRA' 125
+$ aecli wallet mywallet spend 'ak_2MgcVUMneuZshmoMkNKuWqsa1GhakSKoBFhe37crpuVAWcYtRA' 125
 Enter the wallet password []: 
 Transaction posted to the chain
-Transaction hash______________ th$29hPH2jNrZu1kfdmNhE991GaXzRD2QfJGek3xaXVbJZJWGsfQ2
-Sender account________________ ak$wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR
-Recipient account_____________ ak$2MgcVUMneuZshmoMkNKuWqsa1GhakSKoBFhe37crpuVAWcYtRA
+Transaction hash______________ th_29hPH2jNrZu1kfdmNhE991GaXzRD2QfJGek3xaXVbJZJWGsfQ2
+Sender account________________ ak_wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR
+Recipient account_____________ ak_2MgcVUMneuZshmoMkNKuWqsa1GhakSKoBFhe37crpuVAWcYtRA
 $ aecli wallet secondwallet balance
 Enter the wallet password []: 
 Account balance_______________ 125
 ```
-
