@@ -48,10 +48,7 @@ def test_cli_balance():
 def test_cli_top():
     output = call_aecli('--quiet', 'chain', 'top')
     lines = output.split('\n')
-    assert lines[0].startswith('kh_')  # block hash
-    assert int(lines[1]) > 0  # block height
-    assert lines[2].startswith('bs_')  # block state
-    assert len(lines) == 7
+    assert lines[0].startswith('kh_') or lines[0].startswith('mh_')  # block hash
 
 
 def test_cli_generate_wallet():
