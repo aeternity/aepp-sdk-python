@@ -2,8 +2,6 @@ from aeternity.tests import PUBLIC_KEY, EPOCH_VERSION, KEYPAIR
 from aeternity.epoch import EpochClient
 from aeternity.signing import KeyPair
 
-import pytest
-
 # from aeternity.exceptions import TransactionNotFoundException
 
 
@@ -18,14 +16,13 @@ def test_api_get_version():
     assert client.get_version() == EPOCH_VERSION
 
 
-@pytest.mark.skip("it is not a published method")
-def test_api_get_info():
+def test_api_get_status():
     client = EpochClient()
-    info = client.get_info()
-    assert info.last_30_blocks_time[0].time_delta_to_parent > 0
+    status = client.get_status()
+    assert status.node_version == EPOCH_VERSION
 
 
-def test_api_get_latest_block():
+def test_api_get_top_block():
     client = EpochClient()
     block = client.get_top_block()
     # assert type(block) == BlockWithTx
