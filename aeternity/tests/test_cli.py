@@ -131,7 +131,7 @@ def test_cli_spend_invalid_amount():
             output = call_aecli('wallet', wallet_path, 'spend', receipient_address, '-1', '--password', 'secret')
 
 
-def test_cli_inspect_block_by_height():
+def test_cli_inspect_key_block_by_height():
     height = EpochClient().get_current_key_block_height()
     print(height)
     output = call_aecli('--quiet', 'inspect', 'height', str(height))
@@ -140,7 +140,7 @@ def test_cli_inspect_block_by_height():
     assert lines[1] == str(height)
 
 
-def test_cli_inspect_block_by_hash():
+def test_cli_inspect_key_block_by_hash():
     height = EpochClient().get_current_key_block_height()
     output = call_aecli('--quiet', 'inspect', 'height', str(height))
     lines = output.split('\n')
@@ -157,12 +157,6 @@ def test_cli_inspect_block_by_hash():
 def test_cli_inspect_name():
     output = call_aecli('--quiet', 'inspect', 'name', 'whatever.aet')
     assert output == "AVAILABLE\nN/A\nN/A\n0"
-
-
-@pytest.mark.skip('NOT IMPLEMENTED YET')
-def test_cli_inspect_block_by_latest():
-    # TODO
-    raise NotImplementedError()
 
 
 @pytest.mark.skip('NOT IMPLEMENTED YET')
