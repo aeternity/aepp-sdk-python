@@ -7,7 +7,8 @@ import tempfile
 from contextlib import contextmanager
 import aeternity
 from aeternity.epoch import EpochClient
-from . import NODE_URL, NODE_URL_INTERNAL, KEYPAIR
+from aeternity.tests import NODE_URL, NODE_URL_INTERNAL, KEYPAIR
+from aeternity.signing import KeyPair
 
 import pytest
 
@@ -17,6 +18,7 @@ aecli_exe = os.path.join(current_folder, '..', '..', 'aecli')
 
 def call_aecli(*params):
     args = [aecli_exe, '-u', NODE_URL, '-i', NODE_URL_INTERNAL] + list(params)
+    print(" ".join(args))
     output = subprocess.check_output(args).decode('ascii')
     return output.strip()
 
@@ -88,17 +90,23 @@ def test_cli_read_wallet_fail():
             pass
 
 
-@pytest.mark.skip('Cannot spend using a waller without balance. We have to mine into that wallet somehow')
 def test_cli_spend():
     with tempdir() as tmp_path:
-        wallet_path = os.path.join(tmp_path, 'key')
-        call_aecli('wallet', wallet_path, 'create',  '--password', 'whatever')
-        receipient_address = call_aecli('-q', 'wallet', wallet_path, 'address',  '--password', 'whatever')
-    with tempdir() as tmp_path:
-        wallet_path = os.path.join(tmp_path, 'key')
-        call_aecli('wallet', wallet_path, 'create', '--password', 'secret')
-        output = call_aecli('wallet', wallet_path, 'spend', receipient_address, '1', '--password', 'secret')
-        assert 'Transaction sent' in output
+        sender_path = os.path.join(tmp_path, 'sender')
+        call_aecli('wallet', sender_path, 'create',  '--password', 'whatever')
+        sender_address = call_aecli('-q', 'wallet', sender_path, 'address',  '--password', 'whatever')
+        # fill the account from genesys
+        client = EpochClient()
+        client.spend(KEYPAIR, sender_address, 100)
+        # generate a new address
+        recipient_address = KeyPair.generate().get_address()
+        # call the cli
+        call_aecli('wallet', sender_path, 'spend', '--password', 'whatever', recipient_address, "90")
+        client.wait_for_next_block()
+        # test that the recipient account has the requested amount
+        print(recipient_address)
+        recipient_account = client.get_account_by_pubkey(pubkey=recipient_address)
+        assert recipient_account.balance == 90
 
 
 @pytest.mark.skip('We currently cannot verify if the transaction failed because of a wrong password or some other error '
