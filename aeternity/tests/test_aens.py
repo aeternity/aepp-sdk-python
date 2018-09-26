@@ -25,8 +25,8 @@ def test_name_committment():
     domain = random_domain()
     name = AEName(domain)
     cl = name._get_commitment_hash()
-    cr = name.client.cli.get_commitment_hash(name=name.domain, salt=name.preclaim_salt)
-    assert cl == cr.commitment
+    cr = name.client.cli.get_commitment_id(name=name.domain, salt=name.preclaim_salt)
+    assert cl == cr.commitment_id
 
 
 def test_name_validation_fails():
@@ -51,7 +51,7 @@ def test_name_status_availavle():
 
 
 def test_name_hashing():
-    assert AEName.calculate_name_hash('welghmolql.aet') == 'nm$2KrC4asc6fdv82uhXDwfiqB1TY2htjhnzwzJJKLxidyMymJRUQ'
+    assert AEName.calculate_name_hash('welghmolql.aet') == 'nm_2KrC4asc6fdv82uhXDwfiqB1TY2htjhnzwzJJKLxidyMymJRUQ'
 
 
 def test_name_claim_lifecycle():
@@ -93,8 +93,10 @@ def test_name_update():
     client.wait_n_blocks(2)
     name.update_status()
     print("claimed name", name)
-    assert name.pointers != [], 'Pointers should not be empty'
-    assert name.pointers['account_pubkey'] == keypair.get_address()
+    print("pointers", name.pointers)
+    assert len(name.pointers) > 0, 'Pointers should not be empty'
+    assert name.pointers[0]['id'] == keypair.get_address()
+    assert name.pointers[0]['key'] == "account_pubkey"
 
 
 # TODO: enable the test check for pointers
@@ -120,8 +122,10 @@ def test_name_transfer_ownership():
     name.update(new_key_pair, target=new_key_pair.get_address(), name_ttl=10)
     client.wait_for_next_block()
     name.update_status()
-    assert name.pointers != [], 'Pointers should not be empty'
-    assert name.pointers['account_pubkey'] == new_key_pair.get_address()
+    assert len(name.pointers) > 0, 'Pointers should not be empty'
+    assert name.pointers[0]['id'] == new_key_pair.get_address()
+    assert name.pointers[0]['key'] == "account_pubkey"
+
 
 # def test_transfer_failure_wrong_pubkey():
 #     client = EpochClient()
@@ -129,7 +133,7 @@ def test_name_transfer_ownership():
 #     name.full_claim_blocking()
 #     client.wait_for_next_block()
 #     with raises(AENSException):
-#         name.transfer_ownership('ak$deadbeef')
+#         name.transfer_ownership('ak_deadbeef')
 
 
 def test_name_revocation():

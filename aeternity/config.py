@@ -21,10 +21,6 @@ CONTRACT_DEFAULT_GAS_PRICE = 1
 CONTRACT_DEFAULT_DEPOSIT = 4
 CONTRACT_DEFAULT_VM_VERSION = 1
 
-# params
-# can be message_pack or json
-PARAM_DEFAULT_ENCODING = 'json'
-
 
 class ConfigException(Exception):
     pass
@@ -47,8 +43,8 @@ class Config:
         self.pubkey = None
         # retrieve the version of the node we are connecting to
         try:
-            r = requests.get(f"{self.api_url}/v2/version").json()
-            self.node_version = r['version']
+            r = requests.get(f"{self.api_url}/v2/status").json()
+            self.node_version = r['node_version']
         except requests.exceptions.ConnectionError as e:
             raise ConfigException(f"Error connecting to the epoch node at {self.api_url}, connection unavailable")
 

@@ -30,7 +30,7 @@ class OpenAPICli(object):
     Generates a Opena API client
     """
     # skip tags
-    skip_tags = set(["obsolete", "debug"])
+    skip_tags = set(["obsolete"])
     # openapi versions
     open_api_versions = ["2.0"]
     # type mapping
@@ -174,6 +174,10 @@ class OpenAPICli(object):
                 # parse the http_reply
                 if len(api_response.schema) == 0:
                     return {}
+                if "inline_response_200" in api_response.schema:
+                    # this are raw values, doesnt make sense to parse into a dict
+                    raw = http_reply.json()
+                    return list(raw.values())[0]
                 jr = http_reply.json()
                 return namedtuple(api_response.schema, jr.keys())(**jr)
             # error

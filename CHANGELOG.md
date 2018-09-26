@@ -4,6 +4,19 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.22.0.1]
+
+### Removed
+- Compatiblity with epoch nodes version < [0.22.0](https://github.com/aeternity/epoch/blob/v0.22.0/docs/release-notes/RELEASE-NOTES-0.22.0.md) 
+
+### Changed
+- change hash prefix separator from `$` to `_`
+
+## [0.21.0.1]
+
+### Removed
+- Compatiblity with epoch nodes version < 0.21.0
+
 ## [0.20.0.2]
 
 ### Fixed

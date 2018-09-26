@@ -1,13 +1,14 @@
-from aeternity.tests import PUBLIC_KEY, EPOCH_VERSION
+from aeternity.tests import PUBLIC_KEY, EPOCH_VERSION, KEYPAIR
 from aeternity.epoch import EpochClient
-import pytest
+from aeternity.signing import KeyPair
 
 # from aeternity.exceptions import TransactionNotFoundException
 
 
-def test_api_get_balance():
+def test_api_get_account():
     client = EpochClient()
-    assert client.get_balance(account_pubkey=PUBLIC_KEY) > 0
+    account = client.get_account_by_pubkey(pubkey=PUBLIC_KEY)
+    assert account.balance > 0
 
 
 def test_api_get_version():
@@ -15,72 +16,69 @@ def test_api_get_version():
     assert client.get_version() == EPOCH_VERSION
 
 
-@pytest.mark.skip("it is not a published method")
-def test_api_get_info():
+def test_api_get_status():
     client = EpochClient()
-    info = client.get_info()
-    assert info.last_30_blocks_time[0].time_delta_to_parent > 0
+    status = client.get_status()
+    assert status.node_version == EPOCH_VERSION
 
 
-def test_api_get_latest_block():
+def test_api_get_top_block():
     client = EpochClient()
-    block = client.get_latest_block()
+    block = client.get_top_block()
     # assert type(block) == BlockWithTx
     assert block.height > 0
 
 
-def test_api_get_block_by_heigt():
+def test_api_get_block_by_height():
     client = EpochClient()
-    height = client.get_height()
-    block = client.get_key_block_by_height(height)
+    height = client.get_current_key_block_height()
+
+    block = client.get_key_block_by_height(height=height)
     # assert type(block) == BlockWithTx
     assert block.height > 0
 
 
 def test_api_get_block_by_hash():
     client = EpochClient()
-    latest_block = client.get_latest_block()
-    block = client.get_block_by_hash(latest_block.hash)
-    # TODO: The following check should not fail. I feel that's a problem with
-    # TODO: the current state of the api  --devsnd
-    # assert block.hash == latest_block.hash
-    assert block.height == latest_block.height
+
+    has_kb, has_mb = False, False
+    while not has_kb or not has_mb:
+        # the latest block could be both micro or key block
+        latest_block = client.get_top_block()
+        has_mb = latest_block.hash.startswith("mh_") or has_mb  # check if is a microblock
+        has_kb = latest_block.hash.startswith("kh_") or has_kb  # check if is a keyblock
+        print(has_kb, has_mb, latest_block.hash)
+        # create a transaction so the top block is going to be an micro block
+        if not has_mb:
+            account = KeyPair.generate().get_address()
+            client.spend(KEYPAIR, account, 100)
+        # wait for the next block
+        # client.wait_for_next_block()
+        block = client.get_block_by_hash(hash=latest_block.hash)
+        # assert block.hash == latest_block.hash
+        assert block.height == latest_block.height
 
 
 def test_api_get_genesis_block():
     client = EpochClient()
-    genesis_block = client.get_genesis_block()
-    zero_height_block = client.get_key_block_by_height(0)  # these should be equivalent
+    node_status = client.get_status()
+    genesis_block = client.get_key_block_by_hash(hash=node_status.genesis_key_block_hash)
+    zero_height_block = client.get_key_block_by_height(height=0)  # these should be equivalent
     # assert type(genesis_block) == BlockWithTx
     # assert type(zero_height_block) == BlockWithTx
-    assert genesis_block.height == 0
-    assert zero_height_block.height == 0
+    assert genesis_block.height == genesis_block.height == 0
     # TODO: The following check should not fail. I feel that's a problem with
     # TODO: the current state of the api  --devsnd
-    # assert genesis_block.hash == zero_height_block.hash
+    assert genesis_block.hash == zero_height_block.hash
 
 
-def test_api_get_pending_block():
-    # block = client.get_pending_block()
-    # assert type(block) == BlockWithTx
-    pass
-
-
-def test_api_get_block_transaction_count_by_hash():
+def test_api_get_generation_transaction_count_by_hash():
     client = EpochClient()
     # get the latest block
-    block = client.get_latest_block()
-    print(block)
-    assert block.hash is not None
+    block_hash = client.get_current_key_block_hash()
+    print(block_hash)
+    assert block_hash is not None
     # get the transaction count that should be a number >= 0
-    txs_count = client.get_block_transaction_count_by_hash(block.hash)
-    print(txs_count)
-    assert txs_count.count >= 0
-
-
-def test_api_get_block_transaction_count_by_height():
-    client = EpochClient()
-    previous_height = client.get_height() - 1
-    transaction_count = client.get_block_transaction_count_by_height(previous_height)
-    print(transaction_count.count)
-    assert transaction_count.count >= 0
+    generation = client.get_generation_by_hash(hash=block_hash)
+    print(generation)
+    assert len(generation.micro_blocks) >= 0
