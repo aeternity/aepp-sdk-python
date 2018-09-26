@@ -86,6 +86,24 @@ class EpochClient:
     def update_top_block(self):
         self._top_block = self.get_top_block()
 
+    def get_block_by_hash(self, hash=None):
+        """
+        Retrieve a key block or a micro block header
+        based on the block hash_prefix
+        :param block_hash: either a key block or micro block hash
+        """
+        block = None
+        if hash is None:
+            return block
+
+        if hash.startswith("kh_"):
+            # key block
+            block = self.cli.get_key_block_by_hash(hash=hash)
+        elif hash.startswith("mh_"):
+            # micro block
+            block = self.cli.get_micro_block_header_by_hash(hash=hash)
+        return block
+
     def wait_n_blocks(self, block_count, polling_interval=1):
         self.update_top_block()
         current_block = self.get_top_block()

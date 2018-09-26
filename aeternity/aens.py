@@ -51,10 +51,10 @@ class AEName:
 
     @classmethod
     def validate_address(cls, address, raise_exception=True):
-        if not address.startswith(('ak$', 'ok$')):
+        if not address.startswith(('ak_', 'ok_')):
             if raise_exception:
                 raise ValueError(
-                    'pointer addresses must start with in ak$'
+                    'pointer addresses must start with in ak_'
                 )
             return False
         return True
@@ -74,7 +74,7 @@ class AEName:
             # use the openapi client inside the epoch client
             response = self.client.get_name_entry_by_name(name=self.domain)
             self.status = NameStatus.CLAIMED
-            self.name_ttl = response.expires
+            self.name_ttl = response.ttl
             self.name_hash = response.id
             self.pointers = response.pointers
         except OpenAPIClientException:

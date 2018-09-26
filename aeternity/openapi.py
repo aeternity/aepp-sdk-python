@@ -1,7 +1,6 @@
 import re
 import requests
 import keyword
-import json
 from collections import namedtuple
 
 
@@ -179,9 +178,7 @@ class OpenAPICli(object):
                     # this are raw values, doesnt make sense to parse into a dict
                     raw = http_reply.json()
                     return list(raw.values())[0]
-                # TODO: this is because some variables have dash character in it (v0.21.0)
-                # hopefully this will be removed in the next versions
-                jr = json.loads(http_reply.text.replace("-", "_"))
+                jr = http_reply.json()
                 return namedtuple(api_response.schema, jr.keys())(**jr)
             # error
             raise OpenAPIClientException(f"Error: {api_response.desc}")

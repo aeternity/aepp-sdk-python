@@ -36,15 +36,15 @@ def _blacke2b_digest(data):
 
 
 def encode(prefix, data):
-    """encode data using the default encoding/decoding algorithm and prepending the prefix with a prefix, ex: ak$encoded_data, th$encoded_data,..."""
-    return f"{prefix}${base58.b58encode_check(data)}"
+    """encode data using the default encoding/decoding algorithm and prepending the prefix with a prefix, ex: ak_encoded_data, th_encoded_data,..."""
+    return f"{prefix}_{base58.b58encode_check(data)}"
 
 
 def decode(data):
     """decode data using the default encoding/decoding algorithm
-    :param data: a encoded and prefixed string (ex tx$..., sg$..., ak$....)
+    :param data: a encoded and prefixed string (ex tx_..., sg_..., ak_....)
     """
-    if len(data.strip()) < 3 or data[2] != '$':
+    if len(data.strip()) < 3 or data[2] != '_':
         raise ValueError('Invalid hash')
     return _base58_decode(data[3:])
 
@@ -81,7 +81,7 @@ def namehash_encode(prefix, name):
 def is_valid_hash(hash_str, prefix=None):
     """
     Validate an aeternity hash, optionally restrict to a specific prefix.
-    The validation will check if the hash parameter is of the form prefix$hash
+    The validation will check if the hash parameter is of the form prefix_hash
     and that the hash is valdi according to the decode function.
     :param hash_str: the hash to validate
     :param prefix: the prefix to restrict the validation to
@@ -103,7 +103,7 @@ class KeyPair:
         self.verifying_key = verifying_key
 
     def get_address(self):
-        """get the keypair public_key base58 encoded and prefixed (ak$...)"""
+        """get the keypair public_key base58 encoded and prefixed (ak_...)"""
         pub_key = self.verifying_key.encode(encoder=nacl.encoding.RawEncoder)
         return encode("ak", pub_key)
 
@@ -182,7 +182,7 @@ class KeyPair:
     def _raw_key(cls, key_string):
         """decode a key with different method between signing and addresses"""
         key_string = str(key_string)
-        if key_string.startswith('ak$'):
+        if key_string.startswith('ak_'):
             return decode(key_string.strip())
         return bytes.fromhex(key_string.strip())
 

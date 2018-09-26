@@ -122,7 +122,7 @@ class MyOracleQuery(OracleQuery):
         print('The oracle responded %s' % query)
 
 my_query = MyOracleQuery(
-    oracle_pubkey='ok$deadbeef...',  # oracle id as published by the operator
+    oracle_pubkey='ok_deadbeef...',  # oracle id as published by the operator
     query_fee=4,      # these are the same values as the Oracle
     fee=6,
     response_ttl=10,
@@ -165,7 +165,7 @@ if not name.is_available():
 
 name.preclaim()  # preclaim will mark the domain as yours in the current block
 name.claim_blocking()  # will wait for the next block to claim the domain
-name.update(target='ak$1234deadbeef')  # set what this domain stands for
+name.update(target='ak_1234deadbeef')  # set what this domain stands for
 ```
 
 you can also pass an oracle instance directly to in the `target` parameter

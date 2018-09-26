@@ -1,6 +1,6 @@
-from aeternity.tests import PUBLIC_KEY, EPOCH_VERSION
+from aeternity.tests import PUBLIC_KEY, EPOCH_VERSION, KEYPAIR
 from aeternity.epoch import EpochClient
-import pytest
+from aeternity.signing import KeyPair
 
 # from aeternity.exceptions import TransactionNotFoundException
 
@@ -16,14 +16,13 @@ def test_api_get_version():
     assert client.get_version() == EPOCH_VERSION
 
 
-@pytest.mark.skip("it is not a published method")
-def test_api_get_info():
+def test_api_get_status():
     client = EpochClient()
-    info = client.get_info()
-    assert info.last_30_blocks_time[0].time_delta_to_parent > 0
+    status = client.get_status()
+    assert status.node_version == EPOCH_VERSION
 
 
-def test_api_get_latest_block():
+def test_api_get_top_block():
     client = EpochClient()
     block = client.get_top_block()
     # assert type(block) == BlockWithTx
@@ -41,12 +40,23 @@ def test_api_get_block_by_height():
 
 def test_api_get_block_by_hash():
     client = EpochClient()
-    latest_block = client.get_top_block()
-    block = client.get_key_block_by_hash(hash=latest_block.hash)
-    # TODO: The following check should not fail. I feel that's a problem with
-    # TODO: the current state of the api  --devsnd
-    # assert block.hash == latest_block.hash
-    assert block.height == latest_block.height
+
+    has_kb, has_mb = False, False
+    while not has_kb or not has_mb:
+        # the latest block could be both micro or key block
+        latest_block = client.get_top_block()
+        has_mb = latest_block.hash.startswith("mh_") or has_mb  # check if is a microblock
+        has_kb = latest_block.hash.startswith("kh_") or has_kb  # check if is a keyblock
+        print(has_kb, has_mb, latest_block.hash)
+        # create a transaction so the top block is going to be an micro block
+        if not has_mb:
+            account = KeyPair.generate().get_address()
+            client.spend(KEYPAIR, account, 100)
+        # wait for the next block
+        # client.wait_for_next_block()
+        block = client.get_block_by_hash(hash=latest_block.hash)
+        # assert block.hash == latest_block.hash
+        assert block.height == latest_block.height
 
 
 def test_api_get_genesis_block():
