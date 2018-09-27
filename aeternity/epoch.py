@@ -150,7 +150,7 @@ class EpochClient:
         """create and execute a spend transaction"""
         txb = TxBuilder(self.cli, keypair)
         # create spend_tx
-        tx, sg, tx_hash = txb.create_tx_spend(recipient_pubkey, amount, payload, fee, tx_ttl)
+        tx, sg, tx_hash = txb.tx_spend(recipient_pubkey, amount, payload, fee, tx_ttl)
         # post the transaction to the chain
         txb.post_transaction(tx, tx_hash)
         return tx, sg, tx_hash

@@ -42,7 +42,7 @@ class TxBuilder:
         :param epoch: the epoch client
         :return: the next nonce for an account
         """
-        account = epoch.cli.get_account_by_pubkey(pubkey=account_address)
+        account = epoch.get_account_by_pubkey(pubkey=account_address)
         return account.nonce + 1
 
     @staticmethod
