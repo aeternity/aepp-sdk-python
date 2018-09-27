@@ -51,19 +51,6 @@ class Config:
     def __str__(self):
         return f'ws:{self.websocket_url} ext:{self.api_url} int:{self.api_url_internal}'
 
-    @property
-    def top_block_url(self):
-        return f'{self.api_url}/top'
-
-    @property
-    def pubkey_url(self):
-        return f'{self.api_url_internal}/account/pub-key'
-
-    def get_pubkey(self):
-        if self.pubkey is None:
-            self.pubkey = requests.get(self.pubkey_url).json()['pub_key']
-        return self.pubkey
-
     @classmethod
     def set_defaults(cls, config):
         """
