@@ -1,98 +1,11 @@
 import os
 import pathlib
-import base58
-import rlp
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import nacl
-from nacl import encoding
+from nacl.encoding import RawEncoder
 from nacl.signing import SigningKey
-from nacl.hash import blake2b
-
-# RLP version number
-# https://github.com/aeternity/protocol/blob/epoch-v0.10.1/serializations.md#binary-serialization
-VSN = 1
-
-# The list of tags can be found here:
-# https://github.com/aeternity/protocol/blob/epoch-v0.10.1/serializations.md#table-of-object-tags
-TAG_SIGNED_TX = 11
-TAG_SPEND_TX = 12
-
-
-def _base58_decode(encoded_str):
-    """decode a base58 string to bytes"""
-    return base58.b58decode_check(encoded_str)
-
-
-def _base58_encode(data):
-    """crete a base58 encoded string"""
-    return base58.b58encode_check(data)
-
-
-def _blacke2b_digest(data):
-    """create a blacke2b 32 bit raw encoded digest"""
-    return blake2b(data=data, digest_size=32, encoder=nacl.encoding.RawEncoder)
-
-
-def encode(prefix, data):
-    """encode data using the default encoding/decoding algorithm and prepending the prefix with a prefix, ex: ak_encoded_data, th_encoded_data,..."""
-    return f"{prefix}_{base58.b58encode_check(data)}"
-
-
-def decode(data):
-    """decode data using the default encoding/decoding algorithm
-    :param data: a encoded and prefixed string (ex tx_..., sg_..., ak_....)
-    """
-    if len(data.strip()) < 3 or data[2] != '_':
-        raise ValueError('Invalid hash')
-    return _base58_decode(data[3:])
-
-
-def hash(data):
-    """run the default hashing algorihtm"""
-    return _blacke2b_digest(data)
-
-
-def hash_encode(prefix, data):
-    """run the default hashing + digest algorihtms"""
-    return encode(prefix, hash(data))
-
-
-def namehash(name):
-    if isinstance(name, str):
-        name = name.encode('ascii')
-    # see:
-    # https://github.com/aeternity/protocol/blob/master/AENS.md#hashing
-    # and also:
-    # https://github.com/ethereum/EIPs/blob/master/EIPS/eip-137.md#namehash-algorithm
-    labels = name.split(b'.')
-    hashed = b'\x00' * 32
-    while labels:
-        hashed = hash(hashed + hash(labels[0]))
-        labels = labels[1:]
-    return hashed
-
-
-def namehash_encode(prefix, name):
-    return encode(prefix, namehash(name))
-
-
-def is_valid_hash(hash_str, prefix=None):
-    """
-    Validate an aeternity hash, optionally restrict to a specific prefix.
-    The validation will check if the hash parameter is of the form prefix_hash
-    and that the hash is valdi according to the decode function.
-    :param hash_str: the hash to validate
-    :param prefix: the prefix to restrict the validation to
-    """
-    try:
-        decode(hash_str)
-        if prefix is not None and hash_str[0:2] != prefix:
-            raise ValueError('Invalid prefix')
-        return True
-    except ValueError as e:
-        return False
+from aeternity.transactions import decode, encode
 
 
 class KeyPair:
@@ -101,11 +14,12 @@ class KeyPair:
     def __init__(self, signing_key, verifying_key):
         self.signing_key = signing_key
         self.verifying_key = verifying_key
+        pub_key = self.verifying_key.encode(encoder=RawEncoder)
+        self.address = encode("ak", pub_key)
 
     def get_address(self):
         """get the keypair public_key base58 encoded and prefixed (ak_...)"""
-        pub_key = self.verifying_key.encode(encoder=nacl.encoding.RawEncoder)
-        return encode("ak", pub_key)
+        return self.address
 
     def get_private_key(self):
         """get the private key hex encoded"""
@@ -113,30 +27,21 @@ class KeyPair:
         pb = self.verifying_key.encode(encoder=nacl.encoding.HexEncoder).decode('utf-8')
         return f"{pk}{pb}"
 
-    def sign_transaction_message(self, message):
-        """sign a message with using the private key"""
-        return self.signing_key.sign(message).signature
+    def sign(self, data):
+        """
+        Sign data
+        :param data: the data to sign
+        :return: the signature of the data
+        """
+        return self.signing_key.sign(data).signature
 
-    def sign_verify(self, message, signature):
-        """verify message signature, raise an error if the message cannot be verified"""
-        assert self.verifying_key.verify(signature, message)
-
-    def encode_transaction_message(self, unsigned_tx, signatures):
-        """prepare a signed transaction message"""
-        tag = bytes([TAG_SIGNED_TX])
-        vsn = bytes([VSN])
-        payload = rlp.encode([tag, vsn, signatures, unsigned_tx])
-        return encode("tx", payload)
-
-    def sign_transaction(self, transaction):
-        """sign a transaction"""
-        tx_decoded = decode(transaction.tx)
-        signature = self.signing_key.sign(tx_decoded).signature
-        b58_signature = encode("sg", signature)
-        # self.sign_verify(tx_decoded, signature)
-        # encode the transaction message with the signature
-        tx_encoded = self.encode_transaction_message(tx_decoded, [signature])
-        return tx_encoded, b58_signature
+    def verify(self, data, signature):
+        """
+        Verify data signature, raise an error if the singnature cannot be verified
+        :param data: the data
+        :param signature: the signature to verify
+        """
+        assert self.verifying_key.verify(signature, data)
 
     def save_to_folder(self, folder, password, name='key'):
         """
@@ -165,15 +70,6 @@ class KeyPair:
     #
 
     @classmethod
-    def compute_tx_hash(cls, singed_transaction):
-        """
-        generate the hash from a signed and encoded transaction
-        :param signed_transaction: a encoded signed transaction
-        """
-        signed = decode(singed_transaction)
-        return hash_encode("th", signed)
-
-    @classmethod
     def generate(cls):
         signing_key = SigningKey.generate()
         return KeyPair(signing_key=signing_key, verifying_key=signing_key.verify_key)
@@ -195,7 +91,7 @@ class KeyPair:
         k = cls._raw_key(key_string)
         # the private key string is composed with [private_key+pyblic_key]
         # https://blog.mozilla.org/warner/2011/11/29/ed25519-keys/
-        signing_key = SigningKey(seed=k[0:32], encoder=encoding.RawEncoder)
+        signing_key = SigningKey(seed=k[0:32], encoder=RawEncoder)
         kp = KeyPair(signing_key, signing_key.verify_key)
         return kp
 
@@ -272,9 +168,3 @@ class KeyPair:
             os.path.join(directory, name),
             password
         )
-
-    @classmethod
-    def sha256(cls, data):
-        digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
-        digest.update(data)
-        return digest.finalize()
