@@ -42,11 +42,11 @@ class TxBuilder:
         :param epoch: the epoch client
         :return: the next nonce for an account
         """
-        account = epoch.cli.get_account(pubkey=account_address)
+        account = epoch.cli.get_account_by_pubkey(pubkey=account_address)
         return account.nonce + 1
 
     @staticmethod
-    def compute_tx_hash(cls, signed_tx):
+    def compute_tx_hash(signed_tx):
         """
         Generate the hash from a signed and encoded transaction
         :param signed_tx: an encoded signed transaction
@@ -62,14 +62,6 @@ class TxBuilder:
         nonce = TxBuilder.get_next_nonce(self.epoch, self.account.get_address())
         return nonce, ttl
 
-    def sign_transaction(self, transaction):
-        """
-        Sign a transaction and compute the hash
-        """
-        signed_tx, signature = self.account.sign(transaction)
-        tx_hash = TxBuilder.compute_tx_hash(signed_tx)
-        return signed_tx, signature, tx_hash
-
     def encode_signed_transaction(self, signed_tx, signature):
         """prepare a signed transaction message"""
         tag = bytes([TAG_SIGNED_TX])
@@ -77,6 +69,20 @@ class TxBuilder:
         encoded_signed_tx = hashing.encode_rlp("tx", [tag, vsn, [signature], signed_tx])
         encoded_signature = hashing.encode("sg", signature)
         return encoded_signed_tx, encoded_signature
+
+    def sign_encode_transaction(self, tx):
+        """
+        sign, encode and compute the hash of a transaction
+        """
+        transaction = hashing.decode(tx.tx)
+        # sign the transaction
+        signature = self.account.sign(transaction)
+        # encode the transaction
+        encoded_signed_tx, encoded_signature = self.encode_signed_transaction(transaction, signature)
+        # compute the hash
+        tx_hash = TxBuilder.compute_tx_hash(encoded_signed_tx)
+        # return the
+        return encoded_signed_tx, encoded_signature, tx_hash
 
     def post_transaction(self, tx, tx_hash):
         """
@@ -87,7 +93,7 @@ class TxBuilder:
         if reply.tx_hash != tx_hash:
             raise TransactionHashMismatch(f"Transaction hash doesn't match, expected {tx_hash} got {reply.tx_hash}")
 
-    def create_tx_spend(self, recipient_id, amount, payload, fee, ttl):
+    def tx_spend(self, recipient_id, amount, payload, fee, ttl):
         """
         create a spend transaction
         :param recipient_id: the public key of the recipient
@@ -97,7 +103,7 @@ class TxBuilder:
         :param ttl: the relative ttl of the transaction
         """
         # compute the absolute ttl and the nonce
-        nonce, ttl = self._get_ttl_nonce(ttl)
+        nonce, ttl = self._get_nonce_ttl(ttl)
         # send the update transaction
         body = {
             "recipient_id": recipient_id,
@@ -110,10 +116,24 @@ class TxBuilder:
         }
         # request a spend transaction
         # TODO: this should be computed locally
-        spend_tx = self.cli.post_spend(body=body)
-        # sign the transaction
-        signed_tx, signature, tx_hash = self.sign_transaction(spend_tx.tx)
-        # encode the transaction
-        encoded_signed_tx, encoded_signature = self.encode_signed_transaction(signed_tx, signature)
-        # return the whole shebang
-        return encoded_signed_tx, encoded_signature, tx_hash
+        tx = self.epoch.post_spend(body=body)
+        return self.sign_encode_transaction(tx)
+
+    def tx_contract_call(self, call_data, function, arg, amount, gas, gas_price, vm_version, fee, ttl):
+        # compute the absolute ttl and the nonce
+        nonce, ttl = self._get_nonce_ttl(ttl)
+        body = dict(
+            call_data=call_data,
+            caller_id=self.account.get_address(),
+            contract_id=self.address,
+            amount=amount,
+            fee=fee,
+            gas=gas,
+            gas_price=gas_price,
+            vm_version=vm_version,
+            ttl=ttl,
+            nonce=nonce,
+        )
+        tx = self.epochent.cli.post_contract_call(body=body)
+        return self.sign_encode_transaction(tx)
+        
