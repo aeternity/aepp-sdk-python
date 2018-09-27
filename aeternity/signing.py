@@ -8,7 +8,7 @@ from nacl.signing import SigningKey
 from aeternity.transactions import decode, encode
 
 
-class KeyPair:
+class Account:
     """Implement private/public key functionalities"""
 
     def __init__(self, signing_key, verifying_key):
@@ -72,7 +72,7 @@ class KeyPair:
     @classmethod
     def generate(cls):
         signing_key = SigningKey.generate()
-        return KeyPair(signing_key=signing_key, verifying_key=signing_key.verify_key)
+        return Account(signing_key=signing_key, verifying_key=signing_key.verify_key)
 
     @classmethod
     def _raw_key(cls, key_string):
@@ -92,7 +92,7 @@ class KeyPair:
         # the private key string is composed with [private_key+pyblic_key]
         # https://blog.mozilla.org/warner/2011/11/29/ed25519-keys/
         signing_key = SigningKey(seed=k[0:32], encoder=RawEncoder)
-        kp = KeyPair(signing_key, signing_key.verify_key)
+        kp = Account(signing_key, signing_key.verify_key)
         return kp
 
     @classmethod
@@ -153,13 +153,13 @@ class KeyPair:
             public = cls._decrypt_key(fh.read(), password)
         with open(private_key_file, 'rb') as fh:
             private = cls._decrypt_key(fh.read(), password)
-        return KeyPair.from_public_private_key_strings(public, private)
+        return Account.from_public_private_key_strings(public, private)
 
     @classmethod
     def read_from_private_key(cls, private_key_file, password=None):
         with open(private_key_file, 'rb') as fh:
             private = cls._decrypt_key(fh.read(), password)
-        return KeyPair.from_private_key_string(private)
+        return Account.from_private_key_string(private)
 
     @classmethod
     def read_from_dir(cls, directory, password, name='key'):
