@@ -10,10 +10,10 @@ from aeternity.tests import PUBLIC_KEY, PRIVATE_KEY
 
 # to run this test in other environments set the env vars as specified in the
 # config.py
-from aeternity.signing import KeyPair
+from aeternity.signing import Account
 
 # set the key folder as environment variables
-keypair = KeyPair.from_public_private_key_strings(PUBLIC_KEY, PRIVATE_KEY)
+account = Account.from_public_private_key_strings(PUBLIC_KEY, PRIVATE_KEY)
 
 
 def random_domain(length=10):
@@ -60,9 +60,9 @@ def test_name_claim_lifecycle():
     assert name.status == AEName.Status.UNKNOWN
     name.update_status()
     assert name.status == AEName.Status.AVAILABLE
-    name.preclaim(keypair)
+    name.preclaim(account)
     assert name.status == AEName.Status.PRECLAIMED
-    name.claim_blocking(keypair)
+    name.claim_blocking(account)
     assert name.status == AEName.Status.CLAIMED
 
 
@@ -70,7 +70,7 @@ def test_name_status_unavailable():
     # claim a domain
     domain = random_domain()
     occupy_name = AEName(domain)
-    occupy_name.full_claim_blocking(keypair, name_ttl=100)
+    occupy_name.full_claim_blocking(account, name_ttl=100)
     # wait for the state to propagate in the block chain
     EpochClient().wait_for_next_block()
     same_name = AEName(domain)
@@ -84,7 +84,7 @@ def test_name_update():
     print(f"domain is {domain}")
     name = AEName(domain)
     print("Claim name ", domain)
-    name.full_claim_blocking(keypair, name_ttl=100)
+    name.full_claim_blocking(account, name_ttl=100)
     print("got next block")
     client.wait_n_blocks(2)
     print("got next block")
@@ -95,7 +95,7 @@ def test_name_update():
     print("claimed name", name)
     print("pointers", name.pointers)
     assert len(name.pointers) > 0, 'Pointers should not be empty'
-    assert name.pointers[0]['id'] == keypair.get_address()
+    assert name.pointers[0]['id'] == account.get_address()
     assert name.pointers[0]['key'] == "account_pubkey"
 
 
@@ -104,20 +104,20 @@ def test_name_update():
 def test_name_transfer_ownership():
     client = EpochClient()
     name = AEName(random_domain())
-    name.full_claim_blocking(keypair, name_ttl=100)
+    name.full_claim_blocking(account, name_ttl=100)
     assert name.status == AEName.Status.CLAIMED
     client.wait_for_next_block()
 
-    new_key_pair = KeyPair.generate()
+    new_key_pair = Account.generate()
     # put some coins into the account so the account is in the state tree
     # otherwise it couldn't become the owner of an address.
-    client.spend(keypair, new_key_pair.get_address(), 1)
+    client.spend(account, new_key_pair.get_address(), 1)
     client.wait_for_next_block()
     # now transfer the name to the other account
-    name.transfer_ownership(keypair, new_key_pair.get_address())
+    name.transfer_ownership(account, new_key_pair.get_address())
     assert name.status == AEName.Status.TRANSFERRED
     client.wait_for_next_block()
-    # try changing the target using that new keypair
+    # try changing the target using that new account
     name.update_status()
     name.update(new_key_pair, target=new_key_pair.get_address(), name_ttl=10)
     client.wait_for_next_block()
@@ -139,9 +139,9 @@ def test_name_transfer_ownership():
 def test_name_revocation():
     domain = random_domain()
     name = AEName(domain)
-    name.full_claim_blocking(keypair, name_ttl=100)
+    name.full_claim_blocking(account, name_ttl=100)
     EpochClient().wait_for_next_block()
-    name.revoke(keypair=keypair)
+    name.revoke(account=account)
     assert name.status == AEName.Status.REVOKED
     EpochClient().wait_for_next_block()
     assert AEName(domain).is_available()

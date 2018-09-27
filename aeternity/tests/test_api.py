@@ -1,6 +1,6 @@
 from aeternity.tests import PUBLIC_KEY, EPOCH_VERSION, KEYPAIR
 from aeternity.epoch import EpochClient
-from aeternity.signing import KeyPair
+from aeternity.signing import Account
 
 # from aeternity.exceptions import TransactionNotFoundException
 
@@ -50,7 +50,7 @@ def test_api_get_block_by_hash():
         print(has_kb, has_mb, latest_block.hash)
         # create a transaction so the top block is going to be an micro block
         if not has_mb:
-            account = KeyPair.generate().get_address()
+            account = Account.generate().get_address()
             client.spend(KEYPAIR, account, 100)
         # wait for the next block
         # client.wait_for_next_block()

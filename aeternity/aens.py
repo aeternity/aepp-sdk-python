@@ -5,7 +5,7 @@ from aeternity.oracle import Oracle
 from aeternity.epoch import EpochClient
 from aeternity.openapi import OpenAPIClientException
 from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE, NAME_MAX_TLL, NAME_DEFAULT_TTL
-from aeternity.signing import hash_encode, encode, namehash, namehash_encode
+from aeternity.hashing import hash_encode, encode, namehash, namehash_encode
 
 
 class NameStatus:

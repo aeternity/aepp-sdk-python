@@ -8,7 +8,7 @@ from contextlib import contextmanager
 import aeternity
 from aeternity.epoch import EpochClient
 from aeternity.tests import NODE_URL, NODE_URL_INTERNAL, KEYPAIR
-from aeternity.signing import KeyPair
+from aeternity.signing import Account
 
 import pytest
 
@@ -96,7 +96,7 @@ def test_cli_spend():
         client = EpochClient()
         client.spend(KEYPAIR, sender_address, 100)
         # generate a new address
-        recipient_address = KeyPair.generate().get_address()
+        recipient_address = Account.generate().get_address()
         # call the cli
         call_aecli('wallet', sender_path, 'spend', '--password', 'whatever', recipient_address, "90")
         client.wait_for_next_block()

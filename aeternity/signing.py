@@ -5,7 +5,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import nacl
 from nacl.encoding import RawEncoder
 from nacl.signing import SigningKey
-from aeternity.transactions import decode, encode
+from aeternity.hashing import decode, encode
 
 
 class Account:
