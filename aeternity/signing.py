@@ -5,7 +5,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import nacl
 from nacl.encoding import RawEncoder
 from nacl.signing import SigningKey
-from aeternity.hashing import decode, encode
+from aeternity import hashing, utils
 
 
 class Account:
@@ -15,7 +15,7 @@ class Account:
         self.signing_key = signing_key
         self.verifying_key = verifying_key
         pub_key = self.verifying_key.encode(encoder=RawEncoder)
-        self.address = encode("ak", pub_key)
+        self.address = hashing.encode("ak", pub_key)
 
     def get_address(self):
         """get the keypair public_key base58 encoded and prefixed (ak_...)"""
@@ -78,8 +78,8 @@ class Account:
     def _raw_key(cls, key_string):
         """decode a key with different method between signing and addresses"""
         key_string = str(key_string)
-        if key_string.startswith('ak_'):
-            return decode(key_string.strip())
+        if utils.is_valid_hash(key_string, prefix='ak'):
+            return hashing.decode(key_string.strip())
         return bytes.fromhex(key_string.strip())
 
     @classmethod
@@ -119,7 +119,7 @@ class Account:
         if isinstance(password, str):
             password = password.encode('utf-8')
 
-        key = cls.sha256(password)
+        key = hashing._sha256(password)
         encryptor = Cipher(
             algorithms.AES(key),
             modes.ECB(),
@@ -137,7 +137,7 @@ class Account:
         if isinstance(password, str):
             password = password.encode('utf-8')
 
-        key = cls.sha256(password)
+        key = hashing._sha256(password)
         decryptor = Cipher(
             algorithms.AES(key),
             modes.ECB(),

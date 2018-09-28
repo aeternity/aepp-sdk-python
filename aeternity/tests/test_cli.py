@@ -9,6 +9,7 @@ import aeternity
 from aeternity.epoch import EpochClient
 from aeternity.tests import NODE_URL, NODE_URL_INTERNAL, KEYPAIR
 from aeternity.signing import Account
+from aeternity import utils
 
 import pytest
 
@@ -67,7 +68,7 @@ def test_cli_generate_wallet_and_wallet_info():
         wallet_path = os.path.join(tmp_path, 'key')
         output = call_aecli('--quiet', 'wallet', wallet_path, 'create', '--password', 'secret')
         gen_address = output.split('\n')[1]
-        assert gen_address.startswith('ak_')
+        assert utils.is_valid_hash(gen_address, prefix='ak')
         read_address = call_aecli('--quiet', 'wallet', wallet_path, 'address', '--password', 'secret')
         assert read_address.startswith('ak_')
         assert read_address == gen_address
