@@ -6,10 +6,10 @@ from collections import MutableSequence
 
 
 # max number of block into the future that the name is going to be available
-# https://github.com/aeternity/protocol/blob/epoch-v0.13.0/AENS.md#update
+# https://github.com/aeternity/protocol/blob/epoch-v0.22.0/AENS.md#update
 # https://github.com/aeternity/protocol/blob/44a93d3aab957ca820183c3520b9daf6b0fedff4/AENS.md#aens-entry
-NAME_MAX_TLL = 50000
-NAME_DEFAULT_TTL = 60000
+NAME_MAX_TLL = 36000
+NAME_CLIENT_TTL = 60000
 # default relative ttl in number of blocks  for executing transaction on the chain
 MAX_TX_TTL = sys.maxsize
 DEFAULT_TX_TTL = 100
