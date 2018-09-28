@@ -50,19 +50,17 @@ def test_name_status_availavle():
     assert name.status == AEName.Status.AVAILABLE
 
 
-def test_name_hashing():
-    assert AEName.calculate_name_hash('welghmolql.aet') == 'nm_2KrC4asc6fdv82uhXDwfiqB1TY2htjhnzwzJJKLxidyMymJRUQ'
-
-
 def test_name_claim_lifecycle():
     domain = random_domain()
     name = AEName(domain)
     assert name.status == AEName.Status.UNKNOWN
     name.update_status()
     assert name.status == AEName.Status.AVAILABLE
-    name.preclaim(account)
+    h = name.preclaim(account)
+    print(h)
     assert name.status == AEName.Status.PRECLAIMED
-    name.claim_blocking(account)
+    h = name.claim_blocking(account)
+    print(h)
     assert name.status == AEName.Status.CLAIMED
 
 
@@ -86,11 +84,11 @@ def test_name_update():
     print("Claim name ", domain)
     name.full_claim_blocking(account, name_ttl=100)
     print("got next block")
-    client.wait_n_blocks(2)
+    client.wait_n_blocks(1)
     print("got next block")
     assert not AEName(domain).is_available(), 'The name should be claimed now'
     name.update_status()
-    client.wait_n_blocks(2)
+    client.wait_n_blocks(1)
     name.update_status()
     print("claimed name", name)
     print("pointers", name.pointers)
@@ -107,11 +105,14 @@ def test_name_transfer_ownership():
     name.full_claim_blocking(account, name_ttl=100)
     assert name.status == AEName.Status.CLAIMED
     client.wait_for_next_block()
+    name.update_status()
+    assert name.pointers[0]['id'] == account.get_address()
+    assert name.pointers[0]['key'] == "account_pubkey"
 
     new_key_pair = Account.generate()
     # put some coins into the account so the account is in the state tree
     # otherwise it couldn't become the owner of an address.
-    client.spend(account, new_key_pair.get_address(), 1)
+    client.spend(account, new_key_pair.get_address(), 100)
     client.wait_for_next_block()
     # now transfer the name to the other account
     name.transfer_ownership(account, new_key_pair.get_address())
@@ -120,7 +121,7 @@ def test_name_transfer_ownership():
     # try changing the target using that new account
     name.update_status()
     name.update(new_key_pair, target=new_key_pair.get_address(), name_ttl=10)
-    client.wait_for_next_block()
+    client.wait_n_blocks(1)
     name.update_status()
     assert len(name.pointers) > 0, 'Pointers should not be empty'
     assert name.pointers[0]['id'] == new_key_pair.get_address()

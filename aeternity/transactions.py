@@ -119,6 +119,109 @@ class TxBuilder:
         tx = self.epoch.post_spend(body=body)
         return self.sign_encode_transaction(tx)
 
+    # NAMING #
+
+    def tx_name_preclaim(self, commitment_id, fee, ttl):
+        """
+        create a preclaim transaction
+        :param commitment_id: the commitment id
+        :param commitment_hash:  the commitment hash
+        :param fee:  the fee for the transaction
+        :param ttl:  the ttl for the transaction
+        """
+        nonce, ttl = self._get_nonce_ttl(ttl)
+        body = dict(
+            commitment_id=commitment_id,
+            fee=fee,
+            account_id=self.account.get_address(),
+            ttl=ttl,
+            nonce=nonce
+        )
+        tx = self.epoch.post_name_preclaim(body=body)
+        return self.sign_encode_transaction(tx)
+
+    def tx_name_claim(self, name, name_salt, fee, ttl):
+        """
+        create a preclaim transaction
+        :param commitment_id: the commitment id
+        :param commitment_hash:  the commitment hash
+        :param fee:  the fee for the transaction
+        :param ttl:  the ttl for the transaction
+        """
+        nonce, ttl = self._get_nonce_ttl(ttl)
+        body = dict(
+            account_id=self.account.get_address(),
+            name=name,
+            name_salt=name_salt,
+            fee=fee,
+            ttl=ttl,
+            nonce=nonce
+        )
+        tx = self.epoch.post_name_claim(body=body)
+        return self.sign_encode_transaction(tx)
+
+    def tx_name_update(self, name_id, pointers, name_ttl, client_ttl, fee, ttl):
+        """
+        create an update transaction
+        :param name_id: the name id
+        :param pointers:  the pointers to update to
+        :param name_ttl:  the ttl for the name registration
+        :param client_ttl:  the ttl for client to cache the name
+        :param fee: the transaction fee
+        :param ttl: the ttl of the transaction
+        """
+        nonce, ttl = self._get_nonce_ttl(ttl)
+        body = dict(
+            account_id=self.account.get_address(),
+            name_id=name_id,
+            client_ttl=client_ttl,
+            name_ttl=name_ttl,
+            pointers=pointers,
+            ttl=ttl,
+            fee=fee,
+            nonce=nonce
+        )
+        tx = self.epoch.post_name_update(body=body)
+        return self.sign_encode_transaction(tx)
+
+    def tx_name_transfer(self, name_id, recipient_id, fee, ttl):
+        """
+        create a transfer transaction
+        :param name_id: the name to transfer
+        :param recipient_id: the address of the account to transfer the name to
+        :param fee: the transaction fee
+        :param ttl: the ttl of the transaction
+        """
+        nonce, ttl = self._get_nonce_ttl(ttl)
+        body = dict(
+            account_id=self.account.get_address(),
+            name_id=name_id,
+            recipient_id=recipient_id,
+            ttl=ttl,
+            fee=fee,
+            nonce=nonce
+        )
+        tx = self.epoch.post_name_transfer(body=body)
+        return self.sign_encode_transaction(tx)
+
+    def tx_name_revoke(self, name_id, fee, ttl):
+        """
+        create a revoke transaction
+        :param name_id: the name to revoke
+        :param fee: the transaction fee
+        :param ttl: the ttl of the transaction
+        """
+        nonce, ttl = self._get_nonce_ttl(ttl)
+        body = dict(
+            account_id=self.account.get_address(),
+            name_id=name_id,
+            ttl=ttl,
+            fee=fee,
+            nonce=nonce
+        )
+        tx = self.epoch.post_name_revoke(body=body)
+        return self.sign_encode_transaction(tx)
+
     def tx_contract_call(self, call_data, function, arg, amount, gas, gas_price, vm_version, fee, ttl):
         # compute the absolute ttl and the nonce
         nonce, ttl = self._get_nonce_ttl(ttl)
