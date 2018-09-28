@@ -1,4 +1,5 @@
 from aeternity import hashing
+import validators
 
 
 def is_valid_hash(hash_str, prefix=None):
@@ -16,3 +17,15 @@ def is_valid_hash(hash_str, prefix=None):
         return True
     except ValueError as e:
         return False
+
+
+def is_valid_aens_name(domain_name):
+    """
+    Test if the provided name is valid for the aens system
+    """
+    # TODO: validate according to the spec!
+    # TODO: https://github.com/aeternity/protocol/blob/master/AENS.md#name
+
+    if domain_name is None or not validators.domain(domain_name) or not domain_name.endswith(('.aet', '.test')):
+        return False
+    return True
