@@ -1,5 +1,6 @@
 import base58
 import rlp
+import secrets
 from nacl.hash import blake2b
 from nacl.encoding import RawEncoder
 
@@ -81,3 +82,7 @@ def namehash(name):
 
 def namehash_encode(prefix, name):
     return encode(prefix, namehash(name))
+
+
+def randint():
+    return secrets.randbelow(2**64)
