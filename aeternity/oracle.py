@@ -168,7 +168,9 @@ class Oracle(EpochSubscription):
         return self.state == OracleState.READY
 
     def on_mounted(self, client):
-        assert self.state == OracleState.NONE, f'Cannot mount an oracle twice'
+        if self.state == OracleState.NONE:
+            raise ValueError('Cannot mount an oracle twice')
+
         pubkey = client.get_pubkey()
         # send oracle register signal to the node
         logger.debug('Sending OracleRegisterTx')

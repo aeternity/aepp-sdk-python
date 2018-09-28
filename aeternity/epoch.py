@@ -218,8 +218,8 @@ class EpochSubscription():
 
     def __init__(self):
         super().__init__()
-        assert self.message_listeners is not None, \
-            'Classes inheriting EpochSubscription must have message_listeners'
+        if self.message_listeners is not None:
+            raise ValueError('Classes inheriting EpochSubscription must have message_listeners')
 
     def on_mounted(self, client):
         """

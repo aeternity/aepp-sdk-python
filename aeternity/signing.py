@@ -41,7 +41,7 @@ class Account:
         :param data: the data
         :param signature: the signature to verify
         """
-        assert self.verifying_key.verify(signature, data)
+        self.verifying_key.verify(signature, data)
 
     def save_to_folder(self, folder, password, name='key'):
         """
@@ -105,7 +105,8 @@ class Account:
         :return:        a keypair object or raise error if the public key doesnt match
         """
         kp = cls.from_private_key_string(private)
-        assert kp.get_address() == public
+        if kp.get_address() != public:
+            raise ValueError("Public key and private account mismatch")
         return kp
 
     @classmethod

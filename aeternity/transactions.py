@@ -31,7 +31,8 @@ class TxBuilder:
         :param epoch: the epoch client
         :param relative_ttl: the relative ttl, must be > 0
         """
-        assert relative_ttl > 0
+        if relative_ttl <= 0:
+            raise ValueError("ttl must be greather than 0")
         height = epoch.get_current_key_block_height()
         return height + relative_ttl
 
