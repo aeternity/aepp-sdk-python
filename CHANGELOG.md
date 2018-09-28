@@ -11,6 +11,10 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ### Changed
 - change hash prefix separator from `$` to `_`
+- KeyPair object renamed to Account
+
+### Added
+- TxBuilder object to provide transactions operations
 
 ## [0.21.0.1]
 
