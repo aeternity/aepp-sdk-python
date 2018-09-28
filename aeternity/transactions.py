@@ -222,21 +222,47 @@ class TxBuilder:
         tx = self.epoch.post_name_revoke(body=body)
         return self.sign_encode_transaction(tx)
 
-    def tx_contract_call(self, call_data, function, arg, amount, gas, gas_price, vm_version, fee, ttl):
+    # CONTRACTS
+
+    def tx_contract_create(self, code, call_data, amount, deposit, gas, gas_price, vm_version, fee, ttl):
+        """
+        create a revoke transaction
+        :param name_id: the name to revoke
+        :param fee: the transaction fee
+        :param ttl: the ttl of the transaction
+        """
+        nonce, ttl = self._get_nonce_ttl(ttl)
+        body = dict(
+            owner_id=self.account.get_address(),
+            amount=amount,
+            deposit=deposit,
+            fee=fee,
+            gas=gas,
+            gas_price=gas_price,
+            vm_version=vm_version,
+            call_data=call_data,
+            code=code,
+            ttl=ttl,
+            nonce=nonce
+        )
+        tx = self.epoch.post_contract_create(body=body)
+        t, s, th = self.sign_encode_transaction(tx)
+        return t, s, th, tx.contract_id
+
+    def tx_contract_call(self, contract_id, call_data, function, arg, amount, gas, gas_price, vm_version, fee, ttl):
         # compute the absolute ttl and the nonce
         nonce, ttl = self._get_nonce_ttl(ttl)
         body = dict(
             call_data=call_data,
             caller_id=self.account.get_address(),
-            contract_id=self.address,
+            contract_id=contract_id,
             amount=amount,
             fee=fee,
             gas=gas,
             gas_price=gas_price,
             vm_version=vm_version,
             ttl=ttl,
-            nonce=nonce,
+            nonce=nonce
         )
-        tx = self.epochent.cli.post_contract_call(body=body)
+        tx = self.epoch.post_contract_call(body=body)
         return self.sign_encode_transaction(tx)
-        
