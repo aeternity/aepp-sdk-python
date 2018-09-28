@@ -2,6 +2,7 @@ import re
 import requests
 import keyword
 from collections import namedtuple
+import logging
 
 
 class OpenAPIArgsException(Exception):
@@ -40,9 +41,11 @@ class OpenAPICli(object):
         "boolean": "bool",
     }
 
-    def __init__(self, url, url_internal=None):
+    def __init__(self, url, url_internal=None, debug=False):
         # load the openapi json file from the node
         self.api_def = requests.get(f"{url}/api").json()
+        # enable printing debug messages
+        self.debug = debug
 
         # check open_api_version
         if self.api_def.get('swagger', 'x') not in self.open_api_versions:
@@ -164,8 +167,8 @@ class OpenAPICli(object):
             else:
                 http_reply = requests.post(target_endpoint, params=query_params, json=post_body)
                 api_response = api.responses.get(http_reply.status_code, None)
-                # TODO: only for debug
-                # print(f">>>> ENDPOINT {target_endpoint}\n >> QUERY \n{query_params}\n >> BODY \n{post_body} \n >> REPLY \n{http_reply.text}", )
+                if self.debug:
+                    logging.debug(f">>>> ENDPOINT {target_endpoint}\n >> QUERY \n{query_params}\n >> BODY \n{post_body} \n >> REPLY \n{http_reply.text}", )
             # unknown error
             if api_response is None:
                 raise OpenAPIClientException(f"Unknown error {http_reply.status_code} - {http_reply.text}")
