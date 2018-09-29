@@ -70,7 +70,7 @@ def test_name_status_unavailable():
     print(f"domain is {domain}")
     occupy_name = AEName(domain)
     occupy_name.full_claim_blocking(account, name_ttl=100)
-    print("got next block")    
+    print("got next block")
     same_name = AEName(domain)
     assert not same_name.is_available()
 
