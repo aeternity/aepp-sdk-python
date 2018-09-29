@@ -8,7 +8,7 @@ import websocket
 from aeternity.config import Config
 from aeternity.exceptions import NameNotAvailable, InsufficientFundsException, TransactionNotFoundException
 from aeternity.transactions import TxBuilder
-from aeternity.openapi import OpenAPICli
+from aeternity.openapi import OpenAPICli, OpenAPIClientException
 from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE
 
 
@@ -122,6 +122,28 @@ class EpochClient:
         shortcut for self.wait_n_blocks(1, polling_interval=polling_interval)
         """
         self.wait_n_blocks(1, polling_interval=polling_interval)
+
+    def wait_tx(self, tx_hash, ttl=1, polling_interval=1):
+        """
+        Wait for a transaction to be mined for an account
+        this listen to pending transactions
+        """
+        cur_height = self.cli.get_current_key_block_height()
+        max_height = cur_height + ttl
+        tx_found = False
+        # check the transaction by hash
+        while not tx_found and cur_height <= max_height:
+            try:
+                tx = self.cli.get_transaction_by_hash(hash=tx_hash)
+                if tx.block_height > 0:
+                    tx_found = True
+                    break
+                cur_height = self.cli.get_current_key_block_height()
+                time.sleep(polling_interval)
+            except OpenAPIClientException as e:
+                # transaction will not be found
+                break
+        return tx_found
 
     def dispatch_message(self, message):
         subscription_id = (message['origin'], message['action'])

@@ -67,28 +67,24 @@ def test_name_claim_lifecycle():
 def test_name_status_unavailable():
     # claim a domain
     domain = random_domain()
+    print(f"domain is {domain}")
     occupy_name = AEName(domain)
     occupy_name.full_claim_blocking(account, name_ttl=100)
-    # wait for the state to propagate in the block chain
-    EpochClient().wait_for_next_block()
+    print("got next block")    
     same_name = AEName(domain)
     assert not same_name.is_available()
 
 
 def test_name_update():
-    client = EpochClient()
     # claim a domain
     domain = random_domain()
     print(f"domain is {domain}")
     name = AEName(domain)
     print("Claim name ", domain)
     name.full_claim_blocking(account, name_ttl=100)
-    print("got next block")
-    client.wait_n_blocks(1)
-    print("got next block")
-    assert not AEName(domain).is_available(), 'The name should be claimed now'
+    # domain claimed
     name.update_status()
-    client.wait_n_blocks(1)
+    assert not AEName(domain).is_available(), 'The name should be claimed now'
     name.update_status()
     print("claimed name", name)
     print("pointers", name.pointers)
