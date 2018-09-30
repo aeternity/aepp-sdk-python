@@ -2,6 +2,7 @@ import re
 import requests
 import keyword
 from collections import namedtuple
+import logging
 
 
 class OpenAPIArgsException(Exception):
@@ -14,8 +15,9 @@ class OpenAPIArgsException(Exception):
 class OpenAPIClientException(Exception):
     """Raised when there is an error executing requests"""
 
-    def __init__(self, message):
+    def __init__(self, message, code=500):
         self.message = message
+        self.code = code
 
 
 class OpenAPIException(Exception):
@@ -40,9 +42,11 @@ class OpenAPICli(object):
         "boolean": "bool",
     }
 
-    def __init__(self, url, url_internal=None):
+    def __init__(self, url, url_internal=None, debug=False):
         # load the openapi json file from the node
         self.api_def = requests.get(f"{url}/api").json()
+        # enable printing debug messages
+        self.debug = debug
 
         # check open_api_version
         if self.api_def.get('swagger', 'x') not in self.open_api_versions:
@@ -164,11 +168,11 @@ class OpenAPICli(object):
             else:
                 http_reply = requests.post(target_endpoint, params=query_params, json=post_body)
                 api_response = api.responses.get(http_reply.status_code, None)
-                # TODO: only for debug
-                # print(f">>>> ENDPOINT {target_endpoint}\n >> QUERY \n{query_params}\n >> BODY \n{post_body} \n >> REPLY \n{http_reply.text}", )
+                if self.debug:
+                    logging.debug(f">>>> ENDPOINT {target_endpoint}\n >> QUERY \n{query_params}\n >> BODY \n{post_body} \n >> REPLY \n{http_reply.text}", )
             # unknown error
             if api_response is None:
-                raise OpenAPIClientException(f"Unknown error {http_reply.status_code} - {http_reply.text}")
+                raise OpenAPIClientException(f"Unknown error {http_reply.status_code} - {http_reply.text}", code=http_reply.status_code)
             # success
             if http_reply.status_code == 200:
                 # parse the http_reply
@@ -181,7 +185,7 @@ class OpenAPICli(object):
                 jr = http_reply.json()
                 return namedtuple(api_response.schema, jr.keys())(**jr)
             # error
-            raise OpenAPIClientException(f"Error: {api_response.desc}")
+            raise OpenAPIClientException(f"Error: {api_response.desc}", code=http_reply.status_code)
         # register the method
         api_method.__name__ = api.name
         api_method.__doc__ = api.doc

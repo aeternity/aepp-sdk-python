@@ -10,7 +10,7 @@ from aeternity import __version__
 from aeternity.epoch import EpochClient
 from aeternity.config import Config, MAX_TX_TTL, ConfigException
 # from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
-from aeternity.signing import KeyPair
+from aeternity.signing import Account
 from aeternity.contract import Contract
 from aeternity.aens import AEName
 
@@ -58,7 +58,7 @@ def _keypair(password=None):
     try:
         if password is None:
             password = click.prompt("Enter the wallet password", default='', hide_input=True)
-        return KeyPair.read_from_private_key(kf, password), os.path.abspath(kf)
+        return Account.read_from_private_key(kf, password), os.path.abspath(kf)
     except Exception:
         print("Invalid password")
         exit(1)
@@ -221,7 +221,7 @@ def wallet(ctx, key_path):
 @click.option('--password', default=None, help="Set a password from the command line [WARN: this method is not secure]")
 @click.option('--force', default=False, is_flag=True, help="Overwrite exising keys without asking")
 def wallet_create(ctx, password, force):
-    kp = KeyPair.generate()
+    kp = Account.generate()
     kf = ctx.obj.get(CTX_KEY_PATH)
     if not force and os.path.exists(kf):
         click.confirm(f'Key file {kf} already exists, overwrite?', abort=True)
@@ -239,7 +239,7 @@ def wallet_create(ctx, password, force):
 @click.pass_context
 def wallet_save(ctx, private_key):
     try:
-        kp = KeyPair.from_private_key_string(private_key)
+        kp = Account.from_private_key_string(private_key)
         kf = ctx.obj.get(CTX_KEY_PATH)
         if os.path.exists(kf):
             click.confirm(f'Key file {kf} already exists, overwrite?', abort=True)

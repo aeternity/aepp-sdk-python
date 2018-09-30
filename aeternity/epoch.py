@@ -6,9 +6,9 @@ import time
 import websocket
 
 from aeternity.config import Config
-from aeternity.exceptions import NameNotAvailable, InsufficientFundsException, TransactionNotFoundException, TransactionHashMismatch
-from aeternity.signing import KeyPair
-from aeternity.openapi import OpenAPICli
+from aeternity.exceptions import NameNotAvailable, InsufficientFundsException, TransactionNotFoundException
+from aeternity.transactions import TxBuilder
+from aeternity.openapi import OpenAPICli, OpenAPIClientException
 from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE
 
 
@@ -123,6 +123,28 @@ class EpochClient:
         """
         self.wait_n_blocks(1, polling_interval=polling_interval)
 
+    def wait_tx(self, tx_hash, ttl=1, polling_interval=1):
+        """
+        Wait for a transaction to be mined for an account
+        this listen to pending transactions
+        """
+        cur_height = self.cli.get_current_key_block_height()
+        max_height = cur_height + ttl
+        tx_found = False
+        # check the transaction by hash
+        while not tx_found and cur_height <= max_height:
+            try:
+                tx = self.cli.get_transaction_by_hash(hash=tx_hash)
+                if tx.block_height > 0:
+                    tx_found = True
+                    break
+                cur_height = self.cli.get_current_key_block_height()
+                time.sleep(polling_interval)
+            except OpenAPIClientException as e:
+                # transaction will not be found
+                break
+        return tx_found
+
     def dispatch_message(self, message):
         subscription_id = (message['origin'], message['action'])
         callbacks = self._listeners[subscription_id]
@@ -146,23 +168,14 @@ class EpochClient:
         self.update_top_block()
         self._connection.send(message)
 
-    def spend(self, keypair, recipient_pubkey, amount, tx_ttl=DEFAULT_TX_TTL):
+    def spend(self, keypair, recipient_pubkey, amount, payload="", fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
         """create and execute a spend transaction"""
-        transaction = self.create_spend_transaction(keypair.get_address(), recipient_pubkey, amount, tx_ttl=tx_ttl)
-        tx = self.post_transaction(keypair, transaction)
-        return tx
-
-    def post_transaction(self, keypair, transaction):
-        """
-        post a transaction to the chain
-        :return: the signed_transaction
-        """
-        signed_transaction, b58signature = keypair.sign_transaction(transaction)
-        tx_hash = KeyPair.compute_tx_hash(signed_transaction)
-        signed_transaction_reply = self.send_signed_transaction(signed_transaction)
-        if signed_transaction_reply.tx_hash != tx_hash:
-            raise TransactionHashMismatch(f"Transaction hash doesn't match, expected {tx_hash} got {signed_transaction_reply.tx_hash}")
-        return signed_transaction_reply
+        txb = TxBuilder(self.cli, keypair)
+        # create spend_tx
+        tx, sg, tx_hash = txb.tx_spend(recipient_pubkey, amount, payload, fee, tx_ttl)
+        # post the transaction to the chain
+        txb.post_transaction(tx, tx_hash)
+        return tx, sg, tx_hash
 
     def send_and_receive(self, message):
         """
@@ -212,50 +225,6 @@ class EpochClient:
     def listen(self):
         self.listen_until(lambda: False)
 
-    def compute_absolute_ttl(self, ttl):
-        """compute the absolute ttl by adding the ttl to the current height of the chain"""
-        assert ttl > 0
-        height = self.get_current_key_block_height()
-        return height + ttl
-
-    #
-    # API functions
-    #
-
-    @classmethod
-    def _get_burn_key(cls):
-        keypair = KeyPair.generate()
-        keypair.signing_key
-
-    def create_spend_transaction(self, sender_id, recipient_id, amount, payload="", tx_ttl=DEFAULT_TX_TTL, fee=DEFAULT_FEE, nonce=0):
-        """
-        create a spend transaction
-        :param sender: the public key of the sender
-        :param recipient: the public key of the recipient
-        :param amount: the amount to send
-        :param fee: the fee for the transaction
-        """
-        # compute the absolute ttl
-        ttl = self.compute_absolute_ttl(tx_ttl)
-        # send the update transaction
-        body = {
-            "recipient_id": recipient_id,
-            "amount": amount,
-            "fee":  fee,
-            "sender_id": sender_id,
-            "payload": payload,
-            "ttl": ttl,
-        }
-        if nonce > 0:
-            body['nonce'] = nonce
-        return self.cli.post_spend(body=body)
-
-    def send_signed_transaction(self, encoded_signed_transaction):
-        """
-        Utility method to post a transaction to the chain
-        """
-        return self.cli.post_transaction(body={"tx": encoded_signed_transaction})
-
 
 class EpochSubscription():
     message_listeners = None
@@ -271,8 +240,8 @@ class EpochSubscription():
 
     def __init__(self):
         super().__init__()
-        assert self.message_listeners is not None, \
-            'Classes inheriting EpochSubscription must have message_listeners'
+        if self.message_listeners is not None:
+            raise ValueError('Classes inheriting EpochSubscription must have message_listeners')
 
     def on_mounted(self, client):
         """

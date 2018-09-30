@@ -6,10 +6,10 @@ from collections import MutableSequence
 
 
 # max number of block into the future that the name is going to be available
-# https://github.com/aeternity/protocol/blob/epoch-v0.13.0/AENS.md#update
+# https://github.com/aeternity/protocol/blob/epoch-v0.22.0/AENS.md#update
 # https://github.com/aeternity/protocol/blob/44a93d3aab957ca820183c3520b9daf6b0fedff4/AENS.md#aens-entry
-NAME_MAX_TLL = 50000
-NAME_DEFAULT_TTL = 60000
+NAME_MAX_TLL = 36000
+NAME_CLIENT_TTL = 60000
 # default relative ttl in number of blocks  for executing transaction on the chain
 MAX_TX_TTL = sys.maxsize
 DEFAULT_TX_TTL = 100
@@ -50,19 +50,6 @@ class Config:
 
     def __str__(self):
         return f'ws:{self.websocket_url} ext:{self.api_url} int:{self.api_url_internal}'
-
-    @property
-    def top_block_url(self):
-        return f'{self.api_url}/top'
-
-    @property
-    def pubkey_url(self):
-        return f'{self.api_url_internal}/account/pub-key'
-
-    def get_pubkey(self):
-        if self.pubkey is None:
-            self.pubkey = requests.get(self.pubkey_url).json()['pub_key']
-        return self.pubkey
 
     @classmethod
     def set_defaults(cls, config):

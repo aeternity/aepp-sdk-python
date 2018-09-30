@@ -1,7 +1,7 @@
 import logging
 import os
 from aeternity.config import Config
-from aeternity.signing import KeyPair
+from aeternity.signing import Account
 
 logging.getLogger("requests").setLevel(logging.DEBUG)
 logging.getLogger("urllib3").setLevel(logging.DEBUG)
@@ -13,7 +13,10 @@ NODE_URL = os.environ.get('TEST_URL')
 NODE_URL_INTERNAL = os.environ.get('TEST_INTERNAL_URL')
 EPOCH_VERSION = '0.22.0'
 # set the key folder as environment variables
-KEYPAIR = KeyPair.from_public_private_key_strings(PUBLIC_KEY, PRIVATE_KEY)
+KEYPAIR = Account.from_public_private_key_strings(PUBLIC_KEY, PRIVATE_KEY)
+# default values for tests
+TEST_FEE = 1
+TEST_TTL = 50
 
 
 Config.set_defaults(Config(
