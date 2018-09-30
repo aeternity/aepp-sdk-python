@@ -77,7 +77,7 @@ class AEName:
         except OpenAPIClientException as e:
             # e.g. if the status is already PRECLAIMED or CLAIMED, don't reset
             # it to AVAILABLE.
-            self.name_ttl = None
+            self.name_ttl = 0
             self.name_hash = None
             self.pointers = None
             if e.code == 404:

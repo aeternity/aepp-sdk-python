@@ -95,7 +95,8 @@ def test_cli_spend():
         sender_address = call_aecli('-q', 'wallet', sender_path, 'address',  '--password', 'whatever')
         # fill the account from genesys
         client = EpochClient()
-        client.spend(KEYPAIR, sender_address, 100)
+        _, _, tx_hash = client.spend(KEYPAIR, sender_address, 100)
+        client.wait_tx(tx_hash)
         # generate a new address
         recipient_address = Account.generate().get_address()
         # call the cli
