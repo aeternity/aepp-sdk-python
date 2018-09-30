@@ -1,8 +1,7 @@
-
-
 import requests
 import sys
 from collections import MutableSequence
+from . import __compatibility__
 
 
 # max number of block into the future that the name is going to be available
@@ -26,13 +25,18 @@ class ConfigException(Exception):
     pass
 
 
+class UnsupportedEpochVersion(Exception):
+    pass
+
+
 class Config:
     default_configs = None
 
     def __init__(self,
                  external_url='http://localhost:3013',
                  internal_url='http://localhost:3113',
-                 websocket_url=None):
+                 websocket_url=None,
+                 force_comaptibility=False):
 
         # enpoint urls
         self.websocket_url = websocket_url
@@ -45,6 +49,8 @@ class Config:
         try:
             r = requests.get(f"{self.api_url}/v2/status").json()
             self.node_version = r['node_version']
+            if self.node_version not in __compatibility__ and not force_comaptibility:
+                raise UnsupportedEpochVersion(f"Unsupported epoch version {self.node_version}")
         except requests.exceptions.ConnectionError as e:
             raise ConfigException(f"Error connecting to the epoch node at {self.api_url}, connection unavailable")
 
