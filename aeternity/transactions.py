@@ -1,5 +1,8 @@
-from aeternity import hashing
+from aeternity import hashing, config
+from aeternity.openapi import OpenAPIClientException
 from aeternity.exceptions import TransactionHashMismatch
+import time
+import random
 
 # RLP version number
 # https://github.com/aeternity/protocol/blob/epoch-v0.10.1/serializations.md#binary-serialization
@@ -9,6 +12,12 @@ VSN = 1
 # https://github.com/aeternity/protocol/blob/epoch-v0.10.1/serializations.md#table-of-object-tags
 TAG_SIGNED_TX = 11
 TAG_SPEND_TX = 12
+
+
+class TxNotIncluded(Exception):
+    def __init__(self, tx_hash, reason):
+        self.tx_hash = tx_hash
+        self.reason = reason
 
 
 class TxBuilder:
@@ -84,6 +93,54 @@ class TxBuilder:
         tx_hash = TxBuilder.compute_tx_hash(encoded_signed_tx)
         # return the
         return encoded_signed_tx, encoded_signature, tx_hash
+
+    def wait_tx(self, tx_hash, max_retries=config.MAX_RETRIES, polling_interval=config.POLLING_INTERVAL):
+        """
+        Wait for a transaction to be mined for an account
+        this listen to pending transactions.
+        The method will wait for a specific transaction to be included in the chain,
+        it will return False if one of the following conditions are met:
+        - the chain reply with a 404 not found (the transaction was expugned)
+        - the account nonce is >= of the transaction nonce (transaction is in an illegal state)
+        - the ttl of the transaction or the one passed as parameter has been reached
+        :return: True if the transaction id found False otherwise
+        """
+        if max_retries <= 0:
+            raise ValueError("Retries must be greather than 0")
+
+        n = 1
+        total_sleep = 0
+        while True:
+            # query the transaction
+            try:
+                tx = self.epoch.get_transaction_by_hash(hash=tx_hash)
+                # get the account nonce
+            except OpenAPIClientException as e:
+                # it may fail because it is not found that means that
+                # or it was invalid or the ttl has expired
+                raise TxNotIncluded(tx_hash=tx_hash, reason=e.reason)
+            # if the tx.block_height > 0 we win
+            if tx.block_height > 0:
+                break
+            # get the transaction nonce
+            tx_nonce = tx.tx.get('nonce')
+            account_nonce = self.epoch.get_account_by_pubkey(pubkey=self.account.get_address()).nonce
+            if account_nonce >= tx_nonce:
+                # there is a possibility that a tx gets included
+                # between the get_tx call and here, giving false negative
+                # therefore we need to test the tx again before leaving
+                tx = self.epoch.get_transaction_by_hash(hash=tx_hash)
+                if tx.block_height <= 0:
+                    raise TxNotIncluded(tx_hash=tx_hash, reason=f"The nonce for this transaction ({tx_nonce}) has been used ")
+
+            if n >= max_retries:
+                raise TxNotIncluded(tx_hash=tx_hash, reason=f"The transaction was not incluced in {total_sleep} seconds, wait aborted")
+            # calculate sleep time
+            sleep_time = (polling_interval ** n) + (random.randint(0, 1000) / 1000.0)
+            time.sleep(sleep_time)
+            total_sleep += sleep_time
+            # increment n
+            n += 1
 
     def post_transaction(self, tx, tx_hash):
         """

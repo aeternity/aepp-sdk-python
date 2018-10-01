@@ -19,6 +19,9 @@ CONTRACT_DEFAULT_GAS = 40000000
 CONTRACT_DEFAULT_GAS_PRICE = 1
 CONTRACT_DEFAULT_DEPOSIT = 4
 CONTRACT_DEFAULT_VM_VERSION = 1
+# TUNING
+MAX_RETRIES = 6  # used in exponetial backoff when checking a transaction
+POLLING_INTERVAL = 2  # in seconds
 
 
 class ConfigException(Exception):
