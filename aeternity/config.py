@@ -48,9 +48,9 @@ class Config:
         # retrieve the version of the node we are connecting to
         try:
             r = requests.get(f"{self.api_url}/v2/status").json()
-            self.node_version = r['node_version']
+            self.node_version = r.get('node_version', 'unknown')
             if self.node_version not in __compatibility__ and not force_comaptibility:
-                raise UnsupportedEpochVersion(f"Unsupported epoch version {self.node_version}")
+                raise UnsupportedEpochVersion(f"Unsupported epoch version {self.node_version}, supported version are {', '.join(__compatibility__)}")
         except requests.exceptions.ConnectionError as e:
             raise ConfigException(f"Error connecting to the epoch node at {self.api_url}, connection unavailable")
 
