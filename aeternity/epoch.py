@@ -5,11 +5,8 @@ import logging
 import time
 import websocket
 
-from aeternity.config import Config
 from aeternity.exceptions import NameNotAvailable, InsufficientFundsException, TransactionNotFoundException
-from aeternity.transactions import TxBuilder
-from aeternity.openapi import OpenAPICli, OpenAPIClientException
-from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE
+from aeternity import config, aens, openapi, transactions, contract
 
 
 logger = logging.getLogger(__name__)
@@ -53,10 +50,10 @@ class EpochClient:
         'Transaction not found': TransactionNotFoundException,
     }
 
-    def __init__(self, *, configs=None, retry=True):
+    def __init__(self, *, configs=None, blocking_mode=False, retry=True, debug=False):
         if configs is None:
-            configs = Config.get_defaults()
-        if isinstance(configs, Config):
+            configs = config.Config.get_defaults()
+        if isinstance(configs, config.Config):
             configs = [configs]
         self._configs = configs
         self._active_config_idx = 0
@@ -64,9 +61,10 @@ class EpochClient:
         self._connection = self._make_connection()
         self._top_block = None
         self._retry = retry
-
         # instantiate the request client
-        self.cli = OpenAPICli(configs[0].api_url, configs[0].api_url_internal)
+        self.cli = openapi.OpenAPICli(configs[0].api_url, configs[0].api_url_internal, debug=debug)
+        # shall the client work in blocking mode
+        self.blocking_mode = blocking_mode
 
     # enable composition
     def __getattr__(self, attr):
@@ -104,47 +102,6 @@ class EpochClient:
             block = self.cli.get_micro_block_header_by_hash(hash=hash)
         return block
 
-    def wait_n_blocks(self, block_count, polling_interval=1):
-        self.update_top_block()
-        current_block = self.get_top_block()
-        target_block = current_block.height + block_count
-        if polling_interval is None:
-            polling_interval = self.next_block_poll_interval_sec
-        while True:
-            time.sleep(polling_interval)
-            self.update_top_block()
-            if self._top_block.height >= target_block:
-                break
-
-    def wait_for_next_block(self, polling_interval=1):
-        """
-        blocking method to wait for the next block to be mined
-        shortcut for self.wait_n_blocks(1, polling_interval=polling_interval)
-        """
-        self.wait_n_blocks(1, polling_interval=polling_interval)
-
-    def wait_tx(self, tx_hash, ttl=1, polling_interval=1):
-        """
-        Wait for a transaction to be mined for an account
-        this listen to pending transactions
-        """
-        cur_height = self.cli.get_current_key_block_height()
-        max_height = cur_height + ttl
-        tx_found = False
-        # check the transaction by hash
-        while not tx_found and cur_height <= max_height:
-            try:
-                tx = self.cli.get_transaction_by_hash(hash=tx_hash)
-                if tx.block_height > 0:
-                    tx_found = True
-                    break
-                cur_height = self.cli.get_current_key_block_height()
-                time.sleep(polling_interval)
-            except OpenAPIClientException as e:
-                # transaction will not be found
-                break
-        return tx_found
-
     def dispatch_message(self, message):
         subscription_id = (message['origin'], message['action'])
         callbacks = self._listeners[subscription_id]
@@ -168,13 +125,15 @@ class EpochClient:
         self.update_top_block()
         self._connection.send(message)
 
-    def spend(self, keypair, recipient_pubkey, amount, payload="", fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
+    def spend(self, keypair, recipient_pubkey, amount, payload="", fee=config.DEFAULT_FEE, tx_ttl=config.DEFAULT_TX_TTL):
         """create and execute a spend transaction"""
-        txb = TxBuilder(self.cli, keypair)
+        txb = transactions.TxBuilder(self.cli, keypair)
         # create spend_tx
         tx, sg, tx_hash = txb.tx_spend(recipient_pubkey, amount, payload, fee, tx_ttl)
         # post the transaction to the chain
         txb.post_transaction(tx, tx_hash)
+        if self.blocking_mode:
+            txb.wait_tx(tx_hash)
         return tx, sg, tx_hash
 
     def send_and_receive(self, message):
@@ -224,6 +183,13 @@ class EpochClient:
 
     def listen(self):
         self.listen_until(lambda: False)
+
+    # support nameing
+    def AEName(self, domain):
+        return aens.AEName(domain, client=self)
+
+    def Contract(self, source_code, bytecode=None, address=None, abi=contract.Contract.SOPHIA):
+        return contract.Contract(source_code, client=self, bytecode=bytecode, address=address, abi=abi)
 
 
 class EpochSubscription():

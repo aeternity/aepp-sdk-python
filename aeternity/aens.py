@@ -1,11 +1,8 @@
-from aeternity.exceptions import NameNotAvailable, TooEarlyClaim, MissingPreclaim,  ClaimFailed
-from aeternity.oracle import Oracle
-from aeternity.epoch import EpochClient
+from aeternity.exceptions import NameNotAvailable, MissingPreclaim, NameUpdateError
 from aeternity.openapi import OpenAPIClientException
 from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE, NAME_MAX_TLL, NAME_CLIENT_TTL
-from aeternity import hashing
+from aeternity import hashing, utils, oracle, epoch
 from aeternity.transactions import TxBuilder
-from aeternity import utils
 
 
 class NameStatus:
@@ -22,7 +19,7 @@ class AEName:
 
     def __init__(self, domain, client=None):
         if client is None:
-            client = EpochClient()
+            client = epoch.EpochClient()
         if not utils.is_valid_aens_name(domain):
             raise ValueError("Invalid domain ", domain)
 
@@ -117,27 +114,27 @@ class AEName:
         :param name_ttl: the ttl of the name (in blocks)
         :param target: the public key to associate the name to (pointers)
         """
+        # set the blocking to true
+        blocking_orig = self.client.blocking_mode
+        self.client.blocking_mode = True
+        #
         if not self.is_available():
             raise NameNotAvailable(self.domain)
         hashes = {}
         # run preclaim
         h = self.preclaim(account, fee=preclaim_fee, tx_ttl=tx_ttl)
         hashes['preclaim_tx'] = h
-        if not self.client.wait_tx(h):
-            raise ClaimFailed(f"Preclaim transaction {h} was not included in the chain")
         # run claim
-        h = self.claim_blocking(account, fee=claim_fee, tx_ttl=tx_ttl)
-        if not self.client.wait_tx(h):
-            raise ClaimFailed(f"Claim transaction {h} was not included in the chain")
+        h = self.claim(account, fee=claim_fee, tx_ttl=tx_ttl)
         hashes['claim_tx'] = h
         # target is the same of account is not specified
         if target is None:
             target = account.get_address()
         # run update
         h = self.update(account, target, fee=update_fee, name_ttl=name_ttl, client_ttl=name_ttl)
-        if not self.client.wait_tx(h):
-            raise ClaimFailed(f"Update transaction {h} was not included in the chain")
         hashes['update_tx'] = h
+        # restore blocking value
+        self.client.blocking_mode = blocking_orig
         return hashes
 
     def preclaim(self, account, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
@@ -154,32 +151,16 @@ class AEName:
         tx, sg, tx_hash = txb.tx_name_preclaim(commitment_hash, fee, tx_ttl)
         # post the transaction to the chain
         txb.post_transaction(tx, tx_hash)
+        if self.client.blocking_mode:
+            txb.wait_tx(tx_hash)
         # update local status
         self.status = AEName.Status.PRECLAIMED
         self.preclaim_tx_hash = tx_hash
         return tx_hash
 
-    def claim_blocking(self, account, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
-        try:
-            return self.claim(account, fee=fee, tx_ttl=tx_ttl)
-        except TooEarlyClaim:
-            self.client.wait_for_next_block()
-            return self.claim(account, fee=fee, tx_ttl=tx_ttl)
-
     def claim(self, account, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
         if self.preclaimed_block_height is None:
             raise MissingPreclaim('You must call preclaim before claiming a name')
-
-        # current_block_height = self.client.get_current_key_block_height()
-        if not self.client.wait_tx(self.preclaim_tx_hash, ttl=tx_ttl):
-            raise ClaimFailed(f"Preclaim transaction {self.preclaim_tx_hash} was not found")
-
-        # if self.preclaimed_block_height >= current_block_height:
-        #     raise TooEarlyClaim(
-        #         'You must wait for one block to call claim.'
-        #         'Use `claim_blocking` if you have a lot of time on your hands'
-        #     )
-
         # name encoded TODO: shall this goes into transactions?
         name = AEName._encode_name(self.domain)
         # get the transaction builder
@@ -188,6 +169,9 @@ class AEName:
         tx, sg, tx_hash = txb.tx_name_claim(name, self.preclaim_salt, fee, tx_ttl)
         # post the transaction to the chain
         txb.post_transaction(tx, tx_hash)
+        # ensure tx
+        if self.client.blocking_mode:
+            txb.wait_tx(tx_hash)
         # update status
         self.status = AEName.Status.CLAIMED
         return tx_hash
@@ -199,9 +183,9 @@ class AEName:
                tx_ttl=DEFAULT_TX_TTL):
 
         if self.status != NameStatus.CLAIMED:
-            raise 'Must be claimed to update pointer'
+            raise NameUpdateError('Must be claimed to update pointer')
 
-        if isinstance(target, Oracle):
+        if isinstance(target, oracle.Oracle):
             if target.oracle_id is None:
                 raise ValueError('You must register the oracle before using it as target')
             target = target.oracle_id
@@ -214,6 +198,9 @@ class AEName:
         tx, sg, tx_hash = txb.tx_name_update(name_id, pointers, name_ttl, client_ttl, fee, tx_ttl)
         # post the transaction to the chain
         txb.post_transaction(tx, tx_hash)
+        # ensure tx
+        if self.client.blocking_mode:
+            txb.wait_tx(tx_hash)
         return tx_hash
 
     def transfer_ownership(self, account, receipient_pubkey,
@@ -235,6 +222,9 @@ class AEName:
         txb.post_transaction(tx, tx_hash)
         # update local status
         self.status = NameStatus.TRANSFERRED
+        # ensure tx
+        if self.client.blocking_mode:
+            txb.wait_tx(tx_hash)
         return tx_hash
 
     def revoke(self, account, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
@@ -250,5 +240,8 @@ class AEName:
         tx, sg, tx_hash = txb.tx_name_revoke(name_id, fee, tx_ttl)
         # post the transaction to the chain
         txb.post_transaction(tx, tx_hash)
+        # ensure tx
+        if self.client.blocking_mode:
+            txb.wait_tx(tx_hash)
         self.status = NameStatus.REVOKED
         return tx_hash

@@ -28,6 +28,7 @@ CTX_VERBOSE = 'VERBOSE'
 CTX_QUIET = 'QUIET'
 CTX_AET_DOMAIN = 'AET_NAME'
 CTX_FORCE_COMPATIBILITY = 'CTX_FORCE_COMPATIBILITY'
+CTX_BLOCKING_MODE = 'CTX_BLOCKING_MODE'
 
 
 def _epoch_cli():
@@ -48,7 +49,7 @@ def _epoch_cli():
         exit(1)
 
     # load the epoch client
-    return EpochClient()
+    return EpochClient(blocking_mode=ctx.obj.get(CTX_BLOCKING_MODE))
 
 
 def _keypair(password=None):
@@ -181,8 +182,9 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--quiet', '-q', default=False, is_flag=True, help='Print only results')
 @click.option('--verbose', '-v', is_flag=True, default=False, help='Print verbose data')
 @click.option('--force', '-f', is_flag=True, default=False, help='Ignore epoch version compatibility check')
+@click.option('--wait', is_flag=True, default=False, help='Wait for a transaction to be included in the chain before returning')
 @click.version_option(version=__version__)
-def cli(ctx, url, url_internal, url_websocket, quiet, verbose, force):
+def cli(ctx, url, url_internal, url_websocket, quiet, verbose, force, wait):
     """
     Welcome to the aecli client.
 
@@ -195,6 +197,7 @@ def cli(ctx, url, url_internal, url_websocket, quiet, verbose, force):
     ctx.obj[CTX_QUIET] = quiet
     ctx.obj[CTX_VERBOSE] = verbose
     ctx.obj[CTX_FORCE_COMPATIBILITY] = force
+    ctx.obj[CTX_BLOCKING_MODE] = wait
 
 
 @cli.command('config', help="Print the client configuration")
@@ -334,8 +337,8 @@ def name_register(ctx, name_ttl, ttl):
         # retrieve the domain from the context
         domain = ctx.obj.get(CTX_AET_DOMAIN)
         # retrieve the keypair
-        kp, _ = _keypair()
-        name = AEName(domain, client=_epoch_cli())
+        kp, _ = _account()
+        name = _epoch_cli().AEName(domain)
         name.update_status()
         if name.status != AEName.Status.AVAILABLE:
             print("Domain not available")
@@ -360,8 +363,8 @@ def name_update(ctx, address, name_ttl, ttl):
     # retrieve the domain from the context
     domain = ctx.obj.get(CTX_AET_DOMAIN)
     # retrieve the keypair
-    kp, _ = _keypair()
-    name = AEName(domain)
+    kp, _ = _account()
+    name = _epoch_cli().AEName(domain)
     name.update_status()
     if name.status != AEName.Status.CLAIMED:
         print(f"Domain is {name.status} and cannot be transferred")
@@ -378,8 +381,8 @@ def name_revoke(ctx):
     # retrieve the domain from the context
     domain = ctx.obj.get(CTX_AET_DOMAIN)
     # retrieve the keypair
-    kp, _ = _keypair()
-    name = AEName(domain)
+    kp, _ = _account()
+    name = _epoch_cli().AEName(domain)
     name.update_status()
     if name.status == AEName.Status.AVAILABLE:
         print("Domain is available, nothing to revoke")
@@ -400,8 +403,8 @@ def name_transfer(ctx, address):
     # retrieve the domain from the context
     domain = ctx.obj.get(CTX_AET_DOMAIN)
     # retrieve the keypair
-    kp, _ = _keypair()
-    name = AEName(domain)
+    kp, _ = _account()
+    name = _epoch_cli().AEName(domain)
     name.update_status()
     if name.status != AEName.Status.CLAIMED:
         print(f"Domain is {name.status} and cannot be transferred")
@@ -456,7 +459,8 @@ def contract_compile(contract_file):
     try:
         with open(contract_file) as fp:
             code = fp.read()
-            contract = Contract(Contract.SOPHIA, client=_epoch_cli())
+
+            contract = _epoch_cli().Contract(Contract.SOPHIA)
             result = contract.compile(code)
             _pp([
                 ("bytecode", result)
@@ -487,8 +491,8 @@ def contract_deploy(contract_file, gas):
     try:
         with open(contract_file) as fp:
             code = fp.read()
-            contract = Contract(code, client=_epoch_cli())
-            kp, _ = _keypair()
+            contract = _epoch_cli().Contract(code)
+            kp, _ = _account()
             tx = contract.tx_create(kp, gas=gas)
 
             # save the contract data
@@ -527,8 +531,8 @@ def contract_call(ctx, deploy_descriptor, function, params, return_type):
             bytecode = contract.get('bytecode')
             address = contract.get('address')
 
-            kp, _ = _keypair()
-            contract = Contract(source, bytecode=bytecode, address=address, client=_epoch_cli())
+            kp, _ = _account()
+            contract = _epoch_cli().Contract(source, bytecode=bytecode, address=address, client=_epoch_cli())
             result = contract.tx_call(kp, function, params, gas=40000000)
             _pp([
                 ('Contract address', contract.address),

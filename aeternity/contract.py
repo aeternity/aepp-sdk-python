@@ -1,8 +1,7 @@
-from aeternity.epoch import EpochClient
 from aeternity.aevm import pretty_bytecode
 from aeternity.openapi import OpenAPIClientException
 from aeternity.transactions import TxBuilder
-from aeternity import utils
+from aeternity import utils, epoch
 from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE
 from aeternity.config import CONTRACT_DEFAULT_GAS, CONTRACT_DEFAULT_GAS_PRICE, CONTRACT_DEFAULT_VM_VERSION, CONTRACT_DEFAULT_DEPOSIT
 
@@ -34,7 +33,7 @@ class Contract:
         :param client: the epoch client to use
         """
         if client is None:
-            client = EpochClient()
+            client = epoch.EpochClient()
         self.client = client
         self.abi = abi
         self.source_code = source_code
@@ -62,7 +61,7 @@ class Contract:
             # post the transaction to the chain
             txb.post_transaction(tx, tx_hash)
             # wait for transcation to be mined
-            self.client.wait_for_next_block()
+            txb.wait_tx(tx_hash)
             # unsigend transaciton of the call
             call_obj = self.client.cli.get_transaction_info_by_hash(hash=tx_hash)
             return call_obj
@@ -92,24 +91,13 @@ class Contract:
             tx, sg, tx_hash, contract_id = txb.tx_contract_create(self.bytecode, call_data, amount, deposit, gas, gas_price, vm_version, fee, tx_ttl)
             # post the transaction to the chain
             txb.post_transaction(tx, tx_hash)
+            if self.client.blocking_mode:
+                txb.wait_tx(tx_hash)
             # store the contract address in the instance variabl
             self.address = contract_id
             return tx
         except OpenAPIClientException as e:
             raise ContractError(e)
-
-    def tx_create_wait(self, keypair,
-                       amount=1,
-                       deposit=CONTRACT_DEFAULT_DEPOSIT,
-                       init_state="()",
-                       gas=CONTRACT_DEFAULT_GAS,
-                       gas_price=CONTRACT_DEFAULT_GAS_PRICE,
-                       fee=DEFAULT_FEE,
-                       vm_version=CONTRACT_DEFAULT_VM_VERSION,
-                       tx_ttl=DEFAULT_TX_TTL):
-        tx = self.tx_create(keypair, amount, deposit, init_state, gas, gas_price, fee, vm_version, tx_ttl)
-        self.client.wait_n_blocks(1)
-        return tx
 
     def compile(self, code, options=''):
         """

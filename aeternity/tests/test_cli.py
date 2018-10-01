@@ -18,7 +18,7 @@ aecli_exe = os.path.join(current_folder, '..', '..', 'aecli')
 
 
 def call_aecli(*params):
-    args = [aecli_exe, '-u', NODE_URL, '-i', NODE_URL_INTERNAL] + list(params)
+    args = [aecli_exe, '-u', NODE_URL, '-i', NODE_URL_INTERNAL, '--wait'] + list(params)
     print(" ".join(args))
     output = subprocess.check_output(args).decode('ascii')
     return output.strip()
