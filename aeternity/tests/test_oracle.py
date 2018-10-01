@@ -1,7 +1,7 @@
 import logging
 import pytest
 
-from aeternity.epoch import EpochClient
+from aeternity.tests import EPOCH_CLI
 from aeternity.oracle import Oracle, OracleQuery
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,6 @@ class WeatherQuery(OracleQuery):
 
 @pytest.mark.skip('skip tests for v0.13.0')
 def test_oracle_registration():
-    client = EpochClient()
     weather_oracle = WeatherOracle(
         query_format="{'city': str}",
         response_format="{'temp_c': int}",
@@ -42,14 +41,13 @@ def test_oracle_registration():
         default_query_ttl=2,
         default_response_ttl=2,
     )
-    client.register_oracle(weather_oracle)
-    client.listen_until(weather_oracle.is_ready, timeout=5)
+    EPOCH_CLI.register_oracle(weather_oracle)
+    EPOCH_CLI.listen_until(weather_oracle.is_ready, timeout=5)
     assert weather_oracle.oracle_id is not None
 
 
 @pytest.mark.skip('skip tests for v0.13.0')
 def test_oracle_query_received():
-    client = EpochClient()
     weather_oracle = WeatherOracle(
         query_format="{'city': str}",
         response_format="{'temp_c': int}",
@@ -59,8 +57,8 @@ def test_oracle_query_received():
         default_query_ttl=2,
         default_response_ttl=2,
     )
-    client.register_oracle(weather_oracle)
-    client.listen_until(weather_oracle.is_ready, timeout=5)
+    EPOCH_CLI.register_oracle(weather_oracle)
+    EPOCH_CLI.listen_until(weather_oracle.is_ready, timeout=5)
     weather_query = WeatherQuery(
         oracle_pubkey=weather_oracle.oracle_id,
         query_fee=0,
@@ -68,6 +66,6 @@ def test_oracle_query_received():
         query_ttl=2,
         response_ttl=2,
     )
-    client.mount(weather_query)
+    EPOCH_CLI.mount(weather_query)
     weather_query.query("{'city': 'Berlin'}")
-    client.listen_until(lambda: weather_query.response_received, timeout=5)
+    EPOCH_CLI.listen_until(lambda: weather_query.response_received, timeout=5)

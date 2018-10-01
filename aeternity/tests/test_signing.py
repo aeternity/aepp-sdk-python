@@ -1,26 +1,21 @@
 
-from aeternity.tests import PUBLIC_KEY, PRIVATE_KEY, TEST_FEE, TEST_TTL
-from aeternity.epoch import EpochClient
+from aeternity.tests import TEST_FEE, TEST_TTL, EPOCH_CLI, KEYPAIR
 from aeternity.signing import Account
 from aeternity.utils import is_valid_hash
 from aeternity.transactions import TxBuilder
 
 
 def test_signing_create_transaction():
-    client = EpochClient()
     # generate a new account
     new_account = Account.generate()
     receiver_address = new_account.get_address()
-    # get the test account
-    account = Account.from_public_private_key_strings(PUBLIC_KEY, PRIVATE_KEY)
     # create a spend transaction
-    txb = TxBuilder(client, account)
+    txb = TxBuilder(EPOCH_CLI, KEYPAIR)
     tx, sg, tx_hash = txb.tx_spend(receiver_address, 321, "test test ", TEST_FEE, TEST_TTL)
     # this call will fail if the hashes of the transaction do not match
     txb.post_transaction(tx, tx_hash)
     # make sure this works for very short block times
-    client.wait_for_next_block(1)
-    spend_tx = client.get_transaction_by_hash(hash=tx_hash)
+    spend_tx = EPOCH_CLI.get_transaction_by_hash(hash=tx_hash)
     assert spend_tx.signatures[0] == sg
 
 

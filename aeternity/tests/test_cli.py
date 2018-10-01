@@ -6,8 +6,7 @@ import os
 import tempfile
 from contextlib import contextmanager
 import aeternity
-from aeternity.epoch import EpochClient
-from aeternity.tests import NODE_URL, NODE_URL_INTERNAL, KEYPAIR
+from aeternity.tests import NODE_URL, NODE_URL_INTERNAL, KEYPAIR, EPOCH_CLI
 from aeternity.signing import Account
 from aeternity import utils
 
@@ -134,7 +133,7 @@ def test_cli_spend_invalid_amount():
 
 
 def test_cli_inspect_key_block_by_height():
-    height = EpochClient().get_current_key_block_height()
+    height = EPOCH_CLI.get_current_key_block_height()
     print(height)
     output = call_aecli('--quiet', 'inspect', 'height', str(height))
     lines = output.split('\n')
@@ -143,7 +142,7 @@ def test_cli_inspect_key_block_by_height():
 
 
 def test_cli_inspect_key_block_by_hash():
-    height = EpochClient().get_current_key_block_height()
+    height = EPOCH_CLI.get_current_key_block_height()
     output = call_aecli('--quiet', 'inspect', 'height', str(height))
     lines = output.split('\n')
     # retrieve the block hash
