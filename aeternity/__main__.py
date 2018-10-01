@@ -52,7 +52,7 @@ def _epoch_cli():
     return EpochClient(blocking_mode=ctx.obj.get(CTX_BLOCKING_MODE))
 
 
-def _keypair(password=None):
+def _account(password=None):
     """
     utility function to get the keypair from the click context
     :return: (keypair, keypath)
@@ -64,7 +64,7 @@ def _keypair(password=None):
         exit(1)
     try:
         if password is None:
-            password = click.prompt("Enter the wallet password", default='', hide_input=True)
+            password = click.prompt("Enter the account password", default='', hide_input=True)
         return Account.read_from_private_key(kf, password), os.path.abspath(kf)
     except Exception:
         print("Invalid password")
@@ -220,24 +220,24 @@ def config(ctx):
 #
 
 
-@cli.group(help="Handle wallet operations")
+@cli.group(help="Handle account operations")
 @click.pass_context
 @click.argument('key_path', default='sign_key', envvar='WALLET_SIGN_KEY_PATH')
-def wallet(ctx, key_path):
+def account(ctx, key_path):
     ctx.obj[CTX_KEY_PATH] = key_path
 
 
-@wallet.command('create', help="Create a new wallet")
+@account.command('create', help="Create a new account")
 @click.pass_context
 @click.option('--password', default=None, help="Set a password from the command line [WARN: this method is not secure]")
 @click.option('--force', default=False, is_flag=True, help="Overwrite exising keys without asking")
-def wallet_create(ctx, password, force):
+def account_create(ctx, password, force):
     kp = Account.generate()
     kf = ctx.obj.get(CTX_KEY_PATH)
     if not force and os.path.exists(kf):
         click.confirm(f'Key file {kf} already exists, overwrite?', abort=True)
     if password is None:
-        password = click.prompt("Enter the wallet password", default='', hide_input=True)
+        password = click.prompt("Enter the account password", default='', hide_input=True)
     kp.save_to_file(kf, password)
     _pp([
         ('Wallet address', kp.get_address()),
@@ -245,16 +245,16 @@ def wallet_create(ctx, password, force):
     ], title='Wallet created')
 
 
-@wallet.command('save', help='Save a private keys string to a password protected file wallet')
+@account.command('save', help='Save a private keys string to a password protected file account')
 @click.argument("private_key")
 @click.pass_context
-def wallet_save(ctx, private_key):
+def account_save(ctx, private_key):
     try:
         kp = Account.from_private_key_string(private_key)
         kf = ctx.obj.get(CTX_KEY_PATH)
         if os.path.exists(kf):
             click.confirm(f'Key file {kf} already exists, overwrite?', abort=True)
-        password = click.prompt("Enter the wallet password", default='', hide_input=True)
+        password = click.prompt("Enter the account password", default='', hide_input=True)
         kp.save_to_file(kf, password)
         _pp([
             ('Wallet address', kp.get_address()),
@@ -264,11 +264,11 @@ def wallet_save(ctx, private_key):
         _ppe(e)
 
 
-@wallet.command('address', help="Print the wallet address (public key)")
+@account.command('address', help="Print the account address (public key)")
 @click.option('--password', default=None, help="Read the password from the command line [WARN: this method is not secure]")
 @click.option('--private-key', is_flag=True, help="Print the private key instead of the account address")
-def wallet_address(password, private_key):
-    kp, kf = _keypair(password=password)
+def account_address(password, private_key):
+    kp, kf = _account(password=password)
     if private_key:
         _pp([
             ("Private key", kp.get_private_key()),
@@ -279,10 +279,10 @@ def wallet_address(password, private_key):
     ])
 
 
-@wallet.command('balance', help="Get the balance of a wallet")
+@account.command('balance', help="Get the balance of a account")
 @click.option('--password', default=None, help="Read the password from the command line [WARN: this method is not secure]")
-def wallet_balance(password):
-    kp, _ = _keypair(password=password)
+def account_balance(password):
+    kp, _ = _account(password=password)
 
     try:
         account = _epoch_cli().get_account_by_pubkey(pubkey=kp.get_address())
@@ -293,13 +293,13 @@ def wallet_balance(password):
         _ppe(e)
 
 
-@wallet.command('spend', help="Create a transaction to another wallet")
+@account.command('spend', help="Create a transaction to another account")
 @click.argument('recipient_account', required=True)
 @click.argument('amount', required=True, default=1)
 @click.option('--ttl', default=MAX_TX_TTL, help="Validity of the spend transaction in number of blocks (default forever)")
 @click.option('--password', default=None, help="Read the password from the command line [WARN: this method is not secure]")
-def wallet_spend(recipient_account, amount, ttl, password):
-    kp, _ = _keypair(password=password)
+def account_spend(recipient_account, amount, ttl, password):
+    kp, _ = _account(password=password)
     try:
         _check_prefix(recipient_account, "ak")
         data = _epoch_cli().spend(kp, recipient_account, amount, tx_ttl=ttl)
@@ -321,7 +321,7 @@ def wallet_spend(recipient_account, amount, ttl, password):
 #
 
 
-@wallet.group(help="Handle name lifecycle")
+@account.group(help="Handle name lifecycle")
 @click.argument('domain')
 @click.pass_context
 def name(ctx, domain):
@@ -469,7 +469,7 @@ def contract_compile(contract_file):
         print(e)
 
 
-@wallet.group('contract', help='Deploy and execute contracts on the chain')
+@account.group('contract', help='Deploy and execute contracts on the chain')
 def contract():
     pass
 
@@ -626,7 +626,7 @@ def inspect_name(domain):
 def inspect_deploy(contract_deploy_descriptor):
     """
     Inspect a contract deploy file that has been generated with the command
-    aecli wallet X contract CONTRACT_SOURCE deploy
+    aecli account X contract CONTRACT_SOURCE deploy
     """
     try:
         with open(contract_deploy_descriptor) as fp:

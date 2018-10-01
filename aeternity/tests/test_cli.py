@@ -51,10 +51,10 @@ def test_cli_top():
     assert lines[0].startswith('kh_') or lines[0].startswith('mh_')  # block hash
 
 
-def test_cli_generate_wallet():
+def test_cli_generate_account():
     with tempdir() as tmp_path:
-        wallet_key = os.path.join(tmp_path, 'key')
-        call_aecli('wallet', wallet_key, 'create', '--password', 'secret', '--force')
+        account_key = os.path.join(tmp_path, 'key')
+        call_aecli('account', account_key, 'create', '--password', 'secret', '--force')
         # make sure the folder contains the keys
         files = sorted(os.listdir(tmp_path))
         assert len(files) == 2
@@ -62,25 +62,25 @@ def test_cli_generate_wallet():
         assert files[1] == 'key.pub'
 
 
-def test_cli_generate_wallet_and_wallet_info():
+def test_cli_generate_account_and_account_info():
     with tempdir() as tmp_path:
-        wallet_path = os.path.join(tmp_path, 'key')
-        output = call_aecli('--quiet', 'wallet', wallet_path, 'create', '--password', 'secret')
+        account_path = os.path.join(tmp_path, 'key')
+        output = call_aecli('--quiet', 'account', account_path, 'create', '--password', 'secret')
         gen_address = output.split('\n')[1]
         assert utils.is_valid_hash(gen_address, prefix='ak')
-        read_address = call_aecli('--quiet', 'wallet', wallet_path, 'address', '--password', 'secret')
+        read_address = call_aecli('--quiet', 'account', account_path, 'address', '--password', 'secret')
         assert read_address.startswith('ak_')
         assert read_address == gen_address
 
 
-def test_cli_read_wallet_fail():
+def test_cli_read_account_fail():
 
     with tempdir() as tmp_path:
-        wallet_path = os.path.join(tmp_path, 'key')
-        output = call_aecli('--quiet', 'wallet', wallet_path, 'create', '--password', 'secret')
+        account_path = os.path.join(tmp_path, 'key')
+        output = call_aecli('--quiet', 'account', account_path, 'create', '--password', 'secret')
         gen_address = output.split('\n')[1]
         try:
-            read_address = call_aecli('--quiet', 'wallet', wallet_path, 'address', '--password', 'WRONGPASS')
+            read_address = call_aecli('--quiet', 'account', account_path, 'address', '--password', 'WRONGPASS')
             assert gen_address != read_address
         except CalledProcessError:
             # this is fine because invalid passwords exists the command with retcode 1
@@ -90,46 +90,43 @@ def test_cli_read_wallet_fail():
 def test_cli_spend():
     with tempdir() as tmp_path:
         sender_path = os.path.join(tmp_path, 'sender')
-        call_aecli('wallet', sender_path, 'create',  '--password', 'whatever')
-        sender_address = call_aecli('-q', 'wallet', sender_path, 'address',  '--password', 'whatever')
+        call_aecli('account', sender_path, 'create',  '--password', 'whatever')
+        sender_address = call_aecli('-q', 'account', sender_path, 'address',  '--password', 'whatever')
         # fill the account from genesys
-        client = EpochClient()
-        _, _, tx_hash = client.spend(KEYPAIR, sender_address, 100)
-        client.wait_tx(tx_hash)
+        _, _, tx_hash = EPOCH_CLI.spend(KEYPAIR, sender_address, 100)
         # generate a new address
         recipient_address = Account.generate().get_address()
         # call the cli
-        call_aecli('wallet', sender_path, 'spend', '--password', 'whatever', recipient_address, "90")
-        client.wait_for_next_block()
+        call_aecli('account', sender_path, 'spend', '--password', 'whatever', recipient_address, "90")
         # test that the recipient account has the requested amount
         print(recipient_address)
-        recipient_account = client.get_account_by_pubkey(pubkey=recipient_address)
+        recipient_account = EPOCH_CLI.get_account_by_pubkey(pubkey=recipient_address)
         assert recipient_account.balance == 90
 
 
 @pytest.mark.skip('We currently cannot verify if the transaction failed because of a wrong password or some other error '
                   '(e.g. no balance)')
 def test_cli_spend_wrong_password():
-    with tempdir() as wallet_path:
-        output = call_aecli('generate', 'wallet', wallet_path, '--password', 'whatever')
+    with tempdir() as account_path:
+        output = call_aecli('generate', 'account', account_path, '--password', 'whatever')
         receipient_address = output.split('\n')[1][len('Address: '):]
-    with tempdir() as wallet_path:
-        call_aecli('generate', 'wallet', wallet_path, '--password', 'secret')
-        output = call_aecli('spend', '1', receipient_address, wallet_path, '--password', 'WRONGPASS')
+    with tempdir() as account_path:
+        call_aecli('generate', 'account', account_path, '--password', 'secret')
+        output = call_aecli('spend', '1', receipient_address, account_path, '--password', 'WRONGPASS')
         assert 'Transaction sent' in output
 
 
 def test_cli_spend_invalid_amount():
     # try to send a negative amount
     with tempdir() as tmp_path:
-        wallet_path = os.path.join(tmp_path, 'key')
-        output = call_aecli('--quiet', 'wallet', wallet_path, 'create', '--password', 'whatever')
+        account_path = os.path.join(tmp_path, 'key')
+        output = call_aecli('--quiet', 'account', account_path, 'create', '--password', 'whatever')
         receipient_address = output.split('\n')[1]
     with tempdir() as tmp_path:
-        wallet_path = os.path.join(tmp_path, 'key')
-        output = call_aecli('--quiet', 'wallet', wallet_path, 'create', '--password', 'secret')
+        account_path = os.path.join(tmp_path, 'key')
+        output = call_aecli('--quiet', 'account', account_path, 'create', '--password', 'secret')
         with pytest.raises(subprocess.CalledProcessError):
-            output = call_aecli('wallet', wallet_path, 'spend', receipient_address, '-1', '--password', 'secret')
+            output = call_aecli('account', account_path, 'spend', receipient_address, '-1', '--password', 'secret')
 
 
 def test_cli_inspect_key_block_by_height():
@@ -162,11 +159,11 @@ def test_cli_inspect_name():
 
 @pytest.mark.skip('NOT IMPLEMENTED YET')
 def test_cli_inspect_block_by_invalid_arg():
-    # TODO
+    # TODO: is this test meaningfull?
     raise NotImplementedError()
 
 
 @pytest.mark.skip('NOT IMPLEMENTED YET')
 def test_cli_inspect_transaction_by_hash():
-    # TODO
+    # TODO: create a spend transation and implement the thing
     raise NotImplementedError()
