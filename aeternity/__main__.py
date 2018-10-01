@@ -8,7 +8,7 @@ import sys
 from aeternity import __version__
 
 from aeternity.epoch import EpochClient
-from aeternity.config import Config, MAX_TX_TTL, ConfigException
+from aeternity.config import Config, MAX_TX_TTL, ConfigException, UnsupportedEpochVersion
 # from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
 from aeternity.signing import Account
 from aeternity.contract import Contract
@@ -27,6 +27,7 @@ CTX_KEY_PATH = 'KEY_PATH'
 CTX_VERBOSE = 'VERBOSE'
 CTX_QUIET = 'QUIET'
 CTX_AET_DOMAIN = 'AET_NAME'
+CTX_FORCE_COMPATIBILITY = 'CTX_FORCE_COMPATIBILITY'
 
 
 def _epoch_cli():
@@ -36,11 +37,16 @@ def _epoch_cli():
         Config.set_defaults(Config(
             external_url=ctx.obj.get(CTX_EPOCH_URL),
             internal_url=ctx.obj.get(CTX_EPOCH_URL_INTERNAL),
-            websocket_url=ctx.obj.get(CTX_EPOCH_URL_WEBSOCKET)
+            websocket_url=ctx.obj.get(CTX_EPOCH_URL_WEBSOCKET),
+            force_comaptibility=ctx.obj.get(CTX_FORCE_COMPATIBILITY)
         ))
     except ConfigException as e:
         print("Configuration error: ", e)
         exit(1)
+    except UnsupportedEpochVersion as e:
+        print(e)
+        exit(1)
+
     # load the epoch client
     return EpochClient()
 
@@ -174,8 +180,9 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--url-websocket', '-w', default='ws://sdk-testnet.aepps.com', envvar='EPOCH_URL_WEBSOCKET', metavar='URL')
 @click.option('--quiet', '-q', default=False, is_flag=True, help='Print only results')
 @click.option('--verbose', '-v', is_flag=True, default=False, help='Print verbose data')
+@click.option('--force', '-f', is_flag=True, default=False, help='Ignore epoch version compatibility check')
 @click.version_option(version=__version__)
-def cli(ctx, url, url_internal, url_websocket, quiet, verbose):
+def cli(ctx, url, url_internal, url_websocket, quiet, verbose, force):
     """
     Welcome to the aecli client.
 
@@ -187,6 +194,7 @@ def cli(ctx, url, url_internal, url_websocket, quiet, verbose):
     ctx.obj[CTX_EPOCH_URL_WEBSOCKET] = url_websocket
     ctx.obj[CTX_QUIET] = quiet
     ctx.obj[CTX_VERBOSE] = verbose
+    ctx.obj[CTX_FORCE_COMPATIBILITY] = force
 
 
 @cli.command('config', help="Print the client configuration")
