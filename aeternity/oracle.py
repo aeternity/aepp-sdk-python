@@ -1,7 +1,6 @@
 import json
 import logging
 
-from aeternity.epoch import EpochSubscription
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +10,7 @@ class NoOracleResponse(Exception):
     pass
 
 
-class OracleQuery(EpochSubscription):
+class OracleQuery():
     message_listeners = [
         ('oracle', 'query', 'handle_oracle_query_sent'),
         ('chain', 'new_oracle_response', 'handle_oracle_response'),
@@ -117,7 +116,7 @@ class OracleState:
     READY = 'READY'
 
 
-class Oracle(EpochSubscription):
+class Oracle():
     """
     This the base class to override when creating an Oracle
 

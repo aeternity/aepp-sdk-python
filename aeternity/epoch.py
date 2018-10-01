@@ -192,7 +192,7 @@ class EpochClient:
         return contract.Contract(source_code, client=self, bytecode=bytecode, address=address, abi=abi)
 
 
-class EpochSubscription():
+class EpochSubscription:
     message_listeners = None
 
     # Message listeners are a list of tuples to define how the class should
