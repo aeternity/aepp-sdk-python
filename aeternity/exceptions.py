@@ -31,7 +31,7 @@ class NameNotAvailable(AENSException):
     pass
 
 
-class UpdateError(Exception):
+class NameUpdateError(Exception):
     pass
 
 
