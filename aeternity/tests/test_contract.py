@@ -1,8 +1,8 @@
 import pytest
 from pytest import raises
 
-from aeternity.contract import Contract, ContractError
-from aeternity.tests import KEYPAIR
+from aeternity.contract import ContractError, Contract
+from aeternity.tests import KEYPAIR, EPOCH_CLI
 
 aer_identity_contract = '''
 contract Identity =
@@ -22,7 +22,7 @@ contract Identity =
 
 
 def test_sophia_contract_tx_create():
-    contract = Contract(aer_identity_contract)
+    contract = EPOCH_CLI.Contract(aer_identity_contract)
     contract.tx_create(KEYPAIR, gas=10000)
     assert contract.address is not None
     assert len(contract.address) > 0
@@ -30,12 +30,12 @@ def test_sophia_contract_tx_create():
 
 
 def test_sophia_contract_tx_call():
-    contract = Contract(aer_identity_contract)
-    tx = contract.tx_create_wait(KEYPAIR, gas=10000)
+    contract = EPOCH_CLI.Contract(aer_identity_contract)
+    tx = contract.tx_create(KEYPAIR, gas=1000)
     print("contract: ", contract.address)
     print("tx contract: ", tx)
 
-    result = contract.tx_call(KEYPAIR, 'main', '42')
+    result = contract.tx_call(KEYPAIR, 'main', '42', gas=1000)
     assert result is not None
     assert result.return_type == 'ok'
     assert result.return_value.lower() == f'0x{hex(42)[2:].zfill(64).lower()}'
@@ -49,20 +49,20 @@ def test_sophia_contract_tx_call():
 
 
 def test_sophia_contract_compile():
-    contract = Contract(aer_identity_contract)
+    contract = EPOCH_CLI.Contract(aer_identity_contract)
     assert contract is not None
     assert contract.bytecode.startswith('0x')
 
 
 def test_sophia_contract_call():
-    contract = Contract(aer_identity_contract)
+    contract = EPOCH_CLI.Contract(aer_identity_contract)
     result = contract.call('main', '1')
     assert result is not None
     assert result.out
 
 
 def test_sophia_encode_calldata():
-    contract = Contract(aer_identity_contract)
+    contract = EPOCH_CLI.Contract(aer_identity_contract)
     result = contract.encode_calldata('main', '1')
     assert result is not None
     assert result.startswith('0x')
@@ -70,20 +70,20 @@ def test_sophia_encode_calldata():
 
 def test_sophia_broken_contract_compile():
     with raises(ContractError):
-        contract = Contract(broken_contract)
+        contract = EPOCH_CLI.Contract(broken_contract)
         print(contract.source_code)
 
 
 def test_sophia_broken_contract_call():
     with raises(ContractError):
-        contract = Contract(broken_contract)
+        contract = EPOCH_CLI.Contract(broken_contract)
         result = contract.call('IdentityBroken.main', '1')
         print(result)
 
 
 def test_sophia_broken_encode_calldata():
     with raises(ContractError):
-        contract = Contract(broken_contract)
+        contract = EPOCH_CLI.Contract(broken_contract)
         result = contract.encode_calldata('IdentityBroken.main', '1')
         print(result)
 
@@ -93,7 +93,7 @@ def test_sophia_broken_encode_calldata():
 
 
 def test_evm_contract_compile():
-    contract = Contract(aer_identity_contract, abi=Contract.EVM)
+    contract = EPOCH_CLI.Contract(aer_identity_contract, abi=Contract.EVM)
     print(contract)
     assert contract.bytecode is not None
     assert contract.bytecode.startswith('0x')
@@ -103,14 +103,14 @@ def test_evm_contract_compile():
 
 @pytest.mark.skip('This call fails with an out of gas exception')
 def test_evm_contract_call():
-    contract = Contract(aer_identity_contract, abi=Contract.EVM)
+    contract = EPOCH_CLI.Contract(aer_identity_contract, abi=Contract.EVM)
     result = contract.call('main', '1')
     assert result is not None
     assert result.out
 
 
 def test_evm_encode_calldata():
-    contract = Contract(aer_identity_contract, abi=Contract.EVM)
+    contract = EPOCH_CLI.Contract(aer_identity_contract, abi=Contract.EVM)
     result = contract.encode_calldata('main', '1')
     assert result is not None
     assert result == 'main1'
@@ -118,20 +118,20 @@ def test_evm_encode_calldata():
 
 def test_evm_broken_contract_compile():
     with raises(ContractError):
-        contract = Contract(broken_contract, abi=Contract.EVM)
+        contract = EPOCH_CLI.Contract(broken_contract, abi=Contract.EVM)
         print(contract.source_code)
 
 
 def test_evm_broken_contract_call():
     with raises(ContractError):
-        contract = Contract(broken_contract, abi=Contract.EVM)
+        contract = EPOCH_CLI.Contract(broken_contract, abi=Contract.EVM)
         result = contract.call('IdentityBroken.main', '1')
         print(result)
 
 
 def test_evm_broken_encode_calldata():
     with raises(ContractError):
-        contract = Contract(broken_contract, abi=Contract.EVM)
+        contract = EPOCH_CLI.Contract(broken_contract, abi=Contract.EVM)
         # with raises(AException):
         result = contract.encode_calldata('IdentityBroken.main', '1')
         print(result)

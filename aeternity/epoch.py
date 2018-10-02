@@ -5,11 +5,8 @@ import logging
 import time
 import websocket
 
-from aeternity.config import Config
-from aeternity.exceptions import NameNotAvailable, InsufficientFundsException, TransactionNotFoundException, TransactionHashMismatch
-from aeternity.signing import KeyPair
-from aeternity.openapi import OpenAPICli
-from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE
+from aeternity.exceptions import NameNotAvailable, InsufficientFundsException, TransactionNotFoundException
+from aeternity import config, aens, openapi, transactions, contract
 
 
 logger = logging.getLogger(__name__)
@@ -53,10 +50,10 @@ class EpochClient:
         'Transaction not found': TransactionNotFoundException,
     }
 
-    def __init__(self, *, configs=None, retry=True):
+    def __init__(self, *, configs=None, blocking_mode=False, retry=True, debug=False):
         if configs is None:
-            configs = Config.get_defaults()
-        if isinstance(configs, Config):
+            configs = config.Config.get_defaults()
+        if isinstance(configs, config.Config):
             configs = [configs]
         self._configs = configs
         self._active_config_idx = 0
@@ -64,9 +61,10 @@ class EpochClient:
         self._connection = self._make_connection()
         self._top_block = None
         self._retry = retry
-
         # instantiate the request client
-        self.cli = OpenAPICli(configs[0].api_url, configs[0].api_url_internal)
+        self.cli = openapi.OpenAPICli(configs[0].api_url, configs[0].api_url_internal, debug=debug)
+        # shall the client work in blocking mode
+        self.blocking_mode = blocking_mode
 
     # enable composition
     def __getattr__(self, attr):
@@ -104,25 +102,6 @@ class EpochClient:
             block = self.cli.get_micro_block_header_by_hash(hash=hash)
         return block
 
-    def wait_n_blocks(self, block_count, polling_interval=1):
-        self.update_top_block()
-        current_block = self.get_top_block()
-        target_block = current_block.height + block_count
-        if polling_interval is None:
-            polling_interval = self.next_block_poll_interval_sec
-        while True:
-            time.sleep(polling_interval)
-            self.update_top_block()
-            if self._top_block.height >= target_block:
-                break
-
-    def wait_for_next_block(self, polling_interval=1):
-        """
-        blocking method to wait for the next block to be mined
-        shortcut for self.wait_n_blocks(1, polling_interval=polling_interval)
-        """
-        self.wait_n_blocks(1, polling_interval=polling_interval)
-
     def dispatch_message(self, message):
         subscription_id = (message['origin'], message['action'])
         callbacks = self._listeners[subscription_id]
@@ -146,23 +125,16 @@ class EpochClient:
         self.update_top_block()
         self._connection.send(message)
 
-    def spend(self, keypair, recipient_pubkey, amount, tx_ttl=DEFAULT_TX_TTL):
+    def spend(self, keypair, recipient_pubkey, amount, payload="", fee=config.DEFAULT_FEE, tx_ttl=config.DEFAULT_TX_TTL):
         """create and execute a spend transaction"""
-        transaction = self.create_spend_transaction(keypair.get_address(), recipient_pubkey, amount, tx_ttl=tx_ttl)
-        tx = self.post_transaction(keypair, transaction)
-        return tx
-
-    def post_transaction(self, keypair, transaction):
-        """
-        post a transaction to the chain
-        :return: the signed_transaction
-        """
-        signed_transaction, b58signature = keypair.sign_transaction(transaction)
-        tx_hash = KeyPair.compute_tx_hash(signed_transaction)
-        signed_transaction_reply = self.send_signed_transaction(signed_transaction)
-        if signed_transaction_reply.tx_hash != tx_hash:
-            raise TransactionHashMismatch(f"Transaction hash doesn't match, expected {tx_hash} got {signed_transaction_reply.tx_hash}")
-        return signed_transaction_reply
+        txb = transactions.TxBuilder(self.cli, keypair)
+        # create spend_tx
+        tx, sg, tx_hash = txb.tx_spend(recipient_pubkey, amount, payload, fee, tx_ttl)
+        # post the transaction to the chain
+        txb.post_transaction(tx, tx_hash)
+        if self.blocking_mode:
+            txb.wait_tx(tx_hash)
+        return tx, sg, tx_hash
 
     def send_and_receive(self, message):
         """
@@ -212,52 +184,15 @@ class EpochClient:
     def listen(self):
         self.listen_until(lambda: False)
 
-    def compute_absolute_ttl(self, ttl):
-        """compute the absolute ttl by adding the ttl to the current height of the chain"""
-        assert ttl > 0
-        height = self.get_current_key_block_height()
-        return height + ttl
+    # support nameing
+    def AEName(self, domain):
+        return aens.AEName(domain, client=self)
 
-    #
-    # API functions
-    #
-
-    @classmethod
-    def _get_burn_key(cls):
-        keypair = KeyPair.generate()
-        keypair.signing_key
-
-    def create_spend_transaction(self, sender_id, recipient_id, amount, payload="", tx_ttl=DEFAULT_TX_TTL, fee=DEFAULT_FEE, nonce=0):
-        """
-        create a spend transaction
-        :param sender: the public key of the sender
-        :param recipient: the public key of the recipient
-        :param amount: the amount to send
-        :param fee: the fee for the transaction
-        """
-        # compute the absolute ttl
-        ttl = self.compute_absolute_ttl(tx_ttl)
-        # send the update transaction
-        body = {
-            "recipient_id": recipient_id,
-            "amount": amount,
-            "fee":  fee,
-            "sender_id": sender_id,
-            "payload": payload,
-            "ttl": ttl,
-        }
-        if nonce > 0:
-            body['nonce'] = nonce
-        return self.cli.post_spend(body=body)
-
-    def send_signed_transaction(self, encoded_signed_transaction):
-        """
-        Utility method to post a transaction to the chain
-        """
-        return self.cli.post_transaction(body={"tx": encoded_signed_transaction})
+    def Contract(self, source_code, bytecode=None, address=None, abi=contract.Contract.SOPHIA):
+        return contract.Contract(source_code, client=self, bytecode=bytecode, address=address, abi=abi)
 
 
-class EpochSubscription():
+class EpochSubscription:
     message_listeners = None
 
     # Message listeners are a list of tuples to define how the class should
@@ -271,8 +206,8 @@ class EpochSubscription():
 
     def __init__(self):
         super().__init__()
-        assert self.message_listeners is not None, \
-            'Classes inheriting EpochSubscription must have message_listeners'
+        if self.message_listeners is not None:
+            raise ValueError('Classes inheriting EpochSubscription must have message_listeners')
 
     def on_mounted(self, client):
         """

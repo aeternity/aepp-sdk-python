@@ -1,29 +1,22 @@
 
-from aeternity.tests import PUBLIC_KEY, PRIVATE_KEY
-from aeternity.epoch import EpochClient
-from aeternity.signing import KeyPair, is_valid_hash
+from aeternity.tests import TEST_FEE, TEST_TTL, EPOCH_CLI, KEYPAIR
+from aeternity.signing import Account
+from aeternity.utils import is_valid_hash
+from aeternity.transactions import TxBuilder
 
 
 def test_signing_create_transaction():
-    client = EpochClient()
-    # generate a new keypair
-    new_keypair = KeyPair.generate()
-    receiver_address = new_keypair.get_address()
-    # get the test keypair
-    keypair = KeyPair.from_public_private_key_strings(PUBLIC_KEY, PRIVATE_KEY)
+    # generate a new account
+    new_account = Account.generate()
+    receiver_address = new_account.get_address()
     # create a spend transaction
-    transaction = client.create_spend_transaction(PUBLIC_KEY, receiver_address, 321, payload="test payload")
-    signed_transaction, b58signature = keypair.sign_transaction(transaction)
-    # post the transaction
-    result = client.send_signed_transaction(signed_transaction)
-    assert result is not None
-    assert result.tx_hash is not None
-    print(result)
-
+    txb = TxBuilder(EPOCH_CLI, KEYPAIR)
+    tx, sg, tx_hash = txb.tx_spend(receiver_address, 321, "test test ", TEST_FEE, TEST_TTL)
+    # this call will fail if the hashes of the transaction do not match
+    txb.post_transaction(tx, tx_hash)
     # make sure this works for very short block times
-    client.wait_for_next_block(5)
-    spend_tx = client.get_transaction_by_hash(hash=result.tx_hash)
-    assert spend_tx.signatures[0] == b58signature
+    spend_tx = EPOCH_CLI.get_transaction_by_hash(hash=tx_hash)
+    assert spend_tx.signatures[0] == sg
 
 
 def test_signing_is_valid_hash():

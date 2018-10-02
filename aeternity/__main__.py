@@ -8,9 +8,9 @@ import sys
 from aeternity import __version__
 
 from aeternity.epoch import EpochClient
-from aeternity.config import Config, MAX_TX_TTL, ConfigException
+from aeternity.config import Config, MAX_TX_TTL, ConfigException, UnsupportedEpochVersion
 # from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
-from aeternity.signing import KeyPair
+from aeternity.signing import Account
 from aeternity.contract import Contract
 from aeternity.aens import AEName
 
@@ -27,6 +27,8 @@ CTX_KEY_PATH = 'KEY_PATH'
 CTX_VERBOSE = 'VERBOSE'
 CTX_QUIET = 'QUIET'
 CTX_AET_DOMAIN = 'AET_NAME'
+CTX_FORCE_COMPATIBILITY = 'CTX_FORCE_COMPATIBILITY'
+CTX_BLOCKING_MODE = 'CTX_BLOCKING_MODE'
 
 
 def _epoch_cli():
@@ -36,16 +38,21 @@ def _epoch_cli():
         Config.set_defaults(Config(
             external_url=ctx.obj.get(CTX_EPOCH_URL),
             internal_url=ctx.obj.get(CTX_EPOCH_URL_INTERNAL),
-            websocket_url=ctx.obj.get(CTX_EPOCH_URL_WEBSOCKET)
+            websocket_url=ctx.obj.get(CTX_EPOCH_URL_WEBSOCKET),
+            force_comaptibility=ctx.obj.get(CTX_FORCE_COMPATIBILITY)
         ))
     except ConfigException as e:
         print("Configuration error: ", e)
         exit(1)
+    except UnsupportedEpochVersion as e:
+        print(e)
+        exit(1)
+
     # load the epoch client
-    return EpochClient()
+    return EpochClient(blocking_mode=ctx.obj.get(CTX_BLOCKING_MODE))
 
 
-def _keypair(password=None):
+def _account(password=None):
     """
     utility function to get the keypair from the click context
     :return: (keypair, keypath)
@@ -57,8 +64,8 @@ def _keypair(password=None):
         exit(1)
     try:
         if password is None:
-            password = click.prompt("Enter the wallet password", default='', hide_input=True)
-        return KeyPair.read_from_private_key(kf, password), os.path.abspath(kf)
+            password = click.prompt("Enter the account password", default='', hide_input=True)
+        return Account.read_from_private_key(kf, password), os.path.abspath(kf)
     except Exception:
         print("Invalid password")
         exit(1)
@@ -174,8 +181,10 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--url-websocket', '-w', default='ws://sdk-testnet.aepps.com', envvar='EPOCH_URL_WEBSOCKET', metavar='URL')
 @click.option('--quiet', '-q', default=False, is_flag=True, help='Print only results')
 @click.option('--verbose', '-v', is_flag=True, default=False, help='Print verbose data')
+@click.option('--force', '-f', is_flag=True, default=False, help='Ignore epoch version compatibility check')
+@click.option('--wait', is_flag=True, default=False, help='Wait for a transaction to be included in the chain before returning')
 @click.version_option(version=__version__)
-def cli(ctx, url, url_internal, url_websocket, quiet, verbose):
+def cli(ctx, url, url_internal, url_websocket, quiet, verbose, force, wait):
     """
     Welcome to the aecli client.
 
@@ -187,6 +196,8 @@ def cli(ctx, url, url_internal, url_websocket, quiet, verbose):
     ctx.obj[CTX_EPOCH_URL_WEBSOCKET] = url_websocket
     ctx.obj[CTX_QUIET] = quiet
     ctx.obj[CTX_VERBOSE] = verbose
+    ctx.obj[CTX_FORCE_COMPATIBILITY] = force
+    ctx.obj[CTX_BLOCKING_MODE] = wait
 
 
 @cli.command('config', help="Print the client configuration")
@@ -209,24 +220,24 @@ def config(ctx):
 #
 
 
-@cli.group(help="Handle wallet operations")
+@cli.group(help="Handle account operations")
 @click.pass_context
 @click.argument('key_path', default='sign_key', envvar='WALLET_SIGN_KEY_PATH')
-def wallet(ctx, key_path):
+def account(ctx, key_path):
     ctx.obj[CTX_KEY_PATH] = key_path
 
 
-@wallet.command('create', help="Create a new wallet")
+@account.command('create', help="Create a new account")
 @click.pass_context
 @click.option('--password', default=None, help="Set a password from the command line [WARN: this method is not secure]")
 @click.option('--force', default=False, is_flag=True, help="Overwrite exising keys without asking")
-def wallet_create(ctx, password, force):
-    kp = KeyPair.generate()
+def account_create(ctx, password, force):
+    kp = Account.generate()
     kf = ctx.obj.get(CTX_KEY_PATH)
     if not force and os.path.exists(kf):
         click.confirm(f'Key file {kf} already exists, overwrite?', abort=True)
     if password is None:
-        password = click.prompt("Enter the wallet password", default='', hide_input=True)
+        password = click.prompt("Enter the account password", default='', hide_input=True)
     kp.save_to_file(kf, password)
     _pp([
         ('Wallet address', kp.get_address()),
@@ -234,16 +245,16 @@ def wallet_create(ctx, password, force):
     ], title='Wallet created')
 
 
-@wallet.command('save', help='Save a private keys string to a password protected file wallet')
+@account.command('save', help='Save a private keys string to a password protected file account')
 @click.argument("private_key")
 @click.pass_context
-def wallet_save(ctx, private_key):
+def account_save(ctx, private_key):
     try:
-        kp = KeyPair.from_private_key_string(private_key)
+        kp = Account.from_private_key_string(private_key)
         kf = ctx.obj.get(CTX_KEY_PATH)
         if os.path.exists(kf):
             click.confirm(f'Key file {kf} already exists, overwrite?', abort=True)
-        password = click.prompt("Enter the wallet password", default='', hide_input=True)
+        password = click.prompt("Enter the account password", default='', hide_input=True)
         kp.save_to_file(kf, password)
         _pp([
             ('Wallet address', kp.get_address()),
@@ -253,11 +264,11 @@ def wallet_save(ctx, private_key):
         _ppe(e)
 
 
-@wallet.command('address', help="Print the wallet address (public key)")
+@account.command('address', help="Print the account address (public key)")
 @click.option('--password', default=None, help="Read the password from the command line [WARN: this method is not secure]")
 @click.option('--private-key', is_flag=True, help="Print the private key instead of the account address")
-def wallet_address(password, private_key):
-    kp, kf = _keypair(password=password)
+def account_address(password, private_key):
+    kp, kf = _account(password=password)
     if private_key:
         _pp([
             ("Private key", kp.get_private_key()),
@@ -268,10 +279,10 @@ def wallet_address(password, private_key):
     ])
 
 
-@wallet.command('balance', help="Get the balance of a wallet")
+@account.command('balance', help="Get the balance of a account")
 @click.option('--password', default=None, help="Read the password from the command line [WARN: this method is not secure]")
-def wallet_balance(password):
-    kp, _ = _keypair(password=password)
+def account_balance(password):
+    kp, _ = _account(password=password)
 
     try:
         account = _epoch_cli().get_account_by_pubkey(pubkey=kp.get_address())
@@ -282,13 +293,13 @@ def wallet_balance(password):
         _ppe(e)
 
 
-@wallet.command('spend', help="Create a transaction to another wallet")
+@account.command('spend', help="Create a transaction to another account")
 @click.argument('recipient_account', required=True)
 @click.argument('amount', required=True, default=1)
 @click.option('--ttl', default=MAX_TX_TTL, help="Validity of the spend transaction in number of blocks (default forever)")
 @click.option('--password', default=None, help="Read the password from the command line [WARN: this method is not secure]")
-def wallet_spend(recipient_account, amount, ttl, password):
-    kp, _ = _keypair(password=password)
+def account_spend(recipient_account, amount, ttl, password):
+    kp, _ = _account(password=password)
     try:
         _check_prefix(recipient_account, "ak")
         data = _epoch_cli().spend(kp, recipient_account, amount, tx_ttl=ttl)
@@ -310,7 +321,7 @@ def wallet_spend(recipient_account, amount, ttl, password):
 #
 
 
-@wallet.group(help="Handle name lifecycle")
+@account.group(help="Handle name lifecycle")
 @click.argument('domain')
 @click.pass_context
 def name(ctx, domain):
@@ -326,8 +337,8 @@ def name_register(ctx, name_ttl, ttl):
         # retrieve the domain from the context
         domain = ctx.obj.get(CTX_AET_DOMAIN)
         # retrieve the keypair
-        kp, _ = _keypair()
-        name = AEName(domain, client=_epoch_cli())
+        kp, _ = _account()
+        name = _epoch_cli().AEName(domain)
         name.update_status()
         if name.status != AEName.Status.AVAILABLE:
             print("Domain not available")
@@ -352,8 +363,8 @@ def name_update(ctx, address, name_ttl, ttl):
     # retrieve the domain from the context
     domain = ctx.obj.get(CTX_AET_DOMAIN)
     # retrieve the keypair
-    kp, _ = _keypair()
-    name = AEName(domain)
+    kp, _ = _account()
+    name = _epoch_cli().AEName(domain)
     name.update_status()
     if name.status != AEName.Status.CLAIMED:
         print(f"Domain is {name.status} and cannot be transferred")
@@ -370,8 +381,8 @@ def name_revoke(ctx):
     # retrieve the domain from the context
     domain = ctx.obj.get(CTX_AET_DOMAIN)
     # retrieve the keypair
-    kp, _ = _keypair()
-    name = AEName(domain)
+    kp, _ = _account()
+    name = _epoch_cli().AEName(domain)
     name.update_status()
     if name.status == AEName.Status.AVAILABLE:
         print("Domain is available, nothing to revoke")
@@ -392,8 +403,8 @@ def name_transfer(ctx, address):
     # retrieve the domain from the context
     domain = ctx.obj.get(CTX_AET_DOMAIN)
     # retrieve the keypair
-    kp, _ = _keypair()
-    name = AEName(domain)
+    kp, _ = _account()
+    name = _epoch_cli().AEName(domain)
     name.update_status()
     if name.status != AEName.Status.CLAIMED:
         print(f"Domain is {name.status} and cannot be transferred")
@@ -448,7 +459,8 @@ def contract_compile(contract_file):
     try:
         with open(contract_file) as fp:
             code = fp.read()
-            contract = Contract(Contract.SOPHIA, client=_epoch_cli())
+
+            contract = _epoch_cli().Contract(Contract.SOPHIA)
             result = contract.compile(code)
             _pp([
                 ("bytecode", result)
@@ -457,7 +469,7 @@ def contract_compile(contract_file):
         print(e)
 
 
-@wallet.group('contract', help='Deploy and execute contracts on the chain')
+@account.group('contract', help='Deploy and execute contracts on the chain')
 def contract():
     pass
 
@@ -479,8 +491,8 @@ def contract_deploy(contract_file, gas):
     try:
         with open(contract_file) as fp:
             code = fp.read()
-            contract = Contract(code, client=_epoch_cli())
-            kp, _ = _keypair()
+            contract = _epoch_cli().Contract(code)
+            kp, _ = _account()
             tx = contract.tx_create(kp, gas=gas)
 
             # save the contract data
@@ -519,8 +531,8 @@ def contract_call(ctx, deploy_descriptor, function, params, return_type):
             bytecode = contract.get('bytecode')
             address = contract.get('address')
 
-            kp, _ = _keypair()
-            contract = Contract(source, bytecode=bytecode, address=address, client=_epoch_cli())
+            kp, _ = _account()
+            contract = _epoch_cli().Contract(source, bytecode=bytecode, address=address, client=_epoch_cli())
             result = contract.tx_call(kp, function, params, gas=40000000)
             _pp([
                 ('Contract address', contract.address),
@@ -614,7 +626,7 @@ def inspect_name(domain):
 def inspect_deploy(contract_deploy_descriptor):
     """
     Inspect a contract deploy file that has been generated with the command
-    aecli wallet X contract CONTRACT_SOURCE deploy
+    aecli account X contract CONTRACT_SOURCE deploy
     """
     try:
         with open(contract_deploy_descriptor) as fp:

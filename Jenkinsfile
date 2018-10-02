@@ -27,22 +27,6 @@ pipeline {
       }
     }
 
-    // stage('Publish-Test') {
-    //   when {
-    //     beforeAgent true
-    //     branch 'develop'
-    //   }
-    //   steps {
-    //     withCredentials([
-    //       usernamePassword(credentialsId: 'test_pypi',
-    //                                       usernameVariable: 'TWINE_USERNAME',
-    //                                       passwordVariable: 'TWINE_PASSWORD'),
-    //       string(credentialsId: 'pypi_test_repo_url', variable: 'TWINE_REPOSITORY_URL')]) {
-    //         sh '''make clean && make build && make publish'''
-    //     }
-    //   }
-    // }
-
     stage('Publish') {
       when {
         buildingTag()
