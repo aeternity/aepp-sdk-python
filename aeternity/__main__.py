@@ -111,8 +111,8 @@ def _po(label, value, offset=0):
         o = offset + 1
         for k, v in value._asdict().items():
             _po(k, v, o)
-    elif isinstance(value, list):
-        _po(label, ', '.join(value), offset)
+    elif isinstance(value, list) and len(value) > 0:
+        _po(label, ', '.join([str(x) for x in value]), offset)
     else:
         lo = " " * offset
         lj = 53 - len(lo)
@@ -540,8 +540,8 @@ def inspect(obj):
         elif obj.startswith("ak_"):
             v = _epoch_cli().get_account_by_pubkey(pubkey=obj)
             _print_object(v)
-        elif obj.isdigit() and obj >= 0:
-            v = _epoch_cli().get_generation_by_hash(hash=obj)
+        elif obj.isdigit() and int(obj) >= 0:
+            v = _epoch_cli().get_key_block_by_height(height=int(obj))
             _print_object(v)
         else:
             raise ValueError(f"input not recongized: {obj}")
