@@ -7,7 +7,7 @@ import tempfile
 from contextlib import contextmanager
 import aeternity
 import random
-from aeternity.tests import NODE_URL, NODE_URL_INTERNAL, KEYPAIR, EPOCH_CLI
+from aeternity.tests import NODE_URL, KEYPAIR, EPOCH_CLI
 from aeternity.signing import Account
 from aeternity import utils
 
