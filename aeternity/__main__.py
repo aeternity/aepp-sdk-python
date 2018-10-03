@@ -128,7 +128,9 @@ def _print_object(data, title=None):
         if isinstance(data, tuple):
             print(json.dumps(data._asdict(), indent=2))
             return
-
+        if isinstance(data, str):
+            print(data)
+            return
         print(json.dumps(data, indent=2))
         return
 

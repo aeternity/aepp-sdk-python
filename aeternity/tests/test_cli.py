@@ -22,7 +22,10 @@ def call_aecli(*params):
     print(" ".join(args))
     output = subprocess.check_output(args).decode('ascii')
     o = output.strip()
-    return json.loads(o)
+    try:
+        return json.loads(o)
+    except Exception as e:
+        return o
 
 
 @contextmanager
@@ -37,6 +40,7 @@ def tempdir():
 
 def test_cli_version():
     v = call_aecli('--version')
+    print(v, aeternity.__version__)
     assert v == f"aecli, version {aeternity.__version__}"
 
 
@@ -68,10 +72,10 @@ def test_cli_generate_account_and_account_info():
     with tempdir() as tmp_path:
         account_path = os.path.join(tmp_path, 'key')
         j = call_aecli('account', account_path, 'create', '--password', 'secret')
-        gen_address = j.get("id")
+        gen_address = j.get("Account address")
         assert utils.is_valid_hash(gen_address, prefix='ak')
         j1 = call_aecli('account', account_path, 'address', '--password', 'secret')
-        assert utils.is_valid_hash(j1.get('id'), prefix='ak')
+        assert utils.is_valid_hash(j1.get('Account address'), prefix='ak')
 
 
 def test_cli_read_account_fail():
@@ -90,7 +94,8 @@ def test_cli_spend():
     with tempdir() as tmp_path:
         sender_path = os.path.join(tmp_path, 'sender')
         call_aecli('account', sender_path, 'create',  '--password', 'whatever')
-        sender_address = call_aecli('account', sender_path, 'address',  '--password', 'whatever')
+        j = call_aecli('account', sender_path, 'address',  '--password', 'whatever')
+        sender_address = j.get("Account address")
         # fill the account from genesys
         _, _, tx_hash = EPOCH_CLI.spend(KEYPAIR, sender_address, 100)
         # generate a new address
