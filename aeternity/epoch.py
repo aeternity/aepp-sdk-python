@@ -42,7 +42,6 @@ class EpochRequestError(Exception):
 
 
 class EpochClient:
-    next_block_poll_interval_sec = 3
 
     exception_by_reason = {
         'Name not found': NameNotAvailable,
@@ -50,7 +49,7 @@ class EpochClient:
         'Transaction not found': TransactionNotFoundException,
     }
 
-    def __init__(self, *, configs=None, blocking_mode=False, retry=True, debug=False):
+    def __init__(self, configs=None, blocking_mode=False, retry=True, debug=False):
         if configs is None:
             configs = config.Config.get_defaults()
         if isinstance(configs, config.Config):
@@ -184,10 +183,11 @@ class EpochClient:
     def listen(self):
         self.listen_until(lambda: False)
 
-    # support nameing
+    # support naming
     def AEName(self, domain):
         return aens.AEName(domain, client=self)
 
+    # support contract
     def Contract(self, source_code, bytecode=None, address=None, abi=contract.Contract.SOPHIA):
         return contract.Contract(source_code, client=self, bytecode=bytecode, address=address, abi=abi)
 
