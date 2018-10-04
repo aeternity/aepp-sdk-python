@@ -217,15 +217,17 @@ def account_create(ctx, password, force):
 
 
 @account.command('save', help='Save a private keys string to a password protected file account')
-@click.argument("private_key")
 @click.pass_context
-def account_save(ctx, private_key):
+@click.argument("private_key")
+@click.option('--password', default=None, help="Set a password from the command line [WARN: this method is not secure]")
+def account_save(ctx, private_key, password):
     try:
         kp = Account.from_private_key_string(private_key)
         kf = ctx.obj.get(CTX_KEY_PATH)
         if os.path.exists(kf):
             click.confirm(f'Key file {kf} already exists, overwrite?', abort=True)
-        password = click.prompt("Enter the account password", default='', hide_input=True)
+        if password is None:
+            password = click.prompt("Enter the account password", default='', hide_input=True)
         kp.save_to_file(kf, password)
         _print_object({
             'Account address': kp.get_address(),

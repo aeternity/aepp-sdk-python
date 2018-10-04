@@ -92,18 +92,15 @@ def test_cli_read_account_fail():
 
 def test_cli_spend():
     with tempdir() as tmp_path:
+        # save the private key on file
         sender_path = os.path.join(tmp_path, 'sender')
-        call_aecli('account', sender_path, 'create',  '--password', 'whatever')
-        j = call_aecli('account', sender_path, 'address',  '--password', 'whatever')
-        sender_address = j.get("Account address")
-        # fill the account from genesys
-        _, _, tx_hash = EPOCH_CLI.spend(KEYPAIR, sender_address, 100)
+        call_aecli('account', sender_path, 'save', KEYPAIR.get_private_key(), '--password', 'whatever')
         # generate a new address
         recipient_address = Account.generate().get_address()
         # call the cli
         call_aecli('account', sender_path, 'spend', '--password', 'whatever', recipient_address, "90")
         # test that the recipient account has the requested amount
-        print(recipient_address)
+        print(f"recipient address is {recipient_address}")
         recipient_account = EPOCH_CLI.get_account_by_pubkey(pubkey=recipient_address)
         assert recipient_account.balance == 90
 
