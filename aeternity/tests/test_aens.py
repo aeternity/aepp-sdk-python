@@ -5,7 +5,7 @@ from pytest import raises
 
 from aeternity.aens import AEName
 
-from aeternity.tests import PUBLIC_KEY, PRIVATE_KEY, EPOCH_CLI, KEYPAIR
+from aeternity.tests import EPOCH_CLI, KEYPAIR
 
 # to run this test in other environments set the env vars as specified in the
 # config.py
