@@ -47,7 +47,22 @@ class Account:
         """
         self.verifying_key.verify(signature, data)
 
+    def save_to_keystore_file(self, path, password):
+        """
+        Utility method for save_to_keystore
+        """
+        folder = os.path.dirname(path)
+        filename = os.path.basename(path)
+        self.save_to_keystore(folder, password, filename=filename)
+
     def save_to_keystore(self, path, password, filename=None):
+        """
+        Save an account in a Keystore/JSON format
+        :param path: the folder where to store the keystore file
+        :param password: the password for the keystore
+        :param filename: an optional filename to use for the keystore (default to UTC--ISO8601Date--AccountAddress)
+        :return: the filename that has been used for the keystore
+        """
         j = keystore.create_keyfile_json(self.signing_key.encode(encoder=RawEncoder), password.encode("utf-8"))
         if filename is None:
             filename = f"UTC--{datetime.utcnow().isoformat()}--{self.get_address()}"
@@ -57,6 +72,15 @@ class Account:
 
     @staticmethod
     def load_from_keystore(path, password):
+        """
+        Load an account from a Keystore/JSON file
+        :param path: the path to the keystore
+        :param password: the password to decrypt the keystore
+        :return: the account
+
+        raise an error if the account cannot be opened
+
+        """
         with open(path, 'r') as fp:
             j = json.load(fp)
             raw_priv = keystore.decode_keyfile_json(j, password.encode("utf-8"))

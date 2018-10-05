@@ -50,9 +50,8 @@ def test_cli_generate_account():
         call_aecli('account', account_key, 'create', '--password', 'secret', '--force')
         # make sure the folder contains the keys
         files = sorted(os.listdir(tmp_path))
-        assert len(files) == 2
-        assert files[0] == 'key'
-        assert files[1] == 'key.pub'
+        assert len(files) == 1
+        assert files[0].startswith("key")
 
 
 def test_cli_generate_account_and_account_info():
