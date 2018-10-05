@@ -1,7 +1,6 @@
 import logging
 import click
 import os
-import traceback
 import json
 import sys
 
@@ -29,6 +28,7 @@ CTX_QUIET = 'QUIET'
 CTX_AET_DOMAIN = 'AET_NAME'
 CTX_FORCE_COMPATIBILITY = 'CTX_FORCE_COMPATIBILITY'
 CTX_BLOCKING_MODE = 'CTX_BLOCKING_MODE'
+CTX_OUTPUT_JSON = 'CTX_OUTPUT_JSON'
 
 
 def _epoch_cli():
@@ -96,75 +96,47 @@ def _verbose():
     return ctx.obj.get(CTX_VERBOSE, False)
 
 
-def _print(header, value):
-    print(f" {header.ljust(53, '_')} \n\n{value}\n")
-
-
-def _pp(data, title=None, prefix=''):
+def _po(label, value, offset=0):
     """
     pretty printer
     :param data: single enty or list of key-value tuples
     :param title: optional title
     :param quiet: if true print only the values
     """
+    if isinstance(value, dict):
+        o = offset + 1
+        for k, v in value.items():
+            _po(k, v, o)
+    elif isinstance(value, tuple):
+        o = offset + 1
+        for k, v in value._asdict().items():
+            _po(k, v, o)
+    elif isinstance(value, list) and len(value) > 0:
+        _po(label, ', '.join([str(x) for x in value]), offset)
+    else:
+        lo = " " * offset
+        lj = 53 - len(lo)
+        if label == "Time":
+            value = datetime.fromtimestamp(value / 1000, timezone.utc).isoformat('T')
+        print(f"{lo}{label.ljust(lj, '_')} {value}")
+
+
+def _print_object(data, title=None):
     ctx = click.get_current_context()
+
+    if ctx.obj.get(CTX_OUTPUT_JSON, False):
+        if isinstance(data, tuple):
+            print(json.dumps(data._asdict(), indent=2))
+            return
+        if isinstance(data, str):
+            print(data)
+            return
+        print(json.dumps(data, indent=2))
+        return
+
     if title is not None:
         print(title)
-    if not isinstance(data, list):
-        data = [data]
-    for kv in data:
-        value = kv[1] if kv[1] is not None else 'N/A'
-        if isinstance(value, list):
-            value = ', '.join(value)
-        if ctx.obj.get(CTX_QUIET, False):
-            print(value)
-        else:
-            label = f"{prefix}{kv[0]}"
-            print(f"{label.ljust(30, '_')} {value}")
-
-
-def _ppe(error):
-    """pretty printer for errors"""
-    ctx = click.get_current_context()
-    print(error)
-    if ctx.obj.get(CTX_VERBOSE, True):
-        traceback.print_exc()
-
-
-def _p_block(block, title=None):
-    """Print info of a block """
-    if title is not None:
-        print(title)
-    block_info = [
-        ('Block hash', block.hash),
-        ('Block height', block.height),
-        ('State hash', block.state_hash),
-        ('Miner', block.miner if hasattr(block, 'miner') else 'N/A'),
-        ('Time', datetime.fromtimestamp(block.time / 1000, timezone.utc).isoformat('T')),
-        ('Previous block hash', block.prev_hash),
-        ('Transactions', len(block.transactions) if hasattr(block, 'transactions') else 0)
-    ]
-    _pp(block_info)
-    if hasattr(block, 'transactions'):
-        for tx in block.transactions:
-            _pp(('Tx Hash', tx.get('hash')), prefix='>  ')
-            _pp(('Signatures', tx.get('signatures')), prefix='   ')
-            _pp(('Sender', tx.get('tx', {}).get('sender')), prefix='   ')
-            _pp(('Recipient', tx.get('tx', {}).get('recipient')), prefix='   ')
-            _pp(('Amount', tx.get('tx', {}).get('amount')), prefix='   ')
-
-
-def _p_tx(tx):
-    """Print info of a transactions"""
-    _pp([
-        ('Block hash', tx.get('block_hash')),
-        ('Block height', tx.get('block_height')),
-        ('Signatures', tx.get('signatures')),
-        ('Sender account', tx.get('tx', {}).get('sender')),
-        ('Recipient account', tx.get('tx', {}).get('recipient')),
-        ('Amount', tx.get('tx', {}).get('amount')),
-        ('TTL', tx.get('tx', {}).get('ttl'))
-    ])
+    _po(title, data)
 
 
 # Commands
@@ -179,12 +151,12 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--url', '-u', default='https://sdk-testnet.aepps.com', envvar='EPOCH_URL', help='Epoch node url', metavar='URL')
 @click.option('--url-internal', '-i', default='https://sdk-testnet.aepps.com/internal', envvar='EPOCH_URL_INTERNAL', metavar='URL')
 @click.option('--url-websocket', '-w', default='ws://sdk-testnet.aepps.com', envvar='EPOCH_URL_WEBSOCKET', metavar='URL')
-@click.option('--quiet', '-q', default=False, is_flag=True, help='Print only results')
 @click.option('--verbose', '-v', is_flag=True, default=False, help='Print verbose data')
 @click.option('--force', '-f', is_flag=True, default=False, help='Ignore epoch version compatibility check')
 @click.option('--wait', is_flag=True, default=False, help='Wait for a transaction to be included in the chain before returning')
+@click.option('--json', 'json_', is_flag=True, default=False, help='Print output in JSON format')
 @click.version_option(version=__version__)
-def cli(ctx, url, url_internal, url_websocket, quiet, verbose, force, wait):
+def cli(ctx, url, url_internal, url_websocket, verbose, force, wait, json_):
     """
     Welcome to the aecli client.
 
@@ -194,29 +166,28 @@ def cli(ctx, url, url_internal, url_websocket, quiet, verbose, force, wait):
     ctx.obj[CTX_EPOCH_URL] = url
     ctx.obj[CTX_EPOCH_URL_INTERNAL] = url_internal
     ctx.obj[CTX_EPOCH_URL_WEBSOCKET] = url_websocket
-    ctx.obj[CTX_QUIET] = quiet
     ctx.obj[CTX_VERBOSE] = verbose
     ctx.obj[CTX_FORCE_COMPATIBILITY] = force
     ctx.obj[CTX_BLOCKING_MODE] = wait
+    ctx.obj[CTX_OUTPUT_JSON] = json_
 
 
 @cli.command('config', help="Print the client configuration")
 @click.pass_context
 def config(ctx):
-    _pp([
-        ("Epoch URL", ctx.obj.get(CTX_EPOCH_URL)),
-        ("Epoch internal URL", ctx.obj.get(CTX_EPOCH_URL_INTERNAL, 'N/A')),
-        ("Epoch websocket URL", ctx.obj.get(CTX_EPOCH_URL_WEBSOCKET, 'N/A')),
-    ], title="aecli settings")
+    _print_object({
+        "Epoch URL": ctx.obj.get(CTX_EPOCH_URL),
+        "Epoch internal URL": ctx.obj.get(CTX_EPOCH_URL_INTERNAL, 'N/A'),
+        "Epoch websocket URL": ctx.obj.get(CTX_EPOCH_URL_WEBSOCKET, 'N/A'),
+    }, title="aecli settings")
 
 
-#   __          __   _ _      _
-#   \ \        / /  | | |    | |
-#    \ \  /\  / /_ _| | | ___| |_ ___
-#     \ \/  \/ / _` | | |/ _ \ __/ __|
-#      \  /\  / (_| | | |  __/ |_\__ \
-#       \/  \/ \__,_|_|_|\___|\__|___/
-#
+#        _                                               _
+#       / \                                             / |_
+#      / _ \     .---.  .---.   .--.   __   _   _ .--. `| |-'.--.
+#     / ___ \   / /'`\]/ /'`\]/ .'`\ \[  | | | [ `.-. | | | ( (`\]
+#   _/ /   \ \_ | \__. | \__. | \__. | | \_/ |, | | | | | |, `'.'.
+#  |____| |____|'.___.''.___.' '.__.'  '.__.'_/[___||__]\__/[\__) )
 #
 
 
@@ -239,29 +210,31 @@ def account_create(ctx, password, force):
     if password is None:
         password = click.prompt("Enter the account password", default='', hide_input=True)
     kp.save_to_file(kf, password)
-    _pp([
-        ('Wallet address', kp.get_address()),
-        ('Wallet path', os.path.abspath(kf))
-    ], title='Wallet created')
+    _print_object({
+        'Account address': kp.get_address(),
+        'Account path': os.path.abspath(kf)
+    }, title='Account created')
 
 
 @account.command('save', help='Save a private keys string to a password protected file account')
-@click.argument("private_key")
 @click.pass_context
-def account_save(ctx, private_key):
+@click.argument("private_key")
+@click.option('--password', default=None, help="Set a password from the command line [WARN: this method is not secure]")
+def account_save(ctx, private_key, password):
     try:
         kp = Account.from_private_key_string(private_key)
         kf = ctx.obj.get(CTX_KEY_PATH)
         if os.path.exists(kf):
             click.confirm(f'Key file {kf} already exists, overwrite?', abort=True)
-        password = click.prompt("Enter the account password", default='', hide_input=True)
+        if password is None:
+            password = click.prompt("Enter the account password", default='', hide_input=True)
         kp.save_to_file(kf, password)
-        _pp([
-            ('Wallet address', kp.get_address()),
-            ('Wallet path', os.path.abspath(kf))
-        ], title='Wallet saved')
+        _print_object({
+            'Account address': kp.get_address(),
+            'Account path': os.path.abspath(kf)
+        }, title='Account saved')
     except Exception as e:
-        _ppe(e)
+        print(e)
 
 
 @account.command('address', help="Print the account address (public key)")
@@ -269,14 +242,12 @@ def account_save(ctx, private_key):
 @click.option('--private-key', is_flag=True, help="Print the private key instead of the account address")
 def account_address(password, private_key):
     kp, kf = _account(password=password)
+    o = {
+        'Account address': kp.get_address()
+    }
     if private_key:
-        _pp([
-            ("Private key", kp.get_private_key()),
-        ])
-
-    _pp([
-        ('Wallet address', kp.get_address()),
-    ])
+        o["Private key"] = kp.get_private_key()
+    _print_object(o)
 
 
 @account.command('balance', help="Get the balance of a account")
@@ -286,11 +257,9 @@ def account_balance(password):
 
     try:
         account = _epoch_cli().get_account_by_pubkey(pubkey=kp.get_address())
-        _pp(
-            ("Account balance", account.balance)
-        )
+        _print_object({"Account balance": account.balance})
     except Exception as e:
-        _ppe(e)
+        print(e)
 
 
 @account.command('spend', help="Create a transaction to another account")
@@ -303,13 +272,13 @@ def account_spend(recipient_account, amount, ttl, password):
     try:
         _check_prefix(recipient_account, "ak")
         data = _epoch_cli().spend(kp, recipient_account, amount, tx_ttl=ttl)
-        _pp([
-            ("Transaction hash", data.tx_hash),
-            ("Sender account", kp.get_address()),
-            ("Recipient account", recipient_account),
-        ], title='Transaction posted to the chain')
+        _print_object({
+            "Transaction hash": data.tx_hash,
+            "Sender account": kp.get_address(),
+            "Recipient account": recipient_account,
+        }, title='Transaction posted to the chain')
     except Exception as e:
-        _ppe(e)
+        print(e)
 
 #    _   _
 #   | \ | |
@@ -344,11 +313,9 @@ def name_register(ctx, name_ttl, ttl):
             print("Domain not available")
             exit(0)
         tx = name.full_claim_blocking(kp, name_ttl=name_ttl, tx_ttl=ttl)
-        _pp([
-            ("Transaction hash", tx.tx_hash),
-        ], title=f"Name {domain} claimed")
+        _print_object(tx, title=f"Name {domain} claimed")
     except Exception as e:
-        _ppe(e)
+        print(e)
 
 
 @name.command('update')
@@ -370,9 +337,7 @@ def name_update(ctx, address, name_ttl, ttl):
         print(f"Domain is {name.status} and cannot be transferred")
         exit(0)
     tx = name.update(kp, target=address, name_ttl=name_ttl, tx_ttl=ttl)
-    _pp([
-        ('Transaction hash', tx.tx_hash)
-    ], title=f"Name {domain} status {name.status}")
+    _print_object(tx, title=f"Name {domain} status {name.status}")
 
 
 @name.command('revoke')
@@ -388,9 +353,8 @@ def name_revoke(ctx):
         print("Domain is available, nothing to revoke")
         exit(0)
     tx = name.revoke(kp)
-    _pp([
-        ('Transaction hash', tx.tx_hash)
-    ], title=f"Name {domain} status {name.status}")
+
+    _print_object({'Transaction hash', tx.tx_hash}, title=f"Name {domain} status {name.status}")
 
 
 @name.command('transfer')
@@ -410,9 +374,7 @@ def name_transfer(ctx, address):
         print(f"Domain is {name.status} and cannot be transferred")
         exit(0)
     tx = name.transfer_ownership(kp, address)
-    _pp([
-        ('Transaction hash', tx.tx_hash)
-    ], title=f"Name {domain} status {name.status}")
+    _print_object({'Transaction hash', tx}, title=f"Name {domain} status {name.status}")
 
 
 #     ____                 _
@@ -462,9 +424,7 @@ def contract_compile(contract_file):
 
             contract = _epoch_cli().Contract(Contract.SOPHIA)
             result = contract.compile(code)
-            _pp([
-                ("bytecode", result)
-            ])
+            _print_object({"bytecode", result})
     except Exception as e:
         print(e)
 
@@ -508,11 +468,11 @@ def contract_deploy(contract_file, gas):
             deploy_descriptor = f"{contract_file}.deploy.{contract.address[3:]}.json"
             with open(deploy_descriptor, 'w') as fw:
                 json.dump(contract_data, fw, indent=2)
-            _pp([
-                ("Contract address", contract.address),
-                ("Transaction hash", tx.tx_hash),
-                ("Deploy descriptor", deploy_descriptor),
-            ])
+            _print_object({
+                "Contract address": contract.address,
+                "Transaction hash": tx.tx_hash,
+                "Deploy descriptor": deploy_descriptor,
+            })
     except Exception as e:
         print(e)
 
@@ -534,18 +494,18 @@ def contract_call(ctx, deploy_descriptor, function, params, return_type):
             kp, _ = _account()
             contract = _epoch_cli().Contract(source, bytecode=bytecode, address=address, client=_epoch_cli())
             result = contract.tx_call(kp, function, params, gas=40000000)
-            _pp([
-                ('Contract address', contract.address),
-                ('Gas price', result.gas_price),
-                ('Gas used', result.gas_used),
-                ('Return value (encoded)', result.return_value),
-            ])
+            _print_object({
+                'Contract address': contract.address,
+                'Gas price': result.gas_price,
+                'Gas used': result.gas_used,
+                'Return value (encoded)': result.return_value,
+            })
             if result.return_type == 'ok':
                 value, remote_type = contract.decode_data(result.return_value, return_type)
-                _pp([
-                    ('Return value', value),
-                    ('Return remote type', remote_type),
-                ])
+                _print_object({
+                    'Return value': value,
+                    'Return remote type': remote_type,
+                })
 
             pass
     except Exception as e:
@@ -562,88 +522,52 @@ def contract_call(ctx, deploy_descriptor, function, params, return_type):
 #                   |_|
 
 
-@cli.group(help="Get information on transactions, blocks, etc...")
-def inspect():
-    pass
-
-
-@inspect.command('block', help='The block hash to inspect (eg: bh_...)')
-@click.argument('block_hash')
-def inspect_block(block_hash):
-    _check_prefix(block_hash, "kh")
-    data = _epoch_cli().get_key_block_by_hash(hash=block_hash)
-    _p_block(data)
-
-
-@inspect.command('height', help='The height of the chain to inspect (eg:14352)')
-@click.argument('chain_height', default=1)
-def inspect_height(chain_height):
-    data = _epoch_cli().get_key_block_by_height(height=chain_height)
-    _p_block(data)
-
-
-@inspect.command('transaction', help='The transaction hash to inspect (eg: th_...)')
-@click.argument('tx_hash')
-def inspect_transaction(tx_hash):
+@cli.command("inspect", help="Get information on transactions, blocks, etc...")
+@click.argument('obj')
+def inspect(obj):
     try:
-        _check_prefix(tx_hash, "th")
-        data = _epoch_cli().get_transaction_by_hash(hash=tx_hash)
-        _p_tx(data.transaction)
+        if obj.endswith(".aet"):
+            name = _epoch_cli().AEName(obj)
+            name.update_status()
+            _print_object({
+                'Status': name.status,
+                'Name hash': name.name_hash,
+                'Pointers': name.pointers,
+                'TTL': name.name_ttl,
+            })
+        elif obj.startswith("kh_") or obj.startswith("mh_"):
+            v = _epoch_cli().get_block_by_hash(obj)
+            _print_object(v)
+        elif obj.startswith("th_"):
+            v = _epoch_cli().get_transaction_by_hash(hash=obj)
+            _print_object(v)
+        elif obj.startswith("ak_"):
+            v = _epoch_cli().get_account_by_pubkey(pubkey=obj)
+            _print_object(v)
+        elif obj.isdigit() and int(obj) >= 0:
+            v = _epoch_cli().get_key_block_by_height(height=int(obj))
+            _print_object(v)
+        else:
+            raise ValueError(f"input not recongized: {obj}")
     except Exception as e:
-        print(e)
+        print("Error:", e)
 
 
-@inspect.command('account', help='The address of the account to inspect (eg: ak_...)')
-@click.argument('account')
-def inspect_account(account):
-    _check_prefix(account, "ak")
-    try:
-        data = _epoch_cli().get_account_by_pubkey(pubkey=account)
-        _pp(("Account balance", data.balance))
-    except Exception as e:
-        print(e)
-
-
-@inspect.command('name', help='The name to inspect (eg: mydomain.aet)')
-@click.argument('domain')
-def inspect_name(domain):
-    try:
-        name = AEName(domain, client=_epoch_cli())
-        name.update_status()
-        _pp([
-            ('Status', name.status),
-            ('Name hash', name.name_hash),
-            ('Pointers', name.pointers),
-            ('TTL', name.name_ttl),
-        ])
-
-    except Exception as e:
-        print(e)
-
-
-@inspect.command('deploy', help='The contract deploy descriptor to inspect')
-@click.argument('contract_deploy_descriptor')
-def inspect_deploy(contract_deploy_descriptor):
-    """
-    Inspect a contract deploy file that has been generated with the command
-    aecli account X contract CONTRACT_SOURCE deploy
-    """
-    try:
-        with open(contract_deploy_descriptor) as fp:
-            contract = json.load(fp)
-            _pp([
-                ('Source', contract.get('source', 'N/A')),
-                ('Bytecode', contract.get('bytecode', 'N/A')),
-                ('Address', contract.get('address', 'N/A')),
-                ('Transaction', contract.get('transaction', 'N/A')),
-                ('Owner', contract.get('owner', 'N/A')),
-                ('Created_at', contract.get('created_at', 'N/A')),
-            ])
-            data = _epoch_cli().get_transaction_by_hash(hash=contract.get('transaction', 'N/A'))
-            print("Transaction")
-            _p_tx(data.transaction)
-    except Exception as e:
-        print(e)
+# @inspect.command('deploy', help='The contract deploy descriptor to inspect')
+# @click.argument('contract_deploy_descriptor')
+# def inspect_deploy(contract_deploy_descriptor):
+#     """
+#     Inspect a contract deploy file that has been generated with the command
+#     aecli account X contract CONTRACT_SOURCE deploy
+#     """
+#     try:
+#         with open(contract_deploy_descriptor) as fp:
+#             contract = json.load(fp)
+#             _print_object(contract)
+#             data = _epoch_cli().get_transaction_by_hash(hash=contract.get('transaction', 'N/A'))
+#             _print_object(data, "Transaction")
+#     except Exception as e:
+#         print(e)
 
 
 #     _____ _           _
@@ -667,7 +591,7 @@ def chain_top():
     Print the information of the top block of the chain.
     """
     data = _epoch_cli().get_top_block()
-    _p_block(data)
+    _print_object(data)
 
 
 @chain.command('version')
@@ -676,17 +600,7 @@ def chain_version():
     Print the epoch node version.
     """
     data = _epoch_cli().get_status()
-    _pp([
-        ("Epoch node version", data.node_version),
-        ("Epoch node revision", data.node_revision),
-        ("Difficulty", data.difficulty),
-        ("Genesis key block hash", data.genesis_key_block_hash),
-        ("Peers", data.peer_count),
-        ("Pending transactions", data.pending_transactions_count),
-        ("Solutions", data.solutions),
-        ("Listening", data.listening),
-        ("syncing", data.syncing),
-    ])
+    _print_object(data)
 
 
 @chain.command('play')
@@ -698,7 +612,7 @@ def chain_play(height, block_hash, limit):
     play the blockchain backwards
     """
     if block_hash is not None:
-        _check_prefix(block_hash, "bh")
+        _check_prefix(block_hash, "kh")
         b = _epoch_cli().get_key_block_by_hash(hash=block_hash)
     elif height is not None:
         b = _epoch_cli().get_key_block_by_height(height=height)
@@ -708,13 +622,13 @@ def chain_play(height, block_hash, limit):
     limit = limit if limit > 0 else 0
     while b is not None and limit > 0:
         try:
-            _p_block(b, title=' >>>>> ')
+            _print_object(b, title=' >>>>> ')
             limit -= 1
             if limit <= 0:
                 break
             b = _epoch_cli().get_key_block_by_hash(hash=b.prev_hash)
         except Exception as e:
-            _ppe(e)
+            print(e)
             b = None
             pass
 
