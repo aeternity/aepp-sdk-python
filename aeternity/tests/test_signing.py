@@ -1,8 +1,9 @@
-
-from aeternity.tests import TEST_FEE, TEST_TTL, EPOCH_CLI, KEYPAIR
+from pytest import raises
+from aeternity.tests import TEST_FEE, TEST_TTL, EPOCH_CLI, KEYPAIR, tempdir
 from aeternity.signing import Account
 from aeternity.utils import is_valid_hash
 from aeternity.transactions import TxBuilder
+import os
 
 
 def test_signing_create_transaction():
@@ -35,3 +36,38 @@ def test_signing_is_valid_hash():
         got = is_valid_hash(a[0], a[1])
         expected = a[2]
         assert got == expected
+
+
+def test_signing_keystore_load():
+
+    a = Account.load_from_keystore(os.path.join(os.path.dirname(os.path.realpath(__file__)), "testdata", "keystore.json"), "aeternity")
+    assert a.get_address() == "ak_Jt6AzQEiXiEMFXum8NtTXcCQtE9P1RfpkeVSZX87pFddzzynW"
+
+
+def test_signing_keystore_save_load():
+    with tempdir() as tmp_path:
+        filename = KEYPAIR.save_to_keystore(tmp_path, "whatever")
+        path = os.path.join(tmp_path, filename)
+        print(f"\nAccount keystore is {path}")
+        # now load again the same
+        a = Account.load_from_keystore(path, "whatever")
+        assert a.get_address() == KEYPAIR.get_address()
+    with tempdir() as tmp_path:
+        filename = "account_ks"
+        filename = KEYPAIR.save_to_keystore(tmp_path, "whatever", filename=filename)
+        path = os.path.join(tmp_path, filename)
+        print(f"\nAccount keystore is {path}")
+        # now load again the same
+        a = Account.load_from_keystore(path, "whatever")
+        assert a.get_address() == KEYPAIR.get_address()
+
+
+def test_signing_keystore_save_load_wrong_pwd():
+    with tempdir() as tmp_path:
+        filename = KEYPAIR.save_to_keystore(tmp_path, "whatever")
+        path = os.path.join(tmp_path, filename)
+        print(f"\nAccount keystore is {path}")
+        # now load again the same
+        with raises(ValueError):
+            a = Account.load_from_keystore(path, "nononon")
+            assert a.get_address() == KEYPAIR.get_address()

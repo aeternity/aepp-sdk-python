@@ -1,13 +1,10 @@
-import shutil
 import subprocess
 from subprocess import CalledProcessError
 import json
 import os
-import tempfile
-from contextlib import contextmanager
 import aeternity
 import random
-from aeternity.tests import NODE_URL, KEYPAIR, EPOCH_CLI
+from aeternity.tests import NODE_URL, KEYPAIR, EPOCH_CLI, tempdir
 from aeternity.signing import Account
 from aeternity import utils
 
@@ -26,16 +23,6 @@ def call_aecli(*params):
         return json.loads(o)
     except Exception as e:
         return o
-
-
-@contextmanager
-def tempdir():
-    # contextmanager to generate and delete a temporary directory
-    path = tempfile.mkdtemp()
-    try:
-        yield path
-    finally:
-        shutil.rmtree(path)
 
 
 def test_cli_version():

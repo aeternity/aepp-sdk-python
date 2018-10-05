@@ -6,6 +6,10 @@ import nacl
 from nacl.encoding import RawEncoder
 from nacl.signing import SigningKey
 from aeternity import hashing, utils
+# imports for keystore
+from datetime import datetime
+import eth_keyfile as keystore
+import json
 
 
 class Account:
@@ -42,6 +46,23 @@ class Account:
         :param signature: the signature to verify
         """
         self.verifying_key.verify(signature, data)
+
+    def save_to_keystore(self, path, password, filename=None):
+        j = keystore.create_keyfile_json(self.signing_key.encode(encoder=RawEncoder), password.encode("utf-8"))
+        if filename is None:
+            filename = f"UTC--{datetime.utcnow().isoformat()}--{self.get_address()}"
+        with open(os.path.join(path, filename), 'w') as fp:
+            json.dump(j, fp)
+        return filename
+
+    @staticmethod
+    def load_from_keystore(path, password):
+        with open(path, 'r') as fp:
+            j = json.load(fp)
+            raw_priv = keystore.decode_keyfile_json(j, password.encode("utf-8"))
+            signing_key = SigningKey(seed=raw_priv[0:32], encoder=RawEncoder)
+            kp = Account(signing_key, signing_key.verify_key)
+            return kp
 
     def save_to_folder(self, folder, password, name='key'):
         """
