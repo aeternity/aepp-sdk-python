@@ -65,7 +65,7 @@ def _account(password=None):
     try:
         if password is None:
             password = click.prompt("Enter the account password", default='', hide_input=True)
-        return Account.read_from_private_key(kf, password), os.path.abspath(kf)
+        return Account.load_from_keystore(kf, password), os.path.abspath(kf)
     except Exception:
         print("Invalid password")
         exit(1)
@@ -209,7 +209,7 @@ def account_create(ctx, password, force):
         click.confirm(f'Key file {kf} already exists, overwrite?', abort=True)
     if password is None:
         password = click.prompt("Enter the account password", default='', hide_input=True)
-    kp.save_to_file(kf, password)
+    kp.save_to_keystore_file(kf, password)
     _print_object({
         'Account address': kp.get_address(),
         'Account path': os.path.abspath(kf)
@@ -228,7 +228,7 @@ def account_save(ctx, private_key, password):
             click.confirm(f'Key file {kf} already exists, overwrite?', abort=True)
         if password is None:
             password = click.prompt("Enter the account password", default='', hide_input=True)
-        kp.save_to_file(kf, password)
+        kp.save_to_keystore_file(kf, password)
         _print_object({
             'Account address': kp.get_address(),
             'Account path': os.path.abspath(kf)
@@ -254,7 +254,6 @@ def account_address(password, private_key):
 @click.option('--password', default=None, help="Read the password from the command line [WARN: this method is not secure]")
 def account_balance(password):
     kp, _ = _account(password=password)
-
     try:
         account = _epoch_cli().get_account_by_pubkey(pubkey=kp.get_address())
         _print_object({"Account balance": account.balance})

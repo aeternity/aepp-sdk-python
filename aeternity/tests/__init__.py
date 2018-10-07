@@ -3,6 +3,10 @@ import os
 from aeternity.config import Config
 from aeternity.signing import Account
 from aeternity import epoch
+# for tempdir
+import shutil
+import tempfile
+from contextlib import contextmanager
 
 logging.getLogger("requests").setLevel(logging.DEBUG)
 logging.getLogger("urllib3").setLevel(logging.DEBUG)
@@ -32,3 +36,13 @@ EPOCH_CLI = epoch.EpochClient(blocking_mode=True, debug=True)
 KEYPAIR = Account.generate()
 EPOCH_CLI.spend(genesis, KEYPAIR.get_address(), 100000)
 print(f"Test account is {KEYPAIR.get_address()} with balance {100000}")
+
+
+@contextmanager
+def tempdir():
+    # contextmanager to generate and delete a temporary directory
+    path = tempfile.mkdtemp()
+    try:
+        yield path
+    finally:
+        shutil.rmtree(path)
