@@ -3,15 +3,64 @@ from aeternity.openapi import OpenAPIClientException
 from aeternity.exceptions import TransactionHashMismatch
 import time
 import random
+import math
 
 # RLP version number
 # https://github.com/aeternity/protocol/blob/epoch-v0.10.1/serializations.md#binary-serialization
 VSN = 1
 
-# The list of tags can be found here:
-# https://github.com/aeternity/protocol/blob/epoch-v0.10.1/serializations.md#table-of-object-tags
-TAG_SIGNED_TX = 11
-TAG_SPEND_TX = 12
+# Tag constant for ids (type uint8)
+# see https://github.com/aeternity/protocol/blob/master/serializations.md#the-id-type
+# <<Tag:1/unsigned-integer-unit:8, Hash:32/binary-unit:8>>
+ID_TAG_ACCOUNT = 1
+ID_TAG_NAME = 2
+ID_TAG_COMMITMENT = 3
+ID_TAG_ORACLE = 4
+ID_TAG_CONTRACT = 5
+ID_TAG_CHANNEL = 6
+
+# Object tags
+# see https://github.com/aeternity/protocol/blob/master/serializations.md#binary-serialization
+
+OBJECT_TAG_ACCOUNT = 10
+OBJECT_TAG_SIGNED_TRANSACTION = 11
+OBJECT_TAG_SPEND_TRANSACTION = 12
+OBJECT_TAG_ORACLE = 20
+OBJECT_TAG_ORACLE_QUERY = 21
+OBJECT_TAG_ORACLE_REGISTER_TRANSACTION = 22
+OBJECT_TAG_ORACLE_QUERY_TRANSACTION = 23
+OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION = 24
+OBJECT_TAG_ORACLE_EXTEND_TRANSACTION = 25
+OBJECT_TAG_NAME_SERVICE_NAME = 30
+OBJECT_TAG_NAME_SERVICE_COMMITMENT = 31
+OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION = 32
+OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION = 33
+OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION = 34
+OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION = 35
+OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION = 36
+OBJECT_TAG_CONTRACT = 40
+OBJECT_TAG_CONTRACT_CALL = 41
+OBJECT_TAG_CONTRACT_CREATE_TRANSACTION = 42
+OBJECT_TAG_CONTRACT_CALL_TRANSACTION = 43
+OBJECT_TAG_CHANNEL_CREATE_TRANSACTION = 50
+OBJECT_TAG_CHANNEL_DEPOSIT_TRANSACTION = 51
+OBJECT_TAG_CHANNEL_WITHDRAW_TRANSACTION = 52
+OBJECT_TAG_CHANNEL_FORCE_PROGRESS_TRANSACTION = 521
+OBJECT_TAG_CHANNEL_CLOSE_MUTUAL_TRANSACTION = 53
+OBJECT_TAG_CHANNEL_CLOSE_SOLO_TRANSACTION = 54
+OBJECT_TAG_CHANNEL_SLASH_TRANSACTION = 55
+OBJECT_TAG_CHANNEL_SETTLE_TRANSACTION = 56
+OBJECT_TAG_CHANNEL_OFF_CHAIN_TRANSACTION = 57
+OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_TRANSFER = 570
+OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_DEPOSIT = 571
+OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_WITHDRAWAL = 572
+OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_CREATE_CONTRACT = 573
+OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_CALL_CONTRACT = 574
+OBJECT_TAG_CHANNEL = 58
+OBJECT_TAG_CHANNEL_SNAPSHOT_TRANSACTION = 59
+OBJECT_TAG_POI = 60
+OBJECT_TAG_MICRO_BODY = 101
+OBJECT_TAG_LIGHT_MICRO_BLOCK = 102
 
 
 class TxNotIncluded(Exception):
@@ -20,18 +69,28 @@ class TxNotIncluded(Exception):
         self.reason = reason
 
 
+def _b(val):
+    if isinstance(val, int):
+        s = int(math.ceil(val.bit_length() / 8))
+        return val.to_bytes(s, 'big')
+    if isinstance(val, str):
+        return val.encode("utf-8")
+
+
 class TxBuilder:
     """
     TxBuilder is used to build and post transactions to the chain.
     """
 
-    def __init__(self, epoch, account):
+    def __init__(self, epoch, account, native=False):
         """
         :param epoch: the epoch rest client
         :param account: the account that will be signing the transactions
+        :param native: if the transactions should be built by the sdk (True) or requested to the debug api (False)
         """
         self.epoch = epoch
         self.account = account
+        self.native_transactions = native
 
     @staticmethod
     def compute_absolute_ttl(epoch, relative_ttl):
@@ -74,7 +133,7 @@ class TxBuilder:
 
     def encode_signed_transaction(self, signed_tx, signature):
         """prepare a signed transaction message"""
-        tag = bytes([TAG_SIGNED_TX])
+        tag = bytes([OBJECT_TAG_SIGNED_TRANSACTION])
         vsn = bytes([VSN])
         encoded_signed_tx = hashing.encode_rlp("tx", [tag, vsn, [signature], signed_tx])
         encoded_signature = hashing.encode("sg", signature)
@@ -82,9 +141,11 @@ class TxBuilder:
 
     def sign_encode_transaction(self, tx):
         """
-        sign, encode and compute the hash of a transaction
+        Sign, encode and compute the hash of a transaction
+        :return: encoded_signed_tx, encoded_signature, tx_hash
         """
-        transaction = hashing.decode(tx.tx)
+        # decode the transaction if not in native mode
+        transaction = hashing.decode(tx) if self.native_transactions else hashing.decode(tx.tx)
         # sign the transaction
         signature = self.account.sign(transaction)
         # encode the transaction
@@ -162,19 +223,29 @@ class TxBuilder:
         """
         # compute the absolute ttl and the nonce
         nonce, ttl = self._get_nonce_ttl(ttl)
-        # send the update transaction
-        body = {
-            "recipient_id": recipient_id,
-            "amount": amount,
-            "fee":  fee,
-            "sender_id": self.account.get_address(),
-            "payload": payload,
-            "ttl": ttl,
-            "nonce": nonce,
-        }
-        # request a spend transaction
-        # TODO: this should be computed locally
-        tx = self.epoch.post_spend(body=body)
+
+        if self.native_transactions:
+            sid = _b(ID_TAG_ACCOUNT) + hashing.decode(self.account.get_address())
+            rid = _b(ID_TAG_ACCOUNT) + hashing.decode(recipient_id)
+            tx = hashing.encode_rlp("tx", [
+                _b(OBJECT_TAG_SPEND_TRANSACTION), _b(VSN),
+                sid, rid,
+                _b(amount), _b(fee), _b(ttl), _b(nonce),
+                _b(payload)
+            ])
+        else:
+            # send the update transaction
+            body = {
+                "recipient_id": recipient_id,
+                "amount": amount,
+                "fee":  fee,
+                "sender_id": self.account.get_address(),
+                "payload": payload,
+                "ttl": ttl,
+                "nonce": nonce,
+            }
+            # request a spend transaction
+            tx = self.epoch.post_spend(body=body)
         return self.sign_encode_transaction(tx)
 
     # NAMING #
