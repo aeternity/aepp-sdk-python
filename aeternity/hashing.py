@@ -35,8 +35,10 @@ def encode(prefix, data):
 
 
 def decode(data):
-    """decode data using the default encoding/decoding algorithm
+    """
+    Decode data using the default encoding/decoding algorithm
     :param data: a encoded and prefixed string (ex tx_..., sg_..., ak_....)
+    :return: the raw byte array of the decoded hased
     """
     if len(data.strip()) < 3 or data[2] != '_':
         raise ValueError('Invalid hash')
