@@ -137,7 +137,7 @@ class TxBuilder:
         :return: encoded_signed_tx, encoded_signature, tx_hash
         """
         # decode the transaction if not in native mode
-        transaction = hashing.decode(tx) if self.native_transactions else hashing.decode(tx.tx)
+        transaction = hashing.decode(tx.tx) if hasattr(tx, "tx") else hashing.decode(tx)
         # sign the transaction
         signature = self.account.sign(transaction)
         # encode the transaction
