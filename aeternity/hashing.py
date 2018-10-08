@@ -1,3 +1,4 @@
+import math
 import base58
 import rlp
 import secrets
@@ -88,3 +89,19 @@ def namehash_encode(prefix, name):
 
 def randint():
     return secrets.randbelow(2**64)
+
+
+def to_bytes(val):
+    """
+    Encode a value to bytes.
+    If the value is an int it will be encoded as bytes big endian
+    Raises ValueError if the input is not an int or string
+    """
+    if isinstance(val, int):
+        s = int(math.ceil(val.bit_length() / 8))
+        return val.to_bytes(s, 'big')
+    if isinstance(val, str):
+        return val.encode("utf-8")
+    if isinstance(val, bytes):
+        return val
+    raise ValueError("Byte serialization not supported")

@@ -2,8 +2,6 @@ from aeternity.tests import KEYPAIR, EPOCH_CLI
 from aeternity.signing import Account
 from aeternity import transactions
 
-# from aeternity.exceptions import TransactionNotFoundException
-
 
 def test_transaction_spend():
 
