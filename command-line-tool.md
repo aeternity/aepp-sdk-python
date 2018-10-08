@@ -17,7 +17,7 @@ export EPOCH_URL='https://sdk-testnet.aepps.com'
 
 In order to do anything with æternity you'll need a wallet, and some tokens. The first step is to make yourself a wallet, called `mywallet`:
 ```
-$ aecli wallet mywallet create
+$ aecli account mywallet create
 Enter the wallet password []: 
 Wallet created
 Wallet address________________ ak_wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR
@@ -32,7 +32,7 @@ Next you'll need some tokens. We've set up a web page at [https://faucet.aepps.c
 Now you have transferred yourself tokens, check your balance:
 
 ```
-$ aecli wallet mywallet balance
+$ aecli account mywallet balance
 Enter the wallet password []: 
 Account balance_______________ 1000
 ```
@@ -103,7 +103,7 @@ Transactions__________________ 0
 The æternity naming system allows you to register a name for your account (or oracle).
 
 ```
-$ aecli wallet mywallet name 'newby.aet' claim
+$ aecli account mywallet name 'newby.aet' claim
 Enter the wallet password []: 
 Name newby.aet claimed
 Transaction hash______________ th_vmucE7sFSc8QjWBAJwkh2drN3jKwtSd7KYtYzjL6Bfg1x8kyq
@@ -136,7 +136,7 @@ TTL___________________________ 86329
 Let's make a second wallet, and give it some tokens. First, make the new wallet
 
 ```
-$ aecli wallet ./secondwallet create
+$ aecli account ./secondwallet create
 Enter the wallet password []: 
 Wallet created
 Wallet address________________ ak_gqYTvEBEivy2bk8MWYYNqXX2LvMRYho5i43YhPc6iiJNt6wwc
