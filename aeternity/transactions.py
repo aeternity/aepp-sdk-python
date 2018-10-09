@@ -3,7 +3,6 @@ from aeternity.openapi import OpenAPIClientException
 from aeternity.exceptions import TransactionHashMismatch
 import time
 import random
-import math
 
 # RLP version number
 # https://github.com/aeternity/protocol/blob/epoch-v0.10.1/serializations.md#binary-serialization
@@ -69,20 +68,12 @@ class TxNotIncluded(Exception):
         self.reason = reason
 
 
-def _b(val):
-    if isinstance(val, int):
-        s = int(math.ceil(val.bit_length() / 8))
-        return val.to_bytes(s, 'big')
-    if isinstance(val, str):
-        return val.encode("utf-8")
-
-
 class TxBuilder:
     """
     TxBuilder is used to build and post transactions to the chain.
     """
 
-    def __init__(self, epoch, account, native=False):
+    def __init__(self, epoch, account, native=True):
         """
         :param epoch: the epoch rest client
         :param account: the account that will be signing the transactions
@@ -145,7 +136,7 @@ class TxBuilder:
         :return: encoded_signed_tx, encoded_signature, tx_hash
         """
         # decode the transaction if not in native mode
-        transaction = hashing.decode(tx) if self.native_transactions else hashing.decode(tx.tx)
+        transaction = hashing.decode(tx.tx) if hasattr(tx, "tx") else hashing.decode(tx)
         # sign the transaction
         signature = self.account.sign(transaction)
         # encode the transaction
@@ -225,14 +216,19 @@ class TxBuilder:
         nonce, ttl = self._get_nonce_ttl(ttl)
 
         if self.native_transactions:
-            sid = _b(ID_TAG_ACCOUNT) + hashing.decode(self.account.get_address())
-            rid = _b(ID_TAG_ACCOUNT) + hashing.decode(recipient_id)
-            tx = hashing.encode_rlp("tx", [
-                _b(OBJECT_TAG_SPEND_TRANSACTION), _b(VSN),
+            sid = hashing.to_bytes(ID_TAG_ACCOUNT) + hashing.decode(self.account.get_address())
+            rid = hashing.to_bytes(ID_TAG_ACCOUNT) + hashing.decode(recipient_id)
+            tx = [
+                hashing.to_bytes(OBJECT_TAG_SPEND_TRANSACTION),
+                hashing.to_bytes(VSN),
                 sid, rid,
-                _b(amount), _b(fee), _b(ttl), _b(nonce),
-                _b(payload)
-            ])
+                hashing.to_bytes(amount),
+                hashing.to_bytes(fee),
+                hashing.to_bytes(ttl),
+                hashing.to_bytes(nonce),
+                hashing.to_bytes(payload)
+            ]
+            tx = hashing.encode_rlp("tx", tx)
         else:
             # send the update transaction
             body = {

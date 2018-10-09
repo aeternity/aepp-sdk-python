@@ -1,4 +1,5 @@
 from aeternity import hashing
+from pytest import raises
 
 
 def test_hashing_name_hashing():
@@ -44,3 +45,30 @@ def test_hashing_base58_encode():
             assert (o == i.get("data")) is i.get("match")
         except Exception as e:
             assert i.get("raise_error") is True
+
+
+def test_hashing_to_bites():
+    tts = [
+        {"in": "test", "bval": "test".encode("utf-8"), "match": True, "err": False},
+        {"in": "test", "bval": "t".encode("utf-8"), "match": False, "err": False},
+        {"in": 8, "bval": b'\x08', "match": True, "err": False},
+        {"in": 1000, "bval": b'\x00\x03\xe8', "match": False, "err": False},  # with padding
+        {"in": 1000, "bval": b'\x03\xe8', "match": True, "err": False},  # without padding
+        {"in": 1000, "bval": b'\x03\xe8', "match": True, "err": False},  # without padding
+        {"in": 13141231, "bval": b'\xc8\x84\xef', "match": True, "err": False},  # without padding
+        {"in": ["312321"], "bval": b'', "match": False, "err": True},
+        {"in": b'\x00\x16\xba\x14\xfb', "bval": b'\x00\x16\xba\x14\xfb', "match": True, "err": False},
+        {"in": b'\x16\xba\x14\xfb', "bval": b'\x00\x16\xba\x14\xfb', "match": False, "err": False},
+    ]
+
+    for tt in tts:
+        print(tt)
+        if tt['err']:
+            with raises(ValueError):
+                hashing.to_bytes(tt['in'])
+        elif tt['match']:
+            assert hashing.to_bytes(tt['in']) == tt['bval']
+        elif not tt['match']:
+            assert hashing.to_bytes(tt['in']) != tt['bval']
+        else:
+            assert False
