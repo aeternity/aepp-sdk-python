@@ -555,6 +555,9 @@ def inspect(obj):
         elif obj.startswith("ak_"):
             v = _epoch_cli().get_account_by_pubkey(pubkey=obj)
             _print_object(v)
+        elif obj.startswith("ct_"):
+            v = _epoch_cli().get_contract(pubkey=obj)
+            _print_object(v)
         elif obj.isdigit() and int(obj) >= 0:
             v = _epoch_cli().get_key_block_by_height(height=int(obj))
             _print_object(v)
