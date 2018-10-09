@@ -52,20 +52,20 @@ def _epoch_cli():
     return EpochClient(blocking_mode=ctx.obj.get(CTX_BLOCKING_MODE))
 
 
-def _account(password=None):
+def _account(keystore_name, password=None):
     """
     utility function to get the keypair from the click context
     :return: (keypair, keypath)
     """
     ctx = click.get_current_context()
-    kf = ctx.obj.get(CTX_KEY_PATH)
+    kf = ctx.obj.get(CTX_KEY_PATH) if keystore_name is None else keystore_name
     if not os.path.exists(kf):
         print(f'Key file {kf} does not exits.')
         exit(1)
     try:
         if password is None:
             password = click.prompt("Enter the account password", default='', hide_input=True)
-        return Account.load_from_keystore(kf, password), os.path.abspath(kf)
+        return signing.Account.load_from_keystore(kf, password), os.path.abspath(kf)
     except Exception:
         print("Invalid password")
         exit(1)
