@@ -187,89 +187,106 @@ def config(ctx):
 
 
 @cli.group(help="Handle account operations")
-@click.pass_context
-@click.argument('key_path', default='sign_key', envvar='WALLET_SIGN_KEY_PATH')
-def account(ctx, key_path):
-    ctx.obj[CTX_KEY_PATH] = key_path
+def account():
+    pass
 
 
 @account.command('create', help="Create a new account")
-@click.pass_context
+@click.argument('keystore_name')
 @click.option('--password', default=None, help="Set a password from the command line [WARN: this method is not secure]")
-@click.option('--force', default=False, is_flag=True, help="Overwrite exising keys without asking")
-def account_create(ctx, password, force):
-    kp = Account.generate()
-    kf = ctx.obj.get(CTX_KEY_PATH)
-    if not force and os.path.exists(kf):
-        click.confirm(f'Key file {kf} already exists, overwrite?', abort=True)
-    if password is None:
-        password = click.prompt("Enter the account password", default='', hide_input=True)
-    kp.save_to_keystore_file(kf, password)
-    _print_object({
-        'Account address': kp.get_address(),
-        'Account path': os.path.abspath(kf)
-    }, title='Account created')
+@click.option('--overwrite', default=False, is_flag=True, help="Overwrite exising keys without asking")
+@global_options
+def account_create(keystore_name, password, overwrite, force, wait, json_):
+    try:
+        set_global_options(force, wait, json_)
+        new_account = signing.Account.generate()
+        # TODO: introduce default configuration path
+        if not overwrite and os.path.exists(keystore_name):
+            click.confirm(f'Keystore file {keystore_name} already exists, overwrite?', abort=True)
+        if password is None:
+            password = click.prompt("Enter the account password", default='', hide_input=True)
+        new_account.save_to_keystore_file(keystore_name, password)
+        _print_object({
+            'Account address': new_account.get_address(),
+            'Account path': os.path.abspath(keystore_name)
+        }, title='Account created')
+    except Exception as e:
+        print(e)
 
 
 @account.command('save', help='Save a private keys string to a password protected file account')
-@click.pass_context
-@click.argument("private_key")
+@click.argument('keystore_name')
 @click.option('--password', default=None, help="Set a password from the command line [WARN: this method is not secure]")
-def account_save(ctx, private_key, password):
+@click.option('--overwrite', default=False, is_flag=True, help="Overwrite exising keys without asking")
+@global_options
+def account_save(keystore_name, private_key, password, overwrite, force, wait, json_):
     try:
-        kp = Account.from_private_key_string(private_key)
-        kf = ctx.obj.get(CTX_KEY_PATH)
-        if os.path.exists(kf):
-            click.confirm(f'Key file {kf} already exists, overwrite?', abort=True)
+        set_global_options(force, wait, json_)
+        account = signing.Account.from_private_key_string(private_key)
+        if not overwrite and os.path.exists(keystore_name):
+            click.confirm(f'Keystore file {keystore_name} already exists, overwrite?', abort=True)
         if password is None:
             password = click.prompt("Enter the account password", default='', hide_input=True)
-        kp.save_to_keystore_file(kf, password)
+        account.save_to_keystore_file(keystore_name, password)
         _print_object({
-            'Account address': kp.get_address(),
-            'Account path': os.path.abspath(kf)
+            'Account address': account.get_address(),
+            'Account path': os.path.abspath(keystore_name)
         }, title='Account saved')
     except Exception as e:
         print(e)
 
 
 @account.command('address', help="Print the account address (public key)")
+@click.argument('keystore_name')
 @click.option('--password', default=None, help="Read the password from the command line [WARN: this method is not secure]")
 @click.option('--private-key', is_flag=True, help="Print the private key instead of the account address")
-def account_address(password, private_key):
-    kp, kf = _account(password=password)
-    o = {
-        'Account address': kp.get_address()
-    }
-    if private_key:
-        o["Private key"] = kp.get_private_key()
-    _print_object(o)
+@global_options
+def account_address(password, keystore_name, private_key, force, wait, json_):
+    try:
+        set_global_options(force, wait, json_)
+        account, keystore_path = _account(keystore_name, password=password)
+        o = {'Account address': account.get_address()}
+        if private_key:
+            click.confirm(f'!Warning! this will print your private key on the screen, are you sure?', abort=True)
+            o["Private key"] = account.get_private_key()
+        _print_object(o)
+    except Exception as e:
+        print(e)
 
 
 @account.command('balance', help="Get the balance of a account")
+@click.argument('keystore_name')
 @click.option('--password', default=None, help="Read the password from the command line [WARN: this method is not secure]")
-def account_balance(password):
-    kp, _ = _account(password=password)
+@global_options
+def account_balance(keystore_name, password, force, wait, json_):
     try:
-        account = _epoch_cli().get_account_by_pubkey(pubkey=kp.get_address())
-        _print_object({"Account balance": account.balance})
+        set_global_options(force, wait, json_)
+        account, _ = _account(keystore_name, password=password)
+        account = _epoch_cli().get_account_by_pubkey(pubkey=account.get_address())
+        _print_object(account)
     except Exception as e:
         print(e)
 
 
 @account.command('spend', help="Create a transaction to another account")
-@click.argument('recipient_account', required=True)
-@click.argument('amount', required=True, default=1)
-@click.option('--ttl', default=MAX_TX_TTL, help="Validity of the spend transaction in number of blocks (default forever)")
+@click.argument('keystore_name', required=True)
+@click.argument('recipient_id', required=True)
+@click.argument('amount', required=True)
+@click.option('--ttl', default=DEFAULT_TX_TTL, help="Validity of the spend transaction in number of blocks (default forever)")
 @click.option('--password', default=None, help="Read the password from the command line [WARN: this method is not secure]")
-def account_spend(recipient_account, amount, ttl, password):
-    kp, _ = _account(password=password)
+@global_options
+def account_spend(keystore_name, recipient_id, amount, ttl, password, force, wait, json_):
     try:
-        _check_prefix(recipient_account, "ak")
-        data = _epoch_cli().spend(kp, recipient_account, amount, tx_ttl=ttl)
+        set_global_options(force, wait, json_)
+        account, keystore_path = _account(keystore_name, password=password)
+        if not utils.is_valid_hash(recipient_id, prefix="ak"):
+            raise ValueError("Invalid recipient address")
+        _, signature, tx_hash = _epoch_cli().spend(account, recipient_id, amount, tx_ttl=ttl)
         _print_object({
-            "Transaction hash": data.tx_hash,
-            "Sender account": kp.get_address(),
-            "Recipient account": recipient_account,
+            "Transaction hash": tx_hash,
+            "Signature": signature,
+            "Sender account": account.get_address(),
+            "Recipient account": recipient_id,
         }, title='Transaction posted to the chain')
     except Exception as e:
         print(e)
