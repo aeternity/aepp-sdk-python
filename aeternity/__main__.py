@@ -7,11 +7,9 @@ import sys
 from aeternity import __version__
 
 from aeternity.epoch import EpochClient
-from aeternity.config import Config, MAX_TX_TTL, ConfigException, UnsupportedEpochVersion
+from aeternity.config import Config, DEFAULT_TX_TTL, ConfigException, UnsupportedEpochVersion
 # from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
-from aeternity.signing import Account
-from aeternity.contract import Contract
-from aeternity.aens import AEName
+from . import utils, signing, aens, contract
 
 from datetime import datetime, timezone
 
