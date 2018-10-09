@@ -87,13 +87,25 @@ def _po(label, value, offset=0):
         for k, v in value._asdict().items():
             _po(k, v, o)
     elif isinstance(value, list) and len(value) > 0:
-        _po(label, ', '.join([str(x) for x in value]), offset)
+        if label == "pow":
+            return
+        lo = " " * offset
+        print(f"{lo}{label.capitalize().replace('_',' ')}")
+        o = offset + 1
+        for i, x in enumerate(value):
+            _po(f".{i+1}", x, o)
+        # _po("", )
+        # _po(label, ', '.join([str(x) for x in value]), offset)
     else:
         lo = " " * offset
         lj = 53 - len(lo)
         if label == "Time":
             value = datetime.fromtimestamp(value / 1000, timezone.utc).isoformat('T')
-        print(f"{lo}{label.ljust(lj, '_')} {value}")
+        if len(label) > 0:
+            label = label.capitalize().replace('_', ' ').ljust(lj, '_')
+        else:
+            label = ' ' * lj
+        print(f"{lo}{label} {value}")
 
 
 def _print_object(data, title=None):
