@@ -129,6 +129,26 @@ def _print_object(data, title=None):
 # Commands
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
+# set global options TODO: this is a bit silly, we should probably swich back to stdlib
+_global_options = [
+    click.option('--force', is_flag=True, default=False, help='Ignore epoch version compatibility check'),
+    click.option('--wait', is_flag=True, default=False, help='Wait for a transaction to be included in the chain before returning'),
+    click.option('--json', 'json_', is_flag=True, default=False, help='Print output in JSON format'),
+]
+
+
+def global_options(func):
+    for option in reversed(_global_options):
+        func = option(func)
+    return func
+
+
+def set_global_options(force, wait, json_):
+    ctx = click.get_current_context()
+    ctx.obj[CTX_FORCE_COMPATIBILITY] = force
+    ctx.obj[CTX_BLOCKING_MODE] = wait
+    ctx.obj[CTX_OUTPUT_JSON] = json_
+
 # the priority for the url selection is PARAM, ENV, DEFAULT
 
 
