@@ -3,7 +3,6 @@ from aeternity.openapi import OpenAPIClientException
 from aeternity.exceptions import TransactionHashMismatch
 import time
 import random
-import math
 
 # RLP version number
 # https://github.com/aeternity/protocol/blob/epoch-v0.10.1/serializations.md#binary-serialization

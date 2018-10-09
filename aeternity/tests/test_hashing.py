@@ -72,4 +72,3 @@ def test_hashing_to_bites():
             assert hashing.to_bytes(tt['in']) != tt['bval']
         else:
             assert False
-
