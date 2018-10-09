@@ -14,11 +14,11 @@ def _base58_decode(encoded_str):
 
 
 def _base58_encode(data):
-    """crete a base58 encoded string"""
+    """create a base58 encoded string"""
     return base58.b58encode_check(data)
 
 
-def _blacke2b_digest(data):
+def _blake2b_digest(data):
     """create a blacke2b 32 bit raw encoded digest"""
     return blake2b(data=data, digest_size=32, encoder=RawEncoder)
 
