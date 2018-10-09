@@ -20,10 +20,8 @@ logging.basicConfig(format='%(message)s', level=logging.INFO)
 
 
 CTX_EPOCH_URL = 'EPOCH_URL'
-CTX_EPOCH_URL_INTERNAL = 'EPOCH_URL_INTERNAL'
-CTX_EPOCH_URL_WEBSOCKET = 'EPOCH_URL_WEBSOCKET'
+CTX_EPOCH_URL_DEBUG = 'EPOCH_URL_INTERNAL'
 CTX_KEY_PATH = 'KEY_PATH'
-CTX_VERBOSE = 'VERBOSE'
 CTX_QUIET = 'QUIET'
 CTX_AET_DOMAIN = 'AET_NAME'
 CTX_FORCE_COMPATIBILITY = 'CTX_FORCE_COMPATIBILITY'
@@ -35,10 +33,12 @@ def _epoch_cli():
     try:
         ctx = click.get_current_context()
         # set the default configuration
+        url = ctx.obj.get(CTX_EPOCH_URL)
+        url_i = ctx.obj.get(CTX_EPOCH_URL_DEBUG)
+        url_i = url_i if url_i is not None else url
         Config.set_defaults(Config(
-            external_url=ctx.obj.get(CTX_EPOCH_URL),
-            internal_url=ctx.obj.get(CTX_EPOCH_URL_INTERNAL),
-            websocket_url=ctx.obj.get(CTX_EPOCH_URL_WEBSOCKET),
+            external_url=url,
+            internal_url=url_i,
             force_comaptibility=ctx.obj.get(CTX_FORCE_COMPATIBILITY)
         ))
     except ConfigException as e:
@@ -69,31 +69,6 @@ def _account(password=None):
     except Exception:
         print("Invalid password")
         exit(1)
-
-
-def _check_prefix(data, prefix):
-    """
-    helper method to check the validity of a prefix
-    """
-
-    if len(data) < 3:
-        print(f"Invalid input: '{data}'")
-        exit(1)
-
-    if not data.startswith(f"{prefix}_"):
-        if prefix == 'ak':
-            print("Invalid account address, it shoudld be like: ak_....")
-        if prefix == 'th':
-            print("Invalid transaction hash, it shoudld be like: th_....")
-        if prefix in ('bh', 'kh'):
-            print("Invalid block hash, it shoudld be like: bh_...., kh_...")
-        exit(1)
-
-
-def _verbose():
-    """tell if the command has the verbose flag"""
-    ctx = click.get_current_context()
-    return ctx.obj.get(CTX_VERBOSE, False)
 
 
 def _po(label, value, offset=0):
@@ -149,14 +124,10 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.pass_context
 @click.version_option()
 @click.option('--url', '-u', default='https://sdk-testnet.aepps.com', envvar='EPOCH_URL', help='Epoch node url', metavar='URL')
-@click.option('--url-internal', '-i', default='https://sdk-testnet.aepps.com/internal', envvar='EPOCH_URL_INTERNAL', metavar='URL')
-@click.option('--url-websocket', '-w', default='ws://sdk-testnet.aepps.com', envvar='EPOCH_URL_WEBSOCKET', metavar='URL')
-@click.option('--verbose', '-v', is_flag=True, default=False, help='Print verbose data')
-@click.option('--force', '-f', is_flag=True, default=False, help='Ignore epoch version compatibility check')
-@click.option('--wait', is_flag=True, default=False, help='Wait for a transaction to be included in the chain before returning')
-@click.option('--json', 'json_', is_flag=True, default=False, help='Print output in JSON format')
+@click.option('--debug-url', '-d', default=None, envvar='EPOCH_URL_DEBUG', metavar='URL')
+@global_options
 @click.version_option(version=__version__)
-def cli(ctx, url, url_internal, url_websocket, verbose, force, wait, json_):
+def cli(ctx, url, debug_url, force, wait, json_):
     """
     Welcome to the aecli client.
 
@@ -164,12 +135,8 @@ def cli(ctx, url, url_internal, url_websocket, verbose, force, wait, json_):
 
     """
     ctx.obj[CTX_EPOCH_URL] = url
-    ctx.obj[CTX_EPOCH_URL_INTERNAL] = url_internal
-    ctx.obj[CTX_EPOCH_URL_WEBSOCKET] = url_websocket
-    ctx.obj[CTX_VERBOSE] = verbose
-    ctx.obj[CTX_FORCE_COMPATIBILITY] = force
-    ctx.obj[CTX_BLOCKING_MODE] = wait
-    ctx.obj[CTX_OUTPUT_JSON] = json_
+    ctx.obj[CTX_EPOCH_URL_DEBUG] = debug_url
+    set_global_options(force, wait, json_)
 
 
 @cli.command('config', help="Print the client configuration")
@@ -177,8 +144,6 @@ def cli(ctx, url, url_internal, url_websocket, verbose, force, wait, json_):
 def config(ctx):
     _print_object({
         "Epoch URL": ctx.obj.get(CTX_EPOCH_URL),
-        "Epoch internal URL": ctx.obj.get(CTX_EPOCH_URL_INTERNAL, 'N/A'),
-        "Epoch websocket URL": ctx.obj.get(CTX_EPOCH_URL_WEBSOCKET, 'N/A'),
     }, title="aecli settings")
 
 
