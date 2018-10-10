@@ -134,9 +134,20 @@ _global_options = [
     click.option('--json', 'json_', is_flag=True, default=False, help='Print output in JSON format'),
 ]
 
+_account_options = [
+    click.option('--password', default=None, help="Read the password from the command line [WARN: this method is not secure]")
+]
+
 
 def global_options(func):
     for option in reversed(_global_options):
+        func = option(func)
+    return func
+
+
+def account_options(func):
+    func = global_options(func)
+    for option in reversed(_account_options):
         func = option(func)
     return func
 
@@ -193,9 +204,8 @@ def account():
 
 @account.command('create', help="Create a new account")
 @click.argument('keystore_name')
-@click.option('--password', default=None, help="Set a password from the command line [WARN: this method is not secure]")
 @click.option('--overwrite', default=False, is_flag=True, help="Overwrite exising keys without asking")
-@global_options
+@account_options
 def account_create(keystore_name, password, overwrite, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
@@ -216,9 +226,8 @@ def account_create(keystore_name, password, overwrite, force, wait, json_):
 
 @account.command('save', help='Save a private keys string to a password protected file account')
 @click.argument('keystore_name')
-@click.option('--password', default=None, help="Set a password from the command line [WARN: this method is not secure]")
 @click.option('--overwrite', default=False, is_flag=True, help="Overwrite exising keys without asking")
-@global_options
+@account_options
 def account_save(keystore_name, private_key, password, overwrite, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
@@ -238,9 +247,8 @@ def account_save(keystore_name, private_key, password, overwrite, force, wait, j
 
 @account.command('address', help="Print the account address (public key)")
 @click.argument('keystore_name')
-@click.option('--password', default=None, help="Read the password from the command line [WARN: this method is not secure]")
 @click.option('--private-key', is_flag=True, help="Print the private key instead of the account address")
-@global_options
+@account_options
 def account_address(password, keystore_name, private_key, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
@@ -256,8 +264,7 @@ def account_address(password, keystore_name, private_key, force, wait, json_):
 
 @account.command('balance', help="Get the balance of a account")
 @click.argument('keystore_name')
-@click.option('--password', default=None, help="Read the password from the command line [WARN: this method is not secure]")
-@global_options
+@account_options
 def account_balance(keystore_name, password, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
@@ -272,9 +279,8 @@ def account_balance(keystore_name, password, force, wait, json_):
 @click.argument('keystore_name', required=True)
 @click.argument('recipient_id', required=True)
 @click.argument('amount', required=True)
-@click.option('--ttl', default=DEFAULT_TX_TTL, help="Validity of the spend transaction in number of blocks (default forever)")
-@click.option('--password', default=None, help="Read the password from the command line [WARN: this method is not secure]")
-@global_options
+@click.option('--ttl', default=config.DEFAULT_TX_TTL, help="Validity of the spend transaction in number of blocks (default forever)")
+@account_options
 def account_spend(keystore_name, recipient_id, amount, ttl, password, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
