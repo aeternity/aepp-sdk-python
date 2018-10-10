@@ -182,7 +182,7 @@ def cli(ctx, url, debug_url, force, wait, json_):
 
 @cli.command('config', help="Print the client configuration")
 @click.pass_context
-def config(ctx):
+def config_cmd(ctx):
     _print_object({
         "Epoch URL": ctx.obj.get(CTX_EPOCH_URL),
     }, title="aecli settings")
