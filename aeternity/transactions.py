@@ -91,7 +91,7 @@ class TxBuilder:
         :param relative_ttl: the relative ttl, must be > 0
         """
         if relative_ttl <= 0:
-            raise ValueError("ttl must be greather than 0")
+            raise ValueError("ttl must be greater than 0")
         height = epoch.get_current_key_block_height()
         return height + relative_ttl
 
@@ -152,13 +152,13 @@ class TxBuilder:
         this listen to pending transactions.
         The method will wait for a specific transaction to be included in the chain,
         it will return False if one of the following conditions are met:
-        - the chain reply with a 404 not found (the transaction was expugned)
+        - the chain reply with a 404 not found (the transaction was expunged)
         - the account nonce is >= of the transaction nonce (transaction is in an illegal state)
         - the ttl of the transaction or the one passed as parameter has been reached
         :return: True if the transaction id found False otherwise
         """
         if max_retries <= 0:
-            raise ValueError("Retries must be greather than 0")
+            raise ValueError("Retries must be greater than 0")
 
         n = 1
         total_sleep = 0
@@ -186,7 +186,7 @@ class TxBuilder:
                     raise TxNotIncluded(tx_hash=tx_hash, reason=f"The nonce for this transaction ({tx_nonce}) has been used ")
 
             if n >= max_retries:
-                raise TxNotIncluded(tx_hash=tx_hash, reason=f"The transaction was not incluced in {total_sleep} seconds, wait aborted")
+                raise TxNotIncluded(tx_hash=tx_hash, reason=f"The transaction was not included in {total_sleep} seconds, wait aborted")
             # calculate sleep time
             sleep_time = (polling_interval ** n) + (random.randint(0, 1000) / 1000.0)
             time.sleep(sleep_time)

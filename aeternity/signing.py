@@ -41,7 +41,7 @@ class Account:
 
     def verify(self, data, signature):
         """
-        Verify data signature, raise an error if the singnature cannot be verified
+        Verify data signature, raise an error if the signature cannot be verified
         :param data: the data
         :param signature: the signature to verify
         """
@@ -134,7 +134,7 @@ class Account:
         :return: a keypair object or raise error if the public key doesnt match
         """
         k = cls._raw_key(key_string)
-        # the private key string is composed with [private_key+pyblic_key]
+        # the private key string is composed with [private_key+public_key]
         # https://blog.mozilla.org/warner/2011/11/29/ed25519-keys/
         signing_key = SigningKey(seed=k[0:32], encoder=RawEncoder)
         kp = Account(signing_key, signing_key.verify_key)

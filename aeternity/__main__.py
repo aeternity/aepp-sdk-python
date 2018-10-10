@@ -37,7 +37,7 @@ def _epoch_cli():
         config.Config.set_defaults(config.Config(
             external_url=url,
             internal_url=url_i,
-            force_comaptibility=ctx.obj.get(CTX_FORCE_COMPATIBILITY)
+            force_compatibility=ctx.obj.get(CTX_FORCE_COMPATIBILITY)
         ))
     except config.ConfigException as e:
         print("Configuration error: ", e)
@@ -72,7 +72,7 @@ def _account(keystore_name, password=None):
 def _po(label, value, offset=0):
     """
     pretty printer
-    :param data: single enty or list of key-value tuples
+    :param data: single entry or list of key-value tuples
     :param title: optional title
     :param quiet: if true print only the values
     """
@@ -127,7 +127,7 @@ def _print_object(data, title=None):
 # Commands
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
-# set global options TODO: this is a bit silly, we should probably swich back to stdlib
+# set global options TODO: this is a bit silly, we should probably switch back to stdlib
 _global_options = [
     click.option('--force', is_flag=True, default=False, help='Ignore epoch version compatibility check'),
     click.option('--wait', is_flag=True, default=False, help='Wait for a transaction to be included in the chain before returning'),
@@ -204,7 +204,7 @@ def account():
 
 @account.command('create', help="Create a new account")
 @click.argument('keystore_name')
-@click.option('--overwrite', default=False, is_flag=True, help="Overwrite exising keys without asking")
+@click.option('--overwrite', default=False, is_flag=True, help="Overwrite existing keys without asking")
 @account_options
 def account_create(keystore_name, password, overwrite, force, wait, json_):
     try:
@@ -226,7 +226,7 @@ def account_create(keystore_name, password, overwrite, force, wait, json_):
 
 @account.command('save', help='Save a private keys string to a password protected file account')
 @click.argument('keystore_name')
-@click.option('--overwrite', default=False, is_flag=True, help="Overwrite exising keys without asking")
+@click.option('--overwrite', default=False, is_flag=True, help="Overwrite existing keys without asking")
 @account_options
 def account_save(keystore_name, private_key, password, overwrite, force, wait, json_):
     try:
@@ -588,7 +588,7 @@ def inspect(obj):
             v = _epoch_cli().get_key_block_by_height(height=int(obj))
             _print_object(v)
         else:
-            raise ValueError(f"input not recongized: {obj}")
+            raise ValueError(f"input not recognized: {obj}")
     except Exception as e:
         print("Error:", e)
 
