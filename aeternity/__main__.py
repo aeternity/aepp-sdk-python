@@ -301,91 +301,111 @@ def account_spend(keystore_name, recipient_id, amount, ttl, password, force, wai
 #
 
 
-@account.group(help="Handle name lifecycle")
-@click.argument('domain')
-@click.pass_context
-def name(ctx, domain):
-    ctx.obj[CTX_AET_DOMAIN] = domain
+@cli.group(help="Handle name lifecycle")
+def name():
+    pass
 
 
 @name.command('claim', help="Claim a domain name")
-@click.option("--name-ttl", default=100, help='Lifetime of the claim in blocks (default 100)')
-@click.option("--ttl", default=100, help='Lifetime of the claim request in blocks (default 100)')
-@click.pass_context
-def name_register(ctx, name_ttl, ttl):
+@click.argument('keystore_name', required=True)
+@click.argument('domain', required=True)
+@click.option("--name-ttl", default=config.DEFAULT_NAME_TTL, help='Lifetime of the claim in blocks (default 100)')
+@click.option("--ttl", default=config.DEFAULT_TX_TTL, help='Lifetime of the claim request in blocks (default 100)')
+@account_options
+def name_register(keystore_name, domain, name_ttl, ttl, password, force, wait, json_):
     try:
-        # retrieve the domain from the context
-        domain = ctx.obj.get(CTX_AET_DOMAIN)
-        # retrieve the keypair
-        kp, _ = _account()
+        set_global_options(force, wait, json_)
+        account, keystore_path = _account(keystore_name, password=password)
         name = _epoch_cli().AEName(domain)
         name.update_status()
-        if name.status != AEName.Status.AVAILABLE:
+        if name.status != aens.AEName.Status.AVAILABLE:
             print("Domain not available")
             exit(0)
-        tx = name.full_claim_blocking(kp, name_ttl=name_ttl, tx_ttl=ttl)
-        _print_object(tx, title=f"Name {domain} claimed")
-    except Exception as e:
+        txs = name.full_claim_blocking(account, name_ttl=name_ttl, tx_ttl=ttl)
+        _print_object(txs, title=f"Name {domain} claimed")
+    except ValueError as e:
         print(e)
 
 
 @name.command('update')
-@click.pass_context
-@click.argument('address')
+@click.argument('keystore_name', required=True)
+@click.argument('domain', required=True)
+@click.argument('address', required=True)
 @click.option("--name-ttl", default=100, help='Lifetime of the claim in blocks (default 100)')
 @click.option("--ttl", default=100, help='Lifetime of the claim request in blocks (default 100)')
-def name_update(ctx, address, name_ttl, ttl):
+@account_options
+def name_update(keystore_name, domain, address, name_ttl, ttl, password, force, wait, json_):
     """
     Update a name pointer
     """
-    # retrieve the domain from the context
-    domain = ctx.obj.get(CTX_AET_DOMAIN)
-    # retrieve the keypair
-    kp, _ = _account()
-    name = _epoch_cli().AEName(domain)
-    name.update_status()
-    if name.status != AEName.Status.CLAIMED:
-        print(f"Domain is {name.status} and cannot be transferred")
-        exit(0)
-    tx = name.update(kp, target=address, name_ttl=name_ttl, tx_ttl=ttl)
-    _print_object(tx, title=f"Name {domain} status {name.status}")
+    try:
+        set_global_options(force, wait, json_)
+        account, keystore_path = _account(keystore_name, password=password)
+        name = _epoch_cli().AEName(domain)
+        name.update_status()
+        if name.status != name.Status.CLAIMED:
+            print(f"Domain is {name.status} and cannot be transferred")
+            exit(0)
+        _, signature, tx_hash = name.update(account, target=address, name_ttl=name_ttl, tx_ttl=ttl)
+        _print_object({
+            "Transaction hash": tx_hash,
+            "Signature": signature,
+            "Sender account": account.get_address(),
+            "Target ID": address
+        }, title=f"Name {domain} status update")
+    except Exception as e:
+        print(e)
 
 
 @name.command('revoke')
-@click.pass_context
-def name_revoke(ctx):
-    # retrieve the domain from the context
-    domain = ctx.obj.get(CTX_AET_DOMAIN)
-    # retrieve the keypair
-    kp, _ = _account()
-    name = _epoch_cli().AEName(domain)
-    name.update_status()
-    if name.status == AEName.Status.AVAILABLE:
-        print("Domain is available, nothing to revoke")
-        exit(0)
-    tx = name.revoke(kp)
-
-    _print_object({'Transaction hash', tx.tx_hash}, title=f"Name {domain} status {name.status}")
+@click.argument('keystore_name', required=True)
+@click.argument('domain', required=True)
+@account_options
+def name_revoke(keystore_name, domain, password, force, wait, json_):
+    try:
+        set_global_options(force, wait, json_)
+        account, _ = _account(keystore_name, password=password)
+        name = _epoch_cli().AEName(domain)
+        name.update_status()
+        if name.status == name.Status.AVAILABLE:
+            print("Domain is available, nothing to revoke")
+            exit(0)
+        _, signature, tx_hash = name.revoke(account)
+        _print_object({
+            "Transaction hash": tx_hash,
+            "Signature": signature,
+            "Sender account": account.get_address(),
+        }, title=f"Name {domain} status revoke")
+    except Exception as e:
+        pass
 
 
 @name.command('transfer')
-@click.pass_context
+@click.argument('keystore_name', required=True)
+@click.argument('domain', required=True)
 @click.argument('address')
-def name_transfer(ctx, address):
+@account_options
+def name_transfer(keystore_name, domain, address, password, force, wait, json_):
     """
     Transfer a name to another account
     """
-    # retrieve the domain from the context
-    domain = ctx.obj.get(CTX_AET_DOMAIN)
-    # retrieve the keypair
-    kp, _ = _account()
-    name = _epoch_cli().AEName(domain)
-    name.update_status()
-    if name.status != AEName.Status.CLAIMED:
-        print(f"Domain is {name.status} and cannot be transferred")
-        exit(0)
-    tx = name.transfer_ownership(kp, address)
-    _print_object({'Transaction hash', tx}, title=f"Name {domain} status {name.status}")
+    try:
+        set_global_options(force, wait, json_)
+        account, _ = _account(keystore_name, password=password)
+        name = _epoch_cli().AEName(domain)
+        name.update_status()
+        if name.status != name.Status.CLAIMED:
+            print(f"Domain is {name.status} and cannot be transferred")
+            exit(0)
+        _, signature, tx_hash = name.transfer_ownership(account, address)
+        _print_object({
+            "Transaction hash": tx_hash,
+            "Signature": signature,
+            "Sender account": account.get_address(),
+            "Target ID": address
+        }, title=f"Name {domain} status transfer to {address}")
+    except Exception as e:
+        print(e)
 
 
 #     ____                 _
