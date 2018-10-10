@@ -9,7 +9,7 @@ from aeternity import __version__
 from aeternity.epoch import EpochClient
 # from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
 from . import utils, signing, aens, config
-from contract import Contract
+from aeternity.contract import Contract
 
 from datetime import datetime, timezone
 
@@ -459,7 +459,7 @@ def contract_compile(contract_file):
     try:
         with open(contract_file) as fp:
             code = fp.read()
-            c = _epoch_cli().Contract(contract.Contract.SOPHIA)
+            c = _epoch_cli().Contract(Contract.SOPHIA)
             result = c.compile(code)
             _print_object({"bytecode", result})
     except Exception as e:
@@ -561,8 +561,10 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
 
 @cli.command("inspect", help="Get information on transactions, blocks, etc...")
 @click.argument('obj')
-def inspect(obj):
+@global_options
+def inspect(obj, force, wait, json_):
     try:
+        set_global_options(force, wait, json_)
         if obj.endswith(".aet"):
             name = _epoch_cli().AEName(obj)
             name.update_status()

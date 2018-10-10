@@ -15,7 +15,7 @@ aecli_exe = os.path.join(current_folder, '..', '..', 'aecli')
 
 
 def call_aecli(*params):
-    args = [aecli_exe, '-u', NODE_URL, '--wait', '--json'] + list(params)
+    args = [aecli_exe, '-u', NODE_URL] + list(params) + ['--wait', '--json']
     print(" ".join(args))
     output = subprocess.check_output(args).decode('ascii')
     o = output.strip()
@@ -47,7 +47,7 @@ def test_cli_top():
 def test_cli_generate_account():
     with tempdir() as tmp_path:
         account_key = os.path.join(tmp_path, 'key')
-        call_aecli('account', account_key, 'create', '--password', 'secret', '--force')
+        call_aecli('account', 'create', account_key, '--password', 'secret', '--overwrite')
         # make sure the folder contains the keys
         files = sorted(os.listdir(tmp_path))
         assert len(files) == 1
@@ -57,19 +57,19 @@ def test_cli_generate_account():
 def test_cli_generate_account_and_account_info():
     with tempdir() as tmp_path:
         account_path = os.path.join(tmp_path, 'key')
-        j = call_aecli('account', account_path, 'create', '--password', 'secret')
+        j = call_aecli('account', 'create', account_path, '--password', 'secret')
         gen_address = j.get("Account address")
         assert utils.is_valid_hash(gen_address, prefix='ak')
-        j1 = call_aecli('account', account_path, 'address', '--password', 'secret')
+        j1 = call_aecli('account', 'address', account_path, '--password', 'secret')
         assert utils.is_valid_hash(j1.get('Account address'), prefix='ak')
 
 
 def test_cli_read_account_fail():
     with tempdir() as tmp_path:
         account_path = os.path.join(tmp_path, 'key')
-        j = call_aecli('account', account_path, 'create', '--password', 'secret')
+        j = call_aecli('account', 'create', account_path, '--password', 'secret')
         try:
-            j1 = call_aecli('account', account_path, 'address', '--password', 'WRONGPASS')
+            j1 = call_aecli('account', 'address', account_path, '--password', 'WRONGPASS')
             assert j.get("Account address") != j1.get("Account address")
         except CalledProcessError:
             # this is fine because invalid passwords exists the command with retcode 1
@@ -81,7 +81,7 @@ def test_cli_spend():
     with tempdir() as tmp_path:
         # save the private key on file
         sender_path = os.path.join(tmp_path, 'sender')
-        call_aecli('account', sender_path, 'save', KEYPAIR.get_private_key(), '--password', 'whatever')
+        call_aecli('account', 'save', sender_path, KEYPAIR.get_private_key(), '--password', 'whatever')
         # generate a new address
         recipient_address = Account.generate().get_address()
         # call the cli
@@ -96,13 +96,13 @@ def test_cli_spend_invalid_amount():
     # try to send a negative amount
     with tempdir() as tmp_path:
         account_path = os.path.join(tmp_path, 'key')
-        j = call_aecli('account', account_path, 'create', '--password', 'whatever')
+        j = call_aecli('account', 'create', account_path, '--password', 'whatever')
         receipient_address = j.get("Account address")
     with tempdir() as tmp_path:
         account_path = os.path.join(tmp_path, 'key')
-        call_aecli('account', account_path, 'create', '--password', 'secret')
+        call_aecli('account', 'create', account_path, '--password', 'secret')
         with pytest.raises(subprocess.CalledProcessError):
-            call_aecli('account', account_path, 'spend', receipient_address, '-1', '--password', 'secret')
+            call_aecli('account', 'spend', account_path,  receipient_address, '-1', '--password', 'secret')
 
 
 def test_cli_inspect_key_block_by_height():

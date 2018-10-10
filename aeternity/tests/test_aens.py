@@ -4,7 +4,6 @@ import string
 from pytest import raises
 
 from aeternity.aens import AEName
-
 from aeternity.tests import EPOCH_CLI, KEYPAIR
 
 # to run this test in other environments set the env vars as specified in the
@@ -21,7 +20,7 @@ def test_name_committment():
     domain = random_domain()
     name = EPOCH_CLI.AEName(domain)
     cl = name._get_commitment_hash()
-    cr = name.client.cli.get_commitment_id(name=name.domain, salt=name.preclaim_salt)
+    cr = name.client.get_commitment_id(name=name.domain, salt=name.preclaim_salt)
     assert cl == cr.commitment_id
 
 
