@@ -447,35 +447,31 @@ def oracle_query():
 #    \_____\___/|_| |_|\__|_|  \__,_|\___|\__|___/
 #
 #
-@cli.group('contract', help="Compile contracts")
-def contract_off_chain():
+
+@click.group('contract', help='Deploy and execute contracts on the chain')
+def contract():
     pass
 
 
-@contract_off_chain.command(help="Compile a contract")
+@contract.command(help="Compile a contract")
 @click.argument("contract_file")
 def contract_compile(contract_file):
     try:
         with open(contract_file) as fp:
             code = fp.read()
-
-            contract = _epoch_cli().Contract(Contract.SOPHIA)
-            result = contract.compile(code)
+            c = _epoch_cli().Contract(contract.Contract.SOPHIA)
+            result = c.compile(code)
             _print_object({"bytecode", result})
     except Exception as e:
         print(e)
 
 
-@account.group('contract', help='Deploy and execute contracts on the chain')
-def contract():
-    pass
-
-
 @contract.command('deploy', help='Deploy a contract on the chain')
-@click.argument("contract_file")
-# TODO: what is gas here
-@click.option("--gas", default=40000000, help='Amount of gas to deploy the contract')
-def contract_deploy(contract_file, gas):
+@click.argument('keystore_name', required=True)
+@click.argument("contract_file", required=True)
+@click.option("--gas", default=config.CONTRACT_DEFAULT_GAS, help='Amount of gas to deploy the contract')
+@account_options
+def contract_deploy(keystore_name, contract_file, gas, password, force, wait, json_):
     """
     Deploy a contract to the chain and create a deploy descriptor
     with the contract informations that can be use to invoke the contract
@@ -487,18 +483,18 @@ def contract_deploy(contract_file, gas):
     """
     try:
         with open(contract_file) as fp:
+            set_global_options(force, wait, json_)
+            account, _ = _account(keystore_name, password=password)
             code = fp.read()
             contract = _epoch_cli().Contract(code)
-            kp, _ = _account()
-            tx = contract.tx_create(kp, gas=gas)
-
+            tx = contract.tx_create(account, gas=gas)
             # save the contract data
             contract_data = {
                 'source': contract.source_code,
                 'bytecode': contract.bytecode,
                 'address': contract.address,
                 'transaction': tx.tx_hash,
-                'owner': kp.get_address(),
+                'owner': account.get_address(),
                 'created_at': datetime.now().isoformat('T')
             }
             # write the contract data to a file
@@ -515,12 +511,14 @@ def contract_deploy(contract_file, gas):
 
 
 @contract.command('call', help='Execute a function of the contract')
-@click.pass_context
-@click.argument("deploy_descriptor")
-@click.argument("function")
-@click.argument("params")
-@click.argument("return_type")
-def contract_call(ctx, deploy_descriptor, function, params, return_type):
+@click.argument('keystore_name', required=True)
+@click.argument("deploy_descriptor", required=True)
+@click.argument("function", required=True)
+@click.argument("params", required=True)
+@click.argument("return_type", required=True)
+@click.option("--gas", default=config.CONTRACT_DEFAULT_GAS, help='Amount of gas to deploy the contract')
+@account_options
+def contract_call(keystore_name, deploy_descriptor, function, params, return_type, gas,  password, force, wait, json_):
     try:
         with open(deploy_descriptor) as fp:
             contract = json.load(fp)
@@ -528,9 +526,11 @@ def contract_call(ctx, deploy_descriptor, function, params, return_type):
             bytecode = contract.get('bytecode')
             address = contract.get('address')
 
-            kp, _ = _account()
-            contract = _epoch_cli().Contract(source, bytecode=bytecode, address=address, client=_epoch_cli())
-            result = contract.tx_call(kp, function, params, gas=40000000)
+            set_global_options(force, wait, json_)
+            account, _ = _account(keystore_name, password=password)
+
+            contract = _epoch_cli().Contract(source, bytecode=bytecode, address=address)
+            result = contract.tx_call(account, function, params, gas=gas)
             _print_object({
                 'Contract address': contract.address,
                 'Gas price': result.gas_price,
