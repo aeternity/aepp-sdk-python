@@ -7,9 +7,9 @@ import sys
 from aeternity import __version__
 
 from aeternity.epoch import EpochClient
-from aeternity.config import Config, DEFAULT_TX_TTL, ConfigException, UnsupportedEpochVersion
 # from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
-from . import utils, signing, aens, contract
+from . import utils, signing, aens, config
+from contract import Contract
 
 from datetime import datetime, timezone
 
@@ -34,15 +34,15 @@ def _epoch_cli():
         url = ctx.obj.get(CTX_EPOCH_URL)
         url_i = ctx.obj.get(CTX_EPOCH_URL_DEBUG)
         url_i = url_i if url_i is not None else url
-        Config.set_defaults(Config(
+        config.Config.set_defaults(config.Config(
             external_url=url,
             internal_url=url_i,
             force_comaptibility=ctx.obj.get(CTX_FORCE_COMPATIBILITY)
         ))
-    except ConfigException as e:
+    except config.ConfigException as e:
         print("Configuration error: ", e)
         exit(1)
-    except UnsupportedEpochVersion as e:
+    except config.UnsupportedEpochVersion as e:
         print(e)
         exit(1)
 
