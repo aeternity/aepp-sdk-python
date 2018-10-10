@@ -9,13 +9,14 @@ from . import __compatibility__
 # https://github.com/aeternity/protocol/blob/44a93d3aab957ca820183c3520b9daf6b0fedff4/AENS.md#aens-entry
 NAME_MAX_TLL = 36000
 NAME_CLIENT_TTL = 60000
+DEFAULT_NAME_TTL = 500
 # default relative ttl in number of blocks  for executing transaction on the chain
 MAX_TX_TTL = sys.maxsize
-DEFAULT_TX_TTL = 100
+DEFAULT_TX_TTL = 500
 # default fee for posting transacrtion
 DEFAULT_FEE = 1
 # contracts
-CONTRACT_DEFAULT_GAS = 40000000
+CONTRACT_DEFAULT_GAS = 1000
 CONTRACT_DEFAULT_GAS_PRICE = 1
 CONTRACT_DEFAULT_DEPOSIT = 4
 CONTRACT_DEFAULT_VM_VERSION = 1
@@ -56,6 +57,8 @@ class Config:
                 raise UnsupportedEpochVersion(f"Unsupported epoch version {self.node_version}, supported version are {', '.join(__compatibility__)}")
         except requests.exceptions.ConnectionError as e:
             raise ConfigException(f"Error connecting to the epoch node at {self.api_url}, connection unavailable")
+        except Exception as e:
+            raise UnsupportedEpochVersion(f"Unable to understand node reply, peraphs is not an epoch node or is too old?")
 
     def __str__(self):
         return f'ws:{self.websocket_url} ext:{self.api_url} int:{self.api_url_internal}'
