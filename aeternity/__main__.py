@@ -621,56 +621,65 @@ def inspect(obj):
 
 
 @cli.group(help="Interact with the blockchain")
-def chain():
+@global_options
+def chain(force, wait, json_):
+    set_global_options(force, wait, json_)
     pass
 
 
 @chain.command('top')
-def chain_top():
+@global_options
+def chain_top(force, wait, json_):
     """
     Print the information of the top block of the chain.
     """
+    set_global_options(force, wait, json_)
     data = _epoch_cli().get_top_block()
     _print_object(data)
 
 
-@chain.command('version')
-def chain_version():
+@chain.command('status')
+@global_options
+def chain_status(force, wait, json_):
     """
-    Print the epoch node version.
+    Print the epoch node status.
     """
+    set_global_options(force, wait, json_)
     data = _epoch_cli().get_status()
     _print_object(data)
 
 
 @chain.command('play')
 @click.option('--height', type=int, help="From which height should play the chain (default top)")
-@click.option('--block-hash', help="From which block should play the chain (default top)")
 @click.option('--limit', '-l', type=int, default=sys.maxsize, help="Limit the number of block to print")
-def chain_play(height, block_hash, limit):
+@global_options
+def chain_play(height,  limit, force, wait, json_):
     """
     play the blockchain backwards
     """
-    if block_hash is not None:
-        _check_prefix(block_hash, "kh")
-        b = _epoch_cli().get_key_block_by_hash(hash=block_hash)
-    elif height is not None:
-        b = _epoch_cli().get_key_block_by_height(height=height)
-    else:
-        b = _epoch_cli().get_top_block()
-    # check the limit
-    limit = limit if limit > 0 else 0
-    while b is not None and limit > 0:
-        try:
-            _print_object(b, title=' >>>>> ')
+    try:
+        set_global_options(force, wait, json_)
+        cli = _epoch_cli()
+        g = cli.get_generation_by_height(height=height) if height is not None else cli.get_current_generation()
+        # check the limit
+        limit = limit if limit > 0 else 0
+        while g is not None and limit > 0:
+            v = g
+            # if there are microblocks print the transactions
+            if len(g.micro_blocks) > 0:
+                for mb in g.micro_blocks:
+                    txs = cli.get_micro_block_transactions_by_hash(hash=mb)
+                    v = {"keyblock": g.key_block, "transactions": txs}
+                    # _print_object(txs)
+            _print_object(v, title='\nGeneration')
             limit -= 1
             if limit <= 0:
                 break
-            b = _epoch_cli().get_key_block_by_hash(hash=b.prev_hash)
-        except Exception as e:
-            print(e)
-            b = None
-            pass
+            g = cli.get_generation_by_hash(hash=g.key_block.get("prev_key_hash"))
+    except Exception as e:
+        print(e)
+        g = None
+        pass
 
 
 # run the client
