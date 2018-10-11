@@ -4,7 +4,7 @@ import json
 import os
 import aeternity
 import random
-from aeternity.tests import NODE_URL, KEYPAIR, EPOCH_CLI, tempdir, random_domain
+from aeternity.tests import NODE_URL, ACCOUNT, EPOCH_CLI, tempdir, random_domain
 from aeternity.signing import Account
 from aeternity import utils
 from aeternity.aens import AEName
@@ -20,7 +20,7 @@ def account_path():
     with tempdir() as tmp_path:
         # save the private key on file
         sender_path = os.path.join(tmp_path, 'sender')
-        KEYPAIR.save_to_keystore_file(sender_path, 'aeternity_bc')
+        ACCOUNT.save_to_keystore_file(sender_path, 'aeternity_bc')
         yield sender_path
 
 
@@ -45,10 +45,10 @@ def test_cli_version():
 
 
 def test_cli_balance():
-    j = call_aecli('inspect', KEYPAIR.get_address())
+    j = call_aecli('inspect', ACCOUNT.get_address())
     assert isinstance(j.get("balance"), int)
     assert isinstance(j.get("nonce"), int)
-    assert j.get("id") == KEYPAIR.get_address()
+    assert j.get("id") == ACCOUNT.get_address()
     assert j.get("balance") > 0
 
 
@@ -91,21 +91,21 @@ def test_cli_read_account_fail():
 
 # @pytest.mark.skip('Fails with account not founds only on the master build server')
 def test_cli_spend(account_path):
-        # generate a new address
-        recipient_address = Account.generate().get_address()
-        # call the cli
+    # generate a new address
+    recipient_address = Account.generate().get_address()
+    # call the cli
     call_aecli('account', 'spend', account_path, recipient_address, "90", '--password', 'aeternity_bc')
-        # test that the recipient account has the requested amount
-        print(f"recipient address is {recipient_address}")
-        recipient_account = EPOCH_CLI.get_account_by_pubkey(pubkey=recipient_address)
+    # test that the recipient account has the requested amount
+    print(f"recipient address is {recipient_address}")
+    recipient_account = EPOCH_CLI.get_account_by_pubkey(pubkey=recipient_address)
     print(f"recipient address {recipient_address}, balance {recipient_account.balance}")
-        assert recipient_account.balance == 90
+    assert recipient_account.balance == 90
 
 
 def test_cli_spend_invalid_amount(account_path):
-        with pytest.raises(subprocess.CalledProcessError):
+    with pytest.raises(subprocess.CalledProcessError):
         receipient_address = Account.generate().get_address()
-            call_aecli('account', 'spend', account_path,  receipient_address, '-1', '--password', 'secret')
+        call_aecli('account', 'spend', account_path,  receipient_address, '-1', '--password', 'secret')
 
 
 def test_cli_inspect_key_block_by_height():
@@ -137,13 +137,13 @@ def test_cli_inspect_transaction_by_hash():
     # fill the account from genesys
     na = Account.generate()
     amount = random.randint(50, 150)
-    _, _, tx_hash = EPOCH_CLI.spend(KEYPAIR, na.get_address(), amount)
+    _, _, tx_hash = EPOCH_CLI.spend(ACCOUNT, na.get_address(), amount)
     # now inspect the transaction
     j = call_aecli('inspect', tx_hash)
     assert j.get("hash") == tx_hash
     assert j.get("block_height") > 0
     assert j.get("tx", {}).get("recipient_id") == na.get_address()
-    assert j.get("tx", {}).get("sender_id") == KEYPAIR.get_address()
+    assert j.get("tx", {}).get("sender_id") == ACCOUNT.get_address()
     assert j.get("tx", {}).get("amount") == amount
 
 

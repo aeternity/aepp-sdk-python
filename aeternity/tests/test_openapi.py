@@ -1,13 +1,13 @@
 import pytest
 from aeternity.openapi import OpenAPICli
-from aeternity.tests import NODE_URL, NODE_URL_INTERNAL, PUBLIC_KEY
+from aeternity.tests import NODE_URL, NODE_URL_DEBUG, PUBLIC_KEY
 
 client, priv_key, pub_key = None, None, None
 
 
 def test_generatedcli():
     # open client
-    client = OpenAPICli(NODE_URL, NODE_URL_INTERNAL)
+    client = OpenAPICli(NODE_URL, NODE_URL_DEBUG)
     calls = [
         {
             "name": "get_top_block",

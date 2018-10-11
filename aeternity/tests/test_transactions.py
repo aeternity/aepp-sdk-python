@@ -1,4 +1,4 @@
-from aeternity.tests import KEYPAIR, EPOCH_CLI
+from aeternity.tests import ACCOUNT, EPOCH_CLI
 from aeternity.signing import Account
 from aeternity import transactions
 
@@ -25,10 +25,10 @@ def test_transaction_spend():
 
     for tt in tts:
         # get a native transaction
-        txbn = transactions.TxBuilder(EPOCH_CLI, KEYPAIR, native=True)
+        txbn = transactions.TxBuilder(EPOCH_CLI, ACCOUNT, native=True)
         txn, sn, txhn = txbn.tx_spend(tt["native"][0], tt["native"][1], tt["native"][4], tt["native"][2], tt["native"][3])
         # get a debug transaction
-        txbd = transactions.TxBuilder(EPOCH_CLI, KEYPAIR, native=False)
+        txbd = transactions.TxBuilder(EPOCH_CLI, ACCOUNT, native=False)
         txd, sd, txhd = txbd.tx_spend(tt["debug"][0], tt["debug"][1], tt["debug"][4], tt["debug"][2], tt["debug"][3])
         # theys should be the same
         if tt["match"]:
