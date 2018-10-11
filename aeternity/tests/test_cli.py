@@ -154,4 +154,3 @@ def test_cli_name_claim(account_path):
     # call the cli
     call_aecli('name', 'claim', account_path, domain, '--password', 'aeternity_bc')
     EPOCH_CLI.AEName(domain).status == AEName.Status.CLAIMED
-    
