@@ -4,7 +4,7 @@ import json
 import os
 import aeternity
 import random
-from aeternity.tests import NODE_URL, ACCOUNT, EPOCH_CLI, tempdir, random_domain
+from aeternity.tests import NODE_URL, NODE_URL_DEBUG, ACCOUNT, EPOCH_CLI, tempdir, random_domain
 from aeternity.signing import Account
 from aeternity import utils
 from aeternity.aens import AEName
@@ -25,7 +25,7 @@ def account_path():
 
 
 def call_aecli(*params):
-    args = [aecli_exe, '-u', NODE_URL] + list(params) + ['--wait', '--json']
+    args = [aecli_exe, '-u', NODE_URL, '-d', NODE_URL_DEBUG] + list(params) + ['--wait', '--json']
     cmd = " ".join(args)
     print(cmd)
     status, output = subprocess.getstatusoutput(cmd)
