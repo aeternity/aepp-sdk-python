@@ -92,8 +92,6 @@ def _po(label, value, offset=0):
         o = offset + 1
         for i, x in enumerate(value):
             _po(f".{i+1}", x, o)
-        # _po("", )
-        # _po(label, ', '.join([str(x) for x in value]), offset)
     else:
         lo = " " * offset
         lj = 53 - len(lo)
@@ -130,12 +128,12 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 # set global options TODO: this is a bit silly, we should probably switch back to stdlib
 _global_options = [
     click.option('--force', is_flag=True, default=False, help='Ignore epoch version compatibility check'),
-    click.option('--wait', is_flag=True, default=False, help='Wait for a transaction to be included in the chain before returning'),
+    click.option('--wait', is_flag=True, default=False, help='Wait for transactions to be included'),
     click.option('--json', 'json_', is_flag=True, default=False, help='Print output in JSON format'),
 ]
 
 _account_options = [
-    click.option('--password', default=None, help="Read the password from the command line [WARN: this method is not secure]")
+    click.option('--password', default=None, help="Read account password from stdin [WARN: this method is not secure]")
 ]
 
 
@@ -225,7 +223,8 @@ def account_create(keystore_name, password, overwrite, force, wait, json_):
 
 
 @account.command('save', help='Save a private keys string to a password protected file account')
-@click.argument('keystore_name')
+@click.argument('keystore_name', required=True)
+@click.argument('private_key', required=True)
 @click.option('--overwrite', default=False, is_flag=True, help="Overwrite existing keys without asking")
 @account_options
 def account_save(keystore_name, private_key, password, overwrite, force, wait, json_):
@@ -278,7 +277,7 @@ def account_balance(keystore_name, password, force, wait, json_):
 @account.command('spend', help="Create a transaction to another account")
 @click.argument('keystore_name', required=True)
 @click.argument('recipient_id', required=True)
-@click.argument('amount', required=True)
+@click.argument('amount', required=True, type=int)
 @click.option('--ttl', default=config.DEFAULT_TX_TTL, help="Validity of the spend transaction in number of blocks (default forever)")
 @account_options
 def account_spend(keystore_name, recipient_id, amount, ttl, password, force, wait, json_):
@@ -315,13 +314,13 @@ def name():
 @name.command('claim', help="Claim a domain name")
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
-@click.option("--name-ttl", default=config.DEFAULT_NAME_TTL, help='Lifetime of the claim in blocks (default 100)')
-@click.option("--ttl", default=config.DEFAULT_TX_TTL, help='Lifetime of the claim request in blocks (default 100)')
+@click.option("--name-ttl", default=config.DEFAULT_NAME_TTL, help=f'Lifetime of the claim in blocks (default {config.DEFAULT_NAME_TTL})')
+@click.option("--ttl", default=config.DEFAULT_TX_TTL, help=f'Lifetime of the claim request in blocks (default {config.DEFAULT_TX_TTL})')
 @account_options
 def name_register(keystore_name, domain, name_ttl, ttl, password, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
-        account, keystore_path = _account(keystore_name, password=password)
+        account, _ = _account(keystore_name, password=password)
         name = _epoch_cli().AEName(domain)
         name.update_status()
         if name.status != aens.AEName.Status.AVAILABLE:
@@ -337,8 +336,8 @@ def name_register(keystore_name, domain, name_ttl, ttl, password, force, wait, j
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
 @click.argument('address', required=True)
-@click.option("--name-ttl", default=100, help='Lifetime of the claim in blocks (default 100)')
-@click.option("--ttl", default=100, help='Lifetime of the claim request in blocks (default 100)')
+@click.option("--name-ttl", default=100, help=f'Lifetime of the claim in blocks (default {config.DEFAULT_NAME_TTL})')
+@click.option("--ttl", default=100, help=f'Lifetime of the claim request in blocks (default {config.DEFAULT_TX_TTL})')
 @account_options
 def name_update(keystore_name, domain, address, name_ttl, ttl, password, force, wait, json_):
     """
@@ -346,7 +345,7 @@ def name_update(keystore_name, domain, address, name_ttl, ttl, password, force, 
     """
     try:
         set_global_options(force, wait, json_)
-        account, keystore_path = _account(keystore_name, password=password)
+        account, _ = _account(keystore_name, password=password)
         name = _epoch_cli().AEName(domain)
         name.update_status()
         if name.status != name.Status.CLAIMED:
@@ -363,7 +362,7 @@ def name_update(keystore_name, domain, address, name_ttl, ttl, password, force, 
         print(e)
 
 
-@name.command('revoke')
+@name.command('revoke', help="Revoke a claimed name")
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
 @account_options
@@ -386,7 +385,7 @@ def name_revoke(keystore_name, domain, password, force, wait, json_):
         pass
 
 
-@name.command('transfer')
+@name.command('transfer', help="Transfer a claimed domain to another account")
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
 @click.argument('address')

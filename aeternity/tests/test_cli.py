@@ -4,9 +4,10 @@ import json
 import os
 import aeternity
 import random
-from aeternity.tests import NODE_URL, KEYPAIR, EPOCH_CLI, tempdir
+from aeternity.tests import NODE_URL, KEYPAIR, EPOCH_CLI, tempdir, random_domain
 from aeternity.signing import Account
 from aeternity import utils
+from aeternity.aens import AEName
 
 import pytest
 
@@ -14,15 +15,27 @@ current_folder = os.path.dirname(os.path.abspath(__file__))
 aecli_exe = os.path.join(current_folder, '..', '..', 'aecli')
 
 
+@pytest.fixture
+def account_path():
+    with tempdir() as tmp_path:
+        # save the private key on file
+        sender_path = os.path.join(tmp_path, 'sender')
+        KEYPAIR.save_to_keystore_file(sender_path, 'aeternity_bc')
+        yield sender_path
+
+
 def call_aecli(*params):
     args = [aecli_exe, '-u', NODE_URL] + list(params) + ['--wait', '--json']
-    print(" ".join(args))
-    output = subprocess.check_output(args).decode('ascii')
-    o = output.strip()
+    cmd = " ".join(args)
+    print(cmd)
+    status, output = subprocess.getstatusoutput(cmd)
+    if status != 0:
+        print(output)
+        raise subprocess.CalledProcessError(status, cmd)
     try:
-        return json.loads(o)
+        return json.loads(output)
     except Exception as e:
-        return o
+        return output
 
 
 def test_cli_version():
@@ -76,32 +89,22 @@ def test_cli_read_account_fail():
             pass
 
 
-@pytest.mark.skip('Fails with account not founds only on the master build server')
-def test_cli_spend():
-    with tempdir() as tmp_path:
-        # save the private key on file
-        sender_path = os.path.join(tmp_path, 'sender')
-        call_aecli('account', 'save', sender_path, KEYPAIR.get_private_key(), '--password', 'whatever')
+# @pytest.mark.skip('Fails with account not founds only on the master build server')
+def test_cli_spend(account_path):
         # generate a new address
         recipient_address = Account.generate().get_address()
         # call the cli
-        call_aecli('account', sender_path, 'spend', '--password', 'whatever', recipient_address, "90")
+    call_aecli('account', 'spend', account_path, recipient_address, "90", '--password', 'aeternity_bc')
         # test that the recipient account has the requested amount
         print(f"recipient address is {recipient_address}")
         recipient_account = EPOCH_CLI.get_account_by_pubkey(pubkey=recipient_address)
+    print(f"recipient address {recipient_address}, balance {recipient_account.balance}")
         assert recipient_account.balance == 90
 
 
-def test_cli_spend_invalid_amount():
-    # try to send a negative amount
-    with tempdir() as tmp_path:
-        account_path = os.path.join(tmp_path, 'key')
-        j = call_aecli('account', 'create', account_path, '--password', 'whatever')
-        receipient_address = j.get("Account address")
-    with tempdir() as tmp_path:
-        account_path = os.path.join(tmp_path, 'key')
-        call_aecli('account', 'create', account_path, '--password', 'secret')
+def test_cli_spend_invalid_amount(account_path):
         with pytest.raises(subprocess.CalledProcessError):
+        receipient_address = Account.generate().get_address()
             call_aecli('account', 'spend', account_path,  receipient_address, '-1', '--password', 'secret')
 
 
@@ -142,3 +145,13 @@ def test_cli_inspect_transaction_by_hash():
     assert j.get("tx", {}).get("recipient_id") == na.get_address()
     assert j.get("tx", {}).get("sender_id") == KEYPAIR.get_address()
     assert j.get("tx", {}).get("amount") == amount
+
+
+def test_cli_name_claim(account_path):
+    # create a random domain
+    domain = random_domain()
+    print(f"Domain is {domain}")
+    # call the cli
+    call_aecli('name', 'claim', account_path, domain, '--password', 'aeternity_bc')
+    EPOCH_CLI.AEName(domain).status == AEName.Status.CLAIMED
+    

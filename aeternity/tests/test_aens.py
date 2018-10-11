@@ -1,19 +1,11 @@
-import random
-import string
+from aeternity.aens import AEName
+from aeternity.tests import EPOCH_CLI, KEYPAIR, random_domain
 
 from pytest import raises
-
-from aeternity.aens import AEName
-from aeternity.tests import EPOCH_CLI, KEYPAIR
 
 # to run this test in other environments set the env vars as specified in the
 # config.py
 from aeternity.signing import Account
-
-
-def random_domain(length=10):
-    rand_str = ''.join(random.choice(string.ascii_letters) for _ in range(length))
-    return rand_str + '.aet'
 
 
 def test_name_committment():

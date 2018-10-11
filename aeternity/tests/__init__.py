@@ -7,6 +7,8 @@ from aeternity import epoch
 import shutil
 import tempfile
 from contextlib import contextmanager
+import random
+import string
 
 logging.getLogger("requests").setLevel(logging.DEBUG)
 logging.getLogger("urllib3").setLevel(logging.DEBUG)
@@ -46,3 +48,8 @@ def tempdir():
         yield path
     finally:
         shutil.rmtree(path)
+
+
+def random_domain(length=10):
+    rand_str = ''.join(random.choice(string.ascii_letters) for _ in range(length))
+    return rand_str + '.aet'
