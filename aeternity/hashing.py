@@ -15,7 +15,7 @@ def _base58_decode(encoded_str):
 
 
 def _base58_encode(data):
-    """crete a base58 encoded string"""
+    """create a base58 encoded string"""
     return base58.b58encode_check(data)
 
 
@@ -39,7 +39,7 @@ def decode(data):
     """
     Decode data using the default encoding/decoding algorithm
     :param data: a encoded and prefixed string (ex tx_..., sg_..., ak_....)
-    :return: the raw byte array of the decoded hased
+    :return: the raw byte array of the decoded hashed
     """
     if len(data.strip()) < 3 or data[2] != '_':
         raise ValueError('Invalid hash')
@@ -49,7 +49,7 @@ def decode(data):
 def encode_rlp(prefix, data):
     """
     Encode an array in rlp format
-    :param prefix: the prefix to use in the enocoded string
+    :param prefix: the prefix to use in the encoded string
     :param data: the array that has to be encoded in rlp
     """
     if not isinstance(data, list):
@@ -59,12 +59,12 @@ def encode_rlp(prefix, data):
 
 
 def hash(data):
-    """run the default hashing algorihtm"""
+    """run the default hashing algorithm"""
     return _blacke2b_digest(data)
 
 
 def hash_encode(prefix, data):
-    """run the default hashing + digest algorihtms"""
+    """run the default hashing + digest algorithms"""
     return encode(prefix, hash(data))
 
 

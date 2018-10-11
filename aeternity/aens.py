@@ -203,7 +203,7 @@ class AEName:
             txb.wait_tx(tx_hash)
         return tx_hash
 
-    def transfer_ownership(self, account, receipient_pubkey,
+    def transfer_ownership(self, account, recipient_pubkey,
                            fee=DEFAULT_FEE,
                            name_ttl=NAME_MAX_TLL,
                            tx_ttl=DEFAULT_TX_TTL):
@@ -217,7 +217,7 @@ class AEName:
         # get the transaction builder
         txb = TxBuilder(self.client, account)
         # create claim transaction
-        tx, sg, tx_hash = txb.tx_name_transfer(name_id, receipient_pubkey, fee, tx_ttl)
+        tx, sg, tx_hash = txb.tx_name_transfer(name_id, recipient_pubkey, fee, tx_ttl)
         # post the transaction to the chain
         txb.post_transaction(tx, tx_hash)
         # update local status

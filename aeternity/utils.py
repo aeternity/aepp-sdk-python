@@ -16,7 +16,7 @@ def is_valid_hash(hash_str, prefix=None):
         # if prefix is not set then is valid
         if prefix is None:
             return True
-        # let's check the prfix
+        # let's check the prefix
         if not isinstance(prefix, list):
             prefix = [prefix]
         # if a match is not found then raise ValueError

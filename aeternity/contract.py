@@ -10,7 +10,7 @@ class ContractError(Exception):
     pass
 
 
-# contract lifecicle is
+# contract lifecycle is
 # compile contract (get the bytecode)
 # deploy the contract (get the address)
 # encode the calldata (get the )
@@ -60,9 +60,9 @@ class Contract:
             tx, sg, tx_hash = txb.tx_contract_call(self.address, call_data, function, arg, amount, gas, gas_price, vm_version, fee, tx_ttl)
             # post the transaction to the chain
             txb.post_transaction(tx, tx_hash)
-            # wait for transcation to be mined
+            # wait for transaction to be mined
             txb.wait_tx(tx_hash)
-            # unsigend transaciton of the call
+            # unsigned transaction of the call
             call_obj = self.client.cli.get_transaction_info_by_hash(hash=tx_hash)
             return call_obj
         except OpenAPIClientException as e:
