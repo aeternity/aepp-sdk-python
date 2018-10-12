@@ -32,6 +32,8 @@ def _sha256(data):
 
 def encode(prefix, data):
     """encode data using the default encoding/decoding algorithm and prepending the prefix with a prefix, ex: ak_encoded_data, th_encoded_data,..."""
+    if isinstance(data, str):
+        data = data.encode("utf-8")
     return f"{prefix}_{base58.b58encode_check(data)}"
 
 
