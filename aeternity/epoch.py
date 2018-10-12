@@ -1,5 +1,5 @@
 import json
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 import logging
 
 import time
@@ -82,6 +82,17 @@ class EpochClient:
 
     def update_top_block(self):
         self._top_block = self.get_top_block()
+
+    def get_top_block(self):
+        """
+        Override the native method to transform the get top block response object
+        to a Block
+        """
+        b = self.cli.get_top_block()
+        if hasattr(b, 'key_block'):
+            return namedtuple('Block', sorted(b.key_block))(**b.key_block)
+        else:
+            return namedtuple('Block', sorted(b.micro_block))(**b.micro_block)
 
     def get_block_by_hash(self, hash=None):
         """
