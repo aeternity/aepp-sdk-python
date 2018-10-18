@@ -69,39 +69,55 @@ def _account(keystore_name, password=None):
         exit(1)
 
 
-def _po(label, value, offset=0):
+def _pl(label, offset, value=None):
+    if label is None:
+        return
+    if value is None:
+        lo = " " * offset
+        print(f"{lo}{label.capitalize().replace('_',' ')}")
+        return
+    else:
+        lo = " " * offset
+        lj = 53 - len(lo)
+        if len(label) > 0:
+            lv = label.capitalize().replace('_', ' ')
+            lv = f"{lv} ".ljust(lj, '_')
+        else:
+            lv = ' ' * lj
+        print(f"{lo}{lv} {value}")
+
+
+def _po(label, value, offset=0, label_prefix=None):
     """
     pretty printer
     :param data: single entry or list of key-value tuples
     :param title: optional title
     :param quiet: if true print only the values
     """
+    label = label if label_prefix is None else f"{label_prefix} {label}"
     if isinstance(value, dict):
-        o = offset + 1
+        _pl(f"<{label}>", offset)
+        o = offset + 2
         for k, v in value.items():
             _po(k, v, o)
+        _pl(f"</{label}>", offset)
     elif isinstance(value, tuple):
-        o = offset + 1
+        _pl(f"<{label}>", offset)
+        o = offset + 2
         for k, v in value._asdict().items():
             _po(k, v, o)
-    elif isinstance(value, list) and len(value) > 0:
+        _pl(f"</{label}>", offset)
+    elif isinstance(value, list):
         if label == "pow":
             return
-        lo = " " * offset
-        print(f"{lo}{label.capitalize().replace('_',' ')}")
-        o = offset + 1
+        _pl(f"<{label} {len(value)}>", offset)
+        o = offset + 2
         for i, x in enumerate(value):
-            _po(f".{i+1}", x, o)
+            _po(f"{label[:-1]} #{i+1}", x, o)
     else:
-        lo = " " * offset
-        lj = 53 - len(lo)
-        if label == "Time":
+        if label.lower() == "time":
             value = datetime.fromtimestamp(value / 1000, timezone.utc).isoformat('T')
-        if len(label) > 0:
-            label = label.capitalize().replace('_', ' ').ljust(lj, '_')
-        else:
-            label = ' ' * lj
-        print(f"{lo}{label} {value}")
+        _pl(label, offset, value=value)
 
 
 def _print_object(data, title=None):
@@ -117,8 +133,6 @@ def _print_object(data, title=None):
         print(json.dumps(data, indent=2))
         return
 
-    if title is not None:
-        print(title)
     _po(title, data)
 
 
@@ -668,11 +682,12 @@ def chain_play(height,  limit, force, wait, json_):
             v = g
             # if there are microblocks print the transactions
             if len(g.micro_blocks) > 0:
+                txs = []
                 for mb in g.micro_blocks:
-                    txs = cli.get_micro_block_transactions_by_hash(hash=mb)
-                    v = {"keyblock": g.key_block, "transactions": txs}
-                    # _print_object(txs)
-            _print_object(v, title='\nGeneration')
+                    txs.append(cli.get_micro_block_transactions_by_hash(hash=mb))
+                v = {"keyblock": g.key_block, "Microblocks": txs}
+            _print_object(v, title='generation')
+            print('')
             limit -= 1
             if limit <= 0:
                 break

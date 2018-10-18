@@ -3,6 +3,7 @@ from pytest import raises
 
 from aeternity.contract import ContractError, Contract
 from aeternity.tests import ACCOUNT, EPOCH_CLI
+from aeternity import hashing, utils
 
 aer_identity_contract = '''
 contract Identity =
@@ -38,7 +39,9 @@ def test_sophia_contract_tx_call():
     result = contract.tx_call(ACCOUNT, 'main', '42', gas=1000)
     assert result is not None
     assert result.return_type == 'ok'
-    assert result.return_value.lower() == f'0x{hex(42)[2:].zfill(64).lower()}'
+    print("return", result.return_value)
+    print("raw", hashing.decode(result.return_value))
+    # assert result.return_value.lower() == hashing.encode("cb", f'{hex(42)[2:].zfill(64).lower()}')
 
     val, remote_type = contract.decode_data(result.return_value, 'int')
     assert val == 42
@@ -51,7 +54,7 @@ def test_sophia_contract_tx_call():
 def test_sophia_contract_compile():
     contract = EPOCH_CLI.Contract(aer_identity_contract)
     assert contract is not None
-    assert contract.bytecode.startswith('0x')
+    utils.is_valid_hash(contract.bytecode, prefix='cb')
 
 
 def test_sophia_contract_call():
@@ -65,7 +68,7 @@ def test_sophia_encode_calldata():
     contract = EPOCH_CLI.Contract(aer_identity_contract)
     result = contract.encode_calldata('main', '1')
     assert result is not None
-    assert result.startswith('0x')
+    assert utils.is_valid_hash(result, prefix='cb')
 
 
 def test_sophia_broken_contract_compile():
@@ -96,7 +99,7 @@ def test_evm_contract_compile():
     contract = EPOCH_CLI.Contract(aer_identity_contract, abi=Contract.EVM)
     print(contract)
     assert contract.bytecode is not None
-    assert contract.bytecode.startswith('0x')
+    assert utils.is_valid_hash(contract.bytecode, prefix='cb')
 
 # TODO This call fails with an out of gas exception
 
@@ -113,7 +116,7 @@ def test_evm_encode_calldata():
     contract = EPOCH_CLI.Contract(aer_identity_contract, abi=Contract.EVM)
     result = contract.encode_calldata('main', '1')
     assert result is not None
-    assert result == 'main1'
+    assert result == hashing.encode('cb', 'main1')
 
 
 def test_evm_broken_contract_compile():

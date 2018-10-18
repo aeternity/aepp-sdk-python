@@ -58,7 +58,7 @@ def test_name_status_unavailable():
     domain = random_domain()
     print(f"domain is {domain}")
     occupy_name = EPOCH_CLI.AEName(domain)
-    occupy_name.full_claim_blocking(ACCOUNT, name_ttl=100)
+    occupy_name.full_claim_blocking(ACCOUNT)
     # try to get the same name
     same_name = EPOCH_CLI.AEName(domain)
     assert not same_name.is_available()
@@ -70,7 +70,7 @@ def test_name_update():
     print(f"domain is {domain}")
     name = EPOCH_CLI.AEName(domain)
     print("Claim name ", domain)
-    name.full_claim_blocking(ACCOUNT, name_ttl=100)
+    name.full_claim_blocking(ACCOUNT)
     # domain claimed
     name.update_status()
     assert not EPOCH_CLI.AEName(domain).is_available(), 'The name should be claimed now'
@@ -86,7 +86,7 @@ def test_name_update():
 
 def test_name_transfer_ownership():
     name = EPOCH_CLI.AEName(random_domain())
-    name.full_claim_blocking(ACCOUNT, name_ttl=100)
+    name.full_claim_blocking(ACCOUNT)
     assert name.status == AEName.Status.CLAIMED
     name.update_status()
     assert name.pointers[0]['id'] == ACCOUNT.get_address()
@@ -101,7 +101,7 @@ def test_name_transfer_ownership():
     assert name.status == AEName.Status.TRANSFERRED
     # try changing the target using that new account
     name.update_status()
-    name.update(new_key_pair, target=new_key_pair.get_address(), name_ttl=10)
+    name.update(new_key_pair, new_key_pair.get_address())
     name.update_status()
     assert len(name.pointers) > 0, 'Pointers should not be empty'
     assert name.pointers[0]['id'] == new_key_pair.get_address()
@@ -120,7 +120,7 @@ def test_name_transfer_ownership():
 def test_name_revocation():
     domain = random_domain()
     name = EPOCH_CLI.AEName(domain)
-    name.full_claim_blocking(ACCOUNT, name_ttl=100)
+    name.full_claim_blocking(ACCOUNT)
     name.revoke(ACCOUNT)
     assert name.status == AEName.Status.REVOKED
     assert EPOCH_CLI.AEName(domain).is_available()
