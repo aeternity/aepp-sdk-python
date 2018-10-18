@@ -1,6 +1,6 @@
 from aeternity.exceptions import NameNotAvailable, MissingPreclaim, NameUpdateError
 from aeternity.openapi import OpenAPIClientException
-from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE, NAME_MAX_TLL, NAME_CLIENT_TTL
+from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE, DEFAULT_NAME_TTL, NAME_CLIENT_TTL
 from aeternity import hashing, utils, oracle, epoch
 from aeternity.transactions import TxBuilder
 
@@ -94,12 +94,12 @@ class AEName:
                             preclaim_fee=DEFAULT_FEE,
                             claim_fee=DEFAULT_FEE,
                             update_fee=DEFAULT_FEE,
-                            name_ttl=NAME_MAX_TLL,
+                            name_ttl=DEFAULT_NAME_TTL,
                             client_ttl=NAME_CLIENT_TTL,
                             target=None,
                             tx_ttl=DEFAULT_TX_TTL):
         """
-        execute a name claim and updates the pointer to it.
+        Execute a name claim and updates the pointer to it.
 
         It executes:
         1. preclaim
@@ -131,7 +131,7 @@ class AEName:
         if target is None:
             target = account.get_address()
         # run update
-        h = self.update(account, target, fee=update_fee, name_ttl=name_ttl, client_ttl=name_ttl)
+        h = self.update(account, target, fee=update_fee, name_ttl=name_ttl, client_ttl=client_ttl)
         hashes['update_tx'] = h
         # restore blocking value
         self.client.blocking_mode = blocking_orig
@@ -177,7 +177,7 @@ class AEName:
         return tx_hash
 
     def update(self, account, target,
-               name_ttl=NAME_MAX_TLL,
+               name_ttl=DEFAULT_NAME_TTL,
                client_ttl=NAME_CLIENT_TTL,
                fee=DEFAULT_FEE,
                tx_ttl=DEFAULT_TX_TTL):
@@ -189,6 +189,8 @@ class AEName:
             if target.oracle_id is None:
                 raise ValueError('You must register the oracle before using it as target')
             target = target.oracle_id
+        # TODO: check the value for name ttl?
+
         # get the name_id and pointers
         name_id = hashing.namehash_encode("nm", self.domain)
         pointers = self._get_pointers(target)
@@ -203,15 +205,11 @@ class AEName:
             txb.wait_tx(tx_hash)
         return tx_hash
 
-    def transfer_ownership(self, account, recipient_pubkey,
-                           fee=DEFAULT_FEE,
-                           name_ttl=NAME_MAX_TLL,
-                           tx_ttl=DEFAULT_TX_TTL):
+    def transfer_ownership(self, account, recipient_pubkey, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
         """
         transfer ownership of a name
         :return: the transaction
         """
-
         # get the name_id and pointers
         name_id = hashing.namehash_encode("nm", self.domain)
         # get the transaction builder
