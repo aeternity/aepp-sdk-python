@@ -1,3 +1,4 @@
+import math
 import base58
 import rlp
 import secrets
@@ -14,7 +15,7 @@ def _base58_decode(encoded_str):
 
 
 def _base58_encode(data):
-    """crete a base58 encoded string"""
+    """create a base58 encoded string"""
     return base58.b58encode_check(data)
 
 
@@ -35,8 +36,10 @@ def encode(prefix, data):
 
 
 def decode(data):
-    """decode data using the default encoding/decoding algorithm
+    """
+    Decode data using the default encoding/decoding algorithm
     :param data: a encoded and prefixed string (ex tx_..., sg_..., ak_....)
+    :return: the raw byte array of the decoded hashed
     """
     if len(data.strip()) < 3 or data[2] != '_':
         raise ValueError('Invalid hash')
@@ -46,7 +49,7 @@ def decode(data):
 def encode_rlp(prefix, data):
     """
     Encode an array in rlp format
-    :param prefix: the prefix to use in the enocoded string
+    :param prefix: the prefix to use in the encoded string
     :param data: the array that has to be encoded in rlp
     """
     if not isinstance(data, list):
@@ -56,12 +59,12 @@ def encode_rlp(prefix, data):
 
 
 def hash(data):
-    """run the default hashing algorihtm"""
+    """run the default hashing algorithm"""
     return _blacke2b_digest(data)
 
 
 def hash_encode(prefix, data):
-    """run the default hashing + digest algorihtms"""
+    """run the default hashing + digest algorithms"""
     return encode(prefix, hash(data))
 
 
@@ -86,3 +89,19 @@ def namehash_encode(prefix, name):
 
 def randint():
     return secrets.randbelow(2**64)
+
+
+def to_bytes(val):
+    """
+    Encode a value to bytes.
+    If the value is an int it will be encoded as bytes big endian
+    Raises ValueError if the input is not an int or string
+    """
+    if isinstance(val, int):
+        s = int(math.ceil(val.bit_length() / 8))
+        return val.to_bytes(s, 'big')
+    if isinstance(val, str):
+        return val.encode("utf-8")
+    if isinstance(val, bytes):
+        return val
+    raise ValueError("Byte serialization not supported")

@@ -1,4 +1,4 @@
-from aeternity.tests import PUBLIC_KEY, EPOCH_VERSION, KEYPAIR, EPOCH_CLI
+from aeternity.tests import PUBLIC_KEY, EPOCH_VERSION, ACCOUNT, EPOCH_CLI
 from aeternity.signing import Account
 from aeternity import openapi
 
@@ -46,7 +46,7 @@ def test_api_get_block_by_hash():
         # create a transaction so the top block is going to be an micro block
         if not has_mb:
             account = Account.generate().get_address()
-            EPOCH_CLI.spend(KEYPAIR, account, 100)
+            EPOCH_CLI.spend(ACCOUNT, account, 100)
         # wait for the next block
         # client.wait_for_next_block()
         block = EPOCH_CLI.get_block_by_hash(hash=latest_block.hash)

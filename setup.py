@@ -45,13 +45,12 @@ setup(
         'base58 == 0.2.5',
         'click == 6.7',
         'cryptography == 2.3',
-        'deprecation==2.0.5',
-        'flake8 == 3.5.0',
         'rlp == 0.6.0',
         'PyNaCl == 1.2.1',
         'requests == 2.18.4',
         'websocket_client == 0.48.0',
-        'validators == 0.12.1'
+        'validators == 0.12.1',
+        'eth-keyfile == 0.5.1'
     ],
     classifiers=[
         'Programming Language :: Python',

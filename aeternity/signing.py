@@ -6,6 +6,10 @@ import nacl
 from nacl.encoding import RawEncoder
 from nacl.signing import SigningKey
 from aeternity import hashing, utils
+# imports for keystore
+from datetime import datetime
+import eth_keyfile as keystore
+import json
 
 
 class Account:
@@ -37,11 +41,52 @@ class Account:
 
     def verify(self, data, signature):
         """
-        Verify data signature, raise an error if the singnature cannot be verified
+        Verify data signature, raise an error if the signature cannot be verified
         :param data: the data
         :param signature: the signature to verify
         """
         self.verifying_key.verify(signature, data)
+
+    def save_to_keystore_file(self, path, password):
+        """
+        Utility method for save_to_keystore
+        """
+        folder = os.path.dirname(path)
+        filename = os.path.basename(path)
+        self.save_to_keystore(folder, password, filename=filename)
+
+    def save_to_keystore(self, path, password, filename=None):
+        """
+        Save an account in a Keystore/JSON format
+        :param path: the folder where to store the keystore file
+        :param password: the password for the keystore
+        :param filename: an optional filename to use for the keystore (default to UTC--ISO8601Date--AccountAddress)
+        :return: the filename that has been used for the keystore
+        """
+        j = keystore.create_keyfile_json(self.signing_key.encode(encoder=RawEncoder), password.encode("utf-8"))
+        if filename is None:
+            filename = f"UTC--{datetime.utcnow().isoformat()}--{self.get_address()}"
+        with open(os.path.join(path, filename), 'w') as fp:
+            json.dump(j, fp)
+        return filename
+
+    @staticmethod
+    def load_from_keystore(path, password):
+        """
+        Load an account from a Keystore/JSON file
+        :param path: the path to the keystore
+        :param password: the password to decrypt the keystore
+        :return: the account
+
+        raise an error if the account cannot be opened
+
+        """
+        with open(path, 'r') as fp:
+            j = json.load(fp)
+            raw_priv = keystore.decode_keyfile_json(j, password.encode("utf-8"))
+            signing_key = SigningKey(seed=raw_priv[0:32], encoder=RawEncoder)
+            kp = Account(signing_key, signing_key.verify_key)
+            return kp
 
     def save_to_folder(self, folder, password, name='key'):
         """
@@ -89,7 +134,7 @@ class Account:
         :return: a keypair object or raise error if the public key doesnt match
         """
         k = cls._raw_key(key_string)
-        # the private key string is composed with [private_key+pyblic_key]
+        # the private key string is composed with [private_key+public_key]
         # https://blog.mozilla.org/warner/2011/11/29/ed25519-keys/
         signing_key = SigningKey(seed=k[0:32], encoder=RawEncoder)
         kp = Account(signing_key, signing_key.verify_key)

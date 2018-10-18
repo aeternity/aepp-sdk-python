@@ -2,7 +2,7 @@ import pytest
 from pytest import raises
 
 from aeternity.contract import ContractError, Contract
-from aeternity.tests import KEYPAIR, EPOCH_CLI
+from aeternity.tests import ACCOUNT, EPOCH_CLI
 
 aer_identity_contract = '''
 contract Identity =
@@ -23,7 +23,7 @@ contract Identity =
 
 def test_sophia_contract_tx_create():
     contract = EPOCH_CLI.Contract(aer_identity_contract)
-    contract.tx_create(KEYPAIR, gas=10000)
+    contract.tx_create(ACCOUNT, gas=10000)
     assert contract.address is not None
     assert len(contract.address) > 0
     assert contract.address.startswith('ct')
@@ -31,11 +31,11 @@ def test_sophia_contract_tx_create():
 
 def test_sophia_contract_tx_call():
     contract = EPOCH_CLI.Contract(aer_identity_contract)
-    tx = contract.tx_create(KEYPAIR, gas=1000)
+    tx = contract.tx_create(ACCOUNT, gas=1000)
     print("contract: ", contract.address)
     print("tx contract: ", tx)
 
-    result = contract.tx_call(KEYPAIR, 'main', '42', gas=1000)
+    result = contract.tx_call(ACCOUNT, 'main', '42', gas=1000)
     assert result is not None
     assert result.return_type == 'ok'
     assert result.return_value.lower() == f'0x{hex(42)[2:].zfill(64).lower()}'

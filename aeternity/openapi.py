@@ -29,7 +29,7 @@ class OpenAPIException(Exception):
 
 class OpenAPICli(object):
     """
-    Generates a Opena API client
+    Generates a OpenAPI client
     """
     # skip tags
     skip_tags = set(["obsolete"])
@@ -53,7 +53,7 @@ class OpenAPICli(object):
             raise OpenAPIException(f"Unsupported Open API specification version {self.api_def.get('swagger')}")
         self.version = self.api_def.get('info', {}).get('version')
 
-        # regexp to convert method signature to snakecase
+        # regexp to convert method signature to snake case
         first_cap_re = re.compile('(.)([A-Z][a-z]+)')
         all_cap_re = re.compile('([a-z0-9])([A-Z])')
 
@@ -124,7 +124,7 @@ class OpenAPICli(object):
                         desc=r.get("description"),
                         schema=r.get("schema", {"$ref": ""}).get("$ref",).replace("#/definitions/", "")
                     )
-                # crete the method
+                # create the method
                 self._add_api_method(api)
 
     def _add_api_method(self, api):
@@ -137,7 +137,7 @@ class OpenAPICli(object):
                 # get the value or default
                 val, ok = self._get_param_val(kwargs, p)
                 if not ok:
-                    raise OpenAPIArgsException(f"missing required paramter {p.name}")
+                    raise OpenAPIArgsException(f"missing required parameter {p.name}")
                 # if none continue
                 if val is None:
                     continue
@@ -146,14 +146,14 @@ class OpenAPICli(object):
                     # TODO: validate the model
                     pass
                 elif not self._is_valid_type(val, p.field):
-                    raise OpenAPIArgsException(f"type error for paramter {p.name}, expected: {p.field.type} got {type(val).__name__}", )
+                    raise OpenAPIArgsException(f"type error for parameter {p.name}, expected: {p.field.type} got {type(val).__name__}", )
                 # check the ranges
                 if not self._is_valid_interval(val, p.field):
-                    raise OpenAPIArgsException(f"value error for paramter {p.name}, expected: {p.minimum} =< {val} =< {p.maximum}", )
-                # check allowed walues
+                    raise OpenAPIArgsException(f"value error for parameter {p.name}, expected: {p.minimum} =< {val} =< {p.maximum}", )
+                # check allowed values
                 if len(p.field.values) > 0 and val not in p.field.values:
                     raise OpenAPIArgsException(f"Invalid value for param {p.name}, allowed values are {','.join(p.values)}")
-                # if in path substute
+                # if in path substitute
                 if p.pos == 'path':
                     target_endpoint = target_endpoint.replace('{%s}' % p.name, str(val))
                 # if in query add to the query
@@ -210,8 +210,8 @@ class OpenAPICli(object):
 
     def _get_param_val(self, params, param):
         """
-        get the parameter "name" from the parmaters,
-        raise an exception if the paramter is required and is None
+        get the parameter "name" from the parameters,
+        raise an exception if the parameter is required and is None
         """
         val = params.get(param.name, param.field.default)
         val = val if val is not None else param.field.default

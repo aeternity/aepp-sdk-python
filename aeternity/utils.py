@@ -11,12 +11,34 @@ def is_valid_hash(hash_str, prefix=None):
     :param prefix: the prefix to restrict the validation to
     """
     try:
+        # decode the hash
         hashing.decode(hash_str)
-        if prefix is not None and hash_str[0:2] != prefix:
+        # if prefix is not set then is valid
+        if prefix is None:
+            return True
+        # let's check the prefix
+        if not isinstance(prefix, list):
+            prefix = [prefix]
+        # if a match is not found then raise ValueError
+        match = False
+        for p in prefix:
+            match = match or prefix_match(p, hash_str)
+        if not match:
             raise ValueError('Invalid prefix')
+        # a match was found
         return True
     except ValueError as e:
         return False
+
+
+def prefix_match(prefix, obj):
+    """
+    Check if an hash prefix matches:
+    example: prefix_match(hash, "ak") will match "ak_123" but not "ak123"
+    """
+    if obj is None:
+        return False
+    return obj.startswith(f"{prefix}_")
 
 
 def is_valid_aens_name(domain_name):
