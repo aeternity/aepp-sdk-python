@@ -45,8 +45,6 @@ setup(
         'base58 == 0.2.5',
         'click == 6.7',
         'cryptography == 2.3',
-        'deprecation==2.0.5',
-        'flake8 == 3.5.0',
         'rlp == 0.6.0',
         'PyNaCl == 1.2.1',
         'requests == 2.18.4',
