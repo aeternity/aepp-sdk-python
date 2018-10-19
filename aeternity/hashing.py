@@ -4,7 +4,6 @@ import rlp
 import secrets
 from nacl.hash import blake2b
 from nacl.encoding import RawEncoder
-from aeternity import utils
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
