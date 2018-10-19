@@ -44,7 +44,8 @@ def decode(data):
     :param data: a encoded and prefixed string (ex tx_..., sg_..., ak_....)
     :return: the raw byte array of the decoded hashed
     """
-    if not utils.is_valid_hash(data):
+
+    if data is None or len(data.strip()) < 3 or data[2] != '_':
         raise ValueError('Invalid hash')
     return _base58_decode(data[3:])
 
