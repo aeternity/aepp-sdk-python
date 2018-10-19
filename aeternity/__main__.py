@@ -229,9 +229,9 @@ def account_create(keystore_name, password, overwrite, force, wait, json_):
             password = click.prompt("Enter the account password", default='', hide_input=True)
         new_account.save_to_keystore_file(keystore_name, password)
         _print_object({
-            'Account address': new_account.get_address(),
-            'Account path': os.path.abspath(keystore_name)
-        }, title='Account created')
+            'Address': new_account.get_address(),
+            'Path': os.path.abspath(keystore_name)
+        }, title='account')
     except Exception as e:
         print(e)
 
@@ -251,9 +251,9 @@ def account_save(keystore_name, private_key, password, overwrite, force, wait, j
             password = click.prompt("Enter the account password", default='', hide_input=True)
         account.save_to_keystore_file(keystore_name, password)
         _print_object({
-            'Account address': account.get_address(),
-            'Account path': os.path.abspath(keystore_name)
-        }, title='Account saved')
+            'Address': account.get_address(),
+            'Path': os.path.abspath(keystore_name)
+        }, title='account')
     except Exception as e:
         print(e)
 
@@ -266,11 +266,11 @@ def account_address(password, keystore_name, private_key, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
         account, keystore_path = _account(keystore_name, password=password)
-        o = {'Account address': account.get_address()}
+        o = {'Address': account.get_address()}
         if private_key:
             click.confirm(f'!Warning! this will print your private key on the screen, are you sure?', abort=True)
-            o["Private key"] = account.get_private_key()
-        _print_object(o)
+            o["Signing key"] = account.get_private_key()
+        _print_object(o, title='account')
     except Exception as e:
         print(e)
 
@@ -302,11 +302,11 @@ def account_spend(keystore_name, recipient_id, amount, ttl, password, force, wai
             raise ValueError("Invalid recipient address")
         _, signature, tx_hash = _epoch_cli().spend(account, recipient_id, amount, tx_ttl=ttl)
         _print_object({
-            "Transaction hash": tx_hash,
+            "Hash": tx_hash,
             "Signature": signature,
             "Sender account": account.get_address(),
             "Recipient account": recipient_id,
-        }, title='Transaction posted to the chain')
+        }, title='Tx')
     except Exception as e:
         print(e)
 

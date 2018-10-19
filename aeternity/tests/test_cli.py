@@ -60,7 +60,9 @@ def test_cli_top():
 def test_cli_generate_account():
     with tempdir() as tmp_path:
         account_key = os.path.join(tmp_path, 'key')
-        call_aecli('account', 'create', account_key, '--password', 'secret', '--overwrite')
+        j = call_aecli('account', 'create', account_key, '--password', 'secret', '--overwrite')
+        gen_address = j.get("Address")
+        assert utils.is_valid_hash(gen_address, prefix='ak')
         # make sure the folder contains the keys
         files = sorted(os.listdir(tmp_path))
         assert len(files) == 1
@@ -71,10 +73,10 @@ def test_cli_generate_account_and_account_info():
     with tempdir() as tmp_path:
         account_path = os.path.join(tmp_path, 'key')
         j = call_aecli('account', 'create', account_path, '--password', 'secret')
-        gen_address = j.get("Account address")
+        gen_address = j.get("Address")
         assert utils.is_valid_hash(gen_address, prefix='ak')
         j1 = call_aecli('account', 'address', account_path, '--password', 'secret')
-        assert utils.is_valid_hash(j1.get('Account address'), prefix='ak')
+        assert utils.is_valid_hash(j1.get('Address'), prefix='ak')
 
 
 def test_cli_read_account_fail():
@@ -83,7 +85,7 @@ def test_cli_read_account_fail():
         j = call_aecli('account', 'create', account_path, '--password', 'secret')
         try:
             j1 = call_aecli('account', 'address', account_path, '--password', 'WRONGPASS')
-            assert j.get("Account address") != j1.get("Account address")
+            assert j.get("Address") != j1.get("Address")
         except CalledProcessError:
             # this is fine because invalid passwords exists the command with retcode 1
             pass
