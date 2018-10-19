@@ -4,6 +4,7 @@ import rlp
 import secrets
 from nacl.hash import blake2b
 from nacl.encoding import RawEncoder
+from aeternity import utils
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
@@ -43,7 +44,7 @@ def decode(data):
     :param data: a encoded and prefixed string (ex tx_..., sg_..., ak_....)
     :return: the raw byte array of the decoded hashed
     """
-    if len(data.strip()) < 3 or data[2] != '_':
+    if not utils.is_valid_hash(data):
         raise ValueError('Invalid hash')
     return _base58_decode(data[3:])
 
