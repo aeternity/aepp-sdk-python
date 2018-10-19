@@ -19,7 +19,7 @@ PUBLIC_KEY = os.environ.get('WALLET_PUB')
 PRIVATE_KEY = os.environ.get('WALLET_PRIV')
 NODE_URL = os.environ.get('TEST_URL')
 NODE_URL_DEBUG = os.environ.get('TEST_DEBUG_URL')
-EPOCH_VERSION = '0.22.0'
+EPOCH_VERSION = '0.24.0'
 # set the key folder as environment variables
 genesis = Account.from_public_private_key_strings(PUBLIC_KEY, PRIVATE_KEY)
 # default values for tests
