@@ -5,6 +5,12 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.24.0.1b1]
+
+### Removed
+
+- Compatiblity with epoch nodes version < [0.24.0](https://github.com/aeternity/epoch/blob/v0.24.0/docs/release-notes/RELEASE-NOTES-0.24.0.md)
+
 ## [0.22.0.1]
 
 ### Removed
