@@ -266,11 +266,11 @@ def account_address(password, keystore_name, private_key, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
         account, keystore_path = _account(keystore_name, password=password)
-        o = {'Account address': account.get_address()}
+        o = {'Address': account.get_address()}
         if private_key:
             click.confirm(f'!Warning! this will print your private key on the screen, are you sure?', abort=True)
-            o["Private key"] = account.get_private_key()
-        _print_object(o)
+            o["Signing key"] = account.get_private_key()
+        _print_object(o, title='account')
     except Exception as e:
         print(e)
 
