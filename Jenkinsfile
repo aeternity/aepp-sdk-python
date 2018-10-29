@@ -23,7 +23,14 @@ pipeline {
                                           passwordVariable: 'WALLET_PRIV')]) {
           sh "${env.DOCKER_COMPOSE} run sdk flake8"
           sh "${env.DOCKER_COMPOSE} run sdk pytest --junitxml test-results.xml aeternity/tests"
-        }
+      }
+    }
+
+    stage('SonarQube analysis') {
+      // requires SonarQube Scanner 2.8+
+      def scannerHome = tool 'default-sonarqube-scanner';
+      withSonarQubeEnv('default-sonarqube-server') {
+        sh "${scannerHome}/bin/sonar-scanner"
       }
     }
 
