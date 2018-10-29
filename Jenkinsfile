@@ -25,16 +25,9 @@ pipeline {
           sh "${env.DOCKER_COMPOSE} run sdk pytest --junitxml test-results.xml aeternity/tests --cov=aeternity --cov-config .coveragerc --cov-report xml:coverage.xml"
 
         }
-      }
-    }
-
-    stage('SonarQube analysis') {
-      steps {
-        script {
-          def scannerHome = tool 'default-sonarqube-scanner';
-        }
+        // run sonar?
         withSonarQubeEnv('default-sonarqube-server') {
-            sh "${scannerHome}/bin/sonar-scanner"
+            sh "${scannerHome}/bin/sonar-scanner "
         }
       }
     }
