@@ -29,10 +29,12 @@ pipeline {
     }
 
     stage('SonarQube analysis') {
-      // requires SonarQube Scanner 2.8+
-      def scannerHome = tool 'default-sonarqube-scanner';
-      withSonarQubeEnv('default-sonarqube-server') {
-        sh "${scannerHome}/bin/sonar-scanner"
+      steps {
+        // requires SonarQube Scanner 2.8+
+        def scannerHome = tool 'default-sonarqube-scanner';
+        withSonarQubeEnv('default-sonarqube-server') {
+          sh "${scannerHome}/bin/sonar-scanner"
+        }
       }
     }
 
