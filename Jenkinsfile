@@ -22,7 +22,7 @@ pipeline {
                                           usernameVariable: 'WALLET_PUB',
                                           passwordVariable: 'WALLET_PRIV')]) {
           sh "${env.DOCKER_COMPOSE} run sdk flake8"
-          sh "${env.DOCKER_COMPOSE} run sdk pytest --junitxml test-results.xml aeternity/tests"
+          sh "${env.DOCKER_COMPOSE} run sdk pytest --junitxml test-results.xml aeternity/tests --cov=aeternity --cov-config .coveragerc --cov-report xml:coverage.xml"
 
         }
       }
@@ -34,7 +34,7 @@ pipeline {
           def scannerHome = tool 'default-sonarqube-scanner';
         }
         withSonarQubeEnv('default-sonarqube-server') {
-          sh "${scannerHome}/bin/sonar-scanner"
+            sh "${scannerHome}/bin/sonar-scanner"
         }
       }
     }
