@@ -1,4 +1,4 @@
-from aeternity.tests import PUBLIC_KEY, EPOCH_VERSION, ACCOUNT, EPOCH_CLI
+from tests import PUBLIC_KEY, EPOCH_VERSION, ACCOUNT, EPOCH_CLI
 from aeternity.signing import Account
 from aeternity import openapi
 

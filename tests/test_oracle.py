@@ -1,7 +1,7 @@
 import logging
 import pytest
 
-from aeternity.tests import EPOCH_CLI
+from tests import EPOCH_CLI
 from aeternity.oracle import Oracle, OracleQuery
 
 logger = logging.getLogger(__name__)

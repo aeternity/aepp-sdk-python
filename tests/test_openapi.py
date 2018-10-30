@@ -1,6 +1,6 @@
 import pytest
 from aeternity.openapi import OpenAPICli
-from aeternity.tests import NODE_URL, NODE_URL_DEBUG, PUBLIC_KEY
+from tests import NODE_URL, NODE_URL_DEBUG, PUBLIC_KEY
 
 client, priv_key, pub_key = None, None, None
 

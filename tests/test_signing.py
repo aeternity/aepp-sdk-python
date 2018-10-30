@@ -1,5 +1,5 @@
 from pytest import raises
-from aeternity.tests import TEST_FEE, TEST_TTL, EPOCH_CLI, ACCOUNT, tempdir
+from tests import TEST_FEE, TEST_TTL, EPOCH_CLI, ACCOUNT, tempdir
 from aeternity.signing import Account
 from aeternity.utils import is_valid_hash
 from aeternity.transactions import TxBuilder

@@ -22,12 +22,11 @@ pipeline {
                                           usernameVariable: 'WALLET_PUB',
                                           passwordVariable: 'WALLET_PRIV')]) {
           sh "${env.DOCKER_COMPOSE} run sdk flake8"
-          sh "${env.DOCKER_COMPOSE} run sdk pytest --junitxml test-results.xml aeternity/tests --cov=aeternity --cov-config .coveragerc --cov-report xml:coverage.xml"
-
-        }
-        // run sonar?
-        withSonarQubeEnv('default-sonarqube-server') {
-            sh "${scannerHome}/bin/sonar-scanner "
+          sh "${env.DOCKER_COMPOSE} run sdk pytest --junitxml test-results.xml tests --cov=aeternity --cov-config .coveragerc --cov-report xml:coverage.xml"
+          // run sonar?
+          withSonarQubeEnv('default-sonarqube-server') {
+              sh "${scannerHome}/bin/sonar-scanner "
+          }
         }
       }
     }
