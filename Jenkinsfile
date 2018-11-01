@@ -1,4 +1,10 @@
 pipeline {
+  environment {
+    DOCKER_COMPOSE = "docker-compose -p ${env.BUILD_TAG} -H 127.0.0.1:2376"
+    SCANNER_HOME = tool 'default-sonarqube-scanner'
+  }
+
+
   agent {
     dockerfile {
       filename 'Dockerfile.ci'
@@ -6,17 +12,13 @@ pipeline {
            '-v /etc/passwd:/etc/passwd:ro ' +
            '-v /var/lib/jenkins:/var/lib/jenkins ' +
            '-v /usr/bin/docker:/usr/bin/docker:ro ' +
+           '-v /usr/bin/java:/usr/bin/java:ro ' +
+           "-v ${env.SCANNER_HOME}/bin/sonar-scanner:/usr/bin/sonar-scanner:ro " +
            '--network=host'
     }
   }
 
-  environment {
-    DOCKER_COMPOSE = "docker-compose -p ${env.BUILD_TAG} -H 127.0.0.1:2376"
-    SCANNER_HOME = tool 'default-sonarqube-scanner'
-  }
-
   stages {
-
     stage('Test') {
       steps {          
           withCredentials([usernamePassword(credentialsId: 'genesis-wallet',
@@ -24,24 +26,14 @@ pipeline {
                                           passwordVariable: 'WALLET_PRIV')]) {
           sh "${env.DOCKER_COMPOSE} run sdk flake8"
           sh "${env.DOCKER_COMPOSE} run sdk pytest --junitxml test-results.xml tests --cov=aeternity --cov-config .coveragerc --cov-report xml:coverage.xml -k test_hashing"
+          // run sonar?
+          withSonarQubeEnv('default-sonarqube-server') {
+            sh "/usr/bin/sonar-scanner -X"
+          }
         }
       }
     }
 
-    stage('Sonarqube Analysis') {
-      agent { 
-        node { 
-          label 'local'
-          reuseNode: 'true'
-        }
-      }
-      steps {
-        // run sonar?
-        withSonarQubeEnv('default-sonarqube-server') {
-          sh "${env.SCANNER_HOME}/bin/sonar-scanner -X"
-        }
-      }
-    }
 
 
     stage('Publish') {
