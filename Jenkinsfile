@@ -10,7 +10,7 @@ pipeline {
            '-v /home/jenkins:/home/jenkins ' +
            '-v /usr/bin/docker:/usr/bin/docker:ro ' +
            '-v /usr/lib/jvm/java-10-oracle/bin/java:/usr/bin/java:ro ' +
-           '-v /usr/lib/jvm/java-10-oracle:/usr/lib/jvm/java-10-oracle'
+           '-v /usr/lib/jvm/java-10-oracle:/usr/lib/jvm/java-10-oracle' +
            '--network=host'
     }
   }
