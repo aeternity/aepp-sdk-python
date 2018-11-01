@@ -1,8 +1,5 @@
 pipeline {
-  environment {
-    DOCKER_COMPOSE = "docker-compose -p ${env.BUILD_TAG} -H 127.0.0.1:2376"
-    SCANNER_HOME = tool 'default-sonarqube-scanner'
-  }
+  
 
 
   agent {
@@ -13,9 +10,14 @@ pipeline {
            '-v /var/lib/jenkins:/var/lib/jenkins ' +
            '-v /usr/bin/docker:/usr/bin/docker:ro ' +
            '-v /usr/bin/java:/usr/bin/java:ro ' +
-           "-v ${env.SCANNER_HOME}/bin/sonar-scanner:/usr/bin/sonar-scanner:ro " +
+           "-v /home/jenkins/workspace/tools/hudson.plugins.sonar.SonarRunnerInstallation/default-sonarqube-scanner/bin/sonar-scanner:/usr/bin/sonar-scanner:ro " +
            '--network=host'
     }
+  }
+
+  environment {
+    DOCKER_COMPOSE = "docker-compose -p ${env.BUILD_TAG} -H 127.0.0.1:2376"
+    SCANNER_HOME = tool 'default-sonarqube-scanner'
   }
 
   stages {
