@@ -7,10 +7,9 @@ pipeline {
       filename 'Dockerfile.ci'
       args '-v /etc/group:/etc/group:ro ' +
            '-v /etc/passwd:/etc/passwd:ro ' +
-           '-v /var/lib/jenkins:/var/lib/jenkins ' +
+           '-v /home/jenkins:/home/jenkins ' +
            '-v /usr/bin/docker:/usr/bin/docker:ro ' +
            '-v /usr/bin/java:/usr/bin/java:ro ' +
-           "-v /home/jenkins/workspace/tools/hudson.plugins.sonar.SonarRunnerInstallation/default-sonarqube-scanner/bin/sonar-scanner:/usr/bin/sonar-scanner:ro " +
            '--network=host'
     }
   }
@@ -30,7 +29,7 @@ pipeline {
           sh "${env.DOCKER_COMPOSE} run sdk pytest --junitxml test-results.xml tests --cov=aeternity --cov-config .coveragerc --cov-report xml:coverage.xml -k test_hashing"
           // run sonar?
           withSonarQubeEnv('default-sonarqube-server') {
-            sh "/usr/bin/sonar-scanner -X"
+            sh "${env.SCANNER_HOME}/bin/sonar-scanner -X"
           }
         }
       }
