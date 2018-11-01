@@ -29,8 +29,8 @@ pipeline {
     }
 
     stage('Sonarqube Analysis') {
-      agent{ 
-        node{ 
+      agent { 
+        node { 
           label 'local'
           reuseNode: 'true'
         }
