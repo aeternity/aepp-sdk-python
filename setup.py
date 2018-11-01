@@ -47,7 +47,7 @@ setup(
         'cryptography == 2.3',
         'rlp == 0.6.0',
         'PyNaCl == 1.2.1',
-        'requests == 2.18.4',
+        'requests == 2.20.0',
         'websocket_client == 0.48.0',
         'validators == 0.12.1',
         'eth-keyfile == 0.5.1'
@@ -56,7 +56,7 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3.5',
         'Development Status :: 4 - Beta',
-        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'License :: OSI Approved :: ISC License (ISCL)',
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
     ],
