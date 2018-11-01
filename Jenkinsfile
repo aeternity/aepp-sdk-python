@@ -28,8 +28,13 @@ pipeline {
       }
     }
 
-    stage("Sonarqube Analysis") {
-      agent{ node: { label: "local", reuseNode: "true"}}
+    stage('Sonarqube Analysis') {
+      agent{ 
+        node{ 
+          label 'local'
+          reuseNode: 'true'
+        }
+      }
       steps {
         // run sonar?
         withSonarQubeEnv('default-sonarqube-server') {
