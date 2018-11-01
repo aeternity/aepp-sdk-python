@@ -1,4 +1,4 @@
-from aeternity.tests import ACCOUNT, EPOCH_CLI
+from tests import ACCOUNT, EPOCH_CLI
 from aeternity.signing import Account
 from aeternity import transactions
 

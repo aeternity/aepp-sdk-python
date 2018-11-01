@@ -5,6 +5,12 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.24.0.2]
+
+### Fixed
+
+- Fix for [CVE-2018-18074](https://nvd.nist.gov/vuln/detail/CVE-2018-18074)
+
 ## [0.24.0.1]
 
 ### Removed

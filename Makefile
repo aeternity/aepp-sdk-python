@@ -20,7 +20,7 @@ test: test-all
 
 test-all:
 	@echo run pytest
-	pytest
+	pytest --junitxml test-results.xml tests --cov=aeternity --cov-config .coveragerc --cov-report xml:coverage.xml
 	@echo done
 
 lint: lint-all
