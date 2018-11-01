@@ -4,7 +4,7 @@ pipeline {
       filename 'Dockerfile.ci'
       args '-v /etc/group:/etc/group:ro ' +
            '-v /etc/passwd:/etc/passwd:ro ' +
-           '-v /var/lib/jenkins:/var/lib/jenkins ' +
+           '-v /home/jenkins:/home/jenkins ' +
            '-v /usr/bin/docker:/usr/bin/docker:ro ' +
            '--network=host'
     }
@@ -12,20 +12,26 @@ pipeline {
 
   environment {
     DOCKER_COMPOSE = "docker-compose -p ${env.BUILD_TAG} -H 127.0.0.1:2376"
+    SCANNER_HOME = tool 'default-sonarqube-scanner'
   }
 
   stages {
-
     stage('Test') {
-      steps {
+      steps {          
           withCredentials([usernamePassword(credentialsId: 'genesis-wallet',
                                           usernameVariable: 'WALLET_PUB',
                                           passwordVariable: 'WALLET_PRIV')]) {
           sh "${env.DOCKER_COMPOSE} run sdk flake8"
-          sh "${env.DOCKER_COMPOSE} run sdk pytest --junitxml test-results.xml aeternity/tests"
+          sh "${env.DOCKER_COMPOSE} run sdk make test"
+          // run sonar?
+          // withSonarQubeEnv('default-sonarqube-server') {
+          //   sh "${env.SCANNER_HOME}/bin/sonar-scanner -X"
+          // }
         }
       }
     }
+
+
 
     stage('Publish') {
       when {

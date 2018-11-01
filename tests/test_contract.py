@@ -2,7 +2,7 @@ import pytest
 from pytest import raises
 
 from aeternity.contract import ContractError, Contract
-from aeternity.tests import ACCOUNT, EPOCH_CLI
+from tests import ACCOUNT, EPOCH_CLI
 from aeternity import hashing, utils
 
 aer_identity_contract = '''

@@ -1,5 +1,5 @@
 from aeternity.aens import AEName
-from aeternity.tests import EPOCH_CLI, ACCOUNT, random_domain
+from tests import EPOCH_CLI, ACCOUNT, random_domain
 
 from pytest import raises
 

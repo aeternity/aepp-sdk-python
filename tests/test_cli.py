@@ -4,7 +4,7 @@ import json
 import os
 import aeternity
 import random
-from aeternity.tests import NODE_URL, NODE_URL_DEBUG, ACCOUNT, EPOCH_CLI, tempdir, random_domain
+from tests import NODE_URL, NODE_URL_DEBUG, ACCOUNT, EPOCH_CLI, tempdir, random_domain
 from aeternity.signing import Account
 from aeternity import utils
 from aeternity.aens import AEName
@@ -12,7 +12,7 @@ from aeternity.aens import AEName
 import pytest
 
 current_folder = os.path.dirname(os.path.abspath(__file__))
-aecli_exe = os.path.join(current_folder, '..', '..', 'aecli')
+aecli_exe = os.path.join(current_folder, '..', 'aecli')
 
 
 @pytest.fixture
