@@ -1,7 +1,4 @@
 pipeline {
-  
-
-
   agent {
     dockerfile {
       filename 'Dockerfile.ci'
@@ -9,8 +6,6 @@ pipeline {
            '-v /etc/passwd:/etc/passwd:ro ' +
            '-v /home/jenkins:/home/jenkins ' +
            '-v /usr/bin/docker:/usr/bin/docker:ro ' +
-           '-v /usr/lib/jvm/java-10-oracle/bin/java:/usr/bin/java:ro ' +
-           '-v /usr/lib/jvm/java-10-oracle:/usr/lib/jvm/java-10-oracle' +
            '--network=host'
     }
   }
@@ -27,11 +22,11 @@ pipeline {
                                           usernameVariable: 'WALLET_PUB',
                                           passwordVariable: 'WALLET_PRIV')]) {
           sh "${env.DOCKER_COMPOSE} run sdk flake8"
-          sh "${env.DOCKER_COMPOSE} run sdk pytest --junitxml test-results.xml tests --cov=aeternity --cov-config .coveragerc --cov-report xml:coverage.xml -k test_hashing"
+          sh "${env.DOCKER_COMPOSE} run sdk make test"
           // run sonar?
-          withSonarQubeEnv('default-sonarqube-server') {
-            sh "${env.SCANNER_HOME}/bin/sonar-scanner -X"
-          }
+          // withSonarQubeEnv('default-sonarqube-server') {
+          //   sh "${env.SCANNER_HOME}/bin/sonar-scanner -X"
+          // }
         }
       }
     }
