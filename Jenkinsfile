@@ -24,10 +24,16 @@ pipeline {
                                           passwordVariable: 'WALLET_PRIV')]) {
           sh "${env.DOCKER_COMPOSE} run sdk flake8"
           sh "${env.DOCKER_COMPOSE} run sdk pytest --junitxml test-results.xml tests --cov=aeternity --cov-config .coveragerc --cov-report xml:coverage.xml -k test_hashing"
-          // run sonar?
-          withSonarQubeEnv('default-sonarqube-server') {
-            sh "${env.SCANNER_HOME}/bin/sonar-scanner -X"
-          }
+        }
+      }
+    }
+
+    stage("Sonarqube Analysis") {
+      agent{ node: { label: "local", reuseNode: "true"}}
+      steps {
+        // run sonar?
+        withSonarQubeEnv('default-sonarqube-server') {
+          sh "${env.SCANNER_HOME}/bin/sonar-scanner -X"
         }
       }
     }
