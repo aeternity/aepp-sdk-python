@@ -131,7 +131,7 @@ def test_cli_inspect_key_block_by_hash():
 
 
 def test_cli_inspect_name():
-    j = call_aecli('inspect', 'whatever.aet')
+    j = call_aecli('inspect', 'whatever.test')
     assert j.get("Status") == "AVAILABLE"
 
 
