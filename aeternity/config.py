@@ -20,6 +20,8 @@ CONTRACT_DEFAULT_GAS = 1000
 CONTRACT_DEFAULT_GAS_PRICE = 1
 CONTRACT_DEFAULT_DEPOSIT = 4
 CONTRACT_DEFAULT_VM_VERSION = 1
+# network id
+DEFAULT_NETWORK_ID = "ae_mainnet"
 # TUNING
 MAX_RETRIES = 7  # used in exponential backoff when checking a transaction
 POLLING_INTERVAL = 2  # in seconds
@@ -40,7 +42,8 @@ class Config:
                  external_url='http://localhost:3013',
                  internal_url='http://localhost:3113',
                  websocket_url=None,
-                 force_compatibility=False):
+                 force_compatibility=False,
+                 network_id=DEFAULT_NETWORK_ID):
 
         # endpoint urls
         self.websocket_url = websocket_url
@@ -49,6 +52,7 @@ class Config:
         # get the version
         self.name_url = f'{self.api_url}/name'
         self.pubkey = None
+        self.network_id = network_id
         # retrieve the version of the node we are connecting to
         try:
             r = requests.get(f"{self.api_url}/v2/status").json()

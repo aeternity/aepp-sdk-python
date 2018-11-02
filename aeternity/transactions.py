@@ -73,7 +73,7 @@ class TxBuilder:
     TxBuilder is used to build and post transactions to the chain.
     """
 
-    def __init__(self, epoch, account, native=True):
+    def __init__(self, epoch, account, native=False):
         """
         :param epoch: the epoch rest client
         :param account: the account that will be signing the transactions
@@ -81,6 +81,7 @@ class TxBuilder:
         """
         self.epoch = epoch
         self.account = account
+        self.network_id = epoch._get_active_config().network_id
         self.native_transactions = native
 
     @staticmethod
@@ -122,11 +123,11 @@ class TxBuilder:
         nonce = TxBuilder.get_next_nonce(self.epoch, self.account.get_address())
         return nonce, ttl
 
-    def encode_signed_transaction(self, signed_tx, signature):
+    def encode_signed_transaction(self, transaction, signature):
         """prepare a signed transaction message"""
         tag = bytes([OBJECT_TAG_SIGNED_TRANSACTION])
         vsn = bytes([VSN])
-        encoded_signed_tx = hashing.encode_rlp("tx", [tag, vsn, [signature], signed_tx])
+        encoded_signed_tx = hashing.encode_rlp("tx", [tag, vsn, [signature], transaction])
         encoded_signature = hashing.encode("sg", signature)
         return encoded_signed_tx, encoded_signature
 
@@ -138,7 +139,7 @@ class TxBuilder:
         # decode the transaction if not in native mode
         transaction = hashing.decode(tx.tx) if hasattr(tx, "tx") else hashing.decode(tx)
         # sign the transaction
-        signature = self.account.sign(transaction)
+        signature = self.account.sign(hashing.to_bytes(self.network_id) + transaction)
         # encode the transaction
         encoded_signed_tx, encoded_signature = self.encode_signed_transaction(transaction, signature)
         # compute the hash
