@@ -5,6 +5,19 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.25.0.1b1]
+
+### Added
+
+- Support for network_id when signing transactions
+
+### Removed
+
+- Compatiblity with epoch nodes version < [0.25.0](https://github.com/aeternity/epoch/blob/v0.25.0/docs/release-notes/RELEASE-NOTES-0.25.0.md)
+- Support for .aet tld for aens
+
+
+
 ## [0.24.0.2]
 
 ### Fixed
@@ -20,7 +33,6 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 ### Notes
 
 - The keystore/JSON format will be deprecated in the next releases
-
 
 ## [0.22.0.1]
 
@@ -43,7 +55,6 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 - Add `--force` flag to skip compatibility check with the target node
 - Add [exponetial backoff](https://developers.google.com/drive/api/v3/handle-errors#exponential-backoff) strategy to verify if a transaction has been included in the chain.
 - Add `--wait` flag to instruct the client to wait for a transaction to be included in a chain before returning
-
 
 ## [0.21.0.1]
 
