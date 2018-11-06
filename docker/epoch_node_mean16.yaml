@@ -1,7 +1,6 @@
 ---
 peers:
     - aenode://pp_28uQUgsPcsy7TQwnRxhF8GMKU4ykFLKsgf4TwDwPMNaSCXwWV8@node2:3015
-    - aenode://pp_Dxq41rJN33j26MLqryvh7AnhuZywefWKEPBiiYu2Da2vDWLBq@node3:3015
 
 http:
     external:
@@ -10,11 +9,11 @@ http:
         listen_address: 0.0.0.0
 
 websocket:
-    internal:
+    channel:
         listen_address: 0.0.0.0
 
 keys:
-    password: "top secret"
+    peer_password: "top secret"
     dir: ./keys
 
 chain:
