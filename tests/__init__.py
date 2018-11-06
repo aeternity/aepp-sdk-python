@@ -19,7 +19,7 @@ PUBLIC_KEY = os.environ.get('WALLET_PUB')
 PRIVATE_KEY = os.environ.get('WALLET_PRIV')
 NODE_URL = os.environ.get('TEST_URL')
 NODE_URL_DEBUG = os.environ.get('TEST_DEBUG_URL')
-EPOCH_VERSION = '0.24.0'
+EPOCH_VERSION = '0.25.0'
 # set the key folder as environment variables
 genesis = Account.from_public_private_key_strings(PUBLIC_KEY, PRIVATE_KEY)
 # default values for tests
@@ -53,4 +53,4 @@ def tempdir():
 
 def random_domain(length=10):
     rand_str = ''.join(random.choice(string.ascii_letters) for _ in range(length))
-    return rand_str + '.aet'
+    return f"{rand_str}.test"

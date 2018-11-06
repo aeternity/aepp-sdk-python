@@ -22,7 +22,7 @@ def test_name_validation_fails():
 
 
 def test_name_validation_succeeds():
-    EPOCH_CLI.AEName('test.aet')
+    EPOCH_CLI.AEName('test.test')
 
 
 def test_name_is_available():

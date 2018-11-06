@@ -3,9 +3,9 @@ from pytest import raises
 
 
 def test_hashing_name_hashing():
-    assert hashing.namehash_encode('nm', 'welghmolql.aet') == 'nm_2KrC4asc6fdv82uhXDwfiqB1TY2htjhnzwzJJKLxidyMymJRUQ'
-    assert hashing.namehash_encode('pp', 'welghmolql.aet') == 'pp_2KrC4asc6fdv82uhXDwfiqB1TY2htjhnzwzJJKLxidyMymJRUQ'
-    assert hashing.namehash_encode('nm', 'abc.aet') != 'nm_2KrC4asc6fdv82uhXDwfiqB1TY2htjhnzwzJJKLxidyMymJRUQ'
+    assert hashing.namehash_encode('nm', 'welghmolql.test') == 'nm_Ziiq3M9ASEHXCV71qUNde6SsomqwZjYPFvnJSvTkpSUDiXqH3'
+    assert hashing.namehash_encode('pp', 'welghmolql.test') == 'pp_Ziiq3M9ASEHXCV71qUNde6SsomqwZjYPFvnJSvTkpSUDiXqH3'
+    assert hashing.namehash_encode('nm', 'abc.test') != 'nm_2KrC4asc6fdv82uhXDwfiqB1TY2htjhnzwzJJKLxidyMymJRUQ'
 
 
 def test_hashing_base58_encode():

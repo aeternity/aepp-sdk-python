@@ -137,7 +137,7 @@ class EpochClient:
 
     def spend(self, keypair, recipient_pubkey, amount, payload="", fee=config.DEFAULT_FEE, tx_ttl=config.DEFAULT_TX_TTL):
         """create and execute a spend transaction"""
-        txb = transactions.TxBuilder(self.cli, keypair)
+        txb = transactions.TxBuilder(self, keypair)
         # create spend_tx
         tx, sg, tx_hash = txb.tx_spend(recipient_pubkey, amount, payload, fee, tx_ttl)
         # post the transaction to the chain
