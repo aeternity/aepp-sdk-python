@@ -350,8 +350,8 @@ def name_register(keystore_name, domain, name_ttl, ttl, password, force, wait, j
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
 @click.argument('address', required=True)
-@click.option("--name-ttl", default=100, help=f'Lifetime of the claim in blocks (default {config.DEFAULT_NAME_TTL})')
-@click.option("--ttl", default=100, help=f'Lifetime of the claim request in blocks (default {config.DEFAULT_TX_TTL})')
+@click.option("--name-ttl", default=config.DEFAULT_NAME_TTL, help=f'Lifetime of the claim in blocks (default {config.DEFAULT_NAME_TTL})')
+@click.option("--ttl", default=config.DEFAULT_TX_TTL, help=f'Lifetime of the claim request in blocks (default {config.DEFAULT_TX_TTL})')
 @account_options
 def name_update(keystore_name, domain, address, name_ttl, ttl, password, force, wait, json_):
     """
@@ -578,7 +578,7 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
 def inspect(obj, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
-        if obj.endswith(".aet"):
+        if obj.endswith(".test"):
             name = _epoch_cli().AEName(obj)
             name.update_status()
             _print_object({

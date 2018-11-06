@@ -27,18 +27,19 @@ def test_utils_is_valid_hash():
 def test_utils_is_valid_name():
     # input (hash_str, prefix, expected output)
     args = [
-        ('valid.aet', True),
-        ('v.aet', True),
-        ('isaverylongnamethatidontknow.aet', True),
-        ('0123.aet', True),
-        ('0alsoGOod.aet', True),
-        ('valid.aet', True),
-        ('valid.aet', True),
+        ('valid.test', True),
+        ('v.test', True),
+        ('isaverylongnamethatidontknow.test', True),
+        ('0123.test', True),
+        ('0alsoGOod.test', True),
+        ('valid.test', True),
+        ('valid.test', True),
         ('aeternity.com', False),
+        ('aeternity.aet', False),
         ('om', False),
         (None, False),
-        (".o.aet", False),
-        ("-o.aet", False),
+        (".o.test", False),
+        ("-o.test", False),
     ]
 
     for a in args:

@@ -48,6 +48,6 @@ def is_valid_aens_name(domain_name):
     # TODO: validate according to the spec!
     # TODO: https://github.com/aeternity/protocol/blob/master/AENS.md#name
 
-    if domain_name is None or not validators.domain(domain_name) or not domain_name.endswith(('.aet', '.test')):
+    if domain_name is None or not validators.domain(domain_name) or not domain_name.endswith(('.test')):
         return False
     return True
