@@ -1,4 +1,4 @@
-from aeternity import hashing
+from aeternity import hashing, transactions
 from pytest import raises
 
 
@@ -47,7 +47,7 @@ def test_hashing_base58_encode():
             assert i.get("raise_error") is True
 
 
-def test_hashing_to_bites():
+def test_hashing_transactions_binary():
     tts = [
         {"in": "test", "bval": "test".encode("utf-8"), "match": True, "err": False},
         {"in": "test", "bval": "t".encode("utf-8"), "match": False, "err": False},
@@ -65,10 +65,10 @@ def test_hashing_to_bites():
         print(tt)
         if tt['err']:
             with raises(ValueError):
-                hashing.to_bytes(tt['in'])
+                transactions._binary(tt['in'])
         elif tt['match']:
-            assert hashing.to_bytes(tt['in']) == tt['bval']
+            assert transactions._binary(tt['in']) == tt['bval']
         elif not tt['match']:
-            assert hashing.to_bytes(tt['in']) != tt['bval']
+            assert transactions._binary(tt['in']) != tt['bval']
         else:
             assert False
