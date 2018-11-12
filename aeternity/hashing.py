@@ -91,4 +91,3 @@ def namehash_encode(prefix, name):
 
 def randint():
     return secrets.randbelow(2**64)
-
