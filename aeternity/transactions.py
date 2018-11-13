@@ -3,6 +3,7 @@ from aeternity.openapi import OpenAPIClientException
 from aeternity.exceptions import TransactionHashMismatch
 import time
 import random
+import math
 
 # RLP version number
 # https://github.com/aeternity/protocol/blob/epoch-v0.10.1/serializations.md#binary-serialization
@@ -62,6 +63,27 @@ OBJECT_TAG_MICRO_BODY = 101
 OBJECT_TAG_LIGHT_MICRO_BLOCK = 102
 
 
+def _binary(val):
+    """
+    Encode a value to bytes.
+    If the value is an int it will be encoded as bytes big endian
+    Raises ValueError if the input is not an int or string
+    """
+    if isinstance(val, int):
+        s = int(math.ceil(val.bit_length() / 8))
+        return val.to_bytes(s, 'big')
+    if isinstance(val, str):
+        return val.encode("utf-8")
+    if isinstance(val, bytes):
+        return val
+    raise ValueError("Byte serialization not supported")
+
+
+def _id(id_tag, hash_id):
+    """Utility function to create and _id type"""
+    return _binary(id_tag) + hashing.decode(hash_id)
+
+
 class TxNotIncluded(Exception):
     def __init__(self, tx_hash, reason):
         self.tx_hash = tx_hash
@@ -73,7 +95,7 @@ class TxBuilder:
     TxBuilder is used to build and post transactions to the chain.
     """
 
-    def __init__(self, epoch, account, native=False):
+    def __init__(self, epoch, account, native=True):
         """
         :param epoch: the epoch rest client
         :param account: the account that will be signing the transactions
@@ -139,7 +161,7 @@ class TxBuilder:
         # decode the transaction if not in native mode
         transaction = hashing.decode(tx.tx) if hasattr(tx, "tx") else hashing.decode(tx)
         # sign the transaction
-        signature = self.account.sign(hashing.to_bytes(self.network_id) + transaction)
+        signature = self.account.sign(_binary(self.network_id) + transaction)
         # encode the transaction
         encoded_signed_tx, encoded_signature = self.encode_signed_transaction(transaction, signature)
         # compute the hash
@@ -217,17 +239,16 @@ class TxBuilder:
         nonce, ttl = self._get_nonce_ttl(ttl)
 
         if self.native_transactions:
-            sid = hashing.to_bytes(ID_TAG_ACCOUNT) + hashing.decode(self.account.get_address())
-            rid = hashing.to_bytes(ID_TAG_ACCOUNT) + hashing.decode(recipient_id)
             tx = [
-                hashing.to_bytes(OBJECT_TAG_SPEND_TRANSACTION),
-                hashing.to_bytes(VSN),
-                sid, rid,
-                hashing.to_bytes(amount),
-                hashing.to_bytes(fee),
-                hashing.to_bytes(ttl),
-                hashing.to_bytes(nonce),
-                hashing.to_bytes(payload)
+                _binary(OBJECT_TAG_SPEND_TRANSACTION),
+                _binary(VSN),
+                _id(ID_TAG_ACCOUNT, self.account.get_address()),
+                _id(ID_TAG_ACCOUNT, recipient_id),
+                _binary(amount),
+                _binary(fee),
+                _binary(ttl),
+                _binary(nonce),
+                _binary(payload)
             ]
             tx = hashing.encode_rlp("tx", tx)
         else:
@@ -251,19 +272,30 @@ class TxBuilder:
         """
         create a preclaim transaction
         :param commitment_id: the commitment id
-        :param commitment_hash:  the commitment hash
         :param fee:  the fee for the transaction
         :param ttl:  the ttl for the transaction
         """
         nonce, ttl = self._get_nonce_ttl(ttl)
-        body = dict(
-            commitment_id=commitment_id,
-            fee=fee,
-            account_id=self.account.get_address(),
-            ttl=ttl,
-            nonce=nonce
-        )
-        tx = self.epoch.post_name_preclaim(body=body)
+        if self.native_transactions:
+            tx = [
+                _binary(OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION),
+                _binary(VSN),
+                _id(ID_TAG_ACCOUNT, self.account.get_address()),
+                _binary(nonce),
+                _id(ID_TAG_COMMITMENT, commitment_id),
+                _binary(fee),
+                _binary(ttl)
+            ]
+            tx = hashing.encode_rlp("tx", tx)
+        else:
+            body = dict(
+                commitment_id=commitment_id,
+                fee=fee,
+                account_id=self.account.get_address(),
+                ttl=ttl,
+                nonce=nonce
+            )
+            tx = self.epoch.post_name_preclaim(body=body)
         return self.sign_encode_transaction(tx)
 
     def tx_name_claim(self, name, name_salt, fee, ttl):
@@ -275,15 +307,28 @@ class TxBuilder:
         :param ttl:  the ttl for the transaction
         """
         nonce, ttl = self._get_nonce_ttl(ttl)
-        body = dict(
-            account_id=self.account.get_address(),
-            name=name,
-            name_salt=name_salt,
-            fee=fee,
-            ttl=ttl,
-            nonce=nonce
-        )
-        tx = self.epoch.post_name_claim(body=body)
+        if self.native_transactions:
+            tx = [
+                _binary(OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION),
+                _binary(VSN),
+                _id(ID_TAG_ACCOUNT, self.account.get_address()),
+                _binary(nonce),
+                hashing.decode(name),
+                _binary(name_salt),
+                _binary(fee),
+                _binary(ttl)
+            ]
+            tx = hashing.encode_rlp("tx", tx)
+        else:
+            body = dict(
+                account_id=self.account.get_address(),
+                name=name,
+                name_salt=name_salt,
+                fee=fee,
+                ttl=ttl,
+                nonce=nonce
+            )
+            tx = self.epoch.post_name_claim(body=body)
         return self.sign_encode_transaction(tx)
 
     def tx_name_update(self, name_id, pointers, name_ttl, client_ttl, fee, ttl):
@@ -297,17 +342,43 @@ class TxBuilder:
         :param ttl: the ttl of the transaction
         """
         nonce, ttl = self._get_nonce_ttl(ttl)
-        body = dict(
-            account_id=self.account.get_address(),
-            name_id=name_id,
-            client_ttl=client_ttl,
-            name_ttl=name_ttl,
-            pointers=pointers,
-            ttl=ttl,
-            fee=fee,
-            nonce=nonce
-        )
-        tx = self.epoch.post_name_update(body=body)
+        if self.native_transactions:
+
+            # TODO: verify supported keys for name updates
+            def pointer_tag(pointer):
+                return {
+                    "account_pubkey": ID_TAG_ACCOUNT,
+                    "oracle_pubkey": ID_TAG_ORACLE,
+                    "contract_pubkey": ID_TAG_CONTRACT,
+                    "channel_pubkey": ID_TAG_CHANNEL
+                }.get(pointer.get("key"))
+            ptrs = [[_binary(p.get("key")), _id(pointer_tag(p), p.get("id"))] for p in pointers]
+            # build tx
+            tx = [
+                _binary(OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION),
+                _binary(VSN),
+                _id(ID_TAG_ACCOUNT, self.account.get_address()),
+                _binary(nonce),
+                _id(ID_TAG_NAME, name_id),
+                _binary(name_ttl),
+                ptrs,
+                _binary(client_ttl),
+                _binary(fee),
+                _binary(ttl)
+            ]
+            tx = hashing.encode_rlp("tx", tx)
+        else:
+            body = dict(
+                account_id=self.account.get_address(),
+                name_id=name_id,
+                client_ttl=client_ttl,
+                name_ttl=name_ttl,
+                pointers=pointers,
+                ttl=ttl,
+                fee=fee,
+                nonce=nonce
+            )
+            tx = self.epoch.post_name_update(body=body)
         return self.sign_encode_transaction(tx)
 
     def tx_name_transfer(self, name_id, recipient_id, fee, ttl):
@@ -319,15 +390,28 @@ class TxBuilder:
         :param ttl: the ttl of the transaction
         """
         nonce, ttl = self._get_nonce_ttl(ttl)
-        body = dict(
-            account_id=self.account.get_address(),
-            name_id=name_id,
-            recipient_id=recipient_id,
-            ttl=ttl,
-            fee=fee,
-            nonce=nonce
-        )
-        tx = self.epoch.post_name_transfer(body=body)
+        if self.native_transactions:
+            tx = [
+                _binary(OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION),
+                _binary(VSN),
+                _id(ID_TAG_ACCOUNT, self.account.get_address()),
+                _binary(nonce),
+                _id(ID_TAG_NAME, name_id),
+                _id(ID_TAG_ACCOUNT, recipient_id),
+                _binary(fee),
+                _binary(ttl),
+            ]
+            tx = hashing.encode_rlp("tx", tx)
+        else:
+            body = dict(
+                account_id=self.account.get_address(),
+                name_id=name_id,
+                recipient_id=recipient_id,
+                ttl=ttl,
+                fee=fee,
+                nonce=nonce
+            )
+            tx = self.epoch.post_name_transfer(body=body)
         return self.sign_encode_transaction(tx)
 
     def tx_name_revoke(self, name_id, fee, ttl):
@@ -338,14 +422,26 @@ class TxBuilder:
         :param ttl: the ttl of the transaction
         """
         nonce, ttl = self._get_nonce_ttl(ttl)
-        body = dict(
-            account_id=self.account.get_address(),
-            name_id=name_id,
-            ttl=ttl,
-            fee=fee,
-            nonce=nonce
-        )
-        tx = self.epoch.post_name_revoke(body=body)
+        if self.native_transactions:
+            tx = [
+                _binary(OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION),
+                _binary(VSN),
+                _id(ID_TAG_ACCOUNT, self.account.get_address()),
+                _binary(nonce),
+                _id(ID_TAG_NAME, name_id),
+                _binary(fee),
+                _binary(ttl),
+            ]
+            tx = hashing.encode_rlp("tx", tx)
+        else:
+            body = dict(
+                account_id=self.account.get_address(),
+                name_id=name_id,
+                ttl=ttl,
+                fee=fee,
+                nonce=nonce
+            )
+            tx = self.epoch.post_name_revoke(body=body)
         return self.sign_encode_transaction(tx)
 
     # CONTRACTS
