@@ -1,15 +1,16 @@
 import os
 import pathlib
+from datetime import datetime
+import json
+
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-import nacl
-from nacl.encoding import RawEncoder
+
+from nacl.encoding import RawEncoder, HexEncoder
 from nacl.signing import SigningKey
+from nacl.exceptions import CryptoError
+
 from aeternity import hashing, utils
-# imports for keystore
-from datetime import datetime
-import eth_keyfile as keystore
-import json
 
 
 class Account:
@@ -27,8 +28,8 @@ class Account:
 
     def get_private_key(self):
         """get the private key hex encoded"""
-        pk = self.signing_key.encode(encoder=nacl.encoding.HexEncoder).decode('utf-8')
-        pb = self.verifying_key.encode(encoder=nacl.encoding.HexEncoder).decode('utf-8')
+        pk = self.signing_key.encode(encoder=HexEncoder).decode('utf-8')
+        pb = self.verifying_key.encode(encoder=HexEncoder).decode('utf-8')
         return f"{pk}{pb}"
 
     def sign(self, data):
@@ -63,30 +64,13 @@ class Account:
         :param filename: an optional filename to use for the keystore (default to UTC--ISO8601Date--AccountAddress)
         :return: the filename that has been used for the keystore
         """
-        j = keystore.create_keyfile_json(self.signing_key.encode(encoder=RawEncoder), password.encode("utf-8"))
         if filename is None:
             filename = f"UTC--{datetime.utcnow().isoformat()}--{self.get_address()}"
-        with open(os.path.join(path, filename), 'w') as fp:
+        # with open(os.path.join(path, filename), 'w') as fp:
+        with open(os.open(os.path.join(path, filename), os.O_TRUNC | os.O_CREAT | os.O_WRONLY, 0o600), 'w') as fp:
+            j = hashing.keystore_seal(self.signing_key, password, self.get_address())
             json.dump(j, fp)
         return filename
-
-    @staticmethod
-    def load_from_keystore(path, password):
-        """
-        Load an account from a Keystore/JSON file
-        :param path: the path to the keystore
-        :param password: the password to decrypt the keystore
-        :return: the account
-
-        raise an error if the account cannot be opened
-
-        """
-        with open(path, 'r') as fp:
-            j = json.load(fp)
-            raw_priv = keystore.decode_keyfile_json(j, password.encode("utf-8"))
-            signing_key = SigningKey(seed=raw_priv[0:32], encoder=RawEncoder)
-            kp = Account(signing_key, signing_key.verify_key)
-            return kp
 
     def save_to_folder(self, folder, password, name='key'):
         """
@@ -95,8 +79,8 @@ class Account:
         :param password: the password to encrypt the private key
         :param name:     filename of the signing key in folder, default 'key'
         """
-        enc_key = self._encrypt_key(self.signing_key.encode(encoder=nacl.encoding.HexEncoder), password)
-        enc_key_pub = self._encrypt_key(self.verifying_key.encode(encoder=nacl.encoding.HexEncoder), password)
+        enc_key = self._encrypt_key(self.signing_key.encode(encoder=HexEncoder), password)
+        enc_key_pub = self._encrypt_key(self.verifying_key.encode(encoder=HexEncoder), password)
         if not os.path.exists(folder):
             os.makedirs(folder)
         with open(os.path.join(folder, name), 'wb') as fh:
@@ -139,6 +123,27 @@ class Account:
         signing_key = SigningKey(seed=k[0:32], encoder=RawEncoder)
         kp = Account(signing_key, signing_key.verify_key)
         return kp
+
+    @classmethod
+    def from_keystore(cls, path, password):
+        """
+        Load an account from a Keystore/JSON file
+        :param path: the path to the keystore
+        :param password: the password to decrypt the keystore
+        :return: the account
+
+        raise an error if the account cannot be opened
+
+        """
+        try:
+            with open(path) as fp:
+                j = json.load(fp)
+                raw_private_key = hashing.keystore_open(j, password)
+                signing_key = SigningKey(seed=raw_private_key[0:32], encoder=RawEncoder)
+                kp = Account(signing_key, signing_key.verify_key)
+                return kp
+        except CryptoError as e:
+            raise ValueError(e)
 
     @classmethod
     def from_public_private_key_strings(cls, public, private):
