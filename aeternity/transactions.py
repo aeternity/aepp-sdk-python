@@ -90,6 +90,40 @@ class TxNotIncluded(Exception):
         self.reason = reason
 
 
+class TxSigner:
+    """
+    TxSigner is used to sign transactions
+    """
+
+    def __init__(self, account, network_id):
+        self.account = account
+        self.network_id = network_id
+
+    def encode_signed_transaction(self, transaction, signature):
+        """prepare a signed transaction message"""
+        tag = bytes([OBJECT_TAG_SIGNED_TRANSACTION])
+        vsn = bytes([VSN])
+        encoded_signed_tx = hashing.encode_rlp("tx", [tag, vsn, [signature], transaction])
+        encoded_signature = hashing.encode("sg", signature)
+        return encoded_signed_tx, encoded_signature
+
+    def sign_encode_transaction(self, tx):
+        """
+        Sign, encode and compute the hash of a transaction
+        :return: encoded_signed_tx, encoded_signature, tx_hash
+        """
+        # decode the transaction if not in native mode
+        transaction = hashing.decode(tx.tx) if hasattr(tx, "tx") else hashing.decode(tx)
+        # sign the transaction
+        signature = self.account.sign(_binary(self.network_id) + transaction)
+        # encode the transaction
+        encoded_signed_tx, encoded_signature = self.encode_signed_transaction(transaction, signature)
+        # compute the hash
+        tx_hash = TxBuilder.compute_tx_hash(encoded_signed_tx)
+        # return the
+        return encoded_signed_tx, encoded_signature, tx_hash
+
+
 class TxBuilder:
     """
     TxBuilder is used to build and post transactions to the chain.
@@ -103,8 +137,8 @@ class TxBuilder:
         """
         self.epoch = epoch
         self.account = account
-        self.network_id = epoch._get_active_config().network_id
         self.native_transactions = native
+        self.tx_signer = TxSigner(account, network_id=epoch._get_active_config().network_id)
 
     @staticmethod
     def compute_absolute_ttl(epoch, relative_ttl):
@@ -144,30 +178,6 @@ class TxBuilder:
         ttl = TxBuilder.compute_absolute_ttl(self.epoch, relative_ttl)
         nonce = TxBuilder.get_next_nonce(self.epoch, self.account.get_address())
         return nonce, ttl
-
-    def encode_signed_transaction(self, transaction, signature):
-        """prepare a signed transaction message"""
-        tag = bytes([OBJECT_TAG_SIGNED_TRANSACTION])
-        vsn = bytes([VSN])
-        encoded_signed_tx = hashing.encode_rlp("tx", [tag, vsn, [signature], transaction])
-        encoded_signature = hashing.encode("sg", signature)
-        return encoded_signed_tx, encoded_signature
-
-    def sign_encode_transaction(self, tx):
-        """
-        Sign, encode and compute the hash of a transaction
-        :return: encoded_signed_tx, encoded_signature, tx_hash
-        """
-        # decode the transaction if not in native mode
-        transaction = hashing.decode(tx.tx) if hasattr(tx, "tx") else hashing.decode(tx)
-        # sign the transaction
-        signature = self.account.sign(_binary(self.network_id) + transaction)
-        # encode the transaction
-        encoded_signed_tx, encoded_signature = self.encode_signed_transaction(transaction, signature)
-        # compute the hash
-        tx_hash = TxBuilder.compute_tx_hash(encoded_signed_tx)
-        # return the
-        return encoded_signed_tx, encoded_signature, tx_hash
 
     def wait_tx(self, tx_hash, max_retries=config.MAX_RETRIES, polling_interval=config.POLLING_INTERVAL):
         """
@@ -264,7 +274,7 @@ class TxBuilder:
             }
             # request a spend transaction
             tx = self.epoch.post_spend(body=body)
-        return self.sign_encode_transaction(tx)
+        return self.tx_signer.sign_encode_transaction(tx)
 
     # NAMING #
 
@@ -296,7 +306,7 @@ class TxBuilder:
                 nonce=nonce
             )
             tx = self.epoch.post_name_preclaim(body=body)
-        return self.sign_encode_transaction(tx)
+        return self.tx_signer.sign_encode_transaction(tx)
 
     def tx_name_claim(self, name, name_salt, fee, ttl):
         """
@@ -329,7 +339,7 @@ class TxBuilder:
                 nonce=nonce
             )
             tx = self.epoch.post_name_claim(body=body)
-        return self.sign_encode_transaction(tx)
+        return self.tx_signer.sign_encode_transaction(tx)
 
     def tx_name_update(self, name_id, pointers, name_ttl, client_ttl, fee, ttl):
         """
@@ -379,7 +389,7 @@ class TxBuilder:
                 nonce=nonce
             )
             tx = self.epoch.post_name_update(body=body)
-        return self.sign_encode_transaction(tx)
+        return self.tx_signer.sign_encode_transaction(tx)
 
     def tx_name_transfer(self, name_id, recipient_id, fee, ttl):
         """
@@ -412,7 +422,7 @@ class TxBuilder:
                 nonce=nonce
             )
             tx = self.epoch.post_name_transfer(body=body)
-        return self.sign_encode_transaction(tx)
+        return self.tx_signer.sign_encode_transaction(tx)
 
     def tx_name_revoke(self, name_id, fee, ttl):
         """
@@ -442,7 +452,7 @@ class TxBuilder:
                 nonce=nonce
             )
             tx = self.epoch.post_name_revoke(body=body)
-        return self.sign_encode_transaction(tx)
+        return self.tx_signer.sign_encode_transaction(tx)
 
     # CONTRACTS
 
@@ -468,7 +478,7 @@ class TxBuilder:
             nonce=nonce
         )
         tx = self.epoch.post_contract_create(body=body)
-        t, s, th = self.sign_encode_transaction(tx)
+        t, s, th = self.tx_signer.sign_encode_transaction(tx)
         return t, s, th, tx.contract_id
 
     def tx_contract_call(self, contract_id, call_data, function, arg, amount, gas, gas_price, vm_version, fee, ttl):
@@ -487,4 +497,4 @@ class TxBuilder:
             nonce=nonce
         )
         tx = self.epoch.post_contract_call(body=body)
-        return self.sign_encode_transaction(tx)
+        return self.tx_signer.sign_encode_transaction(tx)

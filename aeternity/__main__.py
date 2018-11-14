@@ -150,6 +150,17 @@ _account_options = [
     click.option('--password', default=None, help="Read account password from stdin [WARN: this method is not secure]")
 ]
 
+_transaction_options = [
+    # click.option('--offline', 'offline', is_flag=True, default=False, help='Do not attempt to connect to a node'),
+    click.option('--native', 'native', is_flag=True, default=False,
+                 help='Use native transaction generation instead of the internal endpoints (always True for offline transactions)'),
+    # click.option('--nonce', 'nonce', type=int, default=0, help='Set the transaction nonce'),
+    click.option('--ttl', 'ttl', type=int, default=config.DEFAULT_TX_TTL,
+                 help=f'Set the transaction ttl (relative number, ex 100) - default {config.DEFAULT_TX_TTL}'),
+    click.option('--fee', 'fee', type=int, default=config.DEFAULT_FEE,
+                 help=f'Set the transaction fee - default {config.DEFAULT_FEE}'),
+]
+
 
 def global_options(func):
     for option in reversed(_global_options):
@@ -160,6 +171,13 @@ def global_options(func):
 def account_options(func):
     func = global_options(func)
     for option in reversed(_account_options):
+        func = option(func)
+    return func
+
+
+def transaction_options(func):
+    func = global_options(func)
+    for option in reversed(_transaction_options):
         func = option(func)
     return func
 
@@ -288,19 +306,42 @@ def account_balance(keystore_name, password, force, wait, json_):
         print(e)
 
 
+@account.command('sign', help="Sign a transaction")
+@click.option("--network-id", default=config.DEFAULT_NETWORK_ID, help=f'The network id (default {config.DEFAULT_NETWORK_ID})')
+@click.argument('transaction_hash')
+@account_options
+def account_sign(keystore_name, password, transaction_hash, network_id):
+    try:
+        account, keystore_path = _account(keystore_name, password=password)
+        if not utils.is_valid_hash(transaction_hash, prefix="tx"):
+            raise ValueError("Invalid recipient address")
+        from aeternity.transactions import TxSigner
+        tx, sig, tx_hash = TxSigner(account, network_id).sign_encode_transaction(transaction_hash)
+        _print_object({
+            'Signing account address': account.get_address(),
+            'Unsigned Transaction': transaction_hash,
+            'Signed Transaction': tx,
+            'Signature': sig,
+            'Transaction Hash': tx_hash
+        }, title='signed transaction')
+    except Exception as e:
+        print(e)
+
+
 @account.command('spend', help="Create a transaction to another account")
 @click.argument('keystore_name', required=True)
 @click.argument('recipient_id', required=True)
 @click.argument('amount', required=True, type=int)
-@click.option('--ttl', default=config.DEFAULT_TX_TTL, help="Validity of the spend transaction in number of blocks (default forever)")
 @account_options
-def account_spend(keystore_name, recipient_id, amount, ttl, password, force, wait, json_):
+@transaction_options
+def account_spend(keystore_name, recipient_id, amount, password, force, wait, json_, native, ttl, fee):
     try:
         set_global_options(force, wait, json_)
         account, keystore_path = _account(keystore_name, password=password)
         if not utils.is_valid_hash(recipient_id, prefix="ak"):
             raise ValueError("Invalid recipient address")
         _, signature, tx_hash = _epoch_cli().spend(account, recipient_id, amount, tx_ttl=ttl)
+        account.sign()
         _print_object({
             "Hash": tx_hash,
             "Signature": signature,
