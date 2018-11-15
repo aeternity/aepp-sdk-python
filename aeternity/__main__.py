@@ -353,9 +353,39 @@ def account_sign(keystore_name, password, unsigned_transaction, network_id, forc
     except Exception as e:
         print(e)
 
+#   _________  ____  ____
+#  |  _   _  ||_  _||_  _|
+#  |_/ | | \_|  \ \  / /
+#      | |       > `' <
+#     _| |_    _/ /'`\ \_
+#    |_____|  |____||____|
+#
 
-@account.command('spend', help="Create a transaction to another account")
-@click.argument('keystore_name', required=True)
+
+@cli.group(help="Handle transactions creation")
+def tx():
+    """
+    The tx commnds allow you to create unsigned transactions that can be broadcasted
+    later after beeing signed.
+    """
+    pass
+
+
+@tx.command('broadcast', help='Broadcast a transaction to the network')
+@click.argument('signed_transaction', required=True)
+@global_options
+def tx_broadcast(signed_transaction, force, wait, json_):
+    try:
+        set_global_options(force, wait, json_)
+        if not utils.is_valid_hash(signed_transaction, prefix="tx"):
+            raise ValueError("Invalid transaction format")
+        cli = _epoch_cli()
+        tx_hash = cli.broadcast_transaction(signed_transaction)
+        _print_object({
+            "Transaction hash": tx_hash,
+        }, title='transaction broadcast')
+    except Exception as e:
+        print(e)
 @click.argument('recipient_id', required=True)
 @click.argument('amount', required=True, type=int)
 @account_options
