@@ -308,23 +308,48 @@ def account_balance(keystore_name, password, force, wait, json_):
         print(e)
 
 
-@account.command('sign', help="Sign a transaction")
-@click.option("--network-id", default=config.DEFAULT_NETWORK_ID, help=f'The network id (default {config.DEFAULT_NETWORK_ID})')
-@click.argument('transaction_hash')
+@account.command('spend', help="Create a transaction to another account")
+@click.argument('keystore_name', required=True)
+@click.argument('recipient_id', required=True)
+@click.argument('amount', required=True, type=int)
+@click.option('--ttl', default=config.DEFAULT_TX_TTL, help="Validity of the spend transaction in number of blocks (default forever)")
 @account_options
-def account_sign(keystore_name, password, transaction_hash, network_id):
+def account_spend(keystore_name, recipient_id, amount, ttl, password, force, wait, json_):
+    try:
+        set_global_options(force, wait, json_)
+        account, keystore_path = _account(keystore_name, password=password)
+        if not utils.is_valid_hash(recipient_id, prefix="ak"):
+            raise ValueError("Invalid recipient address")
+        tx, tx_signed, signature, tx_hash = _epoch_cli().spend(account, recipient_id, amount, tx_ttl=ttl)
+        _print_object({
+            "Sender account": account.get_address(),
+            "Recipient account": recipient_id,
+            'Unsigned': tx,
+            'Signed': tx_signed,
+            'Hash': tx_hash
+        }, title='spend transaction')
+    except Exception as e:
+        print(e)
+
+
+@account.command('sign', help="Sign a transaction")
+@click.option("--network-id", default=config.DEFAULT_NETWORK_ID, help=f'The network id', show_default=True)
+@click.argument('keystore_name', required=True)
+@click.argument('unsigned_transaction', required=True)
+@account_options
+def account_sign(keystore_name, password, unsigned_transaction, network_id, force, wait, json_):
     try:
         account, keystore_path = _account(keystore_name, password=password)
-        if not utils.is_valid_hash(transaction_hash, prefix="tx"):
-            raise ValueError("Invalid recipient address")
-        from aeternity.transactions import TxSigner
-        tx, sig, tx_hash = TxSigner(account, network_id).sign_encode_transaction(transaction_hash)
+        if not utils.is_valid_hash(unsigned_transaction, prefix="tx"):
+            raise ValueError("Invalid transaction format")
+        # force offline mode for the epoch_client
+        tx_signed, sig, tx_hash = _epoch_cli(offline=True).sign_transaction(account, unsigned_transaction)
         _print_object({
             'Signing account address': account.get_address(),
-            'Unsigned Transaction': transaction_hash,
-            'Signed Transaction': tx,
             'Signature': sig,
-            'Transaction Hash': tx_hash
+            'Unsigned': unsigned_transaction,
+            'Signed': tx_signed,
+            'Hash': tx_hash
         }, title='signed transaction')
     except Exception as e:
         print(e)
