@@ -153,14 +153,13 @@ _account_options = [
 ]
 
 _transaction_options = [
-    # click.option('--offline', 'offline', is_flag=True, default=False, help='Do not attempt to connect to a node'),
     click.option('--native', 'native', is_flag=True, default=False,
                  help='Use native transaction generation instead of the internal endpoints (always True for offline transactions)'),
-    # click.option('--nonce', 'nonce', type=int, default=0, help='Set the transaction nonce'),
     click.option('--ttl', 'ttl', type=int, default=config.DEFAULT_TX_TTL,
-                 help=f'Set the transaction ttl (relative number, ex 100) - default {config.DEFAULT_TX_TTL}'),
+                 help=f'Set the transaction ttl (relative number, ex 100)', show_default=True),
     click.option('--fee', 'fee', type=int, default=config.DEFAULT_FEE,
-                 help=f'Set the transaction fee - default {config.DEFAULT_FEE}'),
+                 help=f'Set the transaction fee', show_default=True),
+    click.option('--nonce', 'nonce', type=int, default=0, help='Set the transaction nonce, if not set it will automatically generated'),
 ]
 
 
