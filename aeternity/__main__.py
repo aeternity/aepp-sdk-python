@@ -235,7 +235,7 @@ def account():
 
 @account.command('create', help="Create a new account")
 @click.argument('keystore_name')
-@click.option('--overwrite', default=False, is_flag=True, help="Overwrite existing keys without asking")
+@click.option('--overwrite', default=False, is_flag=True, help="Overwrite existing keys without asking", show_default=True)
 @account_options
 def account_create(keystore_name, password, overwrite, force, wait, json_):
     try:
@@ -258,7 +258,7 @@ def account_create(keystore_name, password, overwrite, force, wait, json_):
 @account.command('save', help='Save a private keys string to a password protected file account')
 @click.argument('keystore_name', required=True)
 @click.argument('private_key', required=True)
-@click.option('--overwrite', default=False, is_flag=True, help="Overwrite existing keys without asking")
+@click.option('--overwrite', default=False, is_flag=True, help="Overwrite existing keys without asking", show_default=True)
 @account_options
 def account_save(keystore_name, private_key, password, overwrite, force, wait, json_):
     try:
@@ -302,7 +302,7 @@ def account_balance(keystore_name, password, force, wait, json_):
         set_global_options(force, wait, json_)
         account, _ = _account(keystore_name, password=password)
         account = _epoch_cli().get_account_by_pubkey(pubkey=account.get_address())
-        _print_object(account)
+        _print_object(account, title='account')
     except Exception as e:
         print(e)
 
@@ -431,8 +431,8 @@ def name():
 @name.command('claim', help="Claim a domain name")
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
-@click.option("--name-ttl", default=config.DEFAULT_NAME_TTL, help=f'Lifetime of the claim in blocks (default {config.DEFAULT_NAME_TTL})')
-@click.option("--ttl", default=config.DEFAULT_TX_TTL, help=f'Lifetime of the claim request in blocks (default {config.DEFAULT_TX_TTL})')
+@click.option("--name-ttl", default=config.DEFAULT_NAME_TTL, help=f'Lifetime of the name in blocks', show_default=True)
+@click.option("--ttl", default=config.DEFAULT_TX_TTL, help=f'Lifetime of the claim request in blocks', show_default=True)
 @account_options
 def name_register(keystore_name, domain, name_ttl, ttl, password, force, wait, json_):
     try:
@@ -453,8 +453,8 @@ def name_register(keystore_name, domain, name_ttl, ttl, password, force, wait, j
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
 @click.argument('address', required=True)
-@click.option("--name-ttl", default=config.DEFAULT_NAME_TTL, help=f'Lifetime of the claim in blocks (default {config.DEFAULT_NAME_TTL})')
-@click.option("--ttl", default=config.DEFAULT_TX_TTL, help=f'Lifetime of the claim request in blocks (default {config.DEFAULT_TX_TTL})')
+@click.option("--name-ttl", default=config.DEFAULT_NAME_TTL, help=f'Lifetime of the claim in blocks', show_default=True)
+@click.option("--ttl", default=config.DEFAULT_TX_TTL, help=f'Lifetime of the claim request in blocks', show_default=True)
 @account_options
 def name_update(keystore_name, domain, address, name_ttl, ttl, password, force, wait, json_):
     """
@@ -585,7 +585,7 @@ def contract_compile(contract_file):
 @contract.command('deploy', help='Deploy a contract on the chain')
 @click.argument('keystore_name', required=True)
 @click.argument("contract_file", required=True)
-@click.option("--gas", default=config.CONTRACT_DEFAULT_GAS, help='Amount of gas to deploy the contract')
+@click.option("--gas", default=config.CONTRACT_DEFAULT_GAS, help='Amount of gas to deploy the contract', show_default=True)
 @account_options
 def contract_deploy(keystore_name, contract_file, gas, password, force, wait, json_):
     """
@@ -632,7 +632,7 @@ def contract_deploy(keystore_name, contract_file, gas, password, force, wait, js
 @click.argument("function", required=True)
 @click.argument("params", required=True)
 @click.argument("return_type", required=True)
-@click.option("--gas", default=config.CONTRACT_DEFAULT_GAS, help='Amount of gas to deploy the contract')
+@click.option("--gas", default=config.CONTRACT_DEFAULT_GAS, help='Amount of gas to deploy the contract', show_default=True)
 @account_options
 def contract_call(keystore_name, deploy_descriptor, function, params, return_type, gas,  password, force, wait, json_):
     try:
