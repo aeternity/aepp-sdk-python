@@ -386,24 +386,30 @@ def tx_broadcast(signed_transaction, force, wait, json_):
         }, title='transaction broadcast')
     except Exception as e:
         print(e)
+
+
+@tx.command('spend', help="Create a transaction to another account")
+@click.argument('sender_id', required=True)
 @click.argument('recipient_id', required=True)
 @click.argument('amount', required=True, type=int)
-@account_options
 @transaction_options
-def account_spend(keystore_name, recipient_id, amount, password, force, wait, json_, native, ttl, fee):
+@click.option('--payload', default="", help="Spend transaction payload")
+def tx_spend(sender_id, recipient_id, amount, native, ttl, fee, nonce, payload, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
-        account, keystore_path = _account(keystore_name, password=password)
-        if not utils.is_valid_hash(recipient_id, prefix="ak"):
-            raise ValueError("Invalid recipient address")
-        _, signature, tx_hash = _epoch_cli().spend(account, recipient_id, amount, tx_ttl=ttl)
-        account.sign()
+        txb = _epoch_cli(native=native).tx_builder
+        tx = txb.tx_spend(sender_id, recipient_id, amount, payload, fee, ttl, nonce)
+
         _print_object({
-            "Hash": tx_hash,
-            "Signature": signature,
-            "Sender account": account.get_address(),
+            "Sender account": sender_id,
             "Recipient account": recipient_id,
-        }, title='Tx')
+            "Amount": amount,
+            "TTL": ttl,
+            "fee": fee,
+            "Nonce": nonce,
+            "Payload": payload,
+            "Encoded": tx,
+        }, title='spend tx')
     except Exception as e:
         print(e)
 
