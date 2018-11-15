@@ -27,7 +27,7 @@ CTX_BLOCKING_MODE = 'CTX_BLOCKING_MODE'
 CTX_OUTPUT_JSON = 'CTX_OUTPUT_JSON'
 
 
-def _epoch_cli():
+def _epoch_cli(offline=False, native=False):
     try:
         ctx = click.get_current_context()
         # set the default configuration
@@ -47,7 +47,9 @@ def _epoch_cli():
         exit(1)
 
     # load the epoch client
-    return EpochClient(blocking_mode=ctx.obj.get(CTX_BLOCKING_MODE))
+    return EpochClient(blocking_mode=ctx.obj.get(CTX_BLOCKING_MODE),
+                       offline=offline,
+                       native=native)
 
 
 def _account(keystore_name, password=None):
