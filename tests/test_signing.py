@@ -40,8 +40,8 @@ def test_signing_is_valid_hash():
 
 def test_signing_keystore_load():
 
-    a = Account.load_from_keystore(os.path.join(os.path.dirname(os.path.realpath(__file__)), "testdata", "keystore.json"), "aeternity")
-    assert a.get_address() == "ak_Jt6AzQEiXiEMFXum8NtTXcCQtE9P1RfpkeVSZX87pFddzzynW"
+    a = Account.from_keystore(os.path.join(os.path.dirname(os.path.realpath(__file__)), "testdata", "keystore.json"), "aeternity")
+    assert a.get_address() == "ak_2hSFmdK98bhUw4ar7MUdTRzNQuMJfBFQYxdhN9kaiopDGqj3Cr"
 
 
 def test_signing_keystore_save_load():
@@ -50,7 +50,7 @@ def test_signing_keystore_save_load():
         path = os.path.join(tmp_path, filename)
         print(f"\nAccount keystore is {path}")
         # now load again the same
-        a = Account.load_from_keystore(path, "whatever")
+        a = Account.from_keystore(path, "whatever")
         assert a.get_address() == ACCOUNT.get_address()
     with tempdir() as tmp_path:
         filename = "account_ks"
@@ -58,7 +58,7 @@ def test_signing_keystore_save_load():
         path = os.path.join(tmp_path, filename)
         print(f"\nAccount keystore is {path}")
         # now load again the same
-        a = Account.load_from_keystore(path, "whatever")
+        a = Account.from_keystore(path, "whatever")
         assert a.get_address() == ACCOUNT.get_address()
 
 
@@ -69,5 +69,5 @@ def test_signing_keystore_save_load_wrong_pwd():
         print(f"\nAccount keystore is {path}")
         # now load again the same
         with raises(ValueError):
-            a = Account.load_from_keystore(path, "nononon")
+            a = Account.from_keystore(path, "nononon")
             assert a.get_address() == ACCOUNT.get_address()

@@ -13,6 +13,7 @@ import string
 logging.getLogger("requests").setLevel(logging.DEBUG)
 logging.getLogger("urllib3").setLevel(logging.DEBUG)
 logging.getLogger("aeternity").setLevel(logging.DEBUG)
+logging.root.setLevel(logging.DEBUG)
 
 
 PUBLIC_KEY = os.environ.get('WALLET_PUB')

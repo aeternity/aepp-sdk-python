@@ -63,9 +63,9 @@ def _account(keystore_name, password=None):
     try:
         if password is None:
             password = click.prompt("Enter the account password", default='', hide_input=True)
-        return signing.Account.load_from_keystore(kf, password), os.path.abspath(kf)
-    except Exception:
-        print("Invalid password")
+        return signing.Account.from_keystore(kf, password), os.path.abspath(kf)
+    except Exception as e:
+        print(f"Keystore decryption failed: {e}")
         exit(1)
 
 
@@ -396,7 +396,7 @@ def name_revoke(keystore_name, domain, password, force, wait, json_):
             "Sender account": account.get_address(),
         }, title=f"Name {domain} status revoke")
     except Exception as e:
-        pass
+        print(e)
 
 
 @name.command('transfer', help="Transfer a claimed domain to another account")
