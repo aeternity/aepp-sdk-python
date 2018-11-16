@@ -47,6 +47,12 @@ class EpochClient:
         # instantiate the transaction builder object
         self.tx_builder = transactions.TxBuilder(native=self.native, api=self.api)
 
+    def set_native(self, build_native_transactions: bool):
+        prev_status = self.native
+        self.native = build_native_transactions
+        self.tx_builder.native_transactions = build_native_transactions
+        return prev_status
+
     # enable composition
     def __getattr__(self, attr):
         return getattr(self.api, attr)
@@ -79,12 +85,13 @@ class EpochClient:
         account = self.api.get_account_by_pubkey(pubkey=account_address)
         return account.nonce + 1
 
-    def _get_nonce_ttl(self, account, relative_ttl):
+    def _get_nonce_ttl(self, account_address: str, relative_ttl: int):
         """
-        Helper method to compute both ttl and nonce for a s
+        Helper method to compute both ttl and nonce for an account
+        :return: (nonce, ttl)
         """
         ttl = self.compute_absolute_ttl(relative_ttl)
-        nonce = self.get_next_nonce(account.get_address())
+        nonce = self.get_next_nonce(account_address)
         return nonce, ttl
 
     def get_top_block(self):
@@ -126,8 +133,8 @@ class EpochClient:
             raise TransactionHashMismatch(f"Transaction hash doesn't match, expected {tx_hash} got {reply.tx_hash}")
 
         if self.blocking_mode:
-            self.wait_for_transaction(tx_hash)
-        return tx_hash
+            self.wait_for_transaction(reply.tx_hash)
+        return reply.tx_hash
 
     def sign_transaction(self, account: Account, tx: str) -> (str, str, str):
         """
@@ -146,7 +153,7 @@ class EpochClient:
         Create and execute a spend transaction
         """
         # retrieve the nonce and ttl
-        nonce, tx_ttl = self._get_nonce_ttl(account, tx_ttl)
+        nonce, tx_ttl = self._get_nonce_ttl(account.get_address(), tx_ttl)
         # build the transaction
         tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, amount, payload, fee, tx_ttl, nonce)
         # execute the transaction
