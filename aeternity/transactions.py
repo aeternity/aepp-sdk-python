@@ -66,7 +66,7 @@ def _binary(val):
     If the value is an int it will be encoded as bytes big endian
     Raises ValueError if the input is not an int or string
     """
-    if isinstance(val, int):
+    if isinstance(val, int) or isinstance(val, float):
         s = int(math.ceil(val.bit_length() / 8))
         return val.to_bytes(s, 'big')
     if isinstance(val, str):
@@ -359,7 +359,7 @@ class TxBuilder:
 
     def tx_contract_create(self, account_id, code, call_data, amount, deposit, gas, gas_price, vm_version, fee, ttl, nonce)-> str:
         """
-        create a revoke transaction
+        Create a contract and post it to the chain
         :param account_id: the account creating the contract
         :param code: the binary code of the contract
         :param call_data: the call data for the contract
