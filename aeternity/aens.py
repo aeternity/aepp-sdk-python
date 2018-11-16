@@ -1,8 +1,7 @@
 from aeternity.exceptions import NameNotAvailable, MissingPreclaim, NameUpdateError
 from aeternity.openapi import OpenAPIClientException
 from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE, DEFAULT_NAME_TTL, NAME_CLIENT_TTL
-from aeternity import hashing, utils, oracle, epoch
-from aeternity.transactions import TxBuilder
+from aeternity import hashing, utils, oracle
 
 
 class NameStatus:
@@ -17,9 +16,8 @@ class NameStatus:
 class AEName:
     Status = NameStatus
 
-    def __init__(self, domain, client=None):
-        if client is None:
-            client = epoch.EpochClient()
+    def __init__(self, domain, client):
+
         if not utils.is_valid_aens_name(domain):
             raise ValueError("Invalid domain ", domain)
 
@@ -45,16 +43,21 @@ class AEName:
         )
 
     @classmethod
-    def _encode_name(cls, name):
+    def _get_name_id(cls, name):
+        """
+        Compute the name id
+        """
         if isinstance(name, str):
             name = name.encode('ascii')
         return hashing.encode('nm', name)
 
-    def _get_commitment_hash(self):
-        """Calculate the commitment hash"""
+    def _get_commitment_id(self):
+        """
+        Compute the commitment id
+        """
         self.preclaim_salt = hashing.randint()
-        commitment = hashing.hash_encode("cm", hashing.namehash(self.domain) + self.preclaim_salt.to_bytes(32, 'big'))
-        return commitment
+        commitment_id = hashing.hash_encode("cm", hashing.namehash(self.domain) + self.preclaim_salt.to_bytes(32, 'big'))
+        return commitment_id
 
     def _get_pointers(self, target):
         if target.startswith('ak'):
@@ -122,17 +125,17 @@ class AEName:
             raise NameNotAvailable(self.domain)
         hashes = {}
         # run preclaim
-        h = self.preclaim(account, fee=preclaim_fee, tx_ttl=tx_ttl)
-        hashes['preclaim_tx'] = h
+        t, s, g, h = self.preclaim(account, fee=preclaim_fee, tx_ttl=tx_ttl)
+        hashes['preclaim_tx'] = [t, s, g, h]
         # run claim
-        h = self.claim(account, fee=claim_fee, tx_ttl=tx_ttl)
-        hashes['claim_tx'] = h
+        t, s, g, h = self.claim(account, fee=claim_fee, tx_ttl=tx_ttl)
+        hashes['claim_tx'] = [t, s, g, h]
         # target is the same of account is not specified
         if target is None:
             target = account.get_address()
         # run update
-        h = self.update(account, target, fee=update_fee, name_ttl=name_ttl, client_ttl=client_ttl)
-        hashes['update_tx'] = h
+        t, s, g, h = self.update(account, target, fee=update_fee, name_ttl=name_ttl, client_ttl=client_ttl)
+        hashes['update_tx'] = [t, s, g, h]
         # restore blocking value
         self.client.blocking_mode = blocking_orig
         return hashes
@@ -144,37 +147,40 @@ class AEName:
         # check which block we used to create the preclaim
         self.preclaimed_block_height = self.client.get_current_key_block_height()
         # calculate the commitment hash
-        commitment_hash = self._get_commitment_hash()
+        commitment_id = self._get_commitment_id()
         # get the transaction builder
-        txb = TxBuilder(self.client, account)
+        txb = self.client.tx_builder
+        # get the account nonce and ttl
+        nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
         # create spend_tx
-        tx, sg, tx_hash = txb.tx_name_preclaim(commitment_hash, fee, tx_ttl)
+        tx = txb.tx_name_preclaim(account.get_address(), commitment_id, fee, ttl, nonce)
+        # sign the transaction
+        tx_signed, sg, tx_hash = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
-        txb.post_transaction(tx, tx_hash)
-        if self.client.blocking_mode:
-            txb.wait_tx(tx_hash)
+        self.client.broadcast_transaction(tx_signed, tx_hash)
         # update local status
         self.status = AEName.Status.PRECLAIMED
         self.preclaim_tx_hash = tx_hash
-        return tx_hash
+        return tx, tx_signed, sg, tx_hash
 
     def claim(self, account, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
         if self.preclaimed_block_height is None:
             raise MissingPreclaim('You must call preclaim before claiming a name')
-        # name encoded TODO: shall this goes into transactions?
-        name = AEName._encode_name(self.domain)
+        # name encoded
+        name = AEName._get_name_id(self.domain)
         # get the transaction builder
-        txb = TxBuilder(self.client, account)
-        # create claim transaction
-        tx, sg, tx_hash = txb.tx_name_claim(name, self.preclaim_salt, fee, tx_ttl)
+        txb = self.client.tx_builder
+        # get the account nonce and ttl
+        nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
+        # create transaction
+        tx = txb.tx_name_claim(account.get_address(), name, self.preclaim_salt, fee, ttl, nonce)
+        # sign the transaction
+        tx_signed, sg, tx_hash = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
-        txb.post_transaction(tx, tx_hash)
-        # ensure tx
-        if self.client.blocking_mode:
-            txb.wait_tx(tx_hash)
+        self.client.broadcast_transaction(tx_signed, tx_hash)
         # update status
         self.status = AEName.Status.CLAIMED
-        return tx_hash
+        return tx, tx_signed, sg, tx_hash
 
     def update(self, account, target,
                name_ttl=DEFAULT_NAME_TTL,
@@ -189,21 +195,20 @@ class AEName:
             if target.oracle_id is None:
                 raise ValueError('You must register the oracle before using it as target')
             target = target.oracle_id
-        # TODO: check the value for name ttl?
-
         # get the name_id and pointers
         name_id = hashing.namehash_encode("nm", self.domain)
         pointers = self._get_pointers(target)
         # get the transaction builder
-        txb = TxBuilder(self.client, account)
-        # create claim transaction
-        tx, sg, tx_hash = txb.tx_name_update(name_id, pointers, name_ttl, client_ttl, fee, tx_ttl)
+        txb = self.client.tx_builder
+        # get the account nonce and ttl
+        nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
+        # create transaction
+        tx = txb.tx_name_update(account.get_address(), name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce)
+        # sign the transaction
+        tx_signed, sg, tx_hash = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
-        txb.post_transaction(tx, tx_hash)
-        # ensure tx
-        if self.client.blocking_mode:
-            txb.wait_tx(tx_hash)
-        return tx_hash
+        self.client.broadcast_transaction(tx_signed, tx_hash)
+        return tx, tx_signed, sg, tx_hash
 
     def transfer_ownership(self, account, recipient_pubkey, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
         """
@@ -213,17 +218,18 @@ class AEName:
         # get the name_id and pointers
         name_id = hashing.namehash_encode("nm", self.domain)
         # get the transaction builder
-        txb = TxBuilder(self.client, account)
-        # create claim transaction
-        tx, sg, tx_hash = txb.tx_name_transfer(name_id, recipient_pubkey, fee, tx_ttl)
+        txb = self.client.tx_builder
+        # get the account nonce and ttl
+        nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
+        # create transaction
+        tx = txb.tx_name_transfer(account.get_address(), name_id, recipient_pubkey, fee, ttl, nonce)
+        # sign the transaction
+        tx_signed, sg, tx_hash = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
-        txb.post_transaction(tx, tx_hash)
-        # update local status
+        self.client.broadcast_transaction(tx_signed, tx_hash)
+        # update the status
         self.status = NameStatus.TRANSFERRED
-        # ensure tx
-        if self.client.blocking_mode:
-            txb.wait_tx(tx_hash)
-        return tx_hash
+        return tx, tx_signed, sg, tx_hash
 
     def revoke(self, account, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
         """
@@ -233,13 +239,15 @@ class AEName:
         # get the name_id and pointers
         name_id = hashing.namehash_encode("nm", self.domain)
         # get the transaction builder
-        txb = TxBuilder(self.client, account)
-        # create claim transaction
-        tx, sg, tx_hash = txb.tx_name_revoke(name_id, fee, tx_ttl)
+        txb = self.client.tx_builder
+        # get the account nonce and ttl
+        nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
+        # create transaction
+        tx = txb.tx_name_revoke(account.get_address(), name_id, fee, ttl, nonce)
+        # sign the transaction
+        tx_signed, sg, tx_hash = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
-        txb.post_transaction(tx, tx_hash)
-        # ensure tx
-        if self.client.blocking_mode:
-            txb.wait_tx(tx_hash)
+        self.client.broadcast_transaction(tx_signed, tx_hash)
+        # update the status
         self.status = NameStatus.REVOKED
         return tx_hash
