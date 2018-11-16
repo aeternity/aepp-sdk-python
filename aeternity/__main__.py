@@ -338,6 +338,7 @@ def account_spend(keystore_name, recipient_id, amount, ttl, password, force, wai
 @account_options
 def account_sign(keystore_name, password, unsigned_transaction, network_id, force, wait, json_):
     try:
+        set_global_options(force, wait, json_)
         account, keystore_path = _account(keystore_name, password=password)
         if not utils.is_valid_hash(unsigned_transaction, prefix="tx"):
             raise ValueError("Invalid transaction format")
@@ -397,9 +398,11 @@ def tx_broadcast(signed_transaction, force, wait, json_):
 def tx_spend(sender_id, recipient_id, amount, native, ttl, fee, nonce, payload, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
-        txb = _epoch_cli(native=native).tx_builder
-        tx = txb.tx_spend(sender_id, recipient_id, amount, payload, fee, ttl, nonce)
-
+        cli = _epoch_cli(native=native)
+        if not native:
+            nonce, ttl = cli._get_nonce_ttl(sender_id, ttl)
+        tx = cli.tx_builder.tx_spend(sender_id, recipient_id, amount, payload, fee, ttl, nonce)
+        # print the results
         _print_object({
             "Sender account": sender_id,
             "Recipient account": recipient_id,
@@ -433,8 +436,9 @@ def name():
 @click.argument('domain', required=True)
 @click.option("--name-ttl", default=config.DEFAULT_NAME_TTL, help=f'Lifetime of the name in blocks', show_default=True)
 @click.option("--ttl", default=config.DEFAULT_TX_TTL, help=f'Lifetime of the claim request in blocks', show_default=True)
+@click.option("--fee", default=config.DEFAULT_FEE, help=f'Transaction fee', show_default=True)
 @account_options
-def name_register(keystore_name, domain, name_ttl, ttl, password, force, wait, json_):
+def name_register(keystore_name, domain, name_ttl, ttl, fee, password, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
         account, _ = _account(keystore_name, password=password)
@@ -443,8 +447,25 @@ def name_register(keystore_name, domain, name_ttl, ttl, password, force, wait, j
         if name.status != aens.AEName.Status.AVAILABLE:
             print("Domain not available")
             exit(0)
-        txs = name.full_claim_blocking(account, name_ttl=name_ttl, tx_ttl=ttl)
-        _print_object(txs, title=f"Name {domain} claimed")
+        # preclaim
+        tx, tx_signed, sig, tx_hash = name.preclaim(account, fee, ttl)
+        _print_object({
+            'Signing account address': account.get_address(),
+            'Signature': sig,
+            'Unsigned': tx,
+            'Signed': tx_signed,
+            'Hash': tx_hash
+        }, title='preclaim transaction')
+        # claim
+        tx, tx_signed, sig, tx_hash = name.claim(account, fee, ttl)
+        _print_object({
+            'Signing account address': account.get_address(),
+            'Signature': sig,
+            'Unsigned': tx,
+            'Signed': tx_signed,
+            'Hash': tx_hash
+        }, title='claim transaction')
+        _print_object({}, title=f"Name {domain} claimed")
     except ValueError as e:
         print(e)
 
