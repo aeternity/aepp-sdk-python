@@ -27,7 +27,7 @@ CTX_BLOCKING_MODE = 'CTX_BLOCKING_MODE'
 CTX_OUTPUT_JSON = 'CTX_OUTPUT_JSON'
 
 
-def _epoch_cli():
+def _epoch_cli(offline=False, native=False):
     try:
         ctx = click.get_current_context()
         # set the default configuration
@@ -47,7 +47,9 @@ def _epoch_cli():
         exit(1)
 
     # load the epoch client
-    return EpochClient(blocking_mode=ctx.obj.get(CTX_BLOCKING_MODE))
+    return EpochClient(blocking_mode=ctx.obj.get(CTX_BLOCKING_MODE),
+                       offline=offline,
+                       native=native)
 
 
 def _account(keystore_name, password=None):
@@ -150,6 +152,16 @@ _account_options = [
     click.option('--password', default=None, help="Read account password from stdin [WARN: this method is not secure]")
 ]
 
+_transaction_options = [
+    click.option('--native', 'native', is_flag=True, default=False,
+                 help='Use native transaction generation instead of the internal endpoints (always True for offline transactions)'),
+    click.option('--ttl', 'ttl', type=int, default=config.DEFAULT_TX_TTL,
+                 help=f'Set the transaction ttl (relative number, ex 100)', show_default=True),
+    click.option('--fee', 'fee', type=int, default=config.DEFAULT_FEE,
+                 help=f'Set the transaction fee', show_default=True),
+    click.option('--nonce', 'nonce', type=int, default=0, help='Set the transaction nonce, if not set it will automatically generated'),
+]
+
 
 def global_options(func):
     for option in reversed(_global_options):
@@ -160,6 +172,13 @@ def global_options(func):
 def account_options(func):
     func = global_options(func)
     for option in reversed(_account_options):
+        func = option(func)
+    return func
+
+
+def transaction_options(func):
+    func = global_options(func)
+    for option in reversed(_transaction_options):
         func = option(func)
     return func
 
@@ -216,7 +235,7 @@ def account():
 
 @account.command('create', help="Create a new account")
 @click.argument('keystore_name')
-@click.option('--overwrite', default=False, is_flag=True, help="Overwrite existing keys without asking")
+@click.option('--overwrite', default=False, is_flag=True, help="Overwrite existing keys without asking", show_default=True)
 @account_options
 def account_create(keystore_name, password, overwrite, force, wait, json_):
     try:
@@ -239,7 +258,7 @@ def account_create(keystore_name, password, overwrite, force, wait, json_):
 @account.command('save', help='Save a private keys string to a password protected file account')
 @click.argument('keystore_name', required=True)
 @click.argument('private_key', required=True)
-@click.option('--overwrite', default=False, is_flag=True, help="Overwrite existing keys without asking")
+@click.option('--overwrite', default=False, is_flag=True, help="Overwrite existing keys without asking", show_default=True)
 @account_options
 def account_save(keystore_name, private_key, password, overwrite, force, wait, json_):
     try:
@@ -283,7 +302,7 @@ def account_balance(keystore_name, password, force, wait, json_):
         set_global_options(force, wait, json_)
         account, _ = _account(keystore_name, password=password)
         account = _epoch_cli().get_account_by_pubkey(pubkey=account.get_address())
-        _print_object(account)
+        _print_object(account, title='account')
     except Exception as e:
         print(e)
 
@@ -300,13 +319,100 @@ def account_spend(keystore_name, recipient_id, amount, ttl, password, force, wai
         account, keystore_path = _account(keystore_name, password=password)
         if not utils.is_valid_hash(recipient_id, prefix="ak"):
             raise ValueError("Invalid recipient address")
-        _, signature, tx_hash = _epoch_cli().spend(account, recipient_id, amount, tx_ttl=ttl)
+        tx, tx_signed, signature, tx_hash = _epoch_cli().spend(account, recipient_id, amount, tx_ttl=ttl)
         _print_object({
-            "Hash": tx_hash,
-            "Signature": signature,
             "Sender account": account.get_address(),
             "Recipient account": recipient_id,
-        }, title='Tx')
+            'Unsigned': tx,
+            'Signed': tx_signed,
+            'Hash': tx_hash
+        }, title='spend transaction')
+    except Exception as e:
+        print(e)
+
+
+@account.command('sign', help="Sign a transaction")
+@click.option("--network-id", default=config.DEFAULT_NETWORK_ID, help=f'The network id', show_default=True)
+@click.argument('keystore_name', required=True)
+@click.argument('unsigned_transaction', required=True)
+@account_options
+def account_sign(keystore_name, password, unsigned_transaction, network_id, force, wait, json_):
+    try:
+        set_global_options(force, wait, json_)
+        account, keystore_path = _account(keystore_name, password=password)
+        if not utils.is_valid_hash(unsigned_transaction, prefix="tx"):
+            raise ValueError("Invalid transaction format")
+        # force offline mode for the epoch_client
+        tx_signed, sig, tx_hash = _epoch_cli(offline=True).sign_transaction(account, unsigned_transaction)
+        _print_object({
+            'Signing account address': account.get_address(),
+            'Signature': sig,
+            'Unsigned': unsigned_transaction,
+            'Signed': tx_signed,
+            'Hash': tx_hash
+        }, title='signed transaction')
+    except Exception as e:
+        print(e)
+
+#   _________  ____  ____
+#  |  _   _  ||_  _||_  _|
+#  |_/ | | \_|  \ \  / /
+#      | |       > `' <
+#     _| |_    _/ /'`\ \_
+#    |_____|  |____||____|
+#
+
+
+@cli.group(help="Handle transactions creation")
+def tx():
+    """
+    The tx commnds allow you to create unsigned transactions that can be broadcasted
+    later after beeing signed.
+    """
+    pass
+
+
+@tx.command('broadcast', help='Broadcast a transaction to the network')
+@click.argument('signed_transaction', required=True)
+@global_options
+def tx_broadcast(signed_transaction, force, wait, json_):
+    try:
+        set_global_options(force, wait, json_)
+        if not utils.is_valid_hash(signed_transaction, prefix="tx"):
+            raise ValueError("Invalid transaction format")
+        cli = _epoch_cli()
+        tx_hash = cli.broadcast_transaction(signed_transaction)
+        _print_object({
+            "Transaction hash": tx_hash,
+        }, title='transaction broadcast')
+    except Exception as e:
+        print(e)
+
+
+@tx.command('spend', help="Create a transaction to another account")
+@click.argument('sender_id', required=True)
+@click.argument('recipient_id', required=True)
+@click.argument('amount', required=True, type=int)
+@transaction_options
+@click.option('--payload', default="", help="Spend transaction payload")
+def tx_spend(sender_id, recipient_id, amount, native, ttl, fee, nonce, payload, force, wait, json_):
+    try:
+        set_global_options(force, wait, json_)
+        cli = _epoch_cli(native=native)
+        if not native:
+            nonce, ttl = cli._get_nonce_ttl(sender_id, ttl)
+        tx = cli.tx_builder.tx_spend(sender_id, recipient_id, amount, payload, fee, ttl, nonce)
+        # print the results
+        _print_object({
+            "Sender account": sender_id,
+            "Recipient account": recipient_id,
+            "Amount": amount,
+            "TTL": ttl,
+            "fee": fee,
+            "Nonce": nonce,
+            "Payload": payload,
+            "Encoded": tx,
+        }, title='spend tx')
     except Exception as e:
         print(e)
 
@@ -328,10 +434,11 @@ def name():
 @name.command('claim', help="Claim a domain name")
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
-@click.option("--name-ttl", default=config.DEFAULT_NAME_TTL, help=f'Lifetime of the claim in blocks (default {config.DEFAULT_NAME_TTL})')
-@click.option("--ttl", default=config.DEFAULT_TX_TTL, help=f'Lifetime of the claim request in blocks (default {config.DEFAULT_TX_TTL})')
+@click.option("--name-ttl", default=config.DEFAULT_NAME_TTL, help=f'Lifetime of the name in blocks', show_default=True)
+@click.option("--ttl", default=config.DEFAULT_TX_TTL, help=f'Lifetime of the claim request in blocks', show_default=True)
+@click.option("--fee", default=config.DEFAULT_FEE, help=f'Transaction fee', show_default=True)
 @account_options
-def name_register(keystore_name, domain, name_ttl, ttl, password, force, wait, json_):
+def name_register(keystore_name, domain, name_ttl, ttl, fee, password, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
         account, _ = _account(keystore_name, password=password)
@@ -340,8 +447,25 @@ def name_register(keystore_name, domain, name_ttl, ttl, password, force, wait, j
         if name.status != aens.AEName.Status.AVAILABLE:
             print("Domain not available")
             exit(0)
-        txs = name.full_claim_blocking(account, name_ttl=name_ttl, tx_ttl=ttl)
-        _print_object(txs, title=f"Name {domain} claimed")
+        # preclaim
+        tx, tx_signed, sig, tx_hash = name.preclaim(account, fee, ttl)
+        _print_object({
+            'Signing account address': account.get_address(),
+            'Signature': sig,
+            'Unsigned': tx,
+            'Signed': tx_signed,
+            'Hash': tx_hash
+        }, title='preclaim transaction')
+        # claim
+        tx, tx_signed, sig, tx_hash = name.claim(account, fee, ttl)
+        _print_object({
+            'Signing account address': account.get_address(),
+            'Signature': sig,
+            'Unsigned': tx,
+            'Signed': tx_signed,
+            'Hash': tx_hash
+        }, title='claim transaction')
+        _print_object({}, title=f"Name {domain} claimed")
     except ValueError as e:
         print(e)
 
@@ -350,8 +474,8 @@ def name_register(keystore_name, domain, name_ttl, ttl, password, force, wait, j
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
 @click.argument('address', required=True)
-@click.option("--name-ttl", default=config.DEFAULT_NAME_TTL, help=f'Lifetime of the claim in blocks (default {config.DEFAULT_NAME_TTL})')
-@click.option("--ttl", default=config.DEFAULT_TX_TTL, help=f'Lifetime of the claim request in blocks (default {config.DEFAULT_TX_TTL})')
+@click.option("--name-ttl", default=config.DEFAULT_NAME_TTL, help=f'Lifetime of the claim in blocks', show_default=True)
+@click.option("--ttl", default=config.DEFAULT_TX_TTL, help=f'Lifetime of the claim request in blocks', show_default=True)
 @account_options
 def name_update(keystore_name, domain, address, name_ttl, ttl, password, force, wait, json_):
     """
@@ -482,7 +606,7 @@ def contract_compile(contract_file):
 @contract.command('deploy', help='Deploy a contract on the chain')
 @click.argument('keystore_name', required=True)
 @click.argument("contract_file", required=True)
-@click.option("--gas", default=config.CONTRACT_DEFAULT_GAS, help='Amount of gas to deploy the contract')
+@click.option("--gas", default=config.CONTRACT_DEFAULT_GAS, help='Amount of gas to deploy the contract', show_default=True)
 @account_options
 def contract_deploy(keystore_name, contract_file, gas, password, force, wait, json_):
     """
@@ -529,7 +653,7 @@ def contract_deploy(keystore_name, contract_file, gas, password, force, wait, js
 @click.argument("function", required=True)
 @click.argument("params", required=True)
 @click.argument("return_type", required=True)
-@click.option("--gas", default=config.CONTRACT_DEFAULT_GAS, help='Amount of gas to deploy the contract')
+@click.option("--gas", default=config.CONTRACT_DEFAULT_GAS, help='Amount of gas to deploy the contract', show_default=True)
 @account_options
 def contract_call(keystore_name, deploy_descriptor, function, params, return_type, gas,  password, force, wait, json_):
     try:
