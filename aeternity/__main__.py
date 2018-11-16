@@ -710,22 +710,22 @@ def inspect(obj, force, wait, json_):
                 'Name hash': name.name_hash,
                 'Pointers': name.pointers,
                 'TTL': name.name_ttl,
-            })
+            }, title="aens")
         elif obj.startswith("kh_") or obj.startswith("mh_"):
             v = _epoch_cli().get_block_by_hash(obj)
-            _print_object(v)
+            _print_object(v, title="block")
         elif obj.startswith("th_"):
             v = _epoch_cli().get_transaction_by_hash(hash=obj)
-            _print_object(v)
+            _print_object(v, title="transaction")
         elif obj.startswith("ak_"):
             v = _epoch_cli().get_account_by_pubkey(pubkey=obj)
-            _print_object(v)
+            _print_object(v, title="account")
         elif obj.startswith("ct_"):
             v = _epoch_cli().get_contract(pubkey=obj)
-            _print_object(v)
+            _print_object(v, title="contract")
         elif obj.isdigit() and int(obj) >= 0:
             v = _epoch_cli().get_key_block_by_height(height=int(obj))
-            _print_object(v)
+            _print_object(v, title="block")
         else:
             raise ValueError(f"input not recognized: {obj}")
     except Exception as e:

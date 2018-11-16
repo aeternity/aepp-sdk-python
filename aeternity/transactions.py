@@ -120,7 +120,7 @@ class TxBuilder:
     TxBuilder is used to build and post transactions to the chain.
     """
 
-    def __init__(self, native=True, api: OpenAPICli =None):
+    def __init__(self, native=False, api: OpenAPICli =None):
         """
         :param native: if the transactions should be built by the sdk (True) or requested to the debug api (False)
         """
