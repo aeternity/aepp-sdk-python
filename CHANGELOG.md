@@ -5,6 +5,21 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.25.0.1]
+
+⚠️  KEYSTORE FORMAT CHANGE INCOMPATIBLE WITH PREVIOUS FORMAT ⚠️
+
+refer to the [documentation](docs/keystore_format_change.md) about how to update existing keystores
+
+### Added
+
+- Support for offline transaction signing
+- Native transaction creation for AENS
+
+### Changed
+
+- The keystore json format as been updated to xsalsa-poly1305/argon2id
+
 ## [0.25.0.1b1]
 
 ### Added
@@ -15,7 +30,6 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 - Compatiblity with epoch nodes version < [0.25.0](https://github.com/aeternity/epoch/blob/v0.25.0/docs/release-notes/RELEASE-NOTES-0.25.0.md)
 - Support for .aet tld for aens
-
 
 
 ## [0.24.0.2]
