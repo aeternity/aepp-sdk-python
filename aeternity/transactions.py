@@ -1,5 +1,6 @@
 from aeternity import hashing
 from aeternity.openapi import OpenAPICli
+from aeternity.config import ORACLE_DEFAULT_TTL_TYPE_DELTA
 import math
 
 # RLP version number
@@ -58,6 +59,11 @@ OBJECT_TAG_CHANNEL_SNAPSHOT_TRANSACTION = 59
 OBJECT_TAG_POI = 60
 OBJECT_TAG_MICRO_BODY = 101
 OBJECT_TAG_LIGHT_MICRO_BLOCK = 102
+
+
+def _int(val: int) -> bytes:
+    s = int(math.ceil(val.bit_length() / 8))
+    return val.to_bytes(s, 'big')
 
 
 def _binary(val):
@@ -410,3 +416,42 @@ class TxBuilder:
             nonce=nonce
         )
         return self.api.post_contract_call(body=body).tx
+
+    # ORACLES
+
+    def tx_oracle_register(self, account_id, query_format, response_format, query_fee, ttl_type, ttl_value, vm_version, fee, ttl, nonce)-> str:
+        """
+        Create an register oracle transaction
+        """
+
+        if self.native_transactions:
+            tx = [
+                _int(OBJECT_TAG_ORACLE_REGISTER_TRANSACTION),
+                _int(VSN),
+                _id(ID_TAG_ACCOUNT, account_id),
+                _int(nonce),
+                _binary(query_format),
+                _binary(response_format),
+                _int(query_fee),
+                _int(0 if ttl_type == ORACLE_DEFAULT_TTL_TYPE_DELTA else 2),
+                _int(ttl_value),
+                _int(fee),
+                _int(ttl),
+            ]
+            return hashing.encode_rlp("tx", tx)
+        # use internal endpoints transaction
+        body = dict(
+            account_id=account_id,
+            query_format=query_format,
+            response_format=response_format,
+            query_fee=query_fee,
+            oracle_ttl=dict(
+                type=ttl_type,
+                value=ttl_value),
+            vm_version=vm_version,
+            fee=fee,
+            ttl=ttl,
+            nonce=nonce
+        )
+        tx = self.api.post_oracle_register(body=body)
+        return tx.tx
