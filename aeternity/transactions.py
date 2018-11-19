@@ -84,7 +84,7 @@ def _binary(val):
 
 def _id(id_tag, hash_id):
     """Utility function to create and _id type"""
-    return _binary(id_tag) + hashing.decode(hash_id)
+    return _int(id_tag) + hashing.decode(hash_id)
 
 
 class TxSigner:
@@ -158,14 +158,14 @@ class TxBuilder:
         # compute the absolute ttl and the nonce
         if self.native_transactions:
             tx = [
-                _binary(OBJECT_TAG_SPEND_TRANSACTION),
-                _binary(VSN),
+                _int(OBJECT_TAG_SPEND_TRANSACTION),
+                _int(VSN),
                 _id(ID_TAG_ACCOUNT, account_id),
                 _id(ID_TAG_ACCOUNT, recipient_id),
-                _binary(amount),
-                _binary(fee),
-                _binary(ttl),
-                _binary(nonce),
+                _int(amount),
+                _int(fee),
+                _int(ttl),
+                _int(nonce),
                 _binary(payload)
             ]
             tx = hashing.encode_rlp("tx", tx)
@@ -196,13 +196,13 @@ class TxBuilder:
         """
         if self.native_transactions:
             tx = [
-                _binary(OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION),
-                _binary(VSN),
+                _int(OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION),
+                _int(VSN),
                 _id(ID_TAG_ACCOUNT, account_id),
-                _binary(nonce),
+                _int(nonce),
                 _id(ID_TAG_COMMITMENT, commitment_id),
-                _binary(fee),
-                _binary(ttl)
+                _int(fee),
+                _int(ttl)
             ]
             return hashing.encode_rlp("tx", tx)
         # use internal endpoints transaction
@@ -227,14 +227,14 @@ class TxBuilder:
         """
         if self.native_transactions:
             tx = [
-                _binary(OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION),
-                _binary(VSN),
+                _int(OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION),
+                _int(VSN),
                 _id(ID_TAG_ACCOUNT, account_id),
-                _binary(nonce),
+                _int(nonce),
                 hashing.decode(name),
                 _binary(name_salt),
-                _binary(fee),
-                _binary(ttl)
+                _int(fee),
+                _int(ttl)
             ]
             tx = hashing.encode_rlp("tx", tx)
         # use internal endpoints transaction
@@ -272,16 +272,16 @@ class TxBuilder:
             ptrs = [[_binary(p.get("key")), _id(pointer_tag(p), p.get("id"))] for p in pointers]
             # build tx
             tx = [
-                _binary(OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION),
-                _binary(VSN),
+                _int(OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION),
+                _int(VSN),
                 _id(ID_TAG_ACCOUNT, account_id),
-                _binary(nonce),
+                _int(nonce),
                 _id(ID_TAG_NAME, name_id),
-                _binary(name_ttl),
+                _int(name_ttl),
                 ptrs,
-                _binary(client_ttl),
-                _binary(fee),
-                _binary(ttl)
+                _int(client_ttl),
+                _int(fee),
+                _int(ttl)
             ]
             return hashing.encode_rlp("tx", tx)
         # use internal endpoints transaction
@@ -309,14 +309,14 @@ class TxBuilder:
         """
         if self.native_transactions:
             tx = [
-                _binary(OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION),
-                _binary(VSN),
+                _int(OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION),
+                _int(VSN),
                 _id(ID_TAG_ACCOUNT, account_id),
-                _binary(nonce),
+                _int(nonce),
                 _id(ID_TAG_NAME, name_id),
                 _id(ID_TAG_ACCOUNT, recipient_id),
-                _binary(fee),
-                _binary(ttl),
+                _int(fee),
+                _int(ttl),
             ]
             return hashing.encode_rlp("tx", tx)
         # use internal endpoints transaction
@@ -342,13 +342,13 @@ class TxBuilder:
 
         if self.native_transactions:
             tx = [
-                _binary(OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION),
-                _binary(VSN),
+                _int(OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION),
+                _int(VSN),
                 _id(ID_TAG_ACCOUNT, account_id),
-                _binary(nonce),
+                _int(nonce),
                 _id(ID_TAG_NAME, name_id),
-                _binary(fee),
-                _binary(ttl),
+                _int(fee),
+                _int(ttl),
             ]
             return hashing.encode_rlp("tx", tx)
         # use internal endpoints transaction
@@ -365,7 +365,7 @@ class TxBuilder:
 
     def tx_contract_create(self, account_id, code, call_data, amount, deposit, gas, gas_price, vm_version, fee, ttl, nonce)-> str:
         """
-        Create a contract and post it to the chain
+        Create a contract transaction
         :param account_id: the account creating the contract
         :param code: the binary code of the contract
         :param call_data: the call data for the contract
