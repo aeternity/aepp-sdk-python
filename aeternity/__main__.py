@@ -723,6 +723,9 @@ def inspect(obj, force, wait, json_):
         elif obj.startswith("ct_"):
             v = _epoch_cli().get_contract(pubkey=obj)
             _print_object(v, title="contract")
+        elif obj.startswith("ok_"):
+            v = _epoch_cli().get_oracle_by_pubkey(pubkey=obj)
+            _print_object(v, title="oracle")
         elif obj.isdigit() and int(obj) >= 0:
             v = _epoch_cli().get_key_block_by_height(height=int(obj))
             _print_object(v, title="block")
