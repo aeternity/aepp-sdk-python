@@ -70,7 +70,7 @@ Use the environment variables
 
 ### Example usage
 
-The following is a walktrough to execute an offline spend transaction on the *sdk-edgenet* netowork
+The following is a walkthrough to execute an offline spend transaction on the *sdk-edgenet* network
 
 1. Set the environment variables
 ```
