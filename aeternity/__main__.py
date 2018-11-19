@@ -155,7 +155,7 @@ _account_options = [
 ]
 
 _sign_options = [
-    click.option('--network_id', default=config.DEFAULT_NETWORK_ID, help="The network id to use when siging a transaction", show_default=True)
+    click.option('--network_id', default=config.DEFAULT_NETWORK_ID, help="The network id to use when signing a transaction", show_default=True)
 ]
 
 _transaction_options = [
@@ -378,8 +378,8 @@ def account_sign(keystore_name, password, network_id, unsigned_transaction, forc
 @cli.group(help="Handle transactions creation")
 def tx():
     """
-    The tx commnds allow you to create unsigned transactions that can be broadcasted
-    later after beeing signed.
+    The tx command allow you to create unsigned transactions that can be broadcast
+    later after being signed.
     """
     pass
 
