@@ -75,6 +75,7 @@ The following is a walkthrough to execute an offline spend transaction on the *s
 1. Set the environment variables
 ```
 export EPOCH_URL=https://sdk-edgenet.aepps.com
+export EPOCH_URL_DEBUG=https://sdk-edgenet.aepps.com
 ```
 2. Retrieve the top block 
 ```
