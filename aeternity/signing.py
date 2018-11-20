@@ -66,7 +66,6 @@ class Account:
         """
         if filename is None:
             filename = f"UTC--{datetime.utcnow().isoformat()}--{self.get_address()}"
-        # with open(os.path.join(path, filename), 'w') as fp:
         with open(os.open(os.path.join(path, filename), os.O_TRUNC | os.O_CREAT | os.O_WRONLY, 0o600), 'w') as fp:
             j = hashing.keystore_seal(self.signing_key, password, self.get_address())
             json.dump(j, fp)
