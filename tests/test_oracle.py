@@ -1,8 +1,8 @@
 import logging
 import pytest
 
-from tests import EPOCH_CLI
-from aeternity.oracle import Oracle, OracleQuery
+from tests import EPOCH_CLI, ACCOUNT
+from aeternity.oracles import Oracle, OracleQuery
 
 logger = logging.getLogger(__name__)
 # to run this test in other environments set the env vars as specified in the
@@ -30,20 +30,25 @@ class WeatherQuery(OracleQuery):
         self.response_received = True
 
 
-@pytest.mark.skip('skip tests for v0.13.0')
-def test_oracle_registration():
-    weather_oracle = WeatherOracle(
+def _test_oracle_registration():
+    oracle = EPOCH_CLI.Oracle()
+    weather_oracle = dict(
+        account=ACCOUNT,
         query_format="{'city': str}",
         response_format="{'temp_c': int}",
-        default_query_fee=0,
-        default_fee=10,
-        default_ttl=50,
-        default_query_ttl=2,
-        default_response_ttl=2,
     )
-    EPOCH_CLI.register_oracle(weather_oracle)
-    EPOCH_CLI.listen_until(weather_oracle.is_ready, timeout=5)
-    assert weather_oracle.oracle_id is not None
+    tx, tx_signed, signature, tx_hash = oracle.register(**weather_oracle)
+
+
+def test_oracle_registration_debug():
+    EPOCH_CLI.set_native(False)
+    _test_oracle_registration()
+
+
+@pytest.mark.skip('skip tests, missing documentation for ttl_type encoding')
+def test_oracle_registration_native():
+    EPOCH_CLI.set_native(True)
+    _test_oracle_registration()
 
 
 @pytest.mark.skip('skip tests for v0.13.0')
