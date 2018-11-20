@@ -62,8 +62,9 @@ OBJECT_TAG_LIGHT_MICRO_BLOCK = 102
 
 
 def _int(val: int) -> bytes:
-    s = int(math.ceil(val.bit_length() / 8))
-    return val.to_bytes(s, 'big')
+    if val == 0:
+        return val.to_bytes(1, byteorder='big')
+    return val.to_bytes((val.bit_length() + 7) // 8, byteorder='big')
 
 
 def _binary(val):
