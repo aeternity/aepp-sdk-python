@@ -129,6 +129,7 @@ class Oracle():
 
     def __init__(self, client):
         self.client = client
+        self.id = None
 
     def register(self, account, query_format, response_format,
                  query_fee=config.ORACLE_DEFAULT_QUERY_FEE,
@@ -155,4 +156,9 @@ class Oracle():
         tx_signed, sg, tx_hash = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
         self.client.broadcast_transaction(tx_signed, tx_hash)
+        # register the oracle id
+        # the oracle id is the account that register the oracle
+        # with the prefix substituted by with ok_
+        self.id = f"ok_{account.get_address()[3:]}"
+        # return the transaction
         return tx, tx_signed, sg, tx_hash
