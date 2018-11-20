@@ -629,17 +629,17 @@ def contract_deploy(keystore_name, contract_file, gas, password, force, wait, js
             contract_data = {
                 'source': contract.source_code,
                 'bytecode': contract.bytecode,
-                'address': contract.address,
+                'id': contract.id,
                 'transaction': tx.tx_hash,
                 'owner': account.get_address(),
                 'created_at': datetime.now().isoformat('T')
             }
             # write the contract data to a file
-            deploy_descriptor = f"{contract_file}.deploy.{contract.address[3:]}.json"
+            deploy_descriptor = f"{contract_file}.deploy.{contract.id[3:]}.json"
             with open(deploy_descriptor, 'w') as fw:
                 json.dump(contract_data, fw, indent=2)
             _print_object({
-                "Contract address": contract.address,
+                "Contract id": contract.id,
                 "Transaction hash": tx.tx_hash,
                 "Deploy descriptor": deploy_descriptor,
             })
@@ -669,7 +669,7 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
             contract = _epoch_cli().Contract(source, bytecode=bytecode, address=address)
             result = contract.tx_call(account, function, params, gas=gas)
             _print_object({
-                'Contract address': contract.address,
+                'Contract id': contract.id,
                 'Gas price': result.gas_price,
                 'Gas used': result.gas_used,
                 'Return value (encoded)': result.return_value,
@@ -682,6 +682,32 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
                 })
 
             pass
+    except Exception as e:
+        print(e)
+
+#     ___   _______          _        ______  _____     ________   ______
+#   .'   `.|_   __ \        / \     .' ___  ||_   _|   |_   __  |.' ____ \
+#  /  .-.  \ | |__) |      / _ \   / .'   \_|  | |       | |_ \_|| (___ \_|
+#  | |   | | |  __ /      / ___ \  | |         | |   _   |  _| _  _.____`.
+#  \  `-'  /_| |  \ \_  _/ /   \ \_\ `.___.'\ _| |__/ | _| |__/ || \____) |
+#   `.___.'|____| |___||____| |____|`.____ .'|________||________| \______.'
+#
+
+
+@click.group('oracle', help='Register or query oracles')
+def oracle():
+    pass
+
+
+@oracle.command(help="Register an oracle")
+@click.argument("contract_file")
+def contract_compile(contract_file):
+    try:
+        with open(contract_file) as fp:
+            code = fp.read()
+            c = _epoch_cli().Contract(Contract.SOPHIA)
+            result = c.compile(code)
+            _print_object({"bytecode", result})
     except Exception as e:
         print(e)
 
