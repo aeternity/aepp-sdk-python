@@ -1,7 +1,7 @@
 import logging
 import pytest
 
-from tests import EPOCH_CLI, ACCOUNT
+from tests import EPOCH_CLI, ACCOUNT, ACCOUNT_1
 from aeternity.oracles import Oracle, OracleQuery
 
 logger = logging.getLogger(__name__)
@@ -30,10 +30,10 @@ class WeatherQuery(OracleQuery):
         self.response_received = True
 
 
-def _test_oracle_registration():
+def _test_oracle_registration(account):
     oracle = EPOCH_CLI.Oracle()
     weather_oracle = dict(
-        account=ACCOUNT,
+        account=account,
         query_format="{'city': str}",
         response_format="{'temp_c': int}",
     )
@@ -42,13 +42,12 @@ def _test_oracle_registration():
 
 def test_oracle_registration_debug():
     EPOCH_CLI.set_native(False)
-    _test_oracle_registration()
+    _test_oracle_registration(ACCOUNT)
 
 
-@pytest.mark.skip('skip tests, missing documentation for ttl_type encoding')
 def test_oracle_registration_native():
     EPOCH_CLI.set_native(True)
-    _test_oracle_registration()
+    _test_oracle_registration(ACCOUNT_1)
 
 
 @pytest.mark.skip('skip tests for v0.13.0')

@@ -434,10 +434,11 @@ class TxBuilder:
                 _binary(query_format),
                 _binary(response_format),
                 _int(query_fee),
-                _int(0 if ttl_type == ORACLE_DEFAULT_TTL_TYPE_DELTA else 2),
+                _int(0 if ttl_type == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
                 _int(ttl_value),
                 _int(fee),
                 _int(ttl),
+                _int(vm_version),
             ]
             return hashing.encode_rlp("tx", tx)
         # use internal endpoints transaction
