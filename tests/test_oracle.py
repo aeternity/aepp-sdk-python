@@ -38,16 +38,32 @@ def _test_oracle_registration(account):
         response_format="{'temp_c': int}",
     )
     tx, tx_signed, signature, tx_hash = oracle.register(**weather_oracle)
+    assert oracle.id == account.get_address().replace("ak_", "ok_")
+    oracle_api_response = EPOCH_CLI.get_oracle_by_pubkey(pubkey=oracle.id)
+    assert oracle_api_response.id == oracle.id
+    return oracle
 
 
-def test_oracle_registration_debug():
+def _test_oracle_query(oracle, sender, query):
+    tx, tx_signed, signature, tx_hash = oracle.query(sender, query)
+    print(tx)
+
+
+def test_oracle_lifecycle_debug():
+    # registration
     EPOCH_CLI.set_native(False)
-    _test_oracle_registration(ACCOUNT)
+    oracle = _test_oracle_registration(ACCOUNT)
+    # query
+    _test_oracle_query(oracle, ACCOUNT_1, "{'city': 'Berlin'}")
 
 
-def test_oracle_registration_native():
+@pytest.mark.skip('skip tests for v0.13.0')
+def test_oracle_lifecycle_native():
+    # registration
     EPOCH_CLI.set_native(True)
-    _test_oracle_registration(ACCOUNT_1)
+    oracle = _test_oracle_registration(ACCOUNT_1)
+    # query
+    _test_oracle_query(oracle, ACCOUNT, "{'city': 'Sofia'}")
 
 
 @pytest.mark.skip('skip tests for v0.13.0')

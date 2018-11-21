@@ -420,9 +420,12 @@ class TxBuilder:
 
     # ORACLES
 
-    def tx_oracle_register(self, account_id, query_format, response_format, query_fee, ttl_type, ttl_value, vm_version, fee, ttl, nonce)-> str:
+    def tx_oracle_register(self, account_id,
+                           query_format, response_format,
+                           query_fee, ttl_type, ttl_value, vm_version,
+                           fee, ttl, nonce)-> str:
         """
-        Create an register oracle transaction
+        Create a register oracle transaction
         """
 
         if self.native_transactions:
@@ -458,26 +461,26 @@ class TxBuilder:
         tx = self.api.post_oracle_register(body=body)
         return tx.tx
 
-    def tx_oracle_query(self, account_id, query,
+    def tx_oracle_query(self, oracle_id, sender_id, query,
                         query_fee, query_ttl_type, query_ttl_value,
                         response_ttl_type, response_ttl_value,
                         fee, ttl, nonce)-> str:
         """
-        Create an register oracle transaction
+        Create a query oracle transaction
         """
 
         if self.native_transactions:
             tx = [
                 _int(OBJECT_TAG_ORACLE_QUERY_TRANSACTION),
                 _int(VSN),
-                _id(ID_TAG_ACCOUNT, account_id),
+                _id(ID_TAG_ACCOUNT, sender_id),
                 _int(nonce),
-                _id(ID_TAG_ACCOUNT, oracle_id),
+                _id(ID_TAG_ORACLE, oracle_id),
                 _binary(query),
                 _int(query_fee),
-                _int(query_ttl_type),
+                _int(0 if query_ttl_type == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
                 _int(query_ttl_value),
-                _int(response_ttl_type),
+                _int(0 if response_ttl_type == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
                 _int(response_ttl_value),
                 _int(fee),
                 _int(ttl),
@@ -485,17 +488,21 @@ class TxBuilder:
             return hashing.encode_rlp("tx", tx)
         # use internal endpoints transaction
         body = dict(
-            account_id=account_id,
-            query_format=query_format,
-            response_format=response_format,
-            query_fee=query_fee,
-            oracle_ttl=dict(
-                type=ttl_type,
-                value=ttl_value),
-            vm_version=vm_version,
+            sender_id=sender_id,
+            oracle_id=oracle_id,
+            response_ttl=dict(
+                type=response_ttl_type,
+                value=response_ttl_value
+            ),
+            query=query,
+            query_ttl=dict(
+                type=query_ttl_type,
+                value=query_ttl_value
+            ),
             fee=fee,
+            query_fee=query_fee,
             ttl=ttl,
-            nonce=nonce
+            nonce=nonce,
         )
-        tx = self.api.post_oracle_register(body=body)
+        tx = self.api.post_oracle_query(body=body)
         return tx.tx
