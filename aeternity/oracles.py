@@ -164,14 +164,6 @@ class Oracle():
         # return the transaction
         return tx, tx_signed, sg, tx_hash
 
-    @staticmethod
-    def _query_id(sender_id, nonce, oracle_id):
-        return hashing.encode("oq", hashing.hash(
-            hashing.decode(sender_id) +
-            nonce.to_bytes((nonce.bit_length() + 7) // 8, byteorder='big') +
-            hashing.decode(oracle_id)
-        ))
-
     def query(self, sender, query,
               query_fee=config.ORACLE_DEFAULT_QUERY_FEE,
               query_ttl_type=config.ORACLE_DEFAULT_TTL_TYPE_DELTA,
@@ -200,9 +192,6 @@ class Oracle():
         # post the transaction to the chain
         self.client.broadcast_transaction(tx_signed, tx_hash)
         # save the query id
-        self.query_id = Oracle._query_id(sender.get_address(), nonce, self.id)
-
-        print(f"/sender_id/{sender.get_address()}   /oracle_id/{self.id}   /nonce/{nonce}")
-        print(f"http://localhost:3013/oracles/{self.id}/queries/{self.query_id}")
+        self.query_id = hashing.oracle_query_id(sender.get_address(), nonce, self.id)
         # return the transaction
         return tx, tx_signed, sg, tx_hash
