@@ -2,6 +2,7 @@ import base58
 import rlp
 import uuid
 import secrets
+import math
 from nacl.hash import blake2b
 from nacl.encoding import RawEncoder
 from nacl import secret, utils
@@ -36,14 +37,14 @@ def encode(prefix, data):
     """encode data using the default encoding/decoding algorithm and prepending the prefix with a prefix, ex: ak_encoded_data, th_encoded_data,..."""
     if isinstance(data, str):
         data = data.encode("utf-8")
-    return f"{prefix}_{base58.b58encode_check(data)}"
+    return f"{prefix}_{_base58_encode(data)}"
 
 
 def decode(data):
     """
     Decode data using the default encoding/decoding algorithm
     :param data: a encoded and prefixed string (ex tx_..., sg_..., ak_....)
-    :return: the raw byte array of the decoded hashed
+    :return: the raw bytes
     """
 
     if data is None or len(data.strip()) < 3 or data[2] != '_':
@@ -53,7 +54,7 @@ def decode(data):
 
 def encode_rlp(prefix, data):
     """
-    Encode an array in rlp format
+    Encode a list in rlp format
     :param prefix: the prefix to use in the encoded string
     :param data: the array that has to be encoded in rlp
     """
@@ -61,6 +62,15 @@ def encode_rlp(prefix, data):
         raise ValueError("data to be encoded to rlp must be an array")
     payload = rlp.encode(data)
     return encode(prefix, payload)
+
+
+def decode_rlp(data):
+    """
+    Decode an rlp/b2b message to a list
+    :param data: the encoded string to decode
+    """
+    rlp_enc = decode(data)
+    return rlp.decode(rlp_enc)
 
 
 def hash(data):
@@ -120,6 +130,37 @@ def _binary(val):
 def _id(id_tag, hash_id):
     """Utility function to create and _id type"""
     return _int(id_tag) + decode(hash_id)
+
+
+def contract_id(owner_id, nonce):
+    """
+    Compute the contract id of a contract
+    :param owner_id: the account creating the conctract
+    :param nonce: the nonce of the contract creation transaction
+    """
+    return hash_encode("ct", decode(owner_id) + _int(nonce))
+
+
+def oracle_id(account_id):
+    """
+    Compute the oracle id of a oracle registration
+    :parm account_id: the account registering the oracle
+    """
+    return f"ok_{account_id[3:]}"
+
+
+def oracle_query_id(sender_id, nonce, oracle_id):
+    """
+    Compute the query id for a sender and an oracle
+    :param sender_id: the account making the query
+    :param nonce: the nonce of the query transaction
+    :param oracle_id: the oracle id
+    """
+    def _int32(val):
+        return val.to_bytes(32, byteorder='big')
+    return hash_encode("oq", decode(sender_id) + _int32(nonce) + decode(oracle_id))
+
+
 def randint(upper_bound=2**64):
     return secrets.randbelow(upper_bound)
 
