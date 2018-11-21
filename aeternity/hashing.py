@@ -92,6 +92,34 @@ def namehash_encode(prefix, name):
     return encode(prefix, namehash(name))
 
 
+def _int(val: int) -> bytes:
+    """
+    Encode and int to a big endian byte array
+    """
+    if val == 0:
+        return val.to_bytes(1, byteorder='big')
+    return val.to_bytes((val.bit_length() + 7) // 8, byteorder='big')
+
+
+def _binary(val):
+    """
+    Encode a value to bytes.
+    If the value is an int it will be encoded as bytes big endian
+    Raises ValueError if the input is not an int or string
+    """
+    if isinstance(val, int) or isinstance(val, float):
+        s = int(math.ceil(val.bit_length() / 8))
+        return val.to_bytes(s, 'big')
+    if isinstance(val, str):
+        return val.encode("utf-8")
+    if isinstance(val, bytes):
+        return val
+    raise ValueError("Byte serialization not supported")
+
+
+def _id(id_tag, hash_id):
+    """Utility function to create and _id type"""
+    return _int(id_tag) + decode(hash_id)
 def randint(upper_bound=2**64):
     return secrets.randbelow(upper_bound)
 

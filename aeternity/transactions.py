@@ -1,7 +1,6 @@
-from aeternity import hashing
+from aeternity.hashing import _int, _binary, _id, encode, decode, encode_rlp, hash_encode
 from aeternity.openapi import OpenAPICli
 from aeternity.config import ORACLE_DEFAULT_TTL_TYPE_DELTA
-import math
 
 # RLP version number
 # https://github.com/aeternity/protocol/blob/api-v0.10.1/serializations.md#binary-serialization
@@ -61,33 +60,6 @@ OBJECT_TAG_MICRO_BODY = 101
 OBJECT_TAG_LIGHT_MICRO_BLOCK = 102
 
 
-def _int(val: int) -> bytes:
-    if val == 0:
-        return val.to_bytes(1, byteorder='big')
-    return val.to_bytes((val.bit_length() + 7) // 8, byteorder='big')
-
-
-def _binary(val):
-    """
-    Encode a value to bytes.
-    If the value is an int it will be encoded as bytes big endian
-    Raises ValueError if the input is not an int or string
-    """
-    if isinstance(val, int) or isinstance(val, float):
-        s = int(math.ceil(val.bit_length() / 8))
-        return val.to_bytes(s, 'big')
-    if isinstance(val, str):
-        return val.encode("utf-8")
-    if isinstance(val, bytes):
-        return val
-    raise ValueError("Byte serialization not supported")
-
-
-def _id(id_tag, hash_id):
-    """Utility function to create and _id type"""
-    return _int(id_tag) + hashing.decode(hash_id)
-
-
 class TxSigner:
     """
     TxSigner is used to sign transactions
@@ -101,8 +73,8 @@ class TxSigner:
         """prepare a signed transaction message"""
         tag = bytes([OBJECT_TAG_SIGNED_TRANSACTION])
         vsn = bytes([VSN])
-        encoded_signed_tx = hashing.encode_rlp("tx", [tag, vsn, [signature], transaction])
-        encoded_signature = hashing.encode("sg", signature)
+        encoded_signed_tx = encode_rlp("tx", [tag, vsn, [signature], transaction])
+        encoded_signature = encode("sg", signature)
         return encoded_signed_tx, encoded_signature
 
     def sign_encode_transaction(self, tx):
@@ -111,7 +83,7 @@ class TxSigner:
         :return: encoded_signed_tx, encoded_signature, tx_hash
         """
         # decode the transaction if not in native mode
-        transaction = hashing.decode(tx.tx) if hasattr(tx, "tx") else hashing.decode(tx)
+        transaction = decode(tx.tx) if hasattr(tx, "tx") else decode(tx)
         # sign the transaction
         signature = self.account.sign(_binary(self.network_id) + transaction)
         # encode the transaction
@@ -142,8 +114,8 @@ class TxBuilder:
         Generate the hash from a signed and encoded transaction
         :param signed_tx: an encoded signed transaction
         """
-        signed = hashing.decode(signed_tx)
-        return hashing.hash_encode("th", signed)
+        signed = decode(signed_tx)
+        return hash_encode("th", signed)
 
     def tx_spend(self, account_id, recipient_id, amount, payload, fee, ttl, nonce)-> str:
         """
@@ -169,7 +141,7 @@ class TxBuilder:
                 _int(nonce),
                 _binary(payload)
             ]
-            tx = hashing.encode_rlp("tx", tx)
+            tx = encode_rlp("tx", tx)
             return tx
 
         # use internal endpoints transaction
@@ -205,7 +177,7 @@ class TxBuilder:
                 _int(fee),
                 _int(ttl)
             ]
-            return hashing.encode_rlp("tx", tx)
+            return encode_rlp("tx", tx)
         # use internal endpoints transaction
         body = dict(
             commitment_id=commitment_id,
@@ -232,12 +204,12 @@ class TxBuilder:
                 _int(VSN),
                 _id(ID_TAG_ACCOUNT, account_id),
                 _int(nonce),
-                hashing.decode(name),
+                decode(name),
                 _binary(name_salt),
                 _int(fee),
                 _int(ttl)
             ]
-            tx = hashing.encode_rlp("tx", tx)
+            tx = encode_rlp("tx", tx)
         # use internal endpoints transaction
         body = dict(
             account_id=account_id,
@@ -284,7 +256,7 @@ class TxBuilder:
                 _int(fee),
                 _int(ttl)
             ]
-            return hashing.encode_rlp("tx", tx)
+            return encode_rlp("tx", tx)
         # use internal endpoints transaction
         body = dict(
             account_id=account_id,
@@ -319,7 +291,7 @@ class TxBuilder:
                 _int(fee),
                 _int(ttl),
             ]
-            return hashing.encode_rlp("tx", tx)
+            return encode_rlp("tx", tx)
         # use internal endpoints transaction
         body = dict(
             account_id=account_id,
@@ -351,7 +323,7 @@ class TxBuilder:
                 _int(fee),
                 _int(ttl),
             ]
-            return hashing.encode_rlp("tx", tx)
+            return encode_rlp("tx", tx)
         # use internal endpoints transaction
         body = dict(
             account_id=account_id,
@@ -443,7 +415,7 @@ class TxBuilder:
                 _int(ttl),
                 _int(vm_version),
             ]
-            return hashing.encode_rlp("tx", tx)
+            return encode_rlp("tx", tx)
         # use internal endpoints transaction
         body = dict(
             account_id=account_id,
@@ -485,7 +457,7 @@ class TxBuilder:
                 _int(fee),
                 _int(ttl),
             ]
-            return hashing.encode_rlp("tx", tx)
+            return encode_rlp("tx", tx)
         # use internal endpoints transaction
         body = dict(
             sender_id=sender_id,
