@@ -438,7 +438,7 @@ class TxBuilder:
                         response_ttl_type, response_ttl_value,
                         fee, ttl, nonce)-> str:
         """
-        Create a query oracle transaction
+        Create a oracle query transaction
         """
 
         if self.native_transactions:
@@ -477,4 +477,74 @@ class TxBuilder:
             nonce=nonce,
         )
         tx = self.api.post_oracle_query(body=body)
+        return tx.tx
+
+    def tx_oracle_respond(self, oracle_id, query_id, response,
+                          response_ttl_type, response_ttl_value,
+                          fee, ttl, nonce)-> str:
+        """
+        Create a oracle response transaction
+        """
+
+        if self.native_transactions:
+            tx = [
+                _int(OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION),
+                _int(VSN),
+                _id(ID_TAG_ORACLE, oracle_id),
+                _int(nonce),
+                _binary(query_id),
+                _binary(response),
+                _int(0 if response_ttl_type == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
+                _int(response_ttl_value),
+                _int(fee),
+                _int(ttl),
+            ]
+            return encode_rlp("tx", tx)
+        # use internal endpoints transaction
+        body = dict(
+            response_ttl=dict(
+                type=response_ttl_type,
+                value=response_ttl_value
+            ),
+            oracle_id=oracle_id,
+            query_id=query_id,
+            response=response,
+            fee=fee,
+            ttl=ttl,
+            nonce=nonce,
+        )
+        tx = self.api.post_oracle_respond(body=body)
+        return tx.tx
+
+    def tx_oracle_extend(self, oracle_id,
+                         ttl_type, ttl_value,
+                         fee, ttl, nonce)-> str:
+        """
+        Create a oracle extends transaction
+        """
+
+        if self.native_transactions:
+            tx = [
+                _int(OBJECT_TAG_ORACLE_EXTEND_TRANSACTION),
+                _int(VSN),
+                _id(ID_TAG_ORACLE, oracle_id),
+                _int(nonce),
+                _int(0 if ttl_type == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
+                _int(ttl_value),
+                _int(fee),
+                _int(ttl),
+            ]
+            return encode_rlp("tx", tx)
+        # use internal endpoints transaction
+        body = dict(
+            oracle_id=oracle_id,
+            oracle_ttl=dict(
+                type=ttl_type,
+                value=ttl_value
+            ),
+            fee=fee,
+            ttl=ttl,
+            nonce=nonce,
+        )
+        tx = self.api.post_oracle_extend(body=body)
         return tx.tx

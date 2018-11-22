@@ -3,6 +3,7 @@ import pytest
 
 from tests import EPOCH_CLI, ACCOUNT, ACCOUNT_1
 from aeternity.oracles import Oracle, OracleQuery
+from aeternity import hashing
 
 logger = logging.getLogger(__name__)
 # to run this test in other environments set the env vars as specified in the
@@ -45,8 +46,20 @@ def _test_oracle_registration(account):
 
 
 def _test_oracle_query(oracle, sender, query):
-    tx, tx_signed, signature, tx_hash = oracle.query(sender, query)
-    print(tx)
+    q = EPOCH_CLI.OracleQuery(oracle.id)
+    q.execute(sender, query)
+    return q
+
+
+def _test_oracle_respond(oracle, query, account, response):
+    tx, tx_signed, signature, tx_hash = oracle.respond(account, query.id, response)
+
+
+def _test_oracle_response(query, expected):
+    r = query.get_response_object()
+    assert r.oracle_id == query.oracle_id
+    assert r.id == query.id
+    assert r.response == hashing.encode("or", expected)
 
 
 def test_oracle_lifecycle_debug():
@@ -54,16 +67,21 @@ def test_oracle_lifecycle_debug():
     EPOCH_CLI.set_native(False)
     oracle = _test_oracle_registration(ACCOUNT)
     # query
-    _test_oracle_query(oracle, ACCOUNT_1, "{'city': 'Berlin'}")
+    query = _test_oracle_query(oracle, ACCOUNT_1, "{'city': 'Berlin'}")
+    # respond
+    _test_oracle_respond(oracle, query, ACCOUNT,  "{'temp_c': 20}")
+    _test_oracle_response(query, "{'temp_c': 20}")
 
 
-@pytest.mark.skip('skip tests for v0.13.0')
 def test_oracle_lifecycle_native():
     # registration
     EPOCH_CLI.set_native(True)
     oracle = _test_oracle_registration(ACCOUNT_1)
     # query
-    _test_oracle_query(oracle, ACCOUNT, "{'city': 'Sofia'}")
+    query = _test_oracle_query(oracle, ACCOUNT, "{'city': 'Sofia'}")
+    # respond
+    _test_oracle_respond(oracle, query, ACCOUNT_1,  "{'temp_c': 2000}")
+    _test_oracle_response(query, "{'temp_c': 2000}")
 
 
 @pytest.mark.skip('skip tests for v0.13.0')

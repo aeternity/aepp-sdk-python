@@ -220,3 +220,6 @@ class EpochClient:
     # support oralces
     def Oracle(self):
         return oracles.Oracle(self)
+
+    def OracleQuery(self, oracle_id, query_id=None):
+        return oracles.OracleQuery(self, oracle_id, id=query_id)
