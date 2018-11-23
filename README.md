@@ -70,13 +70,14 @@ Use the environment variables
 
 ### Example usage
 
-The following is a walktrough to execute an offline spend transaction on the *sdk-edgenet* netowork
+The following is a walkthrough to execute an offline spend transaction on the *sdk-edgenet* network
 
 1. Set the environment variables
 ```
 export EPOCH_URL=https://sdk-edgenet.aepps.com
+export EPOCH_URL_DEBUG=https://sdk-edgenet.aepps.com
 ```
-2. Retrieve the top block 
+2. Retrieve the top block
 ```
 ./aecli chain top
 <none>
@@ -98,7 +99,7 @@ export EPOCH_URL=https://sdk-edgenet.aepps.com
 
 ```
 aecli account create TEST.json
-Enter the account password []: 
+Enter the account password []:
 <account>
   Address ___________________________________________ ak_KUF5Y1BwYaMYXCGZU93vjQHxT3hQSVeryBvCMLLguvZTgGGWB
   Path ______________________________________________ /..../TEST.json
@@ -136,19 +137,19 @@ aecli inspect th_uMTuHHgk2RHVjWktNXUKSfPBNjirCRXSRQgx4S5wjGJms2pwE
 
 ```
 aecli account create TEST1.json
-Enter the account password []: 
+Enter the account password []:
 <account>
   Address ___________________________________________ ak_2PSjWyfKy1vitPF3UVWW7bFLBVC96vTbU6XF8Z5sWFDsJ9UX8w
   Path ______________________________________________ /Users/andrea/Documents/workspaces/blockchain/aeternity/aepp-sdk-python/TEST1.json
 </account>
 ```
- 
 
-7. Transfer some tokens to an account to the other 
+
+7. Transfer some tokens to an account to the other
 
 ```
 aecli account spend TEST.json ak_2PSjWyfKy1vitPF3UVWW7bFLBVC96vTbU6XF8Z5sWFDsJ9UX8w 50
-Enter the account password []: 
+Enter the account password []:
 <spend transaction>
   Sender account ____________________________________ ak_KUF5Y1BwYaMYXCGZU93vjQHxT3hQSVeryBvCMLLguvZTgGGWB
   Recipient account _________________________________ ak_2PSjWyfKy1vitPF3UVWW7bFLBVC96vTbU6XF8Z5sWFDsJ9UX8w
@@ -158,7 +159,7 @@ Enter the account password []:
 </spend transaction>
 ```
 
-8. Verify the balance of the new account 
+8. Verify the balance of the new account
 ```
 aecli inspect ak_2PSjWyfKy1vitPF3UVWW7bFLBVC96vTbU6XF8Z5sWFDsJ9UX8w
 <account>
@@ -170,7 +171,7 @@ aecli inspect ak_2PSjWyfKy1vitPF3UVWW7bFLBVC96vTbU6XF8Z5sWFDsJ9UX8w
 
 ## Advanced usage
 
-For advanced usage check the [documentation](docs)
+For advanced usage check the [documentation](docs).
 
 
 ## Reference:

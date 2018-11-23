@@ -7,6 +7,7 @@ import sys
 from aeternity import __version__
 
 from aeternity.epoch import EpochClient
+from aeternity.transactions import TxSigner
 # from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
 from . import utils, signing, aens, config
 from aeternity.contract import Contract
@@ -27,7 +28,7 @@ CTX_BLOCKING_MODE = 'CTX_BLOCKING_MODE'
 CTX_OUTPUT_JSON = 'CTX_OUTPUT_JSON'
 
 
-def _epoch_cli(offline=False, native=False):
+def _epoch_cli(offline=False, native=False, network_id=None):
     try:
         ctx = click.get_current_context()
         # set the default configuration
@@ -37,7 +38,8 @@ def _epoch_cli(offline=False, native=False):
         config.Config.set_defaults(config.Config(
             external_url=url,
             internal_url=url_i,
-            force_compatibility=ctx.obj.get(CTX_FORCE_COMPATIBILITY)
+            force_compatibility=ctx.obj.get(CTX_FORCE_COMPATIBILITY),
+            network_id=network_id
         ))
     except config.ConfigException as e:
         print("Configuration error: ", e)
@@ -152,6 +154,10 @@ _account_options = [
     click.option('--password', default=None, help="Read account password from stdin [WARN: this method is not secure]")
 ]
 
+_sign_options = [
+    click.option('--network_id', default=config.DEFAULT_NETWORK_ID, help="The network id to use when signing a transaction", show_default=True)
+]
+
 _transaction_options = [
     click.option('--native', 'native', is_flag=True, default=False,
                  help='Use native transaction generation instead of the internal endpoints (always True for offline transactions)'),
@@ -172,6 +178,13 @@ def global_options(func):
 def account_options(func):
     func = global_options(func)
     for option in reversed(_account_options):
+        func = option(func)
+    return func
+
+
+def sign_options(func):
+    func = account_options(func)
+    for option in reversed(_sign_options):
         func = option(func)
     return func
 
@@ -312,14 +325,14 @@ def account_balance(keystore_name, password, force, wait, json_):
 @click.argument('recipient_id', required=True)
 @click.argument('amount', required=True, type=int)
 @click.option('--ttl', default=config.DEFAULT_TX_TTL, help="Validity of the spend transaction in number of blocks (default forever)")
-@account_options
-def account_spend(keystore_name, recipient_id, amount, ttl, password, force, wait, json_):
+@sign_options
+def account_spend(keystore_name, recipient_id, amount, ttl, password, network_id, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
         account, keystore_path = _account(keystore_name, password=password)
         if not utils.is_valid_hash(recipient_id, prefix="ak"):
             raise ValueError("Invalid recipient address")
-        tx, tx_signed, signature, tx_hash = _epoch_cli().spend(account, recipient_id, amount, tx_ttl=ttl)
+        tx, tx_signed, signature, tx_hash = _epoch_cli(network_id=network_id).spend(account, recipient_id, amount, tx_ttl=ttl)
         _print_object({
             "Sender account": account.get_address(),
             "Recipient account": recipient_id,
@@ -332,21 +345,20 @@ def account_spend(keystore_name, recipient_id, amount, ttl, password, force, wai
 
 
 @account.command('sign', help="Sign a transaction")
-@click.option("--network-id", default=config.DEFAULT_NETWORK_ID, help=f'The network id', show_default=True)
 @click.argument('keystore_name', required=True)
 @click.argument('unsigned_transaction', required=True)
-@account_options
-def account_sign(keystore_name, password, unsigned_transaction, network_id, force, wait, json_):
+@sign_options
+def account_sign(keystore_name, password, network_id, unsigned_transaction, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
         account, keystore_path = _account(keystore_name, password=password)
         if not utils.is_valid_hash(unsigned_transaction, prefix="tx"):
             raise ValueError("Invalid transaction format")
         # force offline mode for the epoch_client
-        tx_signed, sig, tx_hash = _epoch_cli(offline=True).sign_transaction(account, unsigned_transaction)
+        tx_signed, signature, tx_hash = TxSigner(account, network_id).sign_encode_transaction(unsigned_transaction)
         _print_object({
             'Signing account address': account.get_address(),
-            'Signature': sig,
+            'Signature': signature,
             'Unsigned': unsigned_transaction,
             'Signed': tx_signed,
             'Hash': tx_hash
@@ -366,8 +378,8 @@ def account_sign(keystore_name, password, unsigned_transaction, network_id, forc
 @cli.group(help="Handle transactions creation")
 def tx():
     """
-    The tx commnds allow you to create unsigned transactions that can be broadcasted
-    later after beeing signed.
+    The tx command allow you to create unsigned transactions that can be broadcast
+    later after being signed.
     """
     pass
 
@@ -437,12 +449,12 @@ def name():
 @click.option("--name-ttl", default=config.DEFAULT_NAME_TTL, help=f'Lifetime of the name in blocks', show_default=True)
 @click.option("--ttl", default=config.DEFAULT_TX_TTL, help=f'Lifetime of the claim request in blocks', show_default=True)
 @click.option("--fee", default=config.DEFAULT_FEE, help=f'Transaction fee', show_default=True)
-@account_options
-def name_register(keystore_name, domain, name_ttl, ttl, fee, password, force, wait, json_):
+@sign_options
+def name_register(keystore_name, domain, name_ttl, ttl, fee, password, network_id, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
         account, _ = _account(keystore_name, password=password)
-        name = _epoch_cli().AEName(domain)
+        name = _epoch_cli(network_id=network_id).AEName(domain)
         name.update_status()
         if name.status != aens.AEName.Status.AVAILABLE:
             print("Domain not available")
@@ -476,15 +488,15 @@ def name_register(keystore_name, domain, name_ttl, ttl, fee, password, force, wa
 @click.argument('address', required=True)
 @click.option("--name-ttl", default=config.DEFAULT_NAME_TTL, help=f'Lifetime of the claim in blocks', show_default=True)
 @click.option("--ttl", default=config.DEFAULT_TX_TTL, help=f'Lifetime of the claim request in blocks', show_default=True)
-@account_options
-def name_update(keystore_name, domain, address, name_ttl, ttl, password, force, wait, json_):
+@sign_options
+def name_update(keystore_name, domain, address, name_ttl, ttl, password, network_id, force, wait, json_):
     """
     Update a name pointer
     """
     try:
         set_global_options(force, wait, json_)
         account, _ = _account(keystore_name, password=password)
-        name = _epoch_cli().AEName(domain)
+        name = _epoch_cli(network_id=network_id).AEName(domain)
         name.update_status()
         if name.status != name.Status.CLAIMED:
             print(f"Domain is {name.status} and cannot be transferred")
@@ -503,12 +515,12 @@ def name_update(keystore_name, domain, address, name_ttl, ttl, password, force, 
 @name.command('revoke', help="Revoke a claimed name")
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
-@account_options
-def name_revoke(keystore_name, domain, password, force, wait, json_):
+@sign_options
+def name_revoke(keystore_name, domain, password, network_id, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
         account, _ = _account(keystore_name, password=password)
-        name = _epoch_cli().AEName(domain)
+        name = _epoch_cli(network_id=network_id).AEName(domain)
         name.update_status()
         if name.status == name.Status.AVAILABLE:
             print("Domain is available, nothing to revoke")
@@ -527,15 +539,15 @@ def name_revoke(keystore_name, domain, password, force, wait, json_):
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
 @click.argument('address')
-@account_options
-def name_transfer(keystore_name, domain, address, password, force, wait, json_):
+@sign_options
+def name_transfer(keystore_name, domain, address, password, network_id, force, wait, json_):
     """
     Transfer a name to another account
     """
     try:
         set_global_options(force, wait, json_)
         account, _ = _account(keystore_name, password=password)
-        name = _epoch_cli().AEName(domain)
+        name = _epoch_cli(network_id=network_id).AEName(domain)
         name.update_status()
         if name.status != name.Status.CLAIMED:
             print(f"Domain is {name.status} and cannot be transferred")
@@ -607,8 +619,8 @@ def contract_compile(contract_file):
 @click.argument('keystore_name', required=True)
 @click.argument("contract_file", required=True)
 @click.option("--gas", default=config.CONTRACT_DEFAULT_GAS, help='Amount of gas to deploy the contract', show_default=True)
-@account_options
-def contract_deploy(keystore_name, contract_file, gas, password, force, wait, json_):
+@sign_options
+def contract_deploy(keystore_name, contract_file, gas, password, network_id, force, wait, json_):
     """
     Deploy a contract to the chain and create a deploy descriptor
     with the contract informations that can be use to invoke the contract
@@ -623,7 +635,7 @@ def contract_deploy(keystore_name, contract_file, gas, password, force, wait, js
             set_global_options(force, wait, json_)
             account, _ = _account(keystore_name, password=password)
             code = fp.read()
-            contract = _epoch_cli().Contract(code)
+            contract = _epoch_cli(network_id=network_id).Contract(code)
             tx = contract.tx_create(account, gas=gas)
             # save the contract data
             contract_data = {
@@ -654,8 +666,8 @@ def contract_deploy(keystore_name, contract_file, gas, password, force, wait, js
 @click.argument("params", required=True)
 @click.argument("return_type", required=True)
 @click.option("--gas", default=config.CONTRACT_DEFAULT_GAS, help='Amount of gas to deploy the contract', show_default=True)
-@account_options
-def contract_call(keystore_name, deploy_descriptor, function, params, return_type, gas,  password, force, wait, json_):
+@sign_options
+def contract_call(keystore_name, deploy_descriptor, function, params, return_type, gas,  password, network_id, force, wait, json_):
     try:
         with open(deploy_descriptor) as fp:
             contract = json.load(fp)
@@ -666,7 +678,7 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
             set_global_options(force, wait, json_)
             account, _ = _account(keystore_name, password=password)
 
-            contract = _epoch_cli().Contract(source, bytecode=bytecode, address=address)
+            contract = _epoch_cli(network_id=network_id).Contract(source, bytecode=bytecode, address=address)
             result = contract.tx_call(account, function, params, gas=gas)
             _print_object({
                 'Contract address': contract.address,

@@ -189,17 +189,6 @@ class EpochClient:
             # if the tx.block_height > 0 we win
             if tx.block_height > 0:
                 break
-            # get the transaction nonce
-            # tx_nonce = tx.tx.get('nonce')
-            # account_nonce = self.get_account_by_pubkey(pubkey=self.account.get_address()).nonce
-            # if account_nonce >= tx_nonce:
-            #     # there is a possibility that a tx gets included
-            #     # between the get_tx call and here, giving false negative
-            #     # therefore we need to test the tx again before leaving
-            #     tx = self.get_transaction_by_hash(hash=tx_hash)
-            #     if tx.block_height <= 0:
-            #         raise TransactionWaitTimeoutExpired(tx_hash=tx_hash, reason=f"The nonce for this transaction ({tx_nonce}) has been used ")
-
             if n >= max_retries:
                 raise TransactionWaitTimeoutExpired(tx_hash=tx_hash, reason=f"The transaction was not included in {total_sleep} seconds, wait aborted")
             # calculate sleep time
