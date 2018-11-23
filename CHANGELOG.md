@@ -5,6 +5,21 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.25.0.1]
+
+⚠️  KEYSTORE FORMAT CHANGE INCOMPATIBLE WITH PREVIOUS FORMAT ⚠️
+
+refer to the [documentation](docs/keystore_format_change.md) about how to update existing keystores
+
+### Added
+
+- Support for offline transaction signing
+- Native transaction creation for AENS
+
+### Changed
+
+- The keystore json format as been updated to xsalsa-poly1305/argon2id
+
 ## [0.25.0.1b1]
 
 ### Added
@@ -13,9 +28,8 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ### Removed
 
-- Compatiblity with epoch nodes version < [0.25.0](https://github.com/aeternity/epoch/blob/v0.25.0/docs/release-notes/RELEASE-NOTES-0.25.0.md)
+- Compatibility with epoch nodes version < [0.25.0](https://github.com/aeternity/epoch/blob/v0.25.0/docs/release-notes/RELEASE-NOTES-0.25.0.md)
 - Support for .aet tld for aens
-
 
 
 ## [0.24.0.2]
@@ -28,7 +42,7 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ### Removed
 
-- Compatiblity with epoch nodes version < [0.24.0](https://github.com/aeternity/epoch/blob/v0.24.0/docs/release-notes/RELEASE-NOTES-0.24.0.md)
+- Compatibility with epoch nodes version < [0.24.0](https://github.com/aeternity/epoch/blob/v0.24.0/docs/release-notes/RELEASE-NOTES-0.24.0.md)
 
 ### Notes
 
@@ -38,7 +52,7 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ### Removed
 
-- Compatiblity with epoch nodes version < [0.22.0](https://github.com/aeternity/epoch/blob/v0.22.0/docs/release-notes/RELEASE-NOTES-0.22.0.md)
+- Compatibility with epoch nodes version < [0.22.0](https://github.com/aeternity/epoch/blob/v0.22.0/docs/release-notes/RELEASE-NOTES-0.22.0.md)
 
 ### Changed
 
@@ -53,14 +67,14 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 - TxBuilder object to provide transactions operations
 - Add compatibility check before performing operations against a node
 - Add `--force` flag to skip compatibility check with the target node
-- Add [exponetial backoff](https://developers.google.com/drive/api/v3/handle-errors#exponential-backoff) strategy to verify if a transaction has been included in the chain.
+- Add [exponential backoff](https://developers.google.com/drive/api/v3/handle-errors#exponential-backoff) strategy to verify if a transaction has been included in the chain.
 - Add `--wait` flag to instruct the client to wait for a transaction to be included in a chain before returning
 
 ## [0.21.0.1]
 
 ### Removed
 
-- Compatiblity with epoch nodes version < 0.21.0
+- Compatibility with epoch nodes version < 0.21.0
 
 ## [0.20.0.2]
 
@@ -138,9 +152,9 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ### Changed
 
-- Replaced module PyCrypto with crypthograpy (CVE-2018-6594)
+- Replaced module PyCrypto with cryptography (CVE-2018-6594)
 - method `get_block_by_height` to `get_key_block_by_height`
-- paramater `account_pubkey` is now `account` in API calls
+- parameter `account_pubkey` is now `account` in API calls
 
 ### Removed
 
@@ -156,7 +170,7 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ### Changed
 
-- Update compatiblity to epoch v0.15.0
+- Update compatibility to epoch v0.15.0
 - New cli implementation
 - Change versioning scheme
 
@@ -182,7 +196,7 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 ### Added
 
 - This change log file
-- Flake8 linting congiguration
+- Flake8 linting configuration
 - Jenkins configuratio for CI
 - Authors are now taken from `AUTHORS`
 

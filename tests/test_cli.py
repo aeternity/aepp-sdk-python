@@ -139,7 +139,7 @@ def test_cli_inspect_transaction_by_hash():
     # fill the account from genesys
     na = Account.generate()
     amount = random.randint(50, 150)
-    _, _, tx_hash = EPOCH_CLI.spend(ACCOUNT, na.get_address(), amount)
+    _, _, _, tx_hash = EPOCH_CLI.spend(ACCOUNT, na.get_address(), amount)
     # now inspect the transaction
     j = call_aecli('inspect', tx_hash)
     assert j.get("hash") == tx_hash
@@ -156,3 +156,24 @@ def test_cli_name_claim(account_path):
     # call the cli
     call_aecli('name', 'claim', account_path, domain, '--password', 'aeternity_bc')
     EPOCH_CLI.AEName(domain).status == AEName.Status.CLAIMED
+
+
+def test_cli_phases_spend(account_path):
+    # generate a new address
+    recipient_id = Account.generate().get_address()
+    # step one, generate transaction
+    j = call_aecli('tx', 'spend', ACCOUNT.get_address(), recipient_id, '100')
+    j.get("Sender account")
+    assert recipient_id == j.get("Recipient account")
+    # step 2, sign the transaction
+    tx_unsigned = j.get("Encoded")
+    s = call_aecli('account', 'sign', account_path, tx_unsigned, '--password', 'aeternity_bc')
+    tx_signed = s.get("Signed")
+    # recipient_account = EPOCH_CLI.get_account_by_pubkey(pubkey=recipient_id)
+    # assert recipient_account.balance == 0
+    # step 3 broadcast
+    call_aecli('tx', 'broadcast', tx_signed, "--wait")
+    # b.get("Transaction hash")
+    # verify
+    recipient_account = EPOCH_CLI.get_account_by_pubkey(pubkey=recipient_id)
+    assert recipient_account.balance == 100

@@ -1,23 +1,23 @@
 from pytest import raises
-from tests import TEST_FEE, TEST_TTL, EPOCH_CLI, ACCOUNT, tempdir
+from tests import ACCOUNT, EPOCH_CLI, tempdir, TEST_FEE, TEST_TTL
 from aeternity.signing import Account
 from aeternity.utils import is_valid_hash
-from aeternity.transactions import TxBuilder
 import os
 
 
-def test_signing_create_transaction():
+def test_signing_create_transaction_signature():
     # generate a new account
     new_account = Account.generate()
     receiver_address = new_account.get_address()
     # create a spend transaction
-    txb = TxBuilder(EPOCH_CLI, ACCOUNT)
-    tx, sg, tx_hash = txb.tx_spend(receiver_address, 321, "test test ", TEST_FEE, TEST_TTL)
+    nonce, ttl = EPOCH_CLI._get_nonce_ttl(ACCOUNT.get_address(), TEST_TTL)
+    tx = EPOCH_CLI.tx_builder.tx_spend(ACCOUNT.get_address(), receiver_address, 321, "test test ", TEST_FEE, ttl, nonce)
+    tx_signed, signature, tx_hash = EPOCH_CLI.sign_transaction(ACCOUNT, tx)
     # this call will fail if the hashes of the transaction do not match
-    txb.post_transaction(tx, tx_hash)
+    EPOCH_CLI.broadcast_transaction(tx_signed)
     # make sure this works for very short block times
     spend_tx = EPOCH_CLI.get_transaction_by_hash(hash=tx_hash)
-    assert spend_tx.signatures[0] == sg
+    assert spend_tx.signatures[0] == signature
 
 
 def test_signing_is_valid_hash():
@@ -40,8 +40,8 @@ def test_signing_is_valid_hash():
 
 def test_signing_keystore_load():
 
-    a = Account.load_from_keystore(os.path.join(os.path.dirname(os.path.realpath(__file__)), "testdata", "keystore.json"), "aeternity")
-    assert a.get_address() == "ak_Jt6AzQEiXiEMFXum8NtTXcCQtE9P1RfpkeVSZX87pFddzzynW"
+    a = Account.from_keystore(os.path.join(os.path.dirname(os.path.realpath(__file__)), "testdata", "keystore.json"), "aeternity")
+    assert a.get_address() == "ak_2hSFmdK98bhUw4ar7MUdTRzNQuMJfBFQYxdhN9kaiopDGqj3Cr"
 
 
 def test_signing_keystore_save_load():
@@ -50,7 +50,7 @@ def test_signing_keystore_save_load():
         path = os.path.join(tmp_path, filename)
         print(f"\nAccount keystore is {path}")
         # now load again the same
-        a = Account.load_from_keystore(path, "whatever")
+        a = Account.from_keystore(path, "whatever")
         assert a.get_address() == ACCOUNT.get_address()
     with tempdir() as tmp_path:
         filename = "account_ks"
@@ -58,7 +58,7 @@ def test_signing_keystore_save_load():
         path = os.path.join(tmp_path, filename)
         print(f"\nAccount keystore is {path}")
         # now load again the same
-        a = Account.load_from_keystore(path, "whatever")
+        a = Account.from_keystore(path, "whatever")
         assert a.get_address() == ACCOUNT.get_address()
 
 
@@ -69,5 +69,5 @@ def test_signing_keystore_save_load_wrong_pwd():
         print(f"\nAccount keystore is {path}")
         # now load again the same
         with raises(ValueError):
-            a = Account.load_from_keystore(path, "nononon")
+            a = Account.from_keystore(path, "nononon")
             assert a.get_address() == ACCOUNT.get_address()

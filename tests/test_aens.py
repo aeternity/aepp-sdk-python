@@ -11,7 +11,7 @@ from aeternity.signing import Account
 def test_name_committment():
     domain = random_domain()
     name = EPOCH_CLI.AEName(domain)
-    cl = name._get_commitment_hash()
+    cl = name._get_commitment_id()
     cr = name.client.get_commitment_id(name=name.domain, salt=name.preclaim_salt)
     assert cl == cr.commitment_id
 

@@ -13,6 +13,7 @@ import string
 logging.getLogger("requests").setLevel(logging.DEBUG)
 logging.getLogger("urllib3").setLevel(logging.DEBUG)
 logging.getLogger("aeternity").setLevel(logging.DEBUG)
+logging.root.setLevel(logging.DEBUG)
 
 
 PUBLIC_KEY = os.environ.get('WALLET_PUB')
@@ -36,7 +37,7 @@ Config.set_defaults(Config(
 EPOCH_CLI = epoch.EpochClient(blocking_mode=True, debug=True)
 # create a new account and fill it with some money
 ACCOUNT = Account.generate()
-EPOCH_CLI.spend(genesis, ACCOUNT.get_address(), 100000)
+EPOCH_CLI.spend(genesis, ACCOUNT.get_address(), 100000000)
 a = EPOCH_CLI.get_account_by_pubkey(pubkey=ACCOUNT.get_address())
 print(f"Test account is {ACCOUNT.get_address()} with balance {a.balance}")
 

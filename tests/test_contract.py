@@ -22,21 +22,30 @@ contract Identity =
 #
 
 
-def test_sophia_contract_tx_create():
+def test_sophia_contract_tx_create_online():
+    # save settings and go online
+    original = EPOCH_CLI.set_native(False)
+
+    # runt tests
     contract = EPOCH_CLI.Contract(aer_identity_contract)
     contract.tx_create(ACCOUNT, gas=10000)
     assert contract.address is not None
     assert len(contract.address) > 0
     assert contract.address.startswith('ct')
+    # restore settings
+    EPOCH_CLI.set_native(original)
 
 
-def test_sophia_contract_tx_call():
+def test_sophia_contract_tx_call_online():
+    # save settings and go online
+    original = EPOCH_CLI.set_native(False)
+
     contract = EPOCH_CLI.Contract(aer_identity_contract)
     tx = contract.tx_create(ACCOUNT, gas=1000)
     print("contract: ", contract.address)
     print("tx contract: ", tx)
 
-    result = contract.tx_call(ACCOUNT, 'main', '42', gas=1000)
+    _, _, _, _, result = contract.tx_call(ACCOUNT, 'main', '42', gas=1000)
     assert result is not None
     assert result.return_type == 'ok'
     print("return", result.return_value)
@@ -46,6 +55,9 @@ def test_sophia_contract_tx_call():
     val, remote_type = contract.decode_data(result.return_value, 'int')
     assert val == 42
     assert remote_type == 'word'
+
+    # restore settings
+    EPOCH_CLI.set_native(original)
 
 
 # test contracts
