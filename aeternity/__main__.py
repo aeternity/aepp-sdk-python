@@ -694,23 +694,7 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
 #
 
 
-@click.group('oracle', help='Register or query oracles')
-def oracle():
-    pass
-
-
-@oracle.command(help="Register an oracle")
-@click.argument("contract_file")
-def contract_compile(contract_file):
-    try:
-        with open(contract_file) as fp:
-            code = fp.read()
-            c = _epoch_cli().Contract(Contract.SOPHIA)
-            result = c.compile(code)
-            _print_object({"bytecode", result})
-    except Exception as e:
-        print(e)
-
+# TODO: implement cli for oracles
 
 #    _____                           _
 #   |_   _|                         | |
