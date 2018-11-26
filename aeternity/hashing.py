@@ -1,4 +1,5 @@
 import base58
+import base64
 import rlp
 import uuid
 import secrets
@@ -12,14 +13,30 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 
 
+def _base58_encode(data):
+    """create a base58 encoded string with checksum"""
+    return base58.b58encode_check(data)
+
+
 def _base58_decode(encoded_str):
-    """decode a base58 string to bytes"""
+    """decode a base58 with checksum string to bytes"""
     return base58.b58decode_check(encoded_str)
 
 
-def _base58_encode(data):
-    """create a base58 encoded string"""
-    return base58.b58encode_check(data)
+def _base64_encode(data):
+    """create a base64 encoded string with checksum"""
+    return base64.encodebytes(data + _sha256(data)[0:4])
+
+
+def _base64_decode(encoded_str):
+    """decode a base64 with checksum string to bytes"""
+    if encoded_str is None or len(encoded_str) < 5:
+        raise ValueError("Invalid input for base64 decode check")
+    boundary = len(encoded_str) - 4
+    raw = base64.decodebytes(encoded_str)
+    if raw[boundary:] != _sha256(raw)[0:4]:
+        raise ValueError("Checksum mismatch when decoding base64 hash")
+    return raw[0:boundary]
 
 
 def _blacke2b_digest(data):
