@@ -50,7 +50,7 @@ class Contract:
             raise ValueError("Missing contract id")
 
         try:
-            # preppar the call data
+            # prepare the call data
             call_data = self.encode_calldata(function, arg)
             # get the transaction builder
             txb = self.client.tx_builder
