@@ -1,7 +1,7 @@
 from aeternity.exceptions import NameNotAvailable, MissingPreclaim, NameUpdateError
 from aeternity.openapi import OpenAPIClientException
 from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE, DEFAULT_NAME_TTL, NAME_CLIENT_TTL
-from aeternity import hashing, utils, oracle
+from aeternity import hashing, utils, oracles
 
 
 class NameStatus:
@@ -191,7 +191,7 @@ class AEName:
         if self.status != NameStatus.CLAIMED:
             raise NameUpdateError('Must be claimed to update pointer')
 
-        if isinstance(target, oracle.Oracle):
+        if isinstance(target, oracles.Oracle):
             if target.oracle_id is None:
                 raise ValueError('You must register the oracle before using it as target')
             target = target.oracle_id

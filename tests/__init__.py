@@ -34,12 +34,17 @@ Config.set_defaults(Config(
 ))
 
 # Instantiate the epoch client for the tests
-EPOCH_CLI = epoch.EpochClient(blocking_mode=True, debug=True)
+EPOCH_CLI = epoch.EpochClient(blocking_mode=True, debug=True, native=False)
 # create a new account and fill it with some money
 ACCOUNT = Account.generate()
 EPOCH_CLI.spend(genesis, ACCOUNT.get_address(), 100000000)
 a = EPOCH_CLI.get_account_by_pubkey(pubkey=ACCOUNT.get_address())
 print(f"Test account is {ACCOUNT.get_address()} with balance {a.balance}")
+
+ACCOUNT_1 = Account.generate()  # required for oracles
+EPOCH_CLI.spend(genesis, ACCOUNT_1.get_address(), 10000)
+a = EPOCH_CLI.get_account_by_pubkey(pubkey=ACCOUNT_1.get_address())
+print(f"Test account (1) is {ACCOUNT_1.get_address()} with balance {a.balance}")
 
 
 @contextmanager

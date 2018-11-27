@@ -72,3 +72,37 @@ def test_hashing_transactions_binary():
             assert transactions._binary(tt['in']) != tt['bval']
         else:
             assert False
+
+
+def test_hashing_contract_id():
+    # TODO: add more scenarios
+    # owner_id, nonce -> contract_id, match
+    tt = [
+        ('ak_P1hn3JnJXcdx8USijBcgZHLgvZywH5PbjQK5G1iZaEu9obHiH', 2, 'ct_5ye5dEQwtCrRhsKYq8BprAMFptpY59THUyTxSBQKpDTcywEhk', True),
+        ('ak_P1hn3JnJXcdx8USijBcgZHLgvZywH5PbjQK5G1iZaEu9obHiH', 1, 'ct_5ye5dEQwtCrRhsKYq8BprAMFptpY59THUyTxSBQKpDTcywEhk', False),
+    ]
+
+    for t in tt:
+        assert (hashing.contract_id(t[0], t[1]) == t[2]) == t[3]
+
+
+def test_hashing_oracle_query_id():
+    # TODO: add more scenarios
+    # sender_id, nonce, oracle_id -> query_id, match
+    tt = [
+        ('ak_2ZjpYpJbzq8xbzjgPuEpdq9ahZE7iJRcAYC1weq3xdrNbzRiP4', 1, 'ok_2iqfJjbhGgJFRezjX6Q6DrvokkTM5niGEHBEJZ7uAG5fSGJAw1',
+         'oq_2YvZnoohcSvbQCsPKSMxc98i5HZ1sU5mR6xwJUZC3SvkuSynMj', True),
+    ]
+
+    for t in tt:
+        assert (hashing.oracle_query_id(t[0], t[1], t[2]) == t[3]) == t[4]
+
+
+def test_hashing_oracle_id():
+    # account_id, -> oracle_id, match
+    tt = [
+        ('ak_2iqfJjbhGgJFRezjX6Q6DrvokkTM5niGEHBEJZ7uAG5fSGJAw1', 'ok_2iqfJjbhGgJFRezjX6Q6DrvokkTM5niGEHBEJZ7uAG5fSGJAw1', True),
+    ]
+
+    for t in tt:
+        assert (hashing.oracle_id(t[0]) == t[1]) == t[2]
