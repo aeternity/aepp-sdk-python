@@ -2,14 +2,11 @@ import base58
 import base64
 import hashlib
 import rlp
-import uuid
 import secrets
 import math
 
 from nacl.hash import blake2b
 from nacl.encoding import RawEncoder
-from nacl import secret, utils
-from nacl.pwhash import argon2id
 
 from aeternity import identifiers
 
@@ -200,57 +197,3 @@ def randint(upper_bound=2**64):
 
 def randbytes(size=32):
     return secrets.token_bytes(size)
-
-
-def keystore_seal(private_key, password, address, name=""):
-    # password
-    salt = utils.random(argon2id.SALTBYTES)
-    mem = argon2id.MEMLIMIT_MODERATE
-    ops = argon2id.OPSLIMIT_MODERATE
-    key = argon2id.kdf(secret.SecretBox.KEY_SIZE, password.encode(), salt, opslimit=ops, memlimit=mem)
-    # ciphertext
-    box = secret.SecretBox(key)
-    nonce = utils.random(secret.SecretBox.NONCE_SIZE)
-    sk = private_key.encode(encoder=RawEncoder) + private_key.verify_key.encode(encoder=RawEncoder)
-    ciphertext = box.encrypt(sk, nonce=nonce).ciphertext
-    # build the keystore
-    k = {
-        "public_key": address,
-        "crypto": {
-            "secret_type": "ed25519",
-            "symmetric_alg": "xsalsa20-poly1305",
-            "ciphertext": bytes.hex(ciphertext),
-            "cipher_params": {
-                "nonce": bytes.hex(nonce)
-            },
-            "kdf": "argon2id",
-            "kdf_params": {
-                "memlimit_kib": round(mem / 1024),
-                "opslimit": ops,
-                "salt": bytes.hex(salt),
-                "parallelism": 1  # pynacl 1.3.0 doesnt support this parameter
-            }
-        },
-        "id": str(uuid.uuid4()),
-        "name": name,
-        "version": 1
-    }
-    return k
-
-
-def keystore_open(k, password):
-    # password
-    salt = bytes.fromhex(k.get("crypto", {}).get("kdf_params", {}).get("salt"))
-    ops = k.get("crypto", {}).get("kdf_params", {}).get("opslimit")
-    mem = k.get("crypto", {}).get("kdf_params", {}).get("memlimit_kib") * 1024
-    par = k.get("crypto", {}).get("kdf_params", {}).get("parallelism")
-    # pynacl 1.3.0 doesnt support this parameter and can only use 1
-    if par != 1:
-        raise ValueError(f"Invalid parallelism {par} value, only parallelism = 1 is supported in the python sdk")
-    key = argon2id.kdf(secret.SecretBox.KEY_SIZE, password.encode(), salt, opslimit=ops, memlimit=mem)
-    # decrypt
-    box = secret.SecretBox(key)
-    nonce = bytes.fromhex(k.get("crypto", {}).get("cipher_params", {}).get("nonce"))
-    encrypted = bytes.fromhex(k.get("crypto", {}).get("ciphertext"))
-    private_key = box.decrypt(encrypted, nonce=nonce, encoder=RawEncoder)
-    return private_key

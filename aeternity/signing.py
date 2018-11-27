@@ -2,10 +2,14 @@ import os
 import pathlib
 from datetime import datetime
 import json
+import uuid
 
 from nacl.encoding import RawEncoder, HexEncoder
 from nacl.signing import SigningKey
 from nacl.exceptions import CryptoError
+from nacl.pwhash import argon2id
+from nacl import secret, utils as nacl_utils
+
 
 from aeternity import hashing, utils
 
@@ -64,7 +68,7 @@ class Account:
         if filename is None:
             filename = f"UTC--{datetime.utcnow().isoformat()}--{self.get_address()}"
         with open(os.open(os.path.join(path, filename), os.O_TRUNC | os.O_CREAT | os.O_WRONLY, 0o600), 'w') as fp:
-            j = hashing.keystore_seal(self.signing_key, password, self.get_address())
+            j = keystore_seal(self.signing_key, password, self.get_address())
             json.dump(j, fp)
         return filename
 
@@ -134,7 +138,7 @@ class Account:
         try:
             with open(path) as fp:
                 j = json.load(fp)
-                raw_private_key = hashing.keystore_open(j, password)
+                raw_private_key = keystore_open(j, password)
                 signing_key = SigningKey(seed=raw_private_key[0:32], encoder=RawEncoder)
                 kp = Account(signing_key, signing_key.verify_key)
                 return kp
@@ -154,3 +158,57 @@ class Account:
         if kp.get_address() != public:
             raise ValueError("Public key and private account mismatch")
         return kp
+
+
+def keystore_seal(private_key, password, address, name=""):
+    # password
+    salt = nacl_utils.random(argon2id.SALTBYTES)
+    mem = argon2id.MEMLIMIT_MODERATE
+    ops = argon2id.OPSLIMIT_MODERATE
+    key = argon2id.kdf(secret.SecretBox.KEY_SIZE, password.encode(), salt, opslimit=ops, memlimit=mem)
+    # ciphertext
+    box = secret.SecretBox(key)
+    nonce = nacl_utils.random(secret.SecretBox.NONCE_SIZE)
+    sk = private_key.encode(encoder=RawEncoder) + private_key.verify_key.encode(encoder=RawEncoder)
+    ciphertext = box.encrypt(sk, nonce=nonce).ciphertext
+    # build the keystore
+    k = {
+        "public_key": address,
+        "crypto": {
+            "secret_type": "ed25519",
+            "symmetric_alg": "xsalsa20-poly1305",
+            "ciphertext": bytes.hex(ciphertext),
+            "cipher_params": {
+                "nonce": bytes.hex(nonce)
+            },
+            "kdf": "argon2id",
+            "kdf_params": {
+                "memlimit_kib": round(mem / 1024),
+                "opslimit": ops,
+                "salt": bytes.hex(salt),
+                "parallelism": 1  # pynacl 1.3.0 doesnt support this parameter
+            }
+        },
+        "id": str(uuid.uuid4()),
+        "name": name,
+        "version": 1
+    }
+    return k
+
+
+def keystore_open(k, password):
+    # password
+    salt = bytes.fromhex(k.get("crypto", {}).get("kdf_params", {}).get("salt"))
+    ops = k.get("crypto", {}).get("kdf_params", {}).get("opslimit")
+    mem = k.get("crypto", {}).get("kdf_params", {}).get("memlimit_kib") * 1024
+    par = k.get("crypto", {}).get("kdf_params", {}).get("parallelism")
+    # pynacl 1.3.0 doesnt support this parameter and can only use 1
+    if par != 1:
+        raise ValueError(f"Invalid parallelism {par} value, only parallelism = 1 is supported in the python sdk")
+    key = argon2id.kdf(secret.SecretBox.KEY_SIZE, password.encode(), salt, opslimit=ops, memlimit=mem)
+    # decrypt
+    box = secret.SecretBox(key)
+    nonce = bytes.fromhex(k.get("crypto", {}).get("cipher_params", {}).get("nonce"))
+    encrypted = bytes.fromhex(k.get("crypto", {}).get("ciphertext"))
+    private_key = box.decrypt(encrypted, nonce=nonce, encoder=RawEncoder)
+    return private_key
