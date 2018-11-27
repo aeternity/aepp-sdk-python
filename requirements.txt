@@ -2,7 +2,6 @@ pytest==3.5.0
 pytest-cov==2.6.0
 base58==0.2.5
 click==7.0
-cryptography==2.3
 deprecation==2.0.5
 flake8==3.5.0
 rlp==0.6.0

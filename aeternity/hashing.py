@@ -1,16 +1,16 @@
 import base58
 import base64
+import hashlib
 import rlp
 import uuid
 import secrets
 import math
+
 from nacl.hash import blake2b
 from nacl.encoding import RawEncoder
 from nacl import secret, utils
 from nacl.pwhash import argon2id
 
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.backends import default_backend
 from aeternity import identifiers
 
 
@@ -59,9 +59,7 @@ def _blacke2b_digest(data):
 
 
 def _sha256(data):
-    digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
-    digest.update(data)
-    return digest.finalize()
+    return hashlib.sha256(data).digest()
 
 
 def encode(prefix: str, data) -> str:

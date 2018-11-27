@@ -3,9 +3,6 @@ import pathlib
 from datetime import datetime
 import json
 
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-
 from nacl.encoding import RawEncoder, HexEncoder
 from nacl.signing import SigningKey
 from nacl.exceptions import CryptoError
@@ -157,64 +154,3 @@ class Account:
         if kp.get_address() != public:
             raise ValueError("Public key and private account mismatch")
         return kp
-
-    @classmethod
-    def _encrypt_key(cls, key_hexstring, password):
-        """
-        Encrypt a signing key string with the provided password
-
-        :param key:        the key to encode in hex string
-        :param password:   the password to use for encryption
-        """
-        if isinstance(password, str):
-            password = password.encode('utf-8')
-
-        key = hashing._sha256(password)
-        encryptor = Cipher(
-            algorithms.AES(key),
-            modes.ECB(),
-            backend=default_backend()
-        ).encryptor()
-        encrypted_key = encryptor.update(key_hexstring) + encryptor.finalize()
-        return encrypted_key
-
-    @classmethod
-    def _decrypt_key(cls, key_content, password):
-        """
-        Decrypt a key using password
-        :return: the string that was encrypted
-        """
-        if isinstance(password, str):
-            password = password.encode('utf-8')
-
-        key = hashing._sha256(password)
-        decryptor = Cipher(
-            algorithms.AES(key),
-            modes.ECB(),
-            backend=default_backend()
-        ).decryptor()
-
-        decrypted_key = decryptor.update(key_content) + decryptor.finalize()
-        return decrypted_key.decode("utf-8")
-
-    @classmethod
-    def read_from_files(cls, public_key_file, private_key_file, password):
-        with open(public_key_file, 'rb') as fh:
-            public = cls._decrypt_key(fh.read(), password)
-        with open(private_key_file, 'rb') as fh:
-            private = cls._decrypt_key(fh.read(), password)
-        return Account.from_public_private_key_strings(public, private)
-
-    @classmethod
-    def read_from_private_key(cls, private_key_file, password=None):
-        with open(private_key_file, 'rb') as fh:
-            private = cls._decrypt_key(fh.read(), password)
-        return Account.from_private_key_string(private)
-
-    @classmethod
-    def read_from_dir(cls, directory, password, name='key'):
-        return cls.read_from_files(
-            os.path.join(directory, f'{name}.pub'),
-            os.path.join(directory, name),
-            password
-        )
