@@ -11,6 +11,7 @@ from nacl.pwhash import argon2id
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
+from aeternity import identifiers
 
 
 def _base58_encode(data):
@@ -23,20 +24,33 @@ def _base58_decode(encoded_str):
     return base58.b58decode_check(encoded_str)
 
 
-def _base64_encode(data):
+def _checksum(data: bytes) -> bytes:
+    """
+    Compute a 4 bytes checksum of the input data
+    """
+    return _sha256(_sha256(data))[:4]
+
+
+def _base64_encode(data: bytes) -> str:
     """create a base64 encoded string with checksum"""
-    return base64.encodebytes(data + _sha256(data)[0:4])
+    return base64.b64encode(data + _checksum(data)).decode()
 
 
-def _base64_decode(encoded_str):
+def _base64_decode(encoded_str: str) -> bytes:
     """decode a base64 with checksum string to bytes"""
-    if encoded_str is None or len(encoded_str) < 5:
+    # check for none
+    if encoded_str is None:
         raise ValueError("Invalid input for base64 decode check")
-    boundary = len(encoded_str) - 4
-    raw = base64.decodebytes(encoded_str)
-    if raw[boundary:] != _sha256(raw)[0:4]:
+    # decode bytes
+    raw = base64.b64decode(encoded_str)
+    # check size
+    if len(raw) < 5:
+        raise ValueError("Invalid input for base64 decode check")
+    # test checksum
+    data, check = raw[:-4], raw[-4:]
+    if check != _checksum(data):
         raise ValueError("Checksum mismatch when decoding base64 hash")
-    return raw[0:boundary]
+    return data
 
 
 def _blacke2b_digest(data):
@@ -50,10 +64,12 @@ def _sha256(data):
     return digest.finalize()
 
 
-def encode(prefix, data):
+def encode(prefix: str, data) -> str:
     """encode data using the default encoding/decoding algorithm and prepending the prefix with a prefix, ex: ak_encoded_data, th_encoded_data,..."""
     if isinstance(data, str):
         data = data.encode("utf-8")
+    if prefix in identifiers.IDENTIFIERS_B64:
+        return f"{prefix}_{_base64_encode(data)}"
     return f"{prefix}_{_base58_encode(data)}"
 
 
@@ -66,6 +82,8 @@ def decode(data):
 
     if data is None or len(data.strip()) < 3 or data[2] != '_':
         raise ValueError('Invalid hash')
+    if data[0:2] in identifiers.IDENTIFIERS_B64:
+        return _base64_decode(data[3:])
     return _base58_decode(data[3:])
 
 
