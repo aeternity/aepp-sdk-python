@@ -1,4 +1,4 @@
-from aeternity.hashing import _int, _binary, _id, encode, decode, encode_rlp, hash_encode
+from aeternity.hashing import _int, _binary, _id, encode, decode, encode_rlp, hash_encode, contract_id
 from aeternity.openapi import OpenAPICli
 from aeternity.config import ORACLE_DEFAULT_TTL_TYPE_DELTA
 
@@ -353,7 +353,20 @@ class TxBuilder:
         """
 
         if self.native_transactions:
-            raise NotImplementedError("Native transaction for contract creation not implemented")
+            tx = [
+                _id(account_id),
+                _int(nonce),
+                _binary(code),
+                _int(vm_version),
+                _int(fee),
+                _int(ttl),
+                _int(deposit),
+                _int(amount),
+                _int(gas),
+                _int(gas_price),
+                _binary(call_data),
+            ]
+            return encode_rlp("tx", tx), contract_id(account_id, nonce)
         # use internal endpoints transaction
         body = dict(
             owner_id=account_id,
@@ -372,9 +385,35 @@ class TxBuilder:
         return tx.tx, tx.contract_id
 
     def tx_contract_call(self, account_id, contract_id, call_data, function, arg, amount, gas, gas_price, vm_version, fee, ttl, nonce)-> str:
-        # compute the absolute ttl and the nonce
+        """
+        Create a contract call
+        :param account_id: the account creating the contract
+        :param contract_id: the contract to call
+        :param call_data: the call data for the contract
+        :param function: the function to execute
+        :param arg: the function arguments
+        :param amount: TODO: add definition
+        :param gas: TODO: add definition
+        :param gas_price: TODO: add definition
+        :param vm_version: TODO: add definition
+        :param fee: the transaction fee
+        :param ttl: the ttl of the transaction
+        :param nonce: the nonce of the account for the transaction
+        """
         if self.native_transactions:
-            raise NotImplementedError("Native transaction for contract calls not implemented")
+            tx = [
+                _id(account_id),
+                _int(nonce),
+                _id(contract_id),
+                _int(vm_version),
+                _int(fee),
+                _int(ttl),
+                _int(amount),
+                _int(gas),
+                _int(gas_price),
+                _binary(call_data),
+            ]
+            return encode_rlp("tx", tx)
         # use internal endpoints transaction
         body = dict(
             call_data=call_data,
