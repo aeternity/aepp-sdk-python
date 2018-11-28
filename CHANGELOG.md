@@ -5,6 +5,16 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [1.0.0b1]
+
+### Changed
+
+- Encoding of transaction (and other objects) [changed to base64](https://github.com/aeternity/protocol/blob/epoch-v1.0.0/epoch/api/api_encoding.md)
+
+### Removed
+
+- Compatibility with epoch nodes version < [1.0.0](https://github.com/aeternity/epoch/blob/v1.0.0/docs/release-notes/RELEASE-NOTES-1.0.0.md)
+
 ## [0.25.0.1]
 
 ⚠️  KEYSTORE FORMAT CHANGE INCOMPATIBLE WITH PREVIOUS FORMAT ⚠️
