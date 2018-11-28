@@ -3,10 +3,6 @@ from tests import EPOCH_CLI, ACCOUNT, ACCOUNT_1, random_domain
 
 from pytest import raises
 
-# to run this test in other environments set the env vars as specified in the
-# config.py
-from aeternity.signing import Account
-
 
 def test_name_committment():
     domain = random_domain()
