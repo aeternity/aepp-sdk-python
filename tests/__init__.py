@@ -20,29 +20,31 @@ PUBLIC_KEY = os.environ.get('WALLET_PUB')
 PRIVATE_KEY = os.environ.get('WALLET_PRIV')
 NODE_URL = os.environ.get('TEST_URL')
 NODE_URL_DEBUG = os.environ.get('TEST_DEBUG_URL')
-EPOCH_VERSION = '1.0.0-rc6'
+NETWORK_ID = os.environ.get('TEST_NETWORK_ID')
+EPOCH_VERSION = '1.0.0'
 # set the key folder as environment variables
 genesis = Account.from_public_private_key_strings(PUBLIC_KEY, PRIVATE_KEY)
 # default values for tests
-TEST_FEE = 1
+TEST_FEE = 20000
 TEST_TTL = 50
 
 
 Config.set_defaults(Config(
     external_url=NODE_URL,
-    internal_url=NODE_URL_DEBUG
+    internal_url=NODE_URL_DEBUG,
+    network_id=NETWORK_ID
 ))
 
 # Instantiate the epoch client for the tests
 EPOCH_CLI = epoch.EpochClient(blocking_mode=True, debug=True, native=False)
 # create a new account and fill it with some money
 ACCOUNT = Account.generate()
-EPOCH_CLI.spend(genesis, ACCOUNT.get_address(), 100000000)
+EPOCH_CLI.spend(genesis, ACCOUNT.get_address(), 1000000000)
 a = EPOCH_CLI.get_account_by_pubkey(pubkey=ACCOUNT.get_address())
 print(f"Test account is {ACCOUNT.get_address()} with balance {a.balance}")
 
 ACCOUNT_1 = Account.generate()  # required for oracles
-EPOCH_CLI.spend(genesis, ACCOUNT_1.get_address(), 10000)
+EPOCH_CLI.spend(genesis, ACCOUNT_1.get_address(), 1000000000)
 a = EPOCH_CLI.get_account_by_pubkey(pubkey=ACCOUNT_1.get_address())
 print(f"Test account (1) is {ACCOUNT_1.get_address()} with balance {a.balance}")
 
