@@ -69,7 +69,7 @@ def test_sophia_contract_compile():
     utils.is_valid_hash(contract.bytecode, prefix='cb')
 
 
-@pytest.mark.skip("static call are disabled since 1.0.0-rc")
+@pytest.mark.skip("static call are disabled since 1.0.0")
 def test_sophia_contract_call():
     contract = EPOCH_CLI.Contract(aer_identity_contract)
     result = contract.call('main', '1')
