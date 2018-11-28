@@ -22,23 +22,16 @@ contract Identity =
 #
 
 
-def test_sophia_contract_tx_create_online():
-    # save settings and go online
-    original = EPOCH_CLI.set_native(False)
-
+def _sophia_contract_tx_create_online():
     # runt tests
     contract = EPOCH_CLI.Contract(aer_identity_contract)
     contract.tx_create(ACCOUNT, gas=100000, fee=150000)
     assert contract.address is not None
     assert len(contract.address) > 0
     assert contract.address.startswith('ct')
-    # restore settings
-    EPOCH_CLI.set_native(original)
 
 
-def test_sophia_contract_tx_call_online():
-    # save settings and go online
-    original = EPOCH_CLI.set_native(False)
+def _sophia_contract_tx_call_online():
 
     contract = EPOCH_CLI.Contract(aer_identity_contract)
     tx = contract.tx_create(ACCOUNT, gas=100000, fee=150000)
@@ -56,9 +49,37 @@ def test_sophia_contract_tx_call_online():
     assert val == 42
     assert remote_type == 'word'
 
+
+def test_sophia_contract_tx_create_native():
+    # save settings and go online
+    original = EPOCH_CLI.set_native(False)
+    _sophia_contract_tx_create_online()
     # restore settings
     EPOCH_CLI.set_native(original)
 
+
+def test_sophia_contract_tx_call_native():
+    # save settings and go online
+    original = EPOCH_CLI.set_native(False)
+    _sophia_contract_tx_call_online()
+    # restore settings
+    EPOCH_CLI.set_native(original)
+
+
+def test_sophia_contract_tx_create_debug():
+    # save settings and go online
+    original = EPOCH_CLI.set_native(False)
+    _sophia_contract_tx_create_online()
+    # restore settings
+    EPOCH_CLI.set_native(original)
+
+
+def test_sophia_contract_tx_call_debug():
+    # save settings and go online
+    original = EPOCH_CLI.set_native(False)
+    _sophia_contract_tx_call_online()
+    # restore settings
+    EPOCH_CLI.set_native(original)
 
 # test contracts
 
