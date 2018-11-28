@@ -6,6 +6,9 @@ from . import __compatibility__
 # vm version specification
 # https://github.com/aeternity/protocol/blob/master/contracts/contract_vms.md#virtual-machines-on-the-%C3%A6ternity-blockchain
 AEVM_NO_VM = 0
+# fee calculation
+GAS_PER_BYTE = 20
+BASE_GAS = 15000
 # max number of block into the future that the name is going to be available
 # https://github.com/aeternity/protocol/blob/epoch-v0.22.0/AENS.md#update
 # https://github.com/aeternity/protocol/blob/44a93d3aab957ca820183c3520b9daf6b0fedff4/AENS.md#aens-entry
@@ -16,28 +19,28 @@ DEFAULT_NAME_TTL = 500
 MAX_TX_TTL = sys.maxsize
 DEFAULT_TX_TTL = 500
 # default fee for posting transaction
-DEFAULT_FEE = 10
+DEFAULT_FEE = 20000
 # contracts
-CONTRACT_DEFAULT_GAS = 1000
+CONTRACT_DEFAULT_GAS = 170000
 CONTRACT_DEFAULT_GAS_PRICE = 1
 CONTRACT_DEFAULT_DEPOSIT = 4
 CONTRACT_DEFAULT_VM_VERSION = 1
 CONTRACT_DEFAULT_AMOUNT = 1
 # oracles
 # https://github.com/aeternity/protocol/blob/master/oracles/oracles.md#technical-aspects-of-oracle-operations
-ORACLE_DEFAULT_QUERY_FEE = 10
+ORACLE_DEFAULT_QUERY_FEE = 30000
 ORACLE_DEFAULT_TTL_TYPE_DELTA = 'delta'
 ORACLE_DEFAULT_TTL_TYPE_BLOCK = 'block'
 ORACLE_DEFAULT_TTL_VALUE = 500
-ORACLE_DEFAULT_QUERY_TTL_VALUE = 100
-ORACLE_DEFAULT_RESPONSE_TTL_VALUE = 100
+ORACLE_DEFAULT_QUERY_TTL_VALUE = 10
+ORACLE_DEFAULT_RESPONSE_TTL_VALUE = 10
 ORACLE_DEFAULT_VM_VERSION = AEVM_NO_VM
 
 
 # network id
 DEFAULT_NETWORK_ID = "ae_mainnet"
 # TUNING
-MAX_RETRIES = 7  # used in exponential backoff when checking a transaction
+MAX_RETRIES = 8  # used in exponential backoff when checking a transaction
 POLLING_INTERVAL = 2  # in seconds
 
 
@@ -65,7 +68,6 @@ class Config:
         self.api_url = external_url
         # get the version
         self.name_url = f'{self.api_url}/name'
-        self.pubkey = None
         self.network_id = network_id
         # retrieve the version of the node we are connecting to
         try:

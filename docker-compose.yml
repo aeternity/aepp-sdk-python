@@ -21,7 +21,7 @@ services:
       EPOCH_CONFIG: /home/epoch/epoch.yaml
     command: -aecore expected_mine_rate ${EPOCH_MINE_RATE:-15000}
     volumes:
-      - ${PWD}/docker/epoch_node_mean16.yaml:/home/epoch/epoch.yaml
+      - ${PWD}/docker/epoch.yaml:/home/epoch/epoch.yaml
       - ${PWD}/docker/keys/node:/home/epoch/node/keys
       - node_db:/home/epoch/node/data/mnesia
       - node_keys:/home/epoch/node/keys

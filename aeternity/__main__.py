@@ -155,7 +155,7 @@ _account_options = [
 ]
 
 _sign_options = [
-    click.option('--network_id', default=config.DEFAULT_NETWORK_ID, help="The network id to use when signing a transaction", show_default=True)
+    click.option('--network-id', default=config.DEFAULT_NETWORK_ID, help="The network id to use when signing a transaction", show_default=True)
 ]
 
 _transaction_options = [

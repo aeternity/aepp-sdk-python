@@ -44,7 +44,6 @@ setup(
     install_requires=[
         'base58 == 0.2.5',
         'click == 7.0',
-        'cryptography == 2.3',
         'rlp == 0.6.0',
         'PyNaCl == 1.3.0',
         'requests == 2.20.0',

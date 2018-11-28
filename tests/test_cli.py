@@ -4,7 +4,7 @@ import json
 import os
 import aeternity
 import random
-from tests import NODE_URL, NODE_URL_DEBUG, ACCOUNT, EPOCH_CLI, tempdir, random_domain
+from tests import NODE_URL, NODE_URL_DEBUG, ACCOUNT, EPOCH_CLI, NETWORK_ID, tempdir, random_domain
 from aeternity.signing import Account
 from aeternity import utils
 from aeternity.aens import AEName
@@ -96,7 +96,7 @@ def test_cli_spend(account_path):
     # generate a new address
     recipient_address = Account.generate().get_address()
     # call the cli
-    call_aecli('account', 'spend', account_path, recipient_address, "90", '--password', 'aeternity_bc')
+    call_aecli('account', 'spend', account_path, recipient_address, "90", '--password', 'aeternity_bc', '--network-id', NETWORK_ID)
     # test that the recipient account has the requested amount
     print(f"recipient address is {recipient_address}")
     recipient_account = EPOCH_CLI.get_account_by_pubkey(pubkey=recipient_address)
@@ -154,7 +154,7 @@ def test_cli_name_claim(account_path):
     domain = random_domain()
     print(f"Domain is {domain}")
     # call the cli
-    call_aecli('name', 'claim', account_path, domain, '--password', 'aeternity_bc')
+    call_aecli('name', 'claim', account_path, domain, '--password', 'aeternity_bc', '--network-id', NETWORK_ID)
     EPOCH_CLI.AEName(domain).status == AEName.Status.CLAIMED
 
 
@@ -167,7 +167,7 @@ def test_cli_phases_spend(account_path):
     assert recipient_id == j.get("Recipient account")
     # step 2, sign the transaction
     tx_unsigned = j.get("Encoded")
-    s = call_aecli('account', 'sign', account_path, tx_unsigned, '--password', 'aeternity_bc')
+    s = call_aecli('account', 'sign', account_path, tx_unsigned, '--password', 'aeternity_bc', '--network-id', NETWORK_ID)
     tx_signed = s.get("Signed")
     # recipient_account = EPOCH_CLI.get_account_by_pubkey(pubkey=recipient_id)
     # assert recipient_account.balance == 0
