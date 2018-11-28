@@ -68,8 +68,6 @@ class Config:
         self.api_url = external_url
         # get the version
         self.name_url = f'{self.api_url}/name'
-        if network_id is None or len(network_id) == 0:
-            raise ConfigException("Invalid network id")
         self.network_id = network_id
         # retrieve the version of the node we are connecting to
         try:
