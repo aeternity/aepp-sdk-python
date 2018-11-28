@@ -208,7 +208,7 @@ def set_global_options(force, wait, json_):
 @click.group()
 @click.pass_context
 @click.version_option()
-@click.option('--url', '-u', default='https://sdk-testnet.aepps.com', envvar='EPOCH_URL', help='Epoch node url', metavar='URL')
+@click.option('--url', '-u', default='https://sdk-mainnet.aepps.com', envvar='EPOCH_URL', help='Epoch node url', metavar='URL')
 @click.option('--debug-url', '-d', default=None, envvar='EPOCH_URL_DEBUG', metavar='URL')
 @global_options
 @click.version_option(version=__version__)
