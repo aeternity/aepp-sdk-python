@@ -7,11 +7,15 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [1.1.0]
 
+### Changed
+
+- CLI default node changed to [sdk-mainnet.aepp.com](https://sdk-mainnet.aepp.com/v2/status)
+
 ### Added
 
 - Native transactions for contracts
 
-## [1.0.0b1]
+## [1.0.0]
 
 ### Changed
 
