@@ -5,6 +5,12 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [1.1.0]
+
+### Added
+
+- Native transactions for contracts
+
 ## [1.0.0b1]
 
 ### Changed
@@ -17,7 +23,7 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [0.25.0.1]
 
-⚠️  KEYSTORE FORMAT CHANGE INCOMPATIBLE WITH PREVIOUS FORMAT ⚠️
+⚠️ KEYSTORE FORMAT CHANGE INCOMPATIBLE WITH PREVIOUS FORMAT ⚠️
 
 refer to the [documentation](docs/keystore_format_change.md) about how to update existing keystores
 
@@ -40,7 +46,6 @@ refer to the [documentation](docs/keystore_format_change.md) about how to update
 
 - Compatibility with epoch nodes version < [0.25.0](https://github.com/aeternity/epoch/blob/v0.25.0/docs/release-notes/RELEASE-NOTES-0.25.0.md)
 - Support for .aet tld for aens
-
 
 ## [0.24.0.2]
 
