@@ -8,7 +8,7 @@ from aeternity.signing import Account
 from aeternity.openapi import OpenAPIClientException
 from aeternity.exceptions import NameNotAvailable, InsufficientFundsException
 from aeternity.exceptions import TransactionHashMismatch, TransactionWaitTimeoutExpired, TransactionNotFoundException
-from aeternity import config, aens, openapi, transactions, contract
+from aeternity import config, aens, openapi, transactions, contract, oracles
 
 
 logger = logging.getLogger(__name__)
@@ -205,3 +205,10 @@ class EpochClient:
     # support contract
     def Contract(self, source_code, bytecode=None, address=None, abi=contract.Contract.SOPHIA):
         return contract.Contract(source_code, client=self, bytecode=bytecode, address=address, abi=abi)
+
+    # support oralces
+    def Oracle(self):
+        return oracles.Oracle(self)
+
+    def OracleQuery(self, oracle_id, query_id=None):
+        return oracles.OracleQuery(self, oracle_id, id=query_id)

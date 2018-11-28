@@ -17,7 +17,7 @@ export EPOCH_URL='https://sdk-testnet.aepps.com'
 
 In order to do anything with æternity you'll need a wallet, and some tokens. The first step is to make yourself a wallet, called `mywallet`:
 ```
-$ aecli account mywallet create
+$ aecli account create mywallet
 Enter the wallet password []: 
 Wallet created
 Wallet address________________ ak_wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR

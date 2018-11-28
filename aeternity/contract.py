@@ -26,7 +26,7 @@ class Contract:
         :param source_code: the source code of the contract
         :param bytecode: the bytecode of the contract
         :param address: the address of the contract
-        :param abi: the abi, default 'sofia'
+        :param abi: the abi, default 'sophia'
         :param client: the epoch client to use
         """
         self.client = client

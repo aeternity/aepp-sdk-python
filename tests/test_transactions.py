@@ -3,6 +3,21 @@ from aeternity.signing import Account
 from aeternity import transactions
 
 
+def _execute_test(test_cases):
+    for tt in test_cases:
+        # get a native transaction
+        txbn = transactions.TxBuilder(api=EPOCH_CLI, native=True)
+        txn = getattr(txbn, tt.get("tx"))(**tt["native"])
+        # get a debug transaction
+        txbd = transactions.TxBuilder(api=EPOCH_CLI, native=False)
+        txd = getattr(txbd, tt.get("tx"))(**tt["debug"])
+        # theys should be the same
+        if tt["match"]:
+            assert txn == txd
+        else:
+            assert txn != txd
+
+
 def test_transaction_spend():
 
     recipient_id = Account.generate().get_address()
@@ -39,3 +54,30 @@ def test_transaction_spend():
             assert txn == txd
         else:
             assert txn != txd
+
+
+def test_transaction_oracle_register():
+    # account_id, recipient_id, amount, payload, fee, ttl, nonce
+    tts = [
+        {
+            "tx": "tx_oracle_register",
+            "native": {'account_id': 'ak_2bstpmUDaNcc4jvNENHD9Mfxf55YnK4W24RkGCrHyeVESYvS43',
+                       'query_format': "{'city': str}", 'response_format': "{'temp_c': int}",
+                       'query_fee': 10, 'ttl_type': 'delta', 'ttl_value': 500, 'vm_version': 0, 'fee': 10, 'ttl': 505, 'nonce': 1},
+            "debug": {'account_id': 'ak_2bstpmUDaNcc4jvNENHD9Mfxf55YnK4W24RkGCrHyeVESYvS43',
+                      'query_format': "{'city': str}", 'response_format': "{'temp_c': int}",
+                      'query_fee': 10, 'ttl_type': 'delta', 'ttl_value': 500, 'vm_version': 0, 'fee': 10, 'ttl': 505, 'nonce': 1},
+            "match": True
+        },
+        {
+            "tx": "tx_oracle_register",
+            "native": {'account_id': 'ak_2bstpmUDaNcc4jvNENHD9Mfxf55YnK4W24RkGCrHyeVESYvS43',
+                       'query_format': "{'city': str}", 'response_format': "{'temp_c': int}",
+                       'query_fee': 10, 'ttl_type': 'delta', 'ttl_value': 500, 'vm_version': 0, 'fee': 10, 'ttl': 505, 'nonce': 1},
+            "debug": {'account_id': 'ak_2bstpmUDaNcc4jvNENHD9Mfxf55YnK4W24RkGCrHyeVESYvS43',
+                      'query_format': "{'city': str}", 'response_format': "{'temp_c': int}",
+                      'query_fee': 11, 'ttl_type': 'delta', 'ttl_value': 500, 'vm_version': 0, 'fee': 10, 'ttl': 505, 'nonce': 1},
+            "match": False
+        }
+    ]
+    _execute_test(tts)

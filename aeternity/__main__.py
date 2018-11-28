@@ -155,7 +155,7 @@ _account_options = [
 ]
 
 _sign_options = [
-    click.option('--network_id', default=config.DEFAULT_NETWORK_ID, help="The network id to use when signing a transaction", show_default=True)
+    click.option('--network-id', default=config.DEFAULT_NETWORK_ID, help="The network id to use when signing a transaction", show_default=True)
 ]
 
 _transaction_options = [
@@ -641,17 +641,17 @@ def contract_deploy(keystore_name, contract_file, gas, password, network_id, for
             contract_data = {
                 'source': contract.source_code,
                 'bytecode': contract.bytecode,
-                'address': contract.address,
+                'id': contract.id,
                 'transaction': tx.tx_hash,
                 'owner': account.get_address(),
                 'created_at': datetime.now().isoformat('T')
             }
             # write the contract data to a file
-            deploy_descriptor = f"{contract_file}.deploy.{contract.address[3:]}.json"
+            deploy_descriptor = f"{contract_file}.deploy.{contract.id[3:]}.json"
             with open(deploy_descriptor, 'w') as fw:
                 json.dump(contract_data, fw, indent=2)
             _print_object({
-                "Contract address": contract.address,
+                "Contract id": contract.id,
                 "Transaction hash": tx.tx_hash,
                 "Deploy descriptor": deploy_descriptor,
             })
@@ -681,7 +681,7 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
             contract = _epoch_cli(network_id=network_id).Contract(source, bytecode=bytecode, address=address)
             result = contract.tx_call(account, function, params, gas=gas)
             _print_object({
-                'Contract address': contract.address,
+                'Contract id': contract.id,
                 'Gas price': result.gas_price,
                 'Gas used': result.gas_used,
                 'Return value (encoded)': result.return_value,
@@ -697,6 +697,16 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
     except Exception as e:
         print(e)
 
+#     ___   _______          _        ______  _____     ________   ______
+#   .'   `.|_   __ \        / \     .' ___  ||_   _|   |_   __  |.' ____ \
+#  /  .-.  \ | |__) |      / _ \   / .'   \_|  | |       | |_ \_|| (___ \_|
+#  | |   | | |  __ /      / ___ \  | |         | |   _   |  _| _  _.____`.
+#  \  `-'  /_| |  \ \_  _/ /   \ \_\ `.___.'\ _| |__/ | _| |__/ || \____) |
+#   `.___.'|____| |___||____| |____|`.____ .'|________||________| \______.'
+#
+
+
+# TODO: implement cli for oracles
 
 #    _____                           _
 #   |_   _|                         | |
@@ -735,6 +745,13 @@ def inspect(obj, force, wait, json_):
         elif obj.startswith("ct_"):
             v = _epoch_cli().get_contract(pubkey=obj)
             _print_object(v, title="contract")
+        elif obj.startswith("ok_"):
+            cli = _epoch_cli()
+            data = dict(
+                oracle=cli.get_oracle_by_pubkey(pubkey=obj),
+                queries=cli.get_oracle_queries_by_pubkey(pubkey=obj)
+            )
+            _print_object(data, title="oracle context")
         elif obj.isdigit() and int(obj) >= 0:
             v = _epoch_cli().get_key_block_by_height(height=int(obj))
             _print_object(v, title="block")

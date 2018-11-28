@@ -28,7 +28,7 @@ def test_sophia_contract_tx_create_online():
 
     # runt tests
     contract = EPOCH_CLI.Contract(aer_identity_contract)
-    contract.tx_create(ACCOUNT, gas=10000)
+    contract.tx_create(ACCOUNT, gas=100000, fee=150000)
     assert contract.address is not None
     assert len(contract.address) > 0
     assert contract.address.startswith('ct')
@@ -41,11 +41,11 @@ def test_sophia_contract_tx_call_online():
     original = EPOCH_CLI.set_native(False)
 
     contract = EPOCH_CLI.Contract(aer_identity_contract)
-    tx = contract.tx_create(ACCOUNT, gas=1000)
+    tx = contract.tx_create(ACCOUNT, gas=100000, fee=150000)
     print("contract: ", contract.address)
     print("tx contract: ", tx)
 
-    _, _, _, _, result = contract.tx_call(ACCOUNT, 'main', '42', gas=1000)
+    _, _, _, _, result = contract.tx_call(ACCOUNT, 'main', '42', gas=500000, fee=1000000)
     assert result is not None
     assert result.return_type == 'ok'
     print("return", result.return_value)
@@ -69,6 +69,7 @@ def test_sophia_contract_compile():
     utils.is_valid_hash(contract.bytecode, prefix='cb')
 
 
+@pytest.mark.skip("static call are disabled since 1.0.0")
 def test_sophia_contract_call():
     contract = EPOCH_CLI.Contract(aer_identity_contract)
     result = contract.call('main', '1')

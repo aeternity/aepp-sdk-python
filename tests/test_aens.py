@@ -1,11 +1,7 @@
 from aeternity.aens import AEName
-from tests import EPOCH_CLI, ACCOUNT, random_domain
+from tests import EPOCH_CLI, ACCOUNT, ACCOUNT_1, random_domain
 
 from pytest import raises
-
-# to run this test in other environments set the env vars as specified in the
-# config.py
-from aeternity.signing import Account
 
 
 def test_name_committment():
@@ -92,19 +88,15 @@ def test_name_transfer_ownership():
     assert name.pointers[0]['id'] == ACCOUNT.get_address()
     assert name.pointers[0]['key'] == "account_pubkey"
 
-    new_key_pair = Account.generate()
-    # put some coins into the account so the account is in the state tree
-    # otherwise it couldn't become the owner of an address.
-    EPOCH_CLI.spend(ACCOUNT, new_key_pair.get_address(), 100)
     # now transfer the name to the other account
-    name.transfer_ownership(ACCOUNT, new_key_pair.get_address())
+    name.transfer_ownership(ACCOUNT, ACCOUNT_1.get_address())
     assert name.status == AEName.Status.TRANSFERRED
     # try changing the target using that new account
     name.update_status()
-    name.update(new_key_pair, new_key_pair.get_address())
+    name.update(ACCOUNT_1, ACCOUNT_1.get_address())
     name.update_status()
     assert len(name.pointers) > 0, 'Pointers should not be empty'
-    assert name.pointers[0]['id'] == new_key_pair.get_address()
+    assert name.pointers[0]['id'] == ACCOUNT_1.get_address()
     assert name.pointers[0]['key'] == "account_pubkey"
 
 
