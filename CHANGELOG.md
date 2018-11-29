@@ -9,7 +9,7 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ### Changed
 
-- CLI default node changed to [sdk-mainnet.aepp.com](https://sdk-mainnet.aepp.com/v2/status)
+- CLI default node changed to [sdk-mainnet.aepps.com](https://sdk-mainnet.aepps.com/v2/status)
 
 ### Added
 
