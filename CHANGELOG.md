@@ -5,6 +5,12 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [1.1.1]
+
+### Change
+
+- Add range check in node version compatibility
+
 ## [1.1.0]
 
 ### Changed
