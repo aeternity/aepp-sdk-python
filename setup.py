@@ -48,7 +48,8 @@ setup(
         'PyNaCl == 1.3.0',
         'requests == 2.20.0',
         'websocket_client == 0.48.0',
-        'validators == 0.12.1'
+        'validators == 0.12.1',
+        'semver==2.8.1'
     ],
     classifiers=[
         'Programming Language :: Python',
