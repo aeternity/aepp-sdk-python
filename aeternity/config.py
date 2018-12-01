@@ -1,5 +1,6 @@
 import requests
 import sys
+import semver
 from collections import MutableSequence
 from . import __compatibility__
 
@@ -73,12 +74,16 @@ class Config:
         try:
             r = requests.get(f"{self.api_url}/v2/status").json()
             self.node_version = r.get('node_version', 'unknown')
-            if self.node_version not in __compatibility__ and not force_compatibility:
-                raise UnsupportedEpochVersion(f"Unsupported epoch version {self.node_version}, supported version are {', '.join(__compatibility__)}")
+            match_min = semver.match(self.node_version, __compatibility__.get("from_version"))
+            match_max = semver.match(self.node_version, __compatibility__.get("to_version"))
+            if (not match_min or not match_max) and not force_compatibility:
+                f, t = __compatibility__.get('from_version'), __compatibility__.get('to_version')
+                raise UnsupportedEpochVersion(
+                    f"Unsupported epoch version {self.node_version}, supported version are {f} and {t}")
         except requests.exceptions.ConnectionError as e:
             raise ConfigException(f"Error connecting to the epoch node at {self.api_url}, connection unavailable")
         except Exception as e:
-            raise UnsupportedEpochVersion(f"Unable to understand node reply, perhaps is not an epoch node or is too old?")
+            raise UnsupportedEpochVersion(f"Unable to connect to the node: {e}")
 
     def __str__(self):
         return f'ws:{self.websocket_url} ext:{self.api_url} int:{self.api_url_internal}'
