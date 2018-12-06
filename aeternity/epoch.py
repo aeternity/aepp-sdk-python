@@ -80,12 +80,13 @@ class EpochClient:
     def compute_absolute_ttl(self, relative_ttl):
         """
         Compute the absolute ttl by adding the ttl to the current height of the chain
-        :param relative_ttl: the relative ttl, must be > 0
+        :param relative_ttl: the relative ttl, if 0 will set the ttl to 0
         """
-        if relative_ttl <= 0:
-            raise ValueError("ttl must be greater than 0")
+        absolute_ttl = 0
+        if relative_ttl > 0:
         height = self.get_current_key_block_height()
-        return height + relative_ttl
+            absolute_ttl = height + relative_ttl
+        return absolute_ttl
 
     def get_next_nonce(self, account_address):
         """

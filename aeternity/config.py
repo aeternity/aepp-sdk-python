@@ -15,7 +15,7 @@ NAME_CLIENT_TTL = 60000
 DEFAULT_NAME_TTL = 500
 # default relative ttl in number of blocks  for executing transaction on the chain
 MAX_TX_TTL = sys.maxsize
-DEFAULT_TX_TTL = 500
+DEFAULT_TX_TTL = 0
 # default fee for posting transaction
 DEFAULT_FEE = 20000
 # contracts
