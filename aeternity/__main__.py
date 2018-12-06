@@ -7,7 +7,7 @@ import sys
 from aeternity import __version__
 
 from aeternity.epoch import EpochClient
-from aeternity.transactions import TxSigner
+from aeternity import exceptions
 # from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
 from . import utils, signing, aens, config
 from aeternity.contract import Contract
@@ -38,10 +38,9 @@ def _epoch_cli(offline=False, native=False, network_id=None):
         config.Config.set_defaults(config.Config(
             external_url=url,
             internal_url=url_i,
-            force_compatibility=ctx.obj.get(CTX_FORCE_COMPATIBILITY),
             network_id=network_id
         ))
-    except config.ConfigException as e:
+    except exceptions.ConfigException as e:
         print("Configuration error: ", e)
         exit(1)
     except config.UnsupportedEpochVersion as e:
@@ -50,6 +49,7 @@ def _epoch_cli(offline=False, native=False, network_id=None):
 
     # load the epoch client
     return EpochClient(blocking_mode=ctx.obj.get(CTX_BLOCKING_MODE),
+                       force_compatibility=ctx.obj.get(CTX_FORCE_COMPATIBILITY),
                        offline=offline,
                        native=native)
 
@@ -355,7 +355,8 @@ def account_sign(keystore_name, password, network_id, unsigned_transaction, forc
         if not utils.is_valid_hash(unsigned_transaction, prefix="tx"):
             raise ValueError("Invalid transaction format")
         # force offline mode for the epoch_client
-        tx_signed, signature, tx_hash = TxSigner(account, network_id).sign_encode_transaction(unsigned_transaction)
+        epoch_cli = EpochClient(configs=config.Config(network_id=network_id), offline=True)
+        tx_signed, signature, tx_hash = epoch_cli.sign_transaction(account, unsigned_transaction)
         _print_object({
             'Signing account address': account.get_address(),
             'Signature': signature,

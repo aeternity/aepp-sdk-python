@@ -4,6 +4,11 @@ import keyword
 from collections import namedtuple
 import logging
 
+from aeternity.exceptions import UnsupportedEpochVersion, ConfigException
+import semver
+
+from . import __compatibility__
+
 
 class OpenAPIArgsException(Exception):
     """Raised when there is an error in method arguments"""
@@ -42,9 +47,23 @@ class OpenAPICli(object):
         "boolean": "bool",
     }
 
-    def __init__(self, url, url_internal=None, debug=False):
-        # load the openapi json file from the node
-        self.api_def = requests.get(f"{url}/api").json()
+    def __init__(self, url, url_internal=None, debug=False, force_compatibility=False):
+        try:
+            # load the openapi json file from the node
+            self.api_def = requests.get(f"{url}/api").json()
+            api_version = self.api_def.get("info", {}).get("version", "unknown")
+            # retrieve the version of the node we are connecting to
+            match_min = semver.match(api_version, __compatibility__.get("from_version"))
+            match_max = semver.match(api_version, __compatibility__.get("to_version"))
+            if (not match_min or not match_max) and not force_compatibility:
+                f, t = __compatibility__.get('from_version'), __compatibility__.get('to_version')
+                raise UnsupportedEpochVersion(
+                    f"unsupported epoch version {api_version}, supported version are {f} and {t}")
+        except requests.exceptions.ConnectionError as e:
+            raise ConfigException(f"Error connecting to the epoch node at {self.api_url}, connection unavailable")
+        except Exception as e:
+            raise UnsupportedEpochVersion(f"Unable to connect to the node: {e}")
+
         # enable printing debug messages
         self.debug = debug
 
