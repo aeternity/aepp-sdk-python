@@ -1,8 +1,5 @@
-import requests
 import sys
-import semver
 from collections import MutableSequence
-from . import __compatibility__
 
 # vm version specification
 # https://github.com/aeternity/protocol/blob/master/contracts/contract_vms.md#virtual-machines-on-the-%C3%A6ternity-blockchain
@@ -18,7 +15,7 @@ NAME_CLIENT_TTL = 60000
 DEFAULT_NAME_TTL = 500
 # default relative ttl in number of blocks  for executing transaction on the chain
 MAX_TX_TTL = sys.maxsize
-DEFAULT_TX_TTL = 500
+DEFAULT_TX_TTL = 0
 # default fee for posting transaction
 DEFAULT_FEE = 20000
 # contracts
@@ -45,48 +42,23 @@ MAX_RETRIES = 8  # used in exponential backoff when checking a transaction
 POLLING_INTERVAL = 2  # in seconds
 
 
-class ConfigException(Exception):
-    pass
-
-
-class UnsupportedEpochVersion(Exception):
-    pass
-
-
 class Config:
     default_configs = None
 
     def __init__(self,
                  external_url='http://localhost:3013',
                  internal_url='http://localhost:3113',
-                 websocket_url=None,
-                 force_compatibility=False,
+                 channels_url='http://localhost:3014',
                  network_id=DEFAULT_NETWORK_ID):
 
         # endpoint urls
-        self.websocket_url = websocket_url
+        self.channels_url = channels_url
         self.api_url_internal = internal_url
         self.api_url = external_url
-        # get the version
-        self.name_url = f'{self.api_url}/name'
         self.network_id = network_id
-        # retrieve the version of the node we are connecting to
-        try:
-            r = requests.get(f"{self.api_url}/v2/status").json()
-            self.node_version = r.get('node_version', 'unknown')
-            match_min = semver.match(self.node_version, __compatibility__.get("from_version"))
-            match_max = semver.match(self.node_version, __compatibility__.get("to_version"))
-            if (not match_min or not match_max) and not force_compatibility:
-                f, t = __compatibility__.get('from_version'), __compatibility__.get('to_version')
-                raise UnsupportedEpochVersion(
-                    f"Unsupported epoch version {self.node_version}, supported version are {f} and {t}")
-        except requests.exceptions.ConnectionError as e:
-            raise ConfigException(f"Error connecting to the epoch node at {self.api_url}, connection unavailable")
-        except Exception as e:
-            raise UnsupportedEpochVersion(f"Unable to connect to the node: {e}")
 
     def __str__(self):
-        return f'ws:{self.websocket_url} ext:{self.api_url} int:{self.api_url_internal}'
+        return f'ext:{self.api_url} int:{self.api_url_internal} ch:{self.channels_url} '
 
     @classmethod
     def set_defaults(cls, config):

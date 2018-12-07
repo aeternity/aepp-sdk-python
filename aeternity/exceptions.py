@@ -48,8 +48,17 @@ class TransactionHashMismatch(AException):
     pass
 
 
-class TransactionWaitTimeoutExpired(Exception):
+class TransactionWaitTimeoutExpired(AException):
     """Raised when a transaction hasn't been found after waiting for an amount of time"""
     def __init__(self, tx_hash, reason):
         self.tx_hash = tx_hash
         self.reason = reason
+
+
+class UnsupportedEpochVersion(AException):
+    """Raised when the node target runs an unsupported version"""
+
+
+class ConfigException(AException):
+    """Raised in case of configuration errors"""
+    pass

@@ -27,7 +27,16 @@ class EpochClient:
         'Transaction not found': TransactionNotFoundException,
     }
 
-    def __init__(self, configs=None, blocking_mode=False, retry=True, debug=False, native=True, offline=False):
+    def __init__(self, configs=None, blocking_mode=False, native=True, offline=False, force_compatibility=False, debug=False):
+        """
+        Initialize a new EpochClient
+        :param configs: the list of configurations to use or empty for default (default None)
+        :param blocking_mode: block the client waiting for transactions (default False)
+        :param native: build transaction natively (do not use the node internal endpoints) (default True)
+        :param offline: do not attempt to connect to a node (sign only) (default False)
+        :param force_compatibility: ingnore node version compatibility check (default False)
+        :param debug: enable debug logging (default False)
+        """
         if configs is None:
             configs = config.Config.get_defaults()
         if isinstance(configs, config.Config):
@@ -35,7 +44,6 @@ class EpochClient:
         self._configs = configs
         self._active_config_idx = 0
         self._top_block = None
-        self._retry = retry
         # determine how the transaction are going to be created
         # if running offline they are forced to be native
         self.native = native if not offline else True
@@ -43,7 +51,10 @@ class EpochClient:
         self.blocking_mode = blocking_mode if not offline else False
         self.offline = offline
         # instantiate the api client
-        self.api = None if offline else openapi.OpenAPICli(configs[0].api_url, configs[0].api_url_internal, debug=debug)
+        self.api = None if offline else openapi.OpenAPICli(configs[0].api_url,
+                                                           configs[0].api_url_internal,
+                                                           debug=debug,
+                                                           force_compatibility=force_compatibility)
         # instantiate the transaction builder object
         self.tx_builder = transactions.TxBuilder(native=self.native, api=self.api)
 
@@ -69,12 +80,13 @@ class EpochClient:
     def compute_absolute_ttl(self, relative_ttl):
         """
         Compute the absolute ttl by adding the ttl to the current height of the chain
-        :param relative_ttl: the relative ttl, must be > 0
+        :param relative_ttl: the relative ttl, if 0 will set the ttl to 0
         """
-        if relative_ttl <= 0:
-            raise ValueError("ttl must be greater than 0")
-        height = self.get_current_key_block_height()
-        return height + relative_ttl
+        absolute_ttl = 0
+        if relative_ttl > 0:
+            height = self.get_current_key_block_height()
+            absolute_ttl = height + relative_ttl
+        return absolute_ttl
 
     def get_next_nonce(self, account_address):
         """
@@ -138,10 +150,8 @@ class EpochClient:
 
     def sign_transaction(self, account: Account, tx: str) -> (str, str, str):
         """
-        Sign and broadcast a transaction if conditions are met
-        Conditions are
-        - account is not None
-        - operation mode is not offline
+        Sign a transaction
+        :return (tx_signed, signature, tx_hash):  the signed transaction, the signature and the hash of the transaction
         """
         s = TxSigner(account, self._get_active_config().network_id)
         tx_signed, signature, tx_hash = s.sign_encode_transaction(tx)
