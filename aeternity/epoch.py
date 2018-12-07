@@ -84,7 +84,7 @@ class EpochClient:
         """
         absolute_ttl = 0
         if relative_ttl > 0:
-        height = self.get_current_key_block_height()
+            height = self.get_current_key_block_height()
             absolute_ttl = height + relative_ttl
         return absolute_ttl
 
