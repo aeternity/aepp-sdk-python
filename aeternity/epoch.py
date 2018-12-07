@@ -150,10 +150,8 @@ class EpochClient:
 
     def sign_transaction(self, account: Account, tx: str) -> (str, str, str):
         """
-        Sign and broadcast a transaction if conditions are met
-        Conditions are
-        - account is not None
-        - operation mode is not offline
+        Sign a transaction
+        :return (tx_signed, signature, tx_hash):  the signed transaction, the signature and the hash of the transaction
         """
         s = TxSigner(account, self._get_active_config().network_id)
         tx_signed, signature, tx_hash = s.sign_encode_transaction(tx)
