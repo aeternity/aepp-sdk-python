@@ -1,6 +1,8 @@
-from tests import PUBLIC_KEY, EPOCH_VERSION, ACCOUNT, EPOCH_CLI
+from tests import PUBLIC_KEY, ACCOUNT, EPOCH_CLI
+from aeternity import __compatibility__
 from aeternity.signing import Account
 from aeternity import openapi
+import semver
 
 # from aeternity.exceptions import TransactionNotFoundException
 
@@ -12,12 +14,15 @@ def test_api_get_account():
 
 
 def test_api_get_version():
-    assert EPOCH_CLI.get_version() == EPOCH_VERSION
+    version = EPOCH_CLI.get_version()
+    assert semver.match(version, __compatibility__.get("from_version"))
+    assert semver.match(version, __compatibility__.get("to_version"))
 
 
 def test_api_get_status():
-    status = EPOCH_CLI.get_status()
-    assert status.node_version == EPOCH_VERSION
+    version = EPOCH_CLI.get_version()
+    assert semver.match(version, __compatibility__.get("from_version"))
+    assert semver.match(version, __compatibility__.get("to_version"))
 
 
 def test_api_get_top_block():
