@@ -3,6 +3,7 @@ import click
 import os
 import json
 import sys
+import getpass
 
 from aeternity import __version__
 
@@ -28,7 +29,7 @@ CTX_BLOCKING_MODE = 'CTX_BLOCKING_MODE'
 CTX_OUTPUT_JSON = 'CTX_OUTPUT_JSON'
 
 
-def _epoch_cli(offline=False, native=False, network_id=None):
+def _epoch_cli(offline=False, native=True, network_id=None):
     try:
         ctx = click.get_current_context()
         # set the default configuration
@@ -57,7 +58,7 @@ def _epoch_cli(offline=False, native=False, network_id=None):
 def _account(keystore_name, password=None):
     """
     utility function to get the keypair from the click context
-    :return: (keypair, keypath)
+    :return: (account, keypath)
     """
     ctx = click.get_current_context()
     kf = ctx.obj.get(CTX_KEY_PATH) if keystore_name is None else keystore_name
@@ -66,7 +67,7 @@ def _account(keystore_name, password=None):
         exit(1)
     try:
         if password is None:
-            password = click.prompt("Enter the account password", default='', hide_input=True)
+            password = getpass.getpass("Enter the account password: ")
         return signing.Account.from_keystore(kf, password), os.path.abspath(kf)
     except Exception as e:
         print(f"Keystore decryption failed: {e}")

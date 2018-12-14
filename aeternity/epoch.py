@@ -82,8 +82,11 @@ class EpochClient:
         :param epoch: the epoch client
         :return: the next nonce for an account
         """
-        account = self.api.get_account_by_pubkey(pubkey=account_address)
-        return account.nonce + 1
+        try:
+            account = self.api.get_account_by_pubkey(pubkey=account_address)
+            return account.nonce + 1
+        except Exception as e:
+            return 1
 
     def _get_nonce_ttl(self, account_address: str, relative_ttl: int):
         """
