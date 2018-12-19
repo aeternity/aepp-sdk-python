@@ -5,9 +5,21 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [1.1.2]
+
+### Changed
+
+- Use native transaction by default with the cli
+- Default nonce to 1 when the `get_account_by_pubkey` api call fails.
+- Use `getpass` to read the password from the promt
+
+### Fixed
+
+- Range check tests for node version comaptibility
+
 ## [1.1.1]
 
-### Change
+### Changed
 
 - Add range check in node version compatibility
 
@@ -15,7 +27,7 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ### Changed
 
-- CLI default node changed to [sdk-mainnet.aepp.com](https://sdk-mainnet.aepp.com/v2/status)
+- CLI default node changed to [sdk-mainnet.aepps.com](https://sdk-mainnet.aepps.com/v2/status)
 
 ### Added
 
