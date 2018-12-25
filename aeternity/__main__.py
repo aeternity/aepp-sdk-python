@@ -612,7 +612,7 @@ def contract_compile(contract_file):
             code = fp.read()
             c = _epoch_cli().Contract(Contract.SOPHIA)
             result = c.compile(code)
-            _print_object({"bytecode", result})
+            _print_object({"bytecode", result}, title="contract")
     except Exception as e:
         print(e)
 
@@ -656,7 +656,7 @@ def contract_deploy(keystore_name, contract_file, gas, password, network_id, for
                 "Contract id": contract.id,
                 "Transaction hash": tx.tx_hash,
                 "Deploy descriptor": deploy_descriptor,
-            })
+            }, title="contract")
     except Exception as e:
         print(e)
 
@@ -693,7 +693,7 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
                 _print_object({
                     'Return value': value,
                     'Return remote type': remote_type,
-                })
+                }, title="contract call")
 
             pass
     except Exception as e:
@@ -805,7 +805,7 @@ def chain_top(force, wait, json_):
     """
     set_global_options(force, wait, json_)
     data = _epoch_cli().get_top_block()
-    _print_object(data)
+    _print_object(data, "top block")
 
 
 @chain.command('status')
@@ -816,7 +816,7 @@ def chain_status(force, wait, json_):
     """
     set_global_options(force, wait, json_)
     data = _epoch_cli().get_status()
-    _print_object(data)
+    _print_object(data, title="node")
 
 
 @chain.command('play')
