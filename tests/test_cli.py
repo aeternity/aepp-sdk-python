@@ -162,8 +162,8 @@ def test_cli_phases_spend(account_path):
     # generate a new address
     recipient_id = Account.generate().get_address()
     # step one, generate transaction
-    j = call_aecli('tx', 'spend', ACCOUNT.get_address(), recipient_id, '100')
-    j.get("Sender account")
+    j = call_aecli('tx', 'spend', ACCOUNT.get_address(), recipient_id, '100', '--nonce', '1')
+    # assert ACCOUNT.get_address == j.get("Sender account")
     assert recipient_id == j.get("Recipient account")
     # step 2, sign the transaction
     tx_unsigned = j.get("Encoded")
