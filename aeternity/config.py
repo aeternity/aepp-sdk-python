@@ -49,7 +49,7 @@ class ConfigException(Exception):
     pass
 
 
-class UnsupportedEpochVersion(Exception):
+class UnsupportedNodeVersion(Exception):
     pass
 
 
@@ -78,12 +78,12 @@ class Config:
             match_max = semver.match(self.node_version, __compatibility__.get("to_version"))
             if (not match_min or not match_max) and not force_compatibility:
                 f, t = __compatibility__.get('from_version'), __compatibility__.get('to_version')
-                raise UnsupportedEpochVersion(
-                    f"Unsupported epoch version {self.node_version}, supported version are {f} and {t}")
+                raise UnsupportedNodeVersion(
+                    f"Unsupported node version {self.node_version}, supported version are {f} and {t}")
         except requests.exceptions.ConnectionError as e:
-            raise ConfigException(f"Error connecting to the epoch node at {self.api_url}, connection unavailable")
+            raise ConfigException(f"Error connecting to the node node at {self.api_url}, connection unavailable")
         except Exception as e:
-            raise UnsupportedEpochVersion(f"Unable to connect to the node: {e}")
+            raise UnsupportedNodeVersion(f"Unable to connect to the node: {e}")
 
     def __str__(self):
         return f'ws:{self.websocket_url} ext:{self.api_url} int:{self.api_url_internal}'
@@ -91,7 +91,7 @@ class Config:
     @classmethod
     def set_defaults(cls, config):
         """
-        sets the default configuration that will be used when the epoch client
+        sets the default configuration that will be used when the node client
         did not get a config passed into its constructor
 
         :return: None

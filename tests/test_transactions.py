@@ -1,4 +1,4 @@
-from tests import EPOCH_CLI, ACCOUNT
+from tests import NODE_CLI, ACCOUNT
 from aeternity.signing import Account
 from aeternity import transactions
 
@@ -6,10 +6,10 @@ from aeternity import transactions
 def _execute_test(test_cases):
     for tt in test_cases:
         # get a native transaction
-        txbn = transactions.TxBuilder(api=EPOCH_CLI, native=True)
+        txbn = transactions.TxBuilder(api=NODE_CLI, native=True)
         txn = getattr(txbn, tt.get("tx"))(**tt["native"])
         # get a debug transaction
-        txbd = transactions.TxBuilder(api=EPOCH_CLI, native=False)
+        txbd = transactions.TxBuilder(api=NODE_CLI, native=False)
         txd = getattr(txbd, tt.get("tx"))(**tt["debug"])
         # theys should be the same
         if tt["match"]:
@@ -44,10 +44,10 @@ def test_transaction_spend():
 
     for tt in tts:
         # get a native transaction
-        txbn = transactions.TxBuilder(api=EPOCH_CLI, native=True)
+        txbn = transactions.TxBuilder(api=NODE_CLI, native=True)
         txn = txbn.tx_spend(tt["native"][0], tt["native"][1], tt["native"][2], tt["native"][3], tt["native"][4], tt["native"][5], tt["native"][6])
         # get a debug transaction
-        txbd = transactions.TxBuilder(api=EPOCH_CLI, native=False)
+        txbd = transactions.TxBuilder(api=NODE_CLI, native=False)
         txd = txbd.tx_spend(tt["debug"][0], tt["debug"][1], tt["debug"][2], tt["debug"][3], tt["debug"][4], tt["debug"][5], tt["debug"][6])
         # theys should be the same
         if tt["match"]:

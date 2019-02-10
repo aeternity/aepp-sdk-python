@@ -4,7 +4,7 @@ import json
 import os
 import aeternity
 import random
-from tests import NODE_URL, NODE_URL_DEBUG, ACCOUNT, EPOCH_CLI, NETWORK_ID, tempdir, random_domain
+from tests import NODE_URL, NODE_URL_DEBUG, ACCOUNT, NODE_CLI, NETWORK_ID, tempdir, random_domain
 from aeternity.signing import Account
 from aeternity import utils
 from aeternity.aens import AEName
@@ -99,7 +99,7 @@ def test_cli_spend(account_path):
     call_aecli('account', 'spend', account_path, recipient_address, "90", '--password', 'aeternity_bc', '--network-id', NETWORK_ID)
     # test that the recipient account has the requested amount
     print(f"recipient address is {recipient_address}")
-    recipient_account = EPOCH_CLI.get_account_by_pubkey(pubkey=recipient_address)
+    recipient_account = NODE_CLI.get_account_by_pubkey(pubkey=recipient_address)
     print(f"recipient address {recipient_address}, balance {recipient_account.balance}")
     assert recipient_account.balance == 90
 
@@ -111,14 +111,14 @@ def test_cli_spend_invalid_amount(account_path):
 
 
 def test_cli_inspect_key_block_by_height():
-    height = EPOCH_CLI.get_current_key_block_height()
+    height = NODE_CLI.get_current_key_block_height()
     j = call_aecli('inspect', str(height))
     assert utils.is_valid_hash(j.get("hash"), prefix=["kh", "mh"])
     assert j.get("height") == height
 
 
 def test_cli_inspect_key_block_by_hash():
-    height = EPOCH_CLI.get_current_key_block_height()
+    height = NODE_CLI.get_current_key_block_height()
     jh = call_aecli('inspect', str(height))
     # retrieve the block hash
     jb = call_aecli('inspect', jh.get("hash"))
@@ -139,7 +139,7 @@ def test_cli_inspect_transaction_by_hash():
     # fill the account from genesys
     na = Account.generate()
     amount = random.randint(50, 150)
-    _, _, _, tx_hash = EPOCH_CLI.spend(ACCOUNT, na.get_address(), amount)
+    _, _, _, tx_hash = NODE_CLI.spend(ACCOUNT, na.get_address(), amount)
     # now inspect the transaction
     j = call_aecli('inspect', tx_hash)
     assert j.get("hash") == tx_hash
@@ -155,7 +155,7 @@ def test_cli_name_claim(account_path):
     print(f"Domain is {domain}")
     # call the cli
     call_aecli('name', 'claim', account_path, domain, '--password', 'aeternity_bc', '--network-id', NETWORK_ID)
-    EPOCH_CLI.AEName(domain).status == AEName.Status.CLAIMED
+    NODE_CLI.AEName(domain).status == AEName.Status.CLAIMED
 
 
 def test_cli_phases_spend(account_path):
@@ -169,11 +169,11 @@ def test_cli_phases_spend(account_path):
     tx_unsigned = j.get("Encoded")
     s = call_aecli('account', 'sign', account_path, tx_unsigned, '--password', 'aeternity_bc', '--network-id', NETWORK_ID)
     tx_signed = s.get("Signed")
-    # recipient_account = EPOCH_CLI.get_account_by_pubkey(pubkey=recipient_id)
+    # recipient_account = NODE_CLI.get_account_by_pubkey(pubkey=recipient_id)
     # assert recipient_account.balance == 0
     # step 3 broadcast
     call_aecli('tx', 'broadcast', tx_signed, "--wait")
     # b.get("Transaction hash")
     # verify
-    recipient_account = EPOCH_CLI.get_account_by_pubkey(pubkey=recipient_id)
+    recipient_account = NODE_CLI.get_account_by_pubkey(pubkey=recipient_id)
     assert recipient_account.balance == 100

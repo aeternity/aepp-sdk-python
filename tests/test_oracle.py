@@ -1,7 +1,7 @@
 import logging
 import pytest
 
-from tests import EPOCH_CLI, ACCOUNT, ACCOUNT_1
+from tests import NODE_CLI, ACCOUNT, ACCOUNT_1
 from aeternity.oracles import Oracle, OracleQuery
 from aeternity import hashing
 
@@ -32,7 +32,7 @@ class WeatherQuery(OracleQuery):
 
 
 def _test_oracle_registration(account):
-    oracle = EPOCH_CLI.Oracle()
+    oracle = NODE_CLI.Oracle()
     weather_oracle = dict(
         account=account,
         query_format="{'city': str}",
@@ -40,13 +40,13 @@ def _test_oracle_registration(account):
     )
     tx, tx_signed, signature, tx_hash = oracle.register(**weather_oracle)
     assert oracle.id == account.get_address().replace("ak_", "ok_")
-    oracle_api_response = EPOCH_CLI.get_oracle_by_pubkey(pubkey=oracle.id)
+    oracle_api_response = NODE_CLI.get_oracle_by_pubkey(pubkey=oracle.id)
     assert oracle_api_response.id == oracle.id
     return oracle
 
 
 def _test_oracle_query(oracle, sender, query):
-    q = EPOCH_CLI.OracleQuery(oracle.id)
+    q = NODE_CLI.OracleQuery(oracle.id)
     q.execute(sender, query)
     return q
 
@@ -64,7 +64,7 @@ def _test_oracle_response(query, expected):
 
 def test_oracle_lifecycle_debug():
     # registration
-    EPOCH_CLI.set_native(False)
+    NODE_CLI.set_native(False)
     oracle = _test_oracle_registration(ACCOUNT)
     # query
     query = _test_oracle_query(oracle, ACCOUNT_1, "{'city': 'Berlin'}")
@@ -76,7 +76,7 @@ def test_oracle_lifecycle_debug():
 @pytest.mark.skip('Invalid query_id (TODO)')
 def test_oracle_lifecycle_native():
     # registration
-    EPOCH_CLI.set_native(True)
+    NODE_CLI.set_native(True)
     oracle = _test_oracle_registration(ACCOUNT_1)
     # query
     query = _test_oracle_query(oracle, ACCOUNT, "{'city': 'Sofia'}")

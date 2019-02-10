@@ -2,7 +2,7 @@ import logging
 import os
 from aeternity.config import Config
 from aeternity.signing import Account
-from aeternity import epoch
+from aeternity import node
 # for tempdir
 import shutil
 import tempfile
@@ -34,17 +34,17 @@ Config.set_defaults(Config(
     network_id=NETWORK_ID
 ))
 
-# Instantiate the epoch client for the tests
-EPOCH_CLI = epoch.EpochClient(blocking_mode=True, debug=True, native=False)
+# Instantiate the node client for the tests
+NODE_CLI = node.NodeClient(blocking_mode=True, debug=True, native=False)
 # create a new account and fill it with some money
 ACCOUNT = Account.generate()
-EPOCH_CLI.spend(genesis, ACCOUNT.get_address(), 1000000000)
-a = EPOCH_CLI.get_account_by_pubkey(pubkey=ACCOUNT.get_address())
+NODE_CLI.spend(genesis, ACCOUNT.get_address(), 1000000000)
+a = NODE_CLI.get_account_by_pubkey(pubkey=ACCOUNT.get_address())
 print(f"Test account is {ACCOUNT.get_address()} with balance {a.balance}")
 
 ACCOUNT_1 = Account.generate()  # required for oracles
-EPOCH_CLI.spend(genesis, ACCOUNT_1.get_address(), 1000000000)
-a = EPOCH_CLI.get_account_by_pubkey(pubkey=ACCOUNT_1.get_address())
+NODE_CLI.spend(genesis, ACCOUNT_1.get_address(), 1000000000)
+a = NODE_CLI.get_account_by_pubkey(pubkey=ACCOUNT_1.get_address())
 print(f"Test account (1) is {ACCOUNT_1.get_address()} with balance {a.balance}")
 
 
