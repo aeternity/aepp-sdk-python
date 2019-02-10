@@ -1,63 +1,7 @@
 from aeternity.hashing import _int, _binary, _id, encode, decode, encode_rlp, hash_encode, contract_id
 from aeternity.openapi import OpenAPICli
 from aeternity.config import ORACLE_DEFAULT_TTL_TYPE_DELTA
-
-# RLP version number
-# https://github.com/aeternity/protocol/blob/api-v0.10.1/serializations.md#binary-serialization
-VSN = 1
-
-# Tag constant for ids (type uint8)
-# see https://github.com/aeternity/protocol/blob/master/serializations.md#the-id-type
-# <<Tag:1/unsigned-integer-unit:8, Hash:32/binary-unit:8>>
-ID_TAG_ACCOUNT = 1
-ID_TAG_NAME = 2
-ID_TAG_COMMITMENT = 3
-ID_TAG_ORACLE = 4
-ID_TAG_CONTRACT = 5
-ID_TAG_CHANNEL = 6
-
-# Object tags
-# see https://github.com/aeternity/protocol/blob/master/serializations.md#binary-serialization
-
-OBJECT_TAG_ACCOUNT = 10
-OBJECT_TAG_SIGNED_TRANSACTION = 11
-OBJECT_TAG_SPEND_TRANSACTION = 12
-OBJECT_TAG_ORACLE = 20
-OBJECT_TAG_ORACLE_QUERY = 21
-OBJECT_TAG_ORACLE_REGISTER_TRANSACTION = 22
-OBJECT_TAG_ORACLE_QUERY_TRANSACTION = 23
-OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION = 24
-OBJECT_TAG_ORACLE_EXTEND_TRANSACTION = 25
-OBJECT_TAG_NAME_SERVICE_NAME = 30
-OBJECT_TAG_NAME_SERVICE_COMMITMENT = 31
-OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION = 32
-OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION = 33
-OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION = 34
-OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION = 35
-OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION = 36
-OBJECT_TAG_CONTRACT = 40
-OBJECT_TAG_CONTRACT_CALL = 41
-OBJECT_TAG_CONTRACT_CREATE_TRANSACTION = 42
-OBJECT_TAG_CONTRACT_CALL_TRANSACTION = 43
-OBJECT_TAG_CHANNEL_CREATE_TRANSACTION = 50
-OBJECT_TAG_CHANNEL_DEPOSIT_TRANSACTION = 51
-OBJECT_TAG_CHANNEL_WITHDRAW_TRANSACTION = 52
-OBJECT_TAG_CHANNEL_FORCE_PROGRESS_TRANSACTION = 521
-OBJECT_TAG_CHANNEL_CLOSE_MUTUAL_TRANSACTION = 53
-OBJECT_TAG_CHANNEL_CLOSE_SOLO_TRANSACTION = 54
-OBJECT_TAG_CHANNEL_SLASH_TRANSACTION = 55
-OBJECT_TAG_CHANNEL_SETTLE_TRANSACTION = 56
-OBJECT_TAG_CHANNEL_OFF_CHAIN_TRANSACTION = 57
-OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_TRANSFER = 570
-OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_DEPOSIT = 571
-OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_WITHDRAWAL = 572
-OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_CREATE_CONTRACT = 573
-OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_CALL_CONTRACT = 574
-OBJECT_TAG_CHANNEL = 58
-OBJECT_TAG_CHANNEL_SNAPSHOT_TRANSACTION = 59
-OBJECT_TAG_POI = 60
-OBJECT_TAG_MICRO_BODY = 101
-OBJECT_TAG_LIGHT_MICRO_BLOCK = 102
+from aeternity import identifiers as idf
 
 
 class TxSigner:
@@ -71,10 +15,10 @@ class TxSigner:
 
     def encode_signed_transaction(self, transaction, signature):
         """prepare a signed transaction message"""
-        tag = bytes([OBJECT_TAG_SIGNED_TRANSACTION])
-        vsn = bytes([VSN])
-        encoded_signed_tx = encode_rlp("tx", [tag, vsn, [signature], transaction])
-        encoded_signature = encode("sg", signature)
+        tag = bytes([idf.OBJECT_TAG_SIGNED_TRANSACTION])
+        vsn = bytes([idf.VSN])
+        encoded_signed_tx = encode_rlp(idf.TRANSACTION, [tag, vsn, [signature], transaction])
+        encoded_signature = encode(idf.SIGNATURE, signature)
         return encoded_signed_tx, encoded_signature
 
     def sign_encode_transaction(self, tx):
@@ -83,7 +27,7 @@ class TxSigner:
         :return: encoded_signed_tx, encoded_signature, tx_hash
         """
         # decode the transaction if not in native mode
-        transaction = decode(tx.tx) if hasattr(tx, "tx") else decode(tx)
+        transaction = decode(tx.tx) if hasattr(tx, idf.TRANSACTION) else decode(tx)
         # sign the transaction
         signature = self.account.sign(_binary(self.network_id) + transaction)
         # encode the transaction
@@ -115,7 +59,7 @@ class TxBuilder:
         :param signed_tx: an encoded signed transaction
         """
         signed = decode(signed_tx)
-        return hash_encode("th", signed)
+        return hash_encode(idf.TRANSACTION_HASH, signed)
 
     def tx_spend(self, account_id, recipient_id, amount, payload, fee, ttl, nonce)-> str:
         """
@@ -131,17 +75,17 @@ class TxBuilder:
         # compute the absolute ttl and the nonce
         if self.native_transactions:
             tx = [
-                _int(OBJECT_TAG_SPEND_TRANSACTION),
-                _int(VSN),
-                _id(ID_TAG_ACCOUNT, account_id),
-                _id(ID_TAG_ACCOUNT, recipient_id),
+                _int(idf.OBJECT_TAG_SPEND_TRANSACTION),
+                _int(idf.VSN),
+                _id(idf.ID_TAG_ACCOUNT, account_id),
+                _id(idf.ID_TAG_ACCOUNT, recipient_id),
                 _int(amount),
                 _int(fee),
                 _int(ttl),
                 _int(nonce),
                 _binary(payload)
             ]
-            tx = encode_rlp("tx", tx)
+            tx = encode_rlp(idf.TRANSACTION, tx)
             return tx
 
         # use internal endpoints transaction
@@ -169,15 +113,15 @@ class TxBuilder:
         """
         if self.native_transactions:
             tx = [
-                _int(OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION),
-                _int(VSN),
-                _id(ID_TAG_ACCOUNT, account_id),
+                _int(idf.OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION),
+                _int(idf.VSN),
+                _id(idf.ID_TAG_ACCOUNT, account_id),
                 _int(nonce),
-                _id(ID_TAG_COMMITMENT, commitment_id),
+                _id(idf.ID_TAG_COMMITMENT, commitment_id),
                 _int(fee),
                 _int(ttl)
             ]
-            return encode_rlp("tx", tx)
+            return encode_rlp(idf.TRANSACTION, tx)
         # use internal endpoints transaction
         body = dict(
             commitment_id=commitment_id,
@@ -200,16 +144,16 @@ class TxBuilder:
         """
         if self.native_transactions:
             tx = [
-                _int(OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION),
-                _int(VSN),
-                _id(ID_TAG_ACCOUNT, account_id),
+                _int(idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION),
+                _int(idf.VSN),
+                _id(idf.ID_TAG_ACCOUNT, account_id),
                 _int(nonce),
                 decode(name),
                 _binary(name_salt),
                 _int(fee),
                 _int(ttl)
             ]
-            tx = encode_rlp("tx", tx)
+            tx = encode_rlp(idf.TRANSACTION, tx)
         # use internal endpoints transaction
         body = dict(
             account_id=account_id,
@@ -237,26 +181,26 @@ class TxBuilder:
             # TODO: verify supported keys for name updates
             def pointer_tag(pointer):
                 return {
-                    "account_pubkey": ID_TAG_ACCOUNT,
-                    "oracle_pubkey": ID_TAG_ORACLE,
-                    "contract_pubkey": ID_TAG_CONTRACT,
-                    "channel_pubkey": ID_TAG_CHANNEL
+                    "account_pubkey": idf.ID_TAG_ACCOUNT,
+                    "oracle_pubkey": idf.ID_TAG_ORACLE,
+                    "contract_pubkey": idf.ID_TAG_CONTRACT,
+                    "channel_pubkey": idf.ID_TAG_CHANNEL
                 }.get(pointer.get("key"))
-            ptrs = [[_binary(p.get("key")), _id(pointer_tag(p), p.get("id"))] for p in pointers]
+            ptrs = [[_binary(p.get("key")), _id(idf.pointer_tag(p), p.get("id"))] for p in pointers]
             # build tx
             tx = [
-                _int(OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION),
-                _int(VSN),
-                _id(ID_TAG_ACCOUNT, account_id),
+                _int(idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION),
+                _int(idf.VSN),
+                _id(idf.ID_TAG_ACCOUNT, account_id),
                 _int(nonce),
-                _id(ID_TAG_NAME, name_id),
+                _id(idf.ID_TAG_NAME, name_id),
                 _int(name_ttl),
                 ptrs,
                 _int(client_ttl),
                 _int(fee),
                 _int(ttl)
             ]
-            return encode_rlp("tx", tx)
+            return encode_rlp(idf.TRANSACTION, tx)
         # use internal endpoints transaction
         body = dict(
             account_id=account_id,
@@ -282,16 +226,16 @@ class TxBuilder:
         """
         if self.native_transactions:
             tx = [
-                _int(OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION),
-                _int(VSN),
-                _id(ID_TAG_ACCOUNT, account_id),
+                _int(idf.OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION),
+                _int(idf.VSN),
+                _id(idf.ID_TAG_ACCOUNT, account_id),
                 _int(nonce),
-                _id(ID_TAG_NAME, name_id),
-                _id(ID_TAG_ACCOUNT, recipient_id),
+                _id(idf.ID_TAG_NAME, name_id),
+                _id(idf.ID_TAG_ACCOUNT, recipient_id),
                 _int(fee),
                 _int(ttl),
             ]
-            return encode_rlp("tx", tx)
+            return encode_rlp(idf.TRANSACTION, tx)
         # use internal endpoints transaction
         body = dict(
             account_id=account_id,
@@ -315,15 +259,15 @@ class TxBuilder:
 
         if self.native_transactions:
             tx = [
-                _int(OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION),
-                _int(VSN),
-                _id(ID_TAG_ACCOUNT, account_id),
+                _int(idf.OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION),
+                _int(idf.VSN),
+                _id(idf.ID_TAG_ACCOUNT, account_id),
                 _int(nonce),
-                _id(ID_TAG_NAME, name_id),
+                _id(idf.ID_TAG_NAME, name_id),
                 _int(fee),
                 _int(ttl),
             ]
-            return encode_rlp("tx", tx)
+            return encode_rlp(idf.TRANSACTION, tx)
         # use internal endpoints transaction
         body = dict(
             account_id=account_id,
@@ -354,7 +298,7 @@ class TxBuilder:
 
         if self.native_transactions:
             tx = [
-                _id(account_id),
+                _id(idf.account_id),
                 _int(nonce),
                 _binary(code),
                 _int(vm_version),
@@ -366,7 +310,7 @@ class TxBuilder:
                 _int(gas_price),
                 _binary(call_data),
             ]
-            return encode_rlp("tx", tx), contract_id(account_id, nonce)
+            return encode_rlp(idf.TRANSACTION, tx), contract_id(idf.account_id, nonce)
         # use internal endpoints transaction
         body = dict(
             owner_id=account_id,
@@ -402,9 +346,9 @@ class TxBuilder:
         """
         if self.native_transactions:
             tx = [
-                _id(account_id),
+                _id(idf.account_id),
                 _int(nonce),
-                _id(contract_id),
+                _id(idf.contract_id),
                 _int(vm_version),
                 _int(fee),
                 _int(ttl),
@@ -413,7 +357,7 @@ class TxBuilder:
                 _int(gas_price),
                 _binary(call_data),
             ]
-            return encode_rlp("tx", tx)
+            return encode_rlp(idf.TRANSACTION, tx)
         # use internal endpoints transaction
         body = dict(
             call_data=call_data,
@@ -441,9 +385,9 @@ class TxBuilder:
 
         if self.native_transactions:
             tx = [
-                _int(OBJECT_TAG_ORACLE_REGISTER_TRANSACTION),
-                _int(VSN),
-                _id(ID_TAG_ACCOUNT, account_id),
+                _int(idf.OBJECT_TAG_ORACLE_REGISTER_TRANSACTION),
+                _int(idf.VSN),
+                _id(idf.ID_TAG_ACCOUNT, account_id),
                 _int(nonce),
                 _binary(query_format),
                 _binary(response_format),
@@ -454,7 +398,7 @@ class TxBuilder:
                 _int(ttl),
                 _int(vm_version),
             ]
-            return encode_rlp("tx", tx)
+            return encode_rlp(idf.TRANSACTION, tx)
         # use internal endpoints transaction
         body = dict(
             account_id=account_id,
@@ -482,11 +426,11 @@ class TxBuilder:
 
         if self.native_transactions:
             tx = [
-                _int(OBJECT_TAG_ORACLE_QUERY_TRANSACTION),
-                _int(VSN),
-                _id(ID_TAG_ACCOUNT, sender_id),
+                _int(idf.OBJECT_TAG_ORACLE_QUERY_TRANSACTION),
+                _int(idf.VSN),
+                _id(idf.ID_TAG_ACCOUNT, sender_id),
                 _int(nonce),
-                _id(ID_TAG_ORACLE, oracle_id),
+                _id(idf.ID_TAG_ORACLE, oracle_id),
                 _binary(query),
                 _int(query_fee),
                 _int(0 if query_ttl_type == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
@@ -496,7 +440,7 @@ class TxBuilder:
                 _int(fee),
                 _int(ttl),
             ]
-            return encode_rlp("tx", tx)
+            return encode_rlp(idf.TRANSACTION, tx)
         # use internal endpoints transaction
         body = dict(
             sender_id=sender_id,
@@ -527,9 +471,9 @@ class TxBuilder:
 
         if self.native_transactions:
             tx = [
-                _int(OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION),
-                _int(VSN),
-                _id(ID_TAG_ORACLE, oracle_id),
+                _int(idf.OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION),
+                _int(idf.VSN),
+                _id(idf.ID_TAG_ORACLE, oracle_id),
                 _int(nonce),
                 _binary(query_id),
                 _binary(response),
@@ -538,7 +482,7 @@ class TxBuilder:
                 _int(fee),
                 _int(ttl),
             ]
-            return encode_rlp("tx", tx)
+            return encode_rlp(idf.TRANSACTION, tx)
         # use internal endpoints transaction
         body = dict(
             response_ttl=dict(
@@ -564,16 +508,16 @@ class TxBuilder:
 
         if self.native_transactions:
             tx = [
-                _int(OBJECT_TAG_ORACLE_EXTEND_TRANSACTION),
-                _int(VSN),
-                _id(ID_TAG_ORACLE, oracle_id),
+                _int(idf.OBJECT_TAG_ORACLE_EXTEND_TRANSACTION),
+                _int(idf.VSN),
+                _id(idf.ID_TAG_ORACLE, oracle_id),
                 _int(nonce),
                 _int(0 if ttl_type == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
                 _int(ttl_value),
                 _int(fee),
                 _int(ttl),
             ]
-            return encode_rlp("tx", tx)
+            return encode_rlp(idf.TRANSACTION, tx)
         # use internal endpoints transaction
         body = dict(
             oracle_id=oracle_id,

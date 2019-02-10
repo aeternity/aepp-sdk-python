@@ -1,6 +1,7 @@
 from aeternity.aevm import pretty_bytecode
 from aeternity.openapi import OpenAPIClientException
 from aeternity import utils, config
+from aeternity.identifiers import CONTRACT_ID
 
 
 class ContractError(Exception):
@@ -46,7 +47,7 @@ class Contract:
                 tx_ttl=config.DEFAULT_TX_TTL):
         """Call a sophia contract"""
 
-        if not utils.is_valid_hash(self.address, prefix="ct"):
+        if not utils.is_valid_hash(self.address, prefix=CONTRACT_ID):
             raise ValueError("Missing contract id")
 
         try:
