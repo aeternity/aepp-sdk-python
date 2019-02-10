@@ -160,8 +160,8 @@ _sign_options = [
 ]
 
 _transaction_options = [
-    click.option('--native', 'native', is_flag=True, default=False,
-                 help='Use native transaction generation instead of the internal endpoints (always True for offline transactions)'),
+    click.option('--debug-tx', 'debug_tx', is_flag=True, default=False,
+                 help='Use debug transaction generation endpoints from the node instead of the native python implementation'),
     click.option('--ttl', 'ttl', type=int, default=config.DEFAULT_TX_TTL,
                  help=f'Set the transaction ttl (relative number, ex 100)', show_default=True),
     click.option('--fee', 'fee', type=int, default=config.DEFAULT_FEE,
@@ -408,11 +408,11 @@ def tx_broadcast(signed_transaction, force, wait, json_):
 @click.argument('amount', required=True, type=int)
 @transaction_options
 @click.option('--payload', default="", help="Spend transaction payload")
-def tx_spend(sender_id, recipient_id, amount, native, ttl, fee, nonce, payload, force, wait, json_):
+def tx_spend(sender_id, recipient_id, amount, debug_tx, ttl, fee, nonce, payload, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
-        cli = _node_cli(native=native)
-        if not native:
+        cli = _node_cli(native=not debug_tx)
+        if debug_tx:
             nonce, ttl = cli._get_nonce_ttl(sender_id, ttl)
         tx = cli.tx_builder.tx_spend(sender_id, recipient_id, amount, payload, fee, ttl, nonce)
         # print the results
