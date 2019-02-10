@@ -1,4 +1,4 @@
-from aeternity.epoch import BlockWithTx, Transaction, AENSClaimTx, AENSPreclaimTx, GenericTx
+from aeternity.node import BlockWithTx, Transaction, AENSClaimTx, AENSPreclaimTx, GenericTx
 
 
 def pretty_account(account_hash):

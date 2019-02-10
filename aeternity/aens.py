@@ -68,7 +68,7 @@ class AEName:
 
     def update_status(self):
         try:
-            # use the openapi client inside the epoch client
+            # use the openapi client inside the node client
             response = self.client.get_name_entry_by_name(name=self.domain)
             self.status = NameStatus.CLAIMED
             self.name_ttl = response.ttl

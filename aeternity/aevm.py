@@ -1,7 +1,7 @@
 
 # AEVM opcodes
 #
-# as defined in /epoch/apps/aebytecode/include/aeb_opcodes.hrl
+# as defined in /node/apps/aebytecode/include/aeb_opcodes.hrl
 #
 import binascii
 

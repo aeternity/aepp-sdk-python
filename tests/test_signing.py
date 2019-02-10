@@ -1,5 +1,5 @@
 from pytest import raises
-from tests import ACCOUNT, EPOCH_CLI, tempdir, TEST_FEE, TEST_TTL
+from tests import ACCOUNT, NODE_CLI, tempdir, TEST_FEE, TEST_TTL
 from aeternity.signing import Account
 from aeternity.utils import is_valid_hash
 import os
@@ -10,13 +10,13 @@ def test_signing_create_transaction_signature():
     new_account = Account.generate()
     receiver_address = new_account.get_address()
     # create a spend transaction
-    nonce, ttl = EPOCH_CLI._get_nonce_ttl(ACCOUNT.get_address(), TEST_TTL)
-    tx = EPOCH_CLI.tx_builder.tx_spend(ACCOUNT.get_address(), receiver_address, 321, "test test ", TEST_FEE, ttl, nonce)
-    tx_signed, signature, tx_hash = EPOCH_CLI.sign_transaction(ACCOUNT, tx)
+    nonce, ttl = NODE_CLI._get_nonce_ttl(ACCOUNT.get_address(), TEST_TTL)
+    tx = NODE_CLI.tx_builder.tx_spend(ACCOUNT.get_address(), receiver_address, 321, "test test ", TEST_FEE, ttl, nonce)
+    tx_signed, signature, tx_hash = NODE_CLI.sign_transaction(ACCOUNT, tx)
     # this call will fail if the hashes of the transaction do not match
-    EPOCH_CLI.broadcast_transaction(tx_signed)
+    NODE_CLI.broadcast_transaction(tx_signed)
     # make sure this works for very short block times
-    spend_tx = EPOCH_CLI.get_transaction_by_hash(hash=tx_hash)
+    spend_tx = NODE_CLI.get_transaction_by_hash(hash=tx_hash)
     assert spend_tx.signatures[0] == signature
 
 

@@ -4,7 +4,7 @@ import logging
 
 
 from aeternity import Config
-from aeternity import EpochClient
+from aeternity import NodeClient
 from aeternity import OracleQuery
 
 logging.basicConfig(level=logging.DEBUG)
@@ -17,7 +17,7 @@ class AeternityInUSDOracleQuery(OracleQuery):
 
 
 dev1_config = Config(external_host=3013, internal_host=3113, websocket_host=3114)
-client = EpochClient(configs=dev1_config)
+client = NodeClient(configs=dev1_config)
 oracle_pubkey = 'ok_3WRqCYwdr9B5aeAMT7Bfv2gGZpLUdD4RQM4hzFRpRzRRZx7d8pohQ6xviXxDTLHVwWKDbGzxH1xRp19LtwBypFpCVBDjEQ'
 
 oracle_query = AeternityInUSDOracleQuery(

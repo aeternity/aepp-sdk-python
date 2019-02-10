@@ -1,4 +1,4 @@
-# How to install an Epoch test network on Linux
+# How to install an Node test network on Linux
 
 Tested on Ubuntu 17.10, Ubuntu 17.04 and Fedora 27. This will install a 3-node
 system for local testing. Optionally you may choose to speed up mining in order

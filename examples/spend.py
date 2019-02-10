@@ -1,4 +1,4 @@
-from aeternity.epoch import EpochClient
+from aeternity.node import NodeClient
 from aeternity.config import Config
 
 import sys
@@ -9,6 +9,6 @@ recipient, amount = sys.argv[1:3]
 
 amount = int(amount)
 
-epoch = EpochClient()
+node = NodeClient()
 
-epoch.spend(recipient, amount)
+node.spend(recipient, amount)

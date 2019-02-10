@@ -7,8 +7,8 @@ import getpass
 
 from aeternity import __version__
 
-from aeternity.epoch import EpochClient
-from aeternity import exceptions
+from aeternity.node import NodeClient
+from aeternity.transactions import TxSigner
 # from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
 from . import utils, signing, aens, config
 from aeternity.contract import Contract
@@ -19,8 +19,8 @@ from datetime import datetime, timezone
 logging.basicConfig(format='%(message)s', level=logging.INFO)
 
 
-CTX_EPOCH_URL = 'EPOCH_URL'
-CTX_EPOCH_URL_DEBUG = 'EPOCH_URL_DEBUG'
+CTX_NODE_URL = 'EPOCH_URL'
+CTX_NODE_URL_DEBUG = 'EPOCH_URL_DEBUG'
 CTX_KEY_PATH = 'KEY_PATH'
 CTX_QUIET = 'QUIET'
 CTX_AET_DOMAIN = 'AET_NAME'
@@ -29,30 +29,30 @@ CTX_BLOCKING_MODE = 'CTX_BLOCKING_MODE'
 CTX_OUTPUT_JSON = 'CTX_OUTPUT_JSON'
 
 
-def _epoch_cli(offline=False, native=True, network_id=None):
+def _node_cli(offline=False, native=True, network_id=None):
     try:
         ctx = click.get_current_context()
         # set the default configuration
-        url = ctx.obj.get(CTX_EPOCH_URL)
-        url_i = ctx.obj.get(CTX_EPOCH_URL_DEBUG)
+        url = ctx.obj.get(CTX_NODE_URL)
+        url_i = ctx.obj.get(CTX_NODE_URL_DEBUG)
         url_i = url_i if url_i is not None else url
         config.Config.set_defaults(config.Config(
             external_url=url,
             internal_url=url_i,
+            force_compatibility=ctx.obj.get(CTX_FORCE_COMPATIBILITY),
             network_id=network_id
         ))
-    except exceptions.ConfigException as e:
+    except config.ConfigException as e:
         print("Configuration error: ", e)
         exit(1)
-    except config.UnsupportedEpochVersion as e:
+    except config.UnsupportedNodeVersion as e:
         print(e)
         exit(1)
 
-    # load the epoch client
-    return EpochClient(blocking_mode=ctx.obj.get(CTX_BLOCKING_MODE),
-                       force_compatibility=ctx.obj.get(CTX_FORCE_COMPATIBILITY),
-                       offline=offline,
-                       native=native)
+    # load the aeternity node client
+    return NodeClient(blocking_mode=ctx.obj.get(CTX_BLOCKING_MODE),
+                      offline=offline,
+                      native=native)
 
 
 def _account(keystore_name, password=None):
@@ -146,7 +146,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 # set global options TODO: this is a bit silly, we should probably switch back to stdlib
 _global_options = [
-    click.option('--force', is_flag=True, default=False, help='Ignore epoch version compatibility check'),
+    click.option('--force', is_flag=True, default=False, help='Ignore aeternity node version compatibility check'),
     click.option('--wait', is_flag=True, default=False, help='Wait for transactions to be included'),
     click.option('--json', 'json_', is_flag=True, default=False, help='Print output in JSON format'),
 ]
@@ -209,7 +209,7 @@ def set_global_options(force, wait, json_):
 @click.group()
 @click.pass_context
 @click.version_option()
-@click.option('--url', '-u', default='https://sdk-mainnet.aepps.com', envvar='EPOCH_URL', help='Epoch node url', metavar='URL')
+@click.option('--url', '-u', default='https://sdk-mainnet.aepps.com', envvar='EPOCH_URL', help='Aeternity node url', metavar='URL')
 @click.option('--debug-url', '-d', default=None, envvar='EPOCH_URL_DEBUG', metavar='URL')
 @global_options
 @click.version_option(version=__version__)
@@ -217,11 +217,11 @@ def cli(ctx, url, debug_url, force, wait, json_):
     """
     Welcome to the aecli client.
 
-    The client is to interact with an epoch node.
+    The client is to interact with an aeternity node.
 
     """
-    ctx.obj[CTX_EPOCH_URL] = url
-    ctx.obj[CTX_EPOCH_URL_DEBUG] = debug_url
+    ctx.obj[CTX_NODE_URL] = url
+    ctx.obj[CTX_NODE_URL_DEBUG] = debug_url
     set_global_options(force, wait, json_)
 
 
@@ -229,7 +229,7 @@ def cli(ctx, url, debug_url, force, wait, json_):
 @click.pass_context
 def config_cmd(ctx):
     _print_object({
-        "Epoch URL": ctx.obj.get(CTX_EPOCH_URL),
+        "Node URL": ctx.obj.get(CTX_NODE_URL),
     }, title="aecli settings")
 
 
@@ -315,7 +315,7 @@ def account_balance(keystore_name, password, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
         account, _ = _account(keystore_name, password=password)
-        account = _epoch_cli().get_account_by_pubkey(pubkey=account.get_address())
+        account = _node_cli().get_account_by_pubkey(pubkey=account.get_address())
         _print_object(account, title='account')
     except Exception as e:
         print(e)
@@ -333,7 +333,7 @@ def account_spend(keystore_name, recipient_id, amount, ttl, password, network_id
         account, keystore_path = _account(keystore_name, password=password)
         if not utils.is_valid_hash(recipient_id, prefix="ak"):
             raise ValueError("Invalid recipient address")
-        tx, tx_signed, signature, tx_hash = _epoch_cli(network_id=network_id).spend(account, recipient_id, amount, tx_ttl=ttl)
+        tx, tx_signed, signature, tx_hash = _node_cli(network_id=network_id).spend(account, recipient_id, amount, tx_ttl=ttl)
         _print_object({
             "Sender account": account.get_address(),
             "Recipient account": recipient_id,
@@ -355,9 +355,8 @@ def account_sign(keystore_name, password, network_id, unsigned_transaction, forc
         account, keystore_path = _account(keystore_name, password=password)
         if not utils.is_valid_hash(unsigned_transaction, prefix="tx"):
             raise ValueError("Invalid transaction format")
-        # force offline mode for the epoch_client
-        epoch_cli = EpochClient(configs=config.Config(network_id=network_id), offline=True)
-        tx_signed, signature, tx_hash = epoch_cli.sign_transaction(account, unsigned_transaction)
+        # force offline mode for the node_client
+        tx_signed, signature, tx_hash = TxSigner(account, network_id).sign_encode_transaction(unsigned_transaction)
         _print_object({
             'Signing account address': account.get_address(),
             'Signature': signature,
@@ -394,7 +393,7 @@ def tx_broadcast(signed_transaction, force, wait, json_):
         set_global_options(force, wait, json_)
         if not utils.is_valid_hash(signed_transaction, prefix="tx"):
             raise ValueError("Invalid transaction format")
-        cli = _epoch_cli()
+        cli = _node_cli()
         tx_hash = cli.broadcast_transaction(signed_transaction)
         _print_object({
             "Transaction hash": tx_hash,
@@ -412,7 +411,7 @@ def tx_broadcast(signed_transaction, force, wait, json_):
 def tx_spend(sender_id, recipient_id, amount, native, ttl, fee, nonce, payload, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
-        cli = _epoch_cli(native=native)
+        cli = _node_cli(native=native)
         if not native:
             nonce, ttl = cli._get_nonce_ttl(sender_id, ttl)
         tx = cli.tx_builder.tx_spend(sender_id, recipient_id, amount, payload, fee, ttl, nonce)
@@ -456,7 +455,7 @@ def name_register(keystore_name, domain, name_ttl, ttl, fee, password, network_i
     try:
         set_global_options(force, wait, json_)
         account, _ = _account(keystore_name, password=password)
-        name = _epoch_cli(network_id=network_id).AEName(domain)
+        name = _node_cli(network_id=network_id).AEName(domain)
         name.update_status()
         if name.status != aens.AEName.Status.AVAILABLE:
             print("Domain not available")
@@ -498,7 +497,7 @@ def name_update(keystore_name, domain, address, name_ttl, ttl, password, network
     try:
         set_global_options(force, wait, json_)
         account, _ = _account(keystore_name, password=password)
-        name = _epoch_cli(network_id=network_id).AEName(domain)
+        name = _node_cli(network_id=network_id).AEName(domain)
         name.update_status()
         if name.status != name.Status.CLAIMED:
             print(f"Domain is {name.status} and cannot be transferred")
@@ -522,7 +521,7 @@ def name_revoke(keystore_name, domain, password, network_id, force, wait, json_)
     try:
         set_global_options(force, wait, json_)
         account, _ = _account(keystore_name, password=password)
-        name = _epoch_cli(network_id=network_id).AEName(domain)
+        name = _node_cli(network_id=network_id).AEName(domain)
         name.update_status()
         if name.status == name.Status.AVAILABLE:
             print("Domain is available, nothing to revoke")
@@ -549,7 +548,7 @@ def name_transfer(keystore_name, domain, address, password, network_id, force, w
     try:
         set_global_options(force, wait, json_)
         account, _ = _account(keystore_name, password=password)
-        name = _epoch_cli(network_id=network_id).AEName(domain)
+        name = _node_cli(network_id=network_id).AEName(domain)
         name.update_status()
         if name.status != name.Status.CLAIMED:
             print(f"Domain is {name.status} and cannot be transferred")
@@ -610,9 +609,9 @@ def contract_compile(contract_file):
     try:
         with open(contract_file) as fp:
             code = fp.read()
-            c = _epoch_cli().Contract(Contract.SOPHIA)
+            c = _node_cli().Contract(Contract.SOPHIA)
             result = c.compile(code)
-            _print_object({"bytecode", result}, title="contract")
+            _print_object({"bytecode", result})
     except Exception as e:
         print(e)
 
@@ -637,7 +636,7 @@ def contract_deploy(keystore_name, contract_file, gas, password, network_id, for
             set_global_options(force, wait, json_)
             account, _ = _account(keystore_name, password=password)
             code = fp.read()
-            contract = _epoch_cli(network_id=network_id).Contract(code)
+            contract = _node_cli(network_id=network_id).Contract(code)
             tx = contract.tx_create(account, gas=gas)
             # save the contract data
             contract_data = {
@@ -656,7 +655,7 @@ def contract_deploy(keystore_name, contract_file, gas, password, network_id, for
                 "Contract id": contract.id,
                 "Transaction hash": tx.tx_hash,
                 "Deploy descriptor": deploy_descriptor,
-            }, title="contract")
+            })
     except Exception as e:
         print(e)
 
@@ -680,7 +679,7 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
             set_global_options(force, wait, json_)
             account, _ = _account(keystore_name, password=password)
 
-            contract = _epoch_cli(network_id=network_id).Contract(source, bytecode=bytecode, address=address)
+            contract = _node_cli(network_id=network_id).Contract(source, bytecode=bytecode, address=address)
             result = contract.tx_call(account, function, params, gas=gas)
             _print_object({
                 'Contract id': contract.id,
@@ -693,7 +692,7 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
                 _print_object({
                     'Return value': value,
                     'Return remote type': remote_type,
-                }, title="contract call")
+                })
 
             pass
     except Exception as e:
@@ -727,7 +726,7 @@ def inspect(obj, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
         if obj.endswith(".test"):
-            name = _epoch_cli().AEName(obj)
+            name = _node_cli().AEName(obj)
             name.update_status()
             _print_object({
                 'Status': name.status,
@@ -736,26 +735,26 @@ def inspect(obj, force, wait, json_):
                 'TTL': name.name_ttl,
             }, title="aens")
         elif obj.startswith("kh_") or obj.startswith("mh_"):
-            v = _epoch_cli().get_block_by_hash(obj)
+            v = _node_cli().get_block_by_hash(obj)
             _print_object(v, title="block")
         elif obj.startswith("th_"):
-            v = _epoch_cli().get_transaction_by_hash(hash=obj)
+            v = _node_cli().get_transaction_by_hash(hash=obj)
             _print_object(v, title="transaction")
         elif obj.startswith("ak_"):
-            v = _epoch_cli().get_account_by_pubkey(pubkey=obj)
+            v = _node_cli().get_account_by_pubkey(pubkey=obj)
             _print_object(v, title="account")
         elif obj.startswith("ct_"):
-            v = _epoch_cli().get_contract(pubkey=obj)
+            v = _node_cli().get_contract(pubkey=obj)
             _print_object(v, title="contract")
         elif obj.startswith("ok_"):
-            cli = _epoch_cli()
+            cli = _node_cli()
             data = dict(
                 oracle=cli.get_oracle_by_pubkey(pubkey=obj),
                 queries=cli.get_oracle_queries_by_pubkey(pubkey=obj)
             )
             _print_object(data, title="oracle context")
         elif obj.isdigit() and int(obj) >= 0:
-            v = _epoch_cli().get_key_block_by_height(height=int(obj))
+            v = _node_cli().get_key_block_by_height(height=int(obj))
             _print_object(v, title="block")
         else:
             raise ValueError(f"input not recognized: {obj}")
@@ -774,7 +773,7 @@ def inspect(obj, force, wait, json_):
 #         with open(contract_deploy_descriptor) as fp:
 #             contract = json.load(fp)
 #             _print_object(contract)
-#             data = _epoch_cli().get_transaction_by_hash(hash=contract.get('transaction', 'N/A'))
+#             data = _node_cli().get_transaction_by_hash(hash=contract.get('transaction', 'N/A'))
 #             _print_object(data, "Transaction")
 #     except Exception as e:
 #         print(e)
@@ -804,19 +803,19 @@ def chain_top(force, wait, json_):
     Print the information of the top block of the chain.
     """
     set_global_options(force, wait, json_)
-    data = _epoch_cli().get_top_block()
-    _print_object(data, "top block")
+    data = _node_cli().get_top_block()
+    _print_object(data)
 
 
 @chain.command('status')
 @global_options
 def chain_status(force, wait, json_):
     """
-    Print the epoch node status.
+    Print the node node status.
     """
     set_global_options(force, wait, json_)
-    data = _epoch_cli().get_status()
-    _print_object(data, title="node")
+    data = _node_cli().get_status()
+    _print_object(data)
 
 
 @chain.command('play')
@@ -829,7 +828,7 @@ def chain_play(height,  limit, force, wait, json_):
     """
     try:
         set_global_options(force, wait, json_)
-        cli = _epoch_cli()
+        cli = _node_cli()
         g = cli.get_generation_by_height(height=height) if height is not None else cli.get_current_generation()
         # check the limit
         limit = limit if limit > 0 else 0

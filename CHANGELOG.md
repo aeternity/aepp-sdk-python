@@ -239,7 +239,7 @@ refer to the [documentation](docs/keystore_format_change.md) about how to update
 
 ### Changed
 
-- Switch to curve ed25519 (from secp256k1) to align with Epoch protocol changes
+- Switch to curve ed25519 (from secp256k1) to align with Node protocol changes
 - Generate basic API directly from Swagger files, also validate input data
 
 ### Fixed

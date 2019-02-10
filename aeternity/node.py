@@ -15,11 +15,11 @@ logger = logging.getLogger(__name__)
 logging.root.setLevel(logging.DEBUG)
 
 
-class EpochRequestError(Exception):
+class NodeRequestError(Exception):
     pass
 
 
-class EpochClient:
+class NodeClient:
 
     exception_by_reason = {
         'Name not found': NameNotAvailable,
@@ -91,7 +91,7 @@ class EpochClient:
     def get_next_nonce(self, account_address):
         """
         Get the next nonce to be used for a transaction for an account
-        :param epoch: the epoch client
+        :param node: the node client
         :return: the next nonce for an account
         """
         try:

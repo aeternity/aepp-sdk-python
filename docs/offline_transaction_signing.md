@@ -1,4 +1,0 @@
-# Offline transaction signing
-
-TODO
-

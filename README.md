@@ -40,13 +40,13 @@ Usage: aecli [OPTIONS] COMMAND [ARGS]...
 
   Welcome to the aecli client.
 
-  The client is to interact with an epoch node.
+  The client is to interact with an node node.
 
 Options:
   --version            Show the version and exit.
-  -u, --url URL        Epoch node url
+  -u, --url URL        Node node url
   -d, --debug-url URL
-  --force              Ignore epoch version compatibility check
+  --force              Ignore node version compatibility check
   --wait               Wait for transactions to be included
   --json               Print output in JSON format
   --version            Show the version and exit.
@@ -186,6 +186,6 @@ For advanced usage check the [documentation](docs).
 
 ## Reference:
 
-[AENS API Spec](https://github.com/aeternity/protocol/blob/master/epoch/api/naming_system_api_usage.md)
+[AENS API Spec](https://github.com/aeternity/protocol/blob/master/node/api/naming_system_api_usage.md)
 
 [AENS Protocol](https://github.com/aeternity/protocol/blob/master/AENS.md)
