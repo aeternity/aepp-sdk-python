@@ -37,7 +37,7 @@ setup(
     author='Andrea Giacobino',
     author_email='aepp-dev@aeternity.com',
     url='https://github.com/aeternity/aepp-sdk-python',
-    python_requires='>=3.5',
+    python_requires='>=3.6',
     license='ISC',
     scripts=['aecli'],
     packages=find_packages(),
