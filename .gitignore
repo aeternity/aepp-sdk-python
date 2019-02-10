@@ -7,4 +7,6 @@ venv
 aepp_sdk.egg-info
 dist
 build
-.docker-compose.override.yml
+coverage.xml
+docker-compose.override.yml
+test-results.xml
