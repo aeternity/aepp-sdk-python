@@ -162,7 +162,8 @@ def test_cli_phases_spend(account_path):
     # generate a new address
     recipient_id = Account.generate().get_address()
     # step one, generate transaction
-    j = call_aecli('tx', 'spend', ACCOUNT.get_address(), recipient_id, '100', '--nonce', '1')
+    nonce = NODE_CLI.get_account_by_pubkey(pubkey=ACCOUNT.get_address()).nonce + 1
+    j = call_aecli('tx', 'spend', ACCOUNT.get_address(), recipient_id, '100', '--nonce', f'{nonce}')
     # assert ACCOUNT.get_address == j.get("Sender account")
     assert recipient_id == j.get("Recipient account")
     # step 2, sign the transaction
