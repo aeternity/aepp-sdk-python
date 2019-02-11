@@ -5,7 +5,7 @@ import json
 import uuid
 
 from nacl.encoding import RawEncoder, HexEncoder
-from nacl.signing import SigningKey
+from nacl.signing import SigningKey, VerifyKey
 from nacl.exceptions import CryptoError
 from nacl.pwhash import argon2id
 from nacl import secret, utils as nacl_utils
@@ -213,3 +213,20 @@ def keystore_open(k, password):
     encrypted = bytes.fromhex(k.get("crypto", {}).get("ciphertext"))
     private_key = box.decrypt(encrypted, nonce=nonce, encoder=RawEncoder)
     return private_key
+
+
+def is_signature_valid(account_id, signature, data: bytes) -> bool:
+    """
+    Verify the signature of a message
+    :param account_id: the account id signing the message
+    :param signature: the signature of the messagfe
+    :param data: the message that has been signed
+    :return: true if the signature for the message is valid, false otherwise
+    """
+    try:
+        id = hashing.decode(account_id) if isinstance(account_id, str) else account_id
+        sg = hashing.decode(signature) if isinstance(signature, str) else signature
+        VerifyKey(id).verify(data, sg)
+        return True
+    except Exception as e:
+        return False
