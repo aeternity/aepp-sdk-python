@@ -85,8 +85,8 @@ def test_signing_is_signature_valid():
 
     assert is_signature_valid(account_id, sg_ae, msg)
     assert is_signature_valid(
-        hashing._base64_decode(account_b64), 
-        hashing._base64_decode(sg_b64), 
+        hashing._base64_decode(account_b64),
+        hashing._base64_decode(sg_b64),
         msg)
 
     msg = "wrong".encode("utf-8")
