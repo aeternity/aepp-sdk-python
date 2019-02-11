@@ -1,7 +1,6 @@
 import logging
 import time
 import random
-from collections import namedtuple
 
 from aeternity.transactions import TxSigner
 from aeternity.signing import Account
