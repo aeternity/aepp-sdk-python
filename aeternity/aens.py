@@ -2,6 +2,7 @@ from aeternity.exceptions import NameNotAvailable, MissingPreclaim, NameUpdateEr
 from aeternity.openapi import OpenAPIClientException
 from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE, DEFAULT_NAME_TTL, NAME_CLIENT_TTL
 from aeternity import hashing, utils, oracles
+from aeternity.identifiers import ACCOUNT_ID, COMMITMENT, NAME
 
 
 class NameStatus:
@@ -49,18 +50,18 @@ class AEName:
         """
         if isinstance(name, str):
             name = name.encode('ascii')
-        return hashing.encode('nm', name)
+        return hashing.encode(NAME, name)
 
     def _get_commitment_id(self):
         """
         Compute the commitment id
         """
         self.preclaim_salt = hashing.randint()
-        commitment_id = hashing.hash_encode("cm", hashing.namehash(self.domain) + self.preclaim_salt.to_bytes(32, 'big'))
+        commitment_id = hashing.hash_encode(COMMITMENT, hashing.namehash(self.domain) + self.preclaim_salt.to_bytes(32, 'big'))
         return commitment_id
 
     def _get_pointers(self, target):
-        if target.startswith('ak'):
+        if target.startswith(ACCOUNT_ID):
             pointers = [{'id': target, 'key': 'account_pubkey'}]
         else:
             pointers = [{'id': target, 'key': 'oracle_pubkey'}]
@@ -196,7 +197,7 @@ class AEName:
                 raise ValueError('You must register the oracle before using it as target')
             target = target.oracle_id
         # get the name_id and pointers
-        name_id = hashing.namehash_encode("nm", self.domain)
+        name_id = hashing.namehash_encode(NAME, self.domain)
         pointers = self._get_pointers(target)
         # get the transaction builder
         txb = self.client.tx_builder
@@ -216,7 +217,7 @@ class AEName:
         :return: the transaction
         """
         # get the name_id and pointers
-        name_id = hashing.namehash_encode("nm", self.domain)
+        name_id = hashing.namehash_encode(NAME, self.domain)
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl
@@ -237,7 +238,7 @@ class AEName:
         :return: the transaction
         """
         # get the name_id and pointers
-        name_id = hashing.namehash_encode("nm", self.domain)
+        name_id = hashing.namehash_encode(NAME, self.domain)
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl

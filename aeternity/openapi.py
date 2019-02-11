@@ -2,6 +2,7 @@ import re
 import requests
 import keyword
 from collections import namedtuple
+import namedtupled
 import logging
 
 from aeternity.exceptions import UnsupportedEpochVersion, ConfigException
@@ -202,7 +203,7 @@ class OpenAPICli(object):
                     raw = http_reply.json()
                     return list(raw.values())[0]
                 jr = http_reply.json()
-                return namedtuple(api_response.schema, jr.keys())(**jr)
+                return namedtupled.map(jr, _nt_name=api_response.schema)
             # error
             raise OpenAPIClientException(f"Error: {api_response.desc}", code=http_reply.status_code)
         # register the method

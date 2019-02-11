@@ -1,5 +1,6 @@
 import logging
 from aeternity import config, hashing
+from aeternity.identifiers import ORACLE_ID
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +90,7 @@ class Oracle():
         # register the oracle id
         # the oracle id is the account that register the oracle
         # with the prefix substituted by with ok_
-        self.id = f"ok_{account.get_address()[3:]}"
+        self.id = f"{ORACLE_ID}_{account.get_address()[3:]}"
         # return the transaction
         return tx, tx_signed, sg, tx_hash
 

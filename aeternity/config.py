@@ -18,18 +18,18 @@ NAME_CLIENT_TTL = 60000
 DEFAULT_NAME_TTL = 500
 # default relative ttl in number of blocks  for executing transaction on the chain
 MAX_TX_TTL = sys.maxsize
-DEFAULT_TX_TTL = 500
+DEFAULT_TX_TTL = 0
 # default fee for posting transaction
 DEFAULT_FEE = 20000
 # contracts
 CONTRACT_DEFAULT_GAS = 170000
 CONTRACT_DEFAULT_GAS_PRICE = 1
-CONTRACT_DEFAULT_DEPOSIT = 4
+CONTRACT_DEFAULT_DEPOSIT = 0
 CONTRACT_DEFAULT_VM_VERSION = 1
-CONTRACT_DEFAULT_AMOUNT = 1
+CONTRACT_DEFAULT_AMOUNT = 0
 # oracles
 # https://github.com/aeternity/protocol/blob/master/oracles/oracles.md#technical-aspects-of-oracle-operations
-ORACLE_DEFAULT_QUERY_FEE = 30000
+ORACLE_DEFAULT_QUERY_FEE = 0
 ORACLE_DEFAULT_TTL_TYPE_DELTA = 'delta'
 ORACLE_DEFAULT_TTL_TYPE_BLOCK = 'block'
 ORACLE_DEFAULT_TTL_VALUE = 500
