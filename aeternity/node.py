@@ -115,10 +115,7 @@ class NodeClient:
         to a Block
         """
         b = self.api.get_top_block()
-        if hasattr(b, 'key_block'):
-            return namedtuple('Block', sorted(b.key_block))(**b.key_block)
-        else:
-            return namedtuple('Block', sorted(b.micro_block))(**b.micro_block)
+        return b.key_block if hasattr(b, 'key_block') else b.micro_block
 
     def get_block_by_hash(self, hash=None):
         """

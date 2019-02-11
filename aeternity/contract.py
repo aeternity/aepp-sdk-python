@@ -1,4 +1,3 @@
-from aeternity.aevm import pretty_bytecode
 from aeternity.openapi import OpenAPIClientException
 from aeternity import utils, config
 from aeternity.identifiers import CONTRACT_ID
@@ -120,7 +119,7 @@ class Contract:
             raise ContractError(e)
 
     def get_pretty_bytecode(self, code, options=''):
-        return pretty_bytecode(self.bytecode)
+        return self.bytecode
 
     def call(self, function, arg):
         '''"Call a sophia function with a given name and argument in the given
@@ -165,6 +164,6 @@ class Contract:
                 "data": data,
                 "sophia-type": sophia_type,
             })
-            return reply.data.get('value'), reply.data.get('type', 'word')
+            return reply.data.value, reply.data.type
         except OpenAPIClientException as e:
             raise ContractError(e)

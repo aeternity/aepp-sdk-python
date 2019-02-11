@@ -74,8 +74,8 @@ def test_name_update():
     print("claimed name", name)
     print("pointers", name.pointers)
     assert len(name.pointers) > 0, 'Pointers should not be empty'
-    assert name.pointers[0]['id'] == ACCOUNT.get_address()
-    assert name.pointers[0]['key'] == "account_pubkey"
+    assert name.pointers[0].id == ACCOUNT.get_address()
+    assert name.pointers[0].key == "account_pubkey"
 
 
 # TODO: enable the test check for pointers
@@ -85,8 +85,8 @@ def test_name_transfer_ownership():
     name.full_claim_blocking(ACCOUNT)
     assert name.status == AEName.Status.CLAIMED
     name.update_status()
-    assert name.pointers[0]['id'] == ACCOUNT.get_address()
-    assert name.pointers[0]['key'] == "account_pubkey"
+    assert name.pointers[0].id == ACCOUNT.get_address()
+    assert name.pointers[0].key == "account_pubkey"
 
     # now transfer the name to the other account
     name.transfer_ownership(ACCOUNT, ACCOUNT_1.get_address())
@@ -96,8 +96,8 @@ def test_name_transfer_ownership():
     name.update(ACCOUNT_1, ACCOUNT_1.get_address())
     name.update_status()
     assert len(name.pointers) > 0, 'Pointers should not be empty'
-    assert name.pointers[0]['id'] == ACCOUNT_1.get_address()
-    assert name.pointers[0]['key'] == "account_pubkey"
+    assert name.pointers[0].id == ACCOUNT_1.get_address()
+    assert name.pointers[0].key == "account_pubkey"
 
 
 # def test_transfer_failure_wrong_pubkey():

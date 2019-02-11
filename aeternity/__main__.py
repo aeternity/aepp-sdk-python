@@ -4,6 +4,7 @@ import os
 import json
 import sys
 import getpass
+import namedtupled
 
 from aeternity import __version__
 
@@ -130,7 +131,7 @@ def _print_object(data, title=None):
 
     if ctx.obj.get(CTX_OUTPUT_JSON, False):
         if isinstance(data, tuple):
-            print(json.dumps(data._asdict(), indent=2))
+            print(json.dumps(namedtupled.reduce(data), indent=2))
             return
         if isinstance(data, str):
             print(data)
