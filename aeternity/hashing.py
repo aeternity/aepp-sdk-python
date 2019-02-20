@@ -132,13 +132,17 @@ def namehash_encode(prefix, name):
     return encode(prefix, namehash(name))
 
 
-def _int(val: int) -> bytes:
+def _int(val: int, byte_lenght: int = None) -> bytes:
     """
     Encode and int to a big endian byte array
+    :param val: the value to encode
+    :param byte_length: number of bytes that should be used to encoded the number, by default is the minimum
     """
     if val == 0:
-        return val.to_bytes(1, byteorder='big')
-    return val.to_bytes((val.bit_length() + 7) // 8, byteorder='big')
+        size = 1 if byte_lenght is None else byte_lenght
+        return val.to_bytes(size, byteorder='big')
+    size = (val.bit_length() + 7) // 8 if byte_lenght is None else byte_lenght
+    return val.to_bytes(size, byteorder='big')
 
 
 def _binary(val):

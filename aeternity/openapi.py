@@ -52,16 +52,16 @@ class OpenAPICli(object):
         try:
             # load the openapi json file from the node
             self.api_def = requests.get(f"{url}/api").json()
-            api_version = self.api_def.get("info", {}).get("version", "unknown")
+            self.api_version = self.api_def.get("info", {}).get("version", "unknown")
             # retrieve the version of the node we are connecting to
-            match_min = semver.match(api_version, __compatibility__.get("from_version"))
-            match_max = semver.match(api_version, __compatibility__.get("to_version"))
+            match_min = semver.match(self.api_version, __compatibility__.get("from_version"))
+            match_max = semver.match(self.api_version, __compatibility__.get("to_version"))
             if (not match_min or not match_max) and not force_compatibility:
                 f, t = __compatibility__.get('from_version'), __compatibility__.get('to_version')
                 raise UnsupportedEpochVersion(
-                    f"unsupported epoch version {api_version}, supported version are {f} and {t}")
+                    f"unsupported node version {self.api_version}, supported version are {f} and {t}")
         except requests.exceptions.ConnectionError as e:
-            raise ConfigException(f"Error connecting to the epoch node at {self.api_url}, connection unavailable")
+            raise ConfigException(f"Error connecting to the node at {self.api_url}, connection unavailable")
         except Exception as e:
             raise UnsupportedEpochVersion(f"Unable to connect to the node: {e}")
 

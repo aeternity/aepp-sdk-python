@@ -280,7 +280,7 @@ class TxBuilder:
 
     # CONTRACTS
 
-    def tx_contract_create(self, account_id, code, call_data, amount, deposit, gas, gas_price, vm_version, fee, ttl, nonce)-> str:
+    def tx_contract_create(self, account_id, code, call_data, amount, deposit, gas, gas_price, vm_version, abi_version, fee, ttl, nonce)-> str:
         """
         Create a contract transaction
         :param account_id: the account creating the contract
@@ -291,26 +291,28 @@ class TxBuilder:
         :param gas: TODO: add definition
         :param gas_price: TODO: add definition
         :param vm_version: TODO: add definition
+        :param abi_version: TODO: add definition
         :param fee: the transaction fee
         :param ttl: the ttl of the transaction
         :param nonce: the nonce of the account for the transaction
         """
-
         if self.native_transactions:
             tx = [
-                _id(idf.account_id),
+                _int(idf.OBJECT_TAG_CONTRACT_CREATE_TRANSACTION),
+                _int(idf.VSN),
+                _id(idf.ID_TAG_ACCOUNT, account_id),
                 _int(nonce),
-                _binary(code),
-                _int(vm_version),
+                _binary(decode(code)),
+                _int(vm_version) + _int(abi_version, 2),
                 _int(fee),
                 _int(ttl),
                 _int(deposit),
                 _int(amount),
                 _int(gas),
                 _int(gas_price),
-                _binary(call_data),
+                _binary(decode(call_data)),
             ]
-            return encode_rlp(idf.TRANSACTION, tx), contract_id(idf.account_id, nonce)
+            return encode_rlp(idf.TRANSACTION, tx), contract_id(account_id, nonce)
         # use internal endpoints transaction
         body = dict(
             owner_id=account_id,
@@ -320,6 +322,7 @@ class TxBuilder:
             gas=gas,
             gas_price=gas_price,
             vm_version=vm_version,
+            abi_version=abi_version,
             call_data=call_data,
             code=code,
             ttl=ttl,
@@ -328,7 +331,7 @@ class TxBuilder:
         tx = self.api.post_contract_create(body=body)
         return tx.tx, tx.contract_id
 
-    def tx_contract_call(self, account_id, contract_id, call_data, function, arg, amount, gas, gas_price, vm_version, fee, ttl, nonce)-> str:
+    def tx_contract_call(self, account_id, contract_id, call_data, function, arg, amount, gas, gas_price, vm_version, abi_version, fee, ttl, nonce)-> str:
         """
         Create a contract call
         :param account_id: the account creating the contract
@@ -340,16 +343,19 @@ class TxBuilder:
         :param gas: TODO: add definition
         :param gas_price: TODO: add definition
         :param vm_version: TODO: add definition
+        :param abi_version: TODO: add definition
         :param fee: the transaction fee
         :param ttl: the ttl of the transaction
         :param nonce: the nonce of the account for the transaction
         """
         if self.native_transactions:
             tx = [
-                _id(idf.account_id),
+                _int(idf.OBJECT_TAG_CONTRACT_CALL_TRANSACTION),
+                _int(idf.VSN),
+                _id(idf.ID_TAG_ACCOUNT, account_id),
                 _int(nonce),
                 _id(idf.contract_id),
-                _int(vm_version),
+                _int(vm_version) + _int(abi_version, 2),
                 _int(fee),
                 _int(ttl),
                 _int(amount),
@@ -368,6 +374,7 @@ class TxBuilder:
             gas=gas,
             gas_price=gas_price,
             vm_version=vm_version,
+            abi_version=abi_version,
             ttl=ttl,
             nonce=nonce
         )

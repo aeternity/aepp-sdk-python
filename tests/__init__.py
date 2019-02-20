@@ -38,12 +38,12 @@ Config.set_defaults(Config(
 NODE_CLI = node.NodeClient(blocking_mode=True, debug=True, native=False)
 # create a new account and fill it with some money
 ACCOUNT = Account.generate()
-NODE_CLI.spend(genesis, ACCOUNT.get_address(), 1000000000)
+NODE_CLI.spend(genesis, ACCOUNT.get_address(), 2000000000000000000)
 a = NODE_CLI.get_account_by_pubkey(pubkey=ACCOUNT.get_address())
 print(f"Test account is {ACCOUNT.get_address()} with balance {a.balance}")
 
 ACCOUNT_1 = Account.generate()  # required for oracles
-NODE_CLI.spend(genesis, ACCOUNT_1.get_address(), 1000000000)
+NODE_CLI.spend(genesis, ACCOUNT_1.get_address(), 2000000000000000000)
 a = NODE_CLI.get_account_by_pubkey(pubkey=ACCOUNT_1.get_address())
 print(f"Test account (1) is {ACCOUNT_1.get_address()} with balance {a.balance}")
 

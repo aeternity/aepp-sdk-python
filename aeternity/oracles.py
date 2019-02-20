@@ -1,6 +1,6 @@
 import logging
 from aeternity import config, hashing
-from aeternity.identifiers import ORACLE_ID
+from aeternity.identifiers import ORACLE_ID, ORACLE_DEFAULT_VM_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class Oracle():
                  query_fee=config.ORACLE_DEFAULT_QUERY_FEE,
                  ttl_type=config.ORACLE_DEFAULT_TTL_TYPE_DELTA,
                  ttl_value=config.ORACLE_DEFAULT_TTL_VALUE,
-                 vm_version=config.ORACLE_DEFAULT_VM_VERSION,
+                 vm_version=ORACLE_DEFAULT_VM_VERSION,
                  fee=config.DEFAULT_FEE,
                  tx_ttl=config.DEFAULT_TX_TTL):
         """

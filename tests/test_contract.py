@@ -25,7 +25,7 @@ contract Identity =
 def _sophia_contract_tx_create_online():
     # runt tests
     contract = NODE_CLI.Contract(aer_identity_contract)
-    contract.tx_create(ACCOUNT, gas=100000, fee=150000)
+    contract.tx_create(ACCOUNT, gas=100000, fee=200000000000000)
     assert contract.address is not None
     assert len(contract.address) > 0
     assert contract.address.startswith('ct')
@@ -34,11 +34,11 @@ def _sophia_contract_tx_create_online():
 def _sophia_contract_tx_call_online():
 
     contract = NODE_CLI.Contract(aer_identity_contract)
-    tx = contract.tx_create(ACCOUNT, gas=100000, fee=150000)
+    tx = contract.tx_create(ACCOUNT, gas=100000, fee=200000000000000)
     print("contract: ", contract.address)
     print("tx contract: ", tx)
 
-    _, _, _, _, result = contract.tx_call(ACCOUNT, 'main', '42', gas=500000, fee=1000000)
+    _, _, _, _, result = contract.tx_call(ACCOUNT, 'main', '42', gas=500000, fee=200000000000000)
     assert result is not None
     assert result.return_type == 'ok'
     print("return", result.return_value)
@@ -52,7 +52,7 @@ def _sophia_contract_tx_call_online():
 
 def test_sophia_contract_tx_create_native():
     # save settings and go online
-    original = NODE_CLI.set_native(False)
+    original = NODE_CLI.set_native(True)
     _sophia_contract_tx_create_online()
     # restore settings
     NODE_CLI.set_native(original)
