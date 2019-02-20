@@ -2,6 +2,13 @@ from aeternity.hashing import _int, _binary, _id, encode, decode, encode_rlp, ha
 from aeternity.openapi import OpenAPICli
 from aeternity.config import ORACLE_DEFAULT_TTL_TYPE_DELTA
 from aeternity import identifiers as idf
+import rlp
+import math
+
+BASE_GAS = 15000
+GAS_PER_BYTE = 20
+GAS_PRICE = 1000000000
+KEY_BLOCK_INTERVAL = 3
 
 
 class TxSigner:
@@ -60,6 +67,76 @@ class TxBuilder:
         """
         signed = decode(signed_tx)
         return hash_encode(idf.TRANSACTION_HASH, signed)
+
+    @staticmethod
+    def compute_tx_fee(tag: int, tx_raw: list) -> str:
+        """
+        Generate the hash from a signed and encoded transaction
+        :param signed_tx: an encoded signed transaction
+        """
+
+        def std_fee(tx_raw, fee_idx, base_gas_multiplier=1):
+            tx_copy = tx_raw  # create a copy of the input
+            tx_copy[fee_idx] = _int(0)
+            return (BASE_GAS * base_gas_multiplier + len(rlp.encode(tx_copy)) * GAS_PER_BYTE) * GAS_PRICE
+
+        def oracle_fee(tx_raw, fee_idx, ttl_idx):
+            tx_copy = tx_raw  # create a copy of the input
+            tx_copy[fee_idx] = _int(0)
+            relative_ttl = tx_copy[ttl_idx]
+            fee = (BASE_GAS + len(rlp.encode(tx_copy)) * GAS_PER_BYTE)
+            fee += math.ceiling(32000 * relative_ttl / math.floor(60 * 24 * 365 / KEY_BLOCK_INTERVAL))
+            return fee * GAS_PRICE
+
+        if tag == idf.OBJECT_TAG_SPEND_TRANSACTION:
+            return std_fee(tx_raw, 5)
+        elif tag == idf.OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION:
+            return std_fee(tx_raw, 5)
+        elif tag == idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION:
+            return std_fee(tx_raw, 6)
+        elif tag == idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION:
+            return std_fee(tx_raw, 8)
+        elif tag == idf.OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION:
+            return std_fee(tx_raw, 6)
+        elif tag == idf.OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION:
+            return std_fee(tx_raw, 5)
+        elif tag == idf.OBJECT_TAG_CHANNEL_CREATE_TRANSACTION:
+            return std_fee(tx_raw, 0)  # TODO: set the correct index
+        elif tag == idf.OBJECT_TAG_CHANNEL_DEPOSIT_TRANSACTION:
+            return std_fee(tx_raw, 0)  # TODO: set the correct index
+        elif tag == idf.OBJECT_TAG_CHANNEL_WITHDRAW_TRANSACTION:
+            return std_fee(tx_raw, 0)  # TODO: set the correct index
+        elif tag == idf.OBJECT_TAG_CHANNEL_FORCE_PROGRESS_TRANSACTION:
+            return std_fee(tx_raw, 0)  # TODO: set the correct index
+        elif tag == idf.OBJECT_TAG_CHANNEL_CLOSE_MUTUAL_TRANSACTION:
+            return std_fee(tx_raw, 0)  # TODO: set the correct index
+        elif tag == idf.OBJECT_TAG_CHANNEL_CLOSE_SOLO_TRANSACTION:
+            return std_fee(tx_raw, 0)  # TODO: set the correct index
+        elif tag == idf.OBJECT_TAG_CHANNEL_SLASH_TRANSACTION:
+            return std_fee(tx_raw, 0)  # TODO: set the correct index
+        elif tag == idf.OBJECT_TAG_CHANNEL_SETTLE_TRANSACTION:
+            return std_fee(tx_raw, 0)  # TODO: set the correct index
+        elif tag == idf.OBJECT_TAG_CHANNEL_SNAPSHOT_TRANSACTION:
+            return std_fee(tx_raw, 0)  # TODO: set the correct index
+        elif tag in [idf.OBJECT_TAG_CHANNEL_OFF_CHAIN_TRANSACTION,
+                     idf.OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_TRANSFER,
+                     idf.OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_DEPOSIT,
+                     idf.OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_WITHDRAWAL,
+                     idf.OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_CREATE_CONTRACT,
+                     idf.OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_CALL_CONTRACT]:
+            return 0
+        elif tag == idf.OBJECT_TAG_ORACLE_REGISTER_TRANSACTION:
+            return oracle_fee(tx_raw, 9, 8)
+        elif tag == idf.OBJECT_TAG_ORACLE_QUERY_TRANSACTION:
+            return oracle_fee(tx_raw, 11, 6)
+        elif tag == idf.OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION:
+            return oracle_fee(tx_raw, 8, 7)
+        elif tag == idf.OBJECT_TAG_ORACLE_EXTEND_TRANSACTION:
+            return oracle_fee(tx_raw, 6, 5)
+        elif tag == idf.OBJECT_TAG_CONTRACT_CREATE_TRANSACTION:
+            return std_fee(tx_raw, 6, base_gas_multiplier=5)
+        elif tag == idf.OBJECT_TAG_CONTRACT_CALL_TRANSACTION:
+            return std_fee(tx_raw, 6, base_gas_multiplier=30)
 
     def tx_spend(self, account_id, recipient_id, amount, payload, fee, ttl, nonce)-> str:
         """
