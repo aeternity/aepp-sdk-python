@@ -108,7 +108,7 @@ def _tx_native(tag: int, vsn: int, **kwargs):
                 "contract_pubkey": idf.ID_TAG_CONTRACT,
                 "channel_pubkey": idf.ID_TAG_CHANNEL
             }.get(pointer.get("key"))
-        ptrs = [[_binary(p.get("key")), _id(pointer_tag(p), p.get("id"))] for p in kwargs.get("pointers")]
+        ptrs = [[_binary(p.get("key")), _id(pointer_tag(p), p.get("id"))] for p in kwargs.get("pointers", [])]
         # then build the transaction
         tx_native = [
             _int(tag),
@@ -460,7 +460,7 @@ class TxBuilder:
             fee=fee,
             nonce=nonce
         )
-        tx_native, min_fee = _tx_native(idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION, idf.VSN, **body)
+        tx_native, min_fee = _tx_native(idf.OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION, idf.VSN, **body)
         # compute the absolute ttl and the nonce
         return tx_native
         # return self.api.post_name_transfer(body=body).tx
@@ -482,7 +482,7 @@ class TxBuilder:
             fee=fee,
             nonce=nonce
         )
-        tx_native, min_fee = _tx_native(idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION, idf.VSN, **body)
+        tx_native, min_fee = _tx_native(idf.OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION, idf.VSN, **body)
         # compute the absolute ttl and the nonce
         return tx_native
         # return self.api.post_name_revoke(body=body).tx
