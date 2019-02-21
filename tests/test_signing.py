@@ -1,23 +1,23 @@
 from pytest import raises
-from tests import ACCOUNT, NODE_CLI, tempdir, TEST_FEE, TEST_TTL
+from tests import TEST_FEE, TEST_TTL
 from aeternity.signing import Account, is_signature_valid
 from aeternity.utils import is_valid_hash
 from aeternity import hashing
 import os
 
 
-def test_signing_create_transaction_signature():
+def test_signing_create_transaction_signature(chain_fixture):
     # generate a new account
     new_account = Account.generate()
     receiver_address = new_account.get_address()
     # create a spend transaction
-    nonce, ttl = NODE_CLI._get_nonce_ttl(ACCOUNT.get_address(), TEST_TTL)
-    tx = NODE_CLI.tx_builder.tx_spend(ACCOUNT.get_address(), receiver_address, 321, "test test ", TEST_FEE, ttl, nonce)
-    tx_signed, signature, tx_hash = NODE_CLI.sign_transaction(ACCOUNT, tx)
+    nonce, ttl = chain_fixture.NODE_CLI._get_nonce_ttl(chain_fixture.ACCOUNT.get_address(), TEST_TTL)
+    tx = chain_fixture.NODE_CLI.tx_builder.tx_spend(chain_fixture.ACCOUNT.get_address(), receiver_address, 321, "test test ", TEST_FEE, ttl, nonce)
+    tx_signed, signature, tx_hash = chain_fixture.NODE_CLI.sign_transaction(chain_fixture.ACCOUNT, tx)
     # this call will fail if the hashes of the transaction do not match
-    NODE_CLI.broadcast_transaction(tx_signed)
+    chain_fixture.NODE_CLI.broadcast_transaction(tx_signed)
     # make sure this works for very short block times
-    spend_tx = NODE_CLI.get_transaction_by_hash(hash=tx_hash)
+    spend_tx = chain_fixture.NODE_CLI.get_transaction_by_hash(hash=tx_hash)
     assert spend_tx.signatures[0] == signature
 
 
@@ -45,33 +45,36 @@ def test_signing_keystore_load():
     assert a.get_address() == "ak_2hSFmdK98bhUw4ar7MUdTRzNQuMJfBFQYxdhN9kaiopDGqj3Cr"
 
 
-def test_signing_keystore_save_load():
+def test_signing_keystore_save_load(tempdir):
     with tempdir() as tmp_path:
-        filename = ACCOUNT.save_to_keystore(tmp_path, "whatever")
+        original_account = Account.generate()
+        filename = original_account.save_to_keystore(tmp_path, "whatever")
         path = os.path.join(tmp_path, filename)
         print(f"\nAccount keystore is {path}")
         # now load again the same
         a = Account.from_keystore(path, "whatever")
-        assert a.get_address() == ACCOUNT.get_address()
+        assert a.get_address() == original_account.get_address()
     with tempdir() as tmp_path:
+        original_account = Account.generate()
         filename = "account_ks"
-        filename = ACCOUNT.save_to_keystore(tmp_path, "whatever", filename=filename)
+        filename = original_account.save_to_keystore(tmp_path, "whatever", filename=filename)
         path = os.path.join(tmp_path, filename)
         print(f"\nAccount keystore is {path}")
         # now load again the same
         a = Account.from_keystore(path, "whatever")
-        assert a.get_address() == ACCOUNT.get_address()
+        assert a.get_address() == original_account.get_address()
 
 
-def test_signing_keystore_save_load_wrong_pwd():
+def test_signing_keystore_save_load_wrong_pwd(tempdir):
     with tempdir() as tmp_path:
-        filename = ACCOUNT.save_to_keystore(tmp_path, "whatever")
+        original_account = Account.generate()
+        filename = original_account.save_to_keystore(tmp_path, "whatever")
         path = os.path.join(tmp_path, filename)
         print(f"\nAccount keystore is {path}")
         # now load again the same
         with raises(ValueError):
             a = Account.from_keystore(path, "nononon")
-            assert a.get_address() == ACCOUNT.get_address()
+            assert a.get_address() == original_account.get_address()
 
 
 def test_signing_is_signature_valid():

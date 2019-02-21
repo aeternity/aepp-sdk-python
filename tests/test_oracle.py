@@ -1,7 +1,6 @@
 import logging
 import pytest
 
-from tests import NODE_CLI, ACCOUNT, ACCOUNT_1
 from aeternity.oracles import Oracle, OracleQuery
 from aeternity import hashing
 
@@ -31,8 +30,8 @@ class WeatherQuery(OracleQuery):
         self.response_received = True
 
 
-def _test_oracle_registration(account):
-    oracle = NODE_CLI.Oracle()
+def _test_oracle_registration(chain_fixture, account):
+    oracle = chain_fixture.NODE_CLI.Oracle()
     weather_oracle = dict(
         account=account,
         query_format="{'city': str}",
@@ -40,12 +39,12 @@ def _test_oracle_registration(account):
     )
     tx, tx_signed, signature, tx_hash = oracle.register(**weather_oracle)
     assert oracle.id == account.get_address().replace("ak_", "ok_")
-    oracle_api_response = NODE_CLI.get_oracle_by_pubkey(pubkey=oracle.id)
+    oracle_api_response = chain_fixture.NODE_CLI.get_oracle_by_pubkey(pubkey=oracle.id)
     assert oracle_api_response.id == oracle.id
     return oracle
 
 
-def _test_oracle_query(oracle, sender, query):
+def _test_oracle_query(NODE_CLI, oracle, sender, query):
     q = NODE_CLI.OracleQuery(oracle.id)
     q.execute(sender, query)
     return q
@@ -62,24 +61,24 @@ def _test_oracle_response(query, expected):
     assert r.response == hashing.encode("or", expected)
 
 
-def test_oracle_lifecycle_debug():
+def test_oracle_lifecycle_debug(chain_fixture):
     # registration
-    NODE_CLI.set_native(False)
-    oracle = _test_oracle_registration(ACCOUNT)
+    chain_fixture.NODE_CLI.set_native(False)
+    oracle = _test_oracle_registration(chain_fixture.ACCOUNT)
     # query
-    query = _test_oracle_query(oracle, ACCOUNT_1, "{'city': 'Berlin'}")
+    query = _test_oracle_query(oracle, chain_fixture.ACCOUNT_1, "{'city': 'Berlin'}")
     # respond
-    _test_oracle_respond(oracle, query, ACCOUNT,  "{'temp_c': 20}")
+    _test_oracle_respond(oracle, query, chain_fixture.ACCOUNT,  "{'temp_c': 20}")
     _test_oracle_response(query, "{'temp_c': 20}")
 
 
 @pytest.mark.skip('Invalid query_id (TODO)')
-def test_oracle_lifecycle_native():
+def test_oracle_lifecycle_native(chain_fixture):
     # registration
-    NODE_CLI.set_native(True)
-    oracle = _test_oracle_registration(ACCOUNT_1)
+    chain_fixture.NODE_CLI.set_native(True)
+    oracle = _test_oracle_registration(chain_fixture.ACCOUNT_1)
     # query
-    query = _test_oracle_query(oracle, ACCOUNT, "{'city': 'Sofia'}")
+    query = _test_oracle_query(oracle, chain_fixture.ACCOUNT, "{'city': 'Sofia'}")
     # respond
-    _test_oracle_respond(oracle, query, ACCOUNT_1,  "{'temp_c': 2000}")
+    _test_oracle_respond(oracle, query, chain_fixture.ACCOUNT_1,  "{'temp_c': 2000}")
     _test_oracle_response(query, "{'temp_c': 2000}")
