@@ -45,36 +45,7 @@ class TxSigner:
         return encoded_signed_tx, encoded_signature, tx_hash
 
 
-class TxBuilder:
-    """
-    TxBuilder is used to build and post transactions to the chain.
-    """
-
-    def __init__(self, native=False, api: OpenAPICli =None):
-        """
-        :param native: if the transactions should be built by the sdk (True) or requested to the debug api (False)
-        """
-        if not native and api is None:
-            raise ValueError("A initialized api rest client has to be provided to build a transaction using the node internal API ")
-        self.api = api
-        self.native_transactions = native
-
-    @staticmethod
-    def compute_tx_hash(signed_tx: str) -> str:
-        """
-        Generate the hash from a signed and encoded transaction
-        :param signed_tx: an encoded signed transaction
-        """
-        signed = decode(signed_tx)
-        return hash_encode(idf.TRANSACTION_HASH, signed)
-
-    @staticmethod
-    def compute_tx_fee(tag: int, tx_raw: list) -> str:
-        """
-        Generate the hash from a signed and encoded transaction
-        :param signed_tx: an encoded signed transaction
-        """
-
+def _tx_native(tag: int, vsn: int, **kwargs):
         def std_fee(tx_raw, fee_idx, base_gas_multiplier=1):
             tx_copy = tx_raw  # create a copy of the input
             tx_copy[fee_idx] = _int(0)
@@ -89,54 +60,288 @@ class TxBuilder:
             return fee * GAS_PRICE
 
         if tag == idf.OBJECT_TAG_SPEND_TRANSACTION:
-            return std_fee(tx_raw, 5)
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("sender_id")),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("recipient_id")),
+            _int(kwargs.get("amount")),
+            _int(kwargs.get("fee")),  # index 5
+            _int(kwargs.get("ttl")),
+            _int(kwargs.get("nonce")),
+            _binary(kwargs.get("payload"))
+        ]
+        tx_field_fee_index = 5
+        min_fee = std_fee(tx_native, tx_field_fee_index)
+        print(f"TX_SPEND MIN FEEEEEE {min_fee}")
         elif tag == idf.OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION:
-            return std_fee(tx_raw, 5)
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("account_id")),
+            _int(kwargs.get("nonce")),
+            _id(idf.ID_TAG_COMMITMENT, kwargs.get("commitment_id")),
+            _int(kwargs.get("fee")),
+            _int(kwargs.get("ttl"))
+        ]
+        tx_field_fee_index = 5
+        min_fee = std_fee(tx_native, tx_field_fee_index)
         elif tag == idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION:
-            return std_fee(tx_raw, 6)
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("account_id")),
+            _int(kwargs.get("nonce")),
+            decode(kwargs.get("name")),
+            _binary(kwargs.get("name_salt")),
+            _int(kwargs.get("fee")),
+            _int(kwargs.get("ttl"))
+        ]
+        tx_field_fee_index = 6
+        min_fee = std_fee(tx_native, tx_field_fee_index)
         elif tag == idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION:
-            return std_fee(tx_raw, 8)
+        # first asseble the pointers
+        def pointer_tag(pointer):
+            return {
+                "account_pubkey": idf.ID_TAG_ACCOUNT,
+                "oracle_pubkey": idf.ID_TAG_ORACLE,
+                "contract_pubkey": idf.ID_TAG_CONTRACT,
+                "channel_pubkey": idf.ID_TAG_CHANNEL
+            }.get(pointer.get("key"))
+        ptrs = [[_binary(p.get("key")), _id(pointer_tag(p), p.get("id"))] for p in kwargs.get("pointers")]
+        # then build the transaction
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("account_id")),
+            _int(kwargs.get("nonce")),
+            _id(idf.ID_TAG_NAME, kwargs.get("name_id")),
+            _int(kwargs.get("name_ttl")),
+            ptrs,
+            _int(kwargs.get("client_ttl")),
+            _int(kwargs.get("fee")),
+            _int(kwargs.get("ttl"))
+        ]
+        tx_field_fee_index = 8
+        min_fee = std_fee(tx_native, tx_field_fee_index)
         elif tag == idf.OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION:
-            return std_fee(tx_raw, 6)
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("account_id")),
+            _int(kwargs.get("nonce")),
+            _id(idf.ID_TAG_NAME, kwargs.get("name_id")),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("recipient_id")),
+            _int(kwargs.get("fee")),
+            _int(kwargs.get("ttl")),
+        ]
+        tx_field_fee_index = 6
+        min_fee = std_fee(tx_native, tx_field_fee_index)
         elif tag == idf.OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION:
-            return std_fee(tx_raw, 5)
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("account_id")),
+            _int(kwargs.get("nonce")),
+            _id(idf.ID_TAG_NAME, kwargs.get("name_id")),
+            _int(kwargs.get("fee")),
+            _int(kwargs.get("ttl")),
+        ]
+        tx_field_fee_index = 5
+        min_fee = std_fee(tx_native, tx_field_fee_index)
+    elif tag == idf.OBJECT_TAG_CONTRACT_CREATE_TRANSACTION:
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("account_id")),
+            _int(kwargs.get("nonce")),
+            _binary(decode(kwargs.get("code"))),
+            _int(kwargs.get("vm_version")) + _int(kwargs.get("abi_version"), 2),
+            _int(kwargs.get("fee")),
+            _int(kwargs.get("ttl")),
+            _int(kwargs.get("deposit")),
+            _int(kwargs.get("amount")),
+            _int(kwargs.get("gas")),
+            _int(kwargs.get("gas_price")),
+            _binary(decode(kwargs.get("call_data"))),
+        ]
+        tx_field_fee_index = 6
+        min_fee = std_fee(tx_native, tx_field_fee_index,  base_gas_multiplier=5)
+    elif tag == idf.OBJECT_TAG_CONTRACT_CALL_TRANSACTION:
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("account_id")),
+            _int(kwargs.get("nonce")),
+            _id(idf.kwargs.get("contract_id")),
+            _int(kwargs.get("vm_version")) + _int(kwargs.get("abi_version"), 2),
+            _int(kwargs.get("fee")),
+            _int(kwargs.get("ttl")),
+            _int(kwargs.get("amount")),
+            _int(kwargs.get("gas")),
+            _int(kwargs.get("gas_price")),
+            _binary(decode(kwargs.get("call_data"))),
+        ]
+        tx_field_fee_index = 6
+        min_fee = std_fee(tx_native, tx_field_fee_index,  base_gas_multiplier=30)
         elif tag == idf.OBJECT_TAG_CHANNEL_CREATE_TRANSACTION:
-            return std_fee(tx_raw, 0)  # TODO: set the correct index
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("initiator")),
+            _int(kwargs.get("initiator_amount")),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("responder")),
+            _int(kwargs.get("responder_amount")),
+            _int(kwargs.get("channel_reserve")),
+            _int(kwargs.get("lock_period")),
+            _int(kwargs.get("ttl")),
+            _int(kwargs.get("fee")),
+            # _[id(delegate_ids)], TODO: handle delegate ids
+            _binary(kwargs.get("state_hash")),
+            _int(kwargs.get("nonce")),
+        ]
+        tx_field_fee_index = 9
+        min_fee = std_fee(tx_native, tx_field_fee_index)
         elif tag == idf.OBJECT_TAG_CHANNEL_DEPOSIT_TRANSACTION:
-            return std_fee(tx_raw, 0)  # TODO: set the correct index
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_CHANNEL, kwargs.get("channel_id")),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("from_id")),
+            _int(kwargs.get("amount")),
+            _int(kwargs.get("ttl")),
+            _int(kwargs.get("fee")),
+            _binary(kwargs.get("state_hash")),
+            _int(kwargs.get("round")),
+            _int(kwargs.get("nonce")),
+        ]
+        tx_field_fee_index = 6
+        min_fee = std_fee(tx_native, tx_field_fee_index)
         elif tag == idf.OBJECT_TAG_CHANNEL_WITHDRAW_TRANSACTION:
-            return std_fee(tx_raw, 0)  # TODO: set the correct index
-        elif tag == idf.OBJECT_TAG_CHANNEL_FORCE_PROGRESS_TRANSACTION:
-            return std_fee(tx_raw, 0)  # TODO: set the correct index
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_CHANNEL, kwargs.get("channel_id")),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("to_id")),
+            _int(kwargs.get("amount")),
+            _int(kwargs.get("ttl")),
+            _int(kwargs.get("fee")),
+            _binary(kwargs.get("state_hash")),
+            _int(kwargs.get("round")),
+            _int(kwargs.get("nonce")),
+        ]
+        tx_field_fee_index = 6
+        min_fee = std_fee(tx_native, tx_field_fee_index)
         elif tag == idf.OBJECT_TAG_CHANNEL_CLOSE_MUTUAL_TRANSACTION:
-            return std_fee(tx_raw, 0)  # TODO: set the correct index
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_CHANNEL, kwargs.get("channel_id")),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("from_id")),
+            _int(kwargs.get("initiator_amount_final")),
+            _int(kwargs.get("responder_amount_final")),
+            _int(kwargs.get("ttl")),
+            _int(kwargs.get("fee")),
+            _int(kwargs.get("nonce")),
+        ]
+        tx_field_fee_index = 7
+        min_fee = std_fee(tx_native, tx_field_fee_index)
         elif tag == idf.OBJECT_TAG_CHANNEL_CLOSE_SOLO_TRANSACTION:
-            return std_fee(tx_raw, 0)  # TODO: set the correct index
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_CHANNEL, kwargs.get("channel_id")),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("from_id")),
+            _binary(kwargs.get("payload")),
+            # _poi(kwargs.get("poi")), TODO: implement support for _poi
+            _int(kwargs.get("ttl")),
+            _int(kwargs.get("fee")),
+            _int(kwargs.get("nonce")),
+        ]
+        tx_field_fee_index = 7
+        min_fee = std_fee(tx_native, tx_field_fee_index)
         elif tag == idf.OBJECT_TAG_CHANNEL_SLASH_TRANSACTION:
-            return std_fee(tx_raw, 0)  # TODO: set the correct index
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_CHANNEL, kwargs.get("channel_id")),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("from_id")),
+            _binary(kwargs.get("payload")),
+            # _poi(kwargs.get("poi")), TODO: implement support for _poi
+            _int(kwargs.get("ttl")),
+            _int(kwargs.get("fee")),
+            _int(kwargs.get("nonce")),
+        ]
+        tx_field_fee_index = 7
+        min_fee = std_fee(tx_native, tx_field_fee_index)
         elif tag == idf.OBJECT_TAG_CHANNEL_SETTLE_TRANSACTION:
-            return std_fee(tx_raw, 0)  # TODO: set the correct index
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_CHANNEL, kwargs.get("channel_id")),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("from_id")),
+            _int(kwargs.get("initiator_amount_final")),
+            _int(kwargs.get("responder_amount_final")),
+            _int(kwargs.get("ttl")),
+            _int(kwargs.get("fee")),
+            _int(kwargs.get("nonce")),
+        ]
+        tx_field_fee_index = 7
+        min_fee = std_fee(tx_native, tx_field_fee_index)
         elif tag == idf.OBJECT_TAG_CHANNEL_SNAPSHOT_TRANSACTION:
-            return std_fee(tx_raw, 0)  # TODO: set the correct index
-        elif tag in [idf.OBJECT_TAG_CHANNEL_OFF_CHAIN_TRANSACTION,
-                     idf.OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_TRANSFER,
-                     idf.OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_DEPOSIT,
-                     idf.OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_WITHDRAWAL,
-                     idf.OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_CREATE_CONTRACT,
-                     idf.OBJECT_TAG_CHANNEL_OFF_CHAIN_UPDATE_CALL_CONTRACT]:
-            return 0
-        elif tag == idf.OBJECT_TAG_ORACLE_REGISTER_TRANSACTION:
-            return oracle_fee(tx_raw, 9, 8)
-        elif tag == idf.OBJECT_TAG_ORACLE_QUERY_TRANSACTION:
-            return oracle_fee(tx_raw, 11, 6)
-        elif tag == idf.OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION:
-            return oracle_fee(tx_raw, 8, 7)
-        elif tag == idf.OBJECT_TAG_ORACLE_EXTEND_TRANSACTION:
-            return oracle_fee(tx_raw, 6, 5)
-        elif tag == idf.OBJECT_TAG_CONTRACT_CREATE_TRANSACTION:
-            return std_fee(tx_raw, 6, base_gas_multiplier=5)
-        elif tag == idf.OBJECT_TAG_CONTRACT_CALL_TRANSACTION:
-            return std_fee(tx_raw, 6, base_gas_multiplier=30)
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_CHANNEL, kwargs.get("channel_id")),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("from_id")),
+            _binary(kwargs.get("payload")),
+            _int(kwargs.get("ttl")),
+            _int(kwargs.get("fee")),
+            _int(kwargs.get("nonce")),
+        ]
+        tx_field_fee_index = 6
+        min_fee = std_fee(tx_native, tx_field_fee_index)
+    elif tag == idf.OBJECT_TAG_CHANNEL_FORCE_PROGRESS_TRANSACTION:
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_CHANNEL, kwargs.get("channel_id")),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("from_id")),
+            _binary(kwargs.get("payload")),
+            _int(kwargs.get("round")),
+            _binary(kwargs.get("update")),
+            _binary(kwargs.get("state_hash")),
+            # _trees(kwargs.get("offchain_trees")), TODO: implement support for _trees
+            _int(kwargs.get("ttl")),
+            _int(kwargs.get("fee")),
+            _int(kwargs.get("nonce")),
+        ]
+        tx_field_fee_index = 9
+        min_fee = std_fee(tx_native, tx_field_fee_index)
+
+    # set the correct fee if fee is empty
+    print(f"MIN FEEE {kwargs.get('fee')} < {min_fee}:")
+    if kwargs.get("fee") < min_fee:
+        tx_native[tx_field_fee_index] = min_fee
+    return encode_rlp(idf.TRANSACTION, tx_native), min_fee
+
+
+class TxBuilder:
+    """
+    TxBuilder is used to build and post transactions to the chain.
+    """
+
+    def __init__(self, native, api):
+        pass
+
+    @staticmethod
+    def compute_tx_hash(encoded_tx: str) -> str:
+        """
+        Generate the hash from a signed and encoded transaction
+        :param encoded_tx: an encoded signed transaction
+        """
+        tx_raw = decode(encoded_tx)
+        return hash_encode(idf.TRANSACTION_HASH, tx_raw)
 
     def tx_spend(self, account_id, recipient_id, amount, payload, fee, ttl, nonce)-> str:
         """
@@ -149,22 +354,6 @@ class TxBuilder:
         :param ttl: the absolute ttl of the transaction
         :param nonce: the nonce of the transaction
         """
-        # compute the absolute ttl and the nonce
-        if self.native_transactions:
-            tx = [
-                _int(idf.OBJECT_TAG_SPEND_TRANSACTION),
-                _int(idf.VSN),
-                _id(idf.ID_TAG_ACCOUNT, account_id),
-                _id(idf.ID_TAG_ACCOUNT, recipient_id),
-                _int(amount),
-                _int(fee),
-                _int(ttl),
-                _int(nonce),
-                _binary(payload)
-            ]
-            tx = encode_rlp(idf.TRANSACTION, tx)
-            return tx
-
         # use internal endpoints transaction
         body = {
             "recipient_id": recipient_id,
@@ -175,7 +364,10 @@ class TxBuilder:
             "ttl": ttl,
             "nonce": nonce,
         }
-        return self.api.post_spend(body=body).tx
+        tx_native, min_fee = _tx_native(idf.OBJECT_TAG_SPEND_TRANSACTION, idf.VSN, **body)
+        # compute the absolute ttl and the nonce
+        return tx_native
+        # return self.api.post_spend(body=body).tx
 
     # NAMING #
 
@@ -188,18 +380,6 @@ class TxBuilder:
         :param ttl:  the ttl for the transaction
         :param nonce: the nonce of the account for the transaction
         """
-        if self.native_transactions:
-            tx = [
-                _int(idf.OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION),
-                _int(idf.VSN),
-                _id(idf.ID_TAG_ACCOUNT, account_id),
-                _int(nonce),
-                _id(idf.ID_TAG_COMMITMENT, commitment_id),
-                _int(fee),
-                _int(ttl)
-            ]
-            return encode_rlp(idf.TRANSACTION, tx)
-        # use internal endpoints transaction
         body = dict(
             commitment_id=commitment_id,
             fee=fee,
@@ -207,7 +387,10 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce
         )
-        return self.api.post_name_preclaim(body=body).tx
+        tx_native, min_fee = _tx_native(idf.OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION, idf.VSN, **body)
+        # compute the absolute ttl and the nonce
+        return tx_native
+        # sreturn self.api.post_name_preclaim(body=body).tx
 
     def tx_name_claim(self, account_id, name, name_salt, fee, ttl, nonce)-> str:
         """
@@ -219,19 +402,6 @@ class TxBuilder:
         :param ttl:  the ttl for the transaction
         :param nonce: the nonce of the account for the transaction
         """
-        if self.native_transactions:
-            tx = [
-                _int(idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION),
-                _int(idf.VSN),
-                _id(idf.ID_TAG_ACCOUNT, account_id),
-                _int(nonce),
-                decode(name),
-                _binary(name_salt),
-                _int(fee),
-                _int(ttl)
-            ]
-            tx = encode_rlp(idf.TRANSACTION, tx)
-        # use internal endpoints transaction
         body = dict(
             account_id=account_id,
             name=name,
@@ -240,7 +410,10 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce
         )
-        return self.api.post_name_claim(body=body).tx
+        tx_native, min_fee = _tx_native(idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION, idf.VSN, **body)
+        # compute the absolute ttl and the nonce
+        return tx_native
+        # return self.api.post_name_claim(body=body).tx
 
     def tx_name_update(self, account_id, name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce)-> str:
         """
@@ -254,31 +427,6 @@ class TxBuilder:
         :param ttl: the ttl of the transaction
         :param nonce: the nonce of the account for the transaction
         """
-        if self.native_transactions:
-            # TODO: verify supported keys for name updates
-            def pointer_tag(pointer):
-                return {
-                    "account_pubkey": idf.ID_TAG_ACCOUNT,
-                    "oracle_pubkey": idf.ID_TAG_ORACLE,
-                    "contract_pubkey": idf.ID_TAG_CONTRACT,
-                    "channel_pubkey": idf.ID_TAG_CHANNEL
-                }.get(pointer.get("key"))
-            ptrs = [[_binary(p.get("key")), _id(idf.pointer_tag(p), p.get("id"))] for p in pointers]
-            # build tx
-            tx = [
-                _int(idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION),
-                _int(idf.VSN),
-                _id(idf.ID_TAG_ACCOUNT, account_id),
-                _int(nonce),
-                _id(idf.ID_TAG_NAME, name_id),
-                _int(name_ttl),
-                ptrs,
-                _int(client_ttl),
-                _int(fee),
-                _int(ttl)
-            ]
-            return encode_rlp(idf.TRANSACTION, tx)
-        # use internal endpoints transaction
         body = dict(
             account_id=account_id,
             name_id=name_id,
@@ -289,7 +437,10 @@ class TxBuilder:
             fee=fee,
             nonce=nonce
         )
-        return self.api.post_name_update(body=body).tx
+        tx_native, min_fee = _tx_native(idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION, idf.VSN, **body)
+        # compute the absolute ttl and the nonce
+        return tx_native
+        # return self.api.post_name_update(body=body).tx
 
     def tx_name_transfer(self, account_id, name_id, recipient_id, fee, ttl, nonce)-> str:
         """
@@ -301,19 +452,6 @@ class TxBuilder:
         :param ttl: the ttl of the transaction
         :param nonce: the nonce of the account for the transaction
         """
-        if self.native_transactions:
-            tx = [
-                _int(idf.OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION),
-                _int(idf.VSN),
-                _id(idf.ID_TAG_ACCOUNT, account_id),
-                _int(nonce),
-                _id(idf.ID_TAG_NAME, name_id),
-                _id(idf.ID_TAG_ACCOUNT, recipient_id),
-                _int(fee),
-                _int(ttl),
-            ]
-            return encode_rlp(idf.TRANSACTION, tx)
-        # use internal endpoints transaction
         body = dict(
             account_id=account_id,
             name_id=name_id,
@@ -322,7 +460,10 @@ class TxBuilder:
             fee=fee,
             nonce=nonce
         )
-        return self.api.post_name_transfer(body=body).tx
+        tx_native, min_fee = _tx_native(idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION, idf.VSN, **body)
+        # compute the absolute ttl and the nonce
+        return tx_native
+        # return self.api.post_name_transfer(body=body).tx
 
     def tx_name_revoke(self, account_id, name_id, fee, ttl, nonce)-> str:
         """
@@ -334,18 +475,6 @@ class TxBuilder:
         :param nonce: the nonce of the account for the transaction
         """
 
-        if self.native_transactions:
-            tx = [
-                _int(idf.OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION),
-                _int(idf.VSN),
-                _id(idf.ID_TAG_ACCOUNT, account_id),
-                _int(nonce),
-                _id(idf.ID_TAG_NAME, name_id),
-                _int(fee),
-                _int(ttl),
-            ]
-            return encode_rlp(idf.TRANSACTION, tx)
-        # use internal endpoints transaction
         body = dict(
             account_id=account_id,
             name_id=name_id,
@@ -353,7 +482,10 @@ class TxBuilder:
             fee=fee,
             nonce=nonce
         )
-        return self.api.post_name_revoke(body=body).tx
+        tx_native, min_fee = _tx_native(idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION, idf.VSN, **body)
+        # compute the absolute ttl and the nonce
+        return tx_native
+        # return self.api.post_name_revoke(body=body).tx
 
     # CONTRACTS
 
