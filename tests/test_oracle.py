@@ -61,7 +61,7 @@ def _test_oracle_response(query, expected):
     assert r.response == hashing.encode("or", expected)
 
 
-@pytest.mark.skip('Invalid query_id (TODO)')
+@pytest.mark.skip('Debug transaction disabled')
 def test_oracle_lifecycle_debug(chain_fixture):
     # registration
     chain_fixture.NODE_CLI.set_native(False)
