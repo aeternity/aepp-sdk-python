@@ -1,5 +1,4 @@
 import requests
-import sys
 import semver
 from collections import MutableSequence
 from . import __compatibility__
@@ -14,13 +13,13 @@ NAME_MAX_TLL = 36000
 NAME_CLIENT_TTL = 60000
 DEFAULT_NAME_TTL = 500
 # default relative ttl in number of blocks  for executing transaction on the chain
-MAX_TX_TTL = sys.maxsize
+MAX_TX_TTL = 256
 DEFAULT_TX_TTL = 0
 # default fee for posting transaction
 DEFAULT_FEE = 0
 # contracts
-CONTRACT_DEFAULT_GAS = 170000000
-CONTRACT_DEFAULT_GAS_PRICE = 1
+CONTRACT_DEFAULT_GAS = 100000
+CONTRACT_DEFAULT_GAS_PRICE = 1000000
 CONTRACT_DEFAULT_DEPOSIT = 0
 CONTRACT_DEFAULT_VM_VERSION = 1
 CONTRACT_DEFAULT_AMOUNT = 0

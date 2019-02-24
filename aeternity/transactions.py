@@ -153,7 +153,7 @@ def _tx_native(tag: int, vsn: int, **kwargs):
         tx_native = [
             _int(tag),
             _int(vsn),
-            _id(idf.ID_TAG_ACCOUNT, kwargs.get("account_id")),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("owner_id")),
             _int(kwargs.get("nonce")),
             _binary(decode(kwargs.get("code"))),
             _int(kwargs.get("vm_version")) + _int(kwargs.get("abi_version"), 2),
@@ -171,10 +171,10 @@ def _tx_native(tag: int, vsn: int, **kwargs):
         tx_native = [
             _int(tag),
             _int(vsn),
-            _id(idf.ID_TAG_ACCOUNT, kwargs.get("account_id")),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("caller_id")),
             _int(kwargs.get("nonce")),
-            _id(idf.kwargs.get("contract_id")),
-            _int(kwargs.get("vm_version")) + _int(kwargs.get("abi_version"), 2),
+            _id(idf.ID_TAG_CONTRACT, kwargs.get("contract_id")),
+            _int(kwargs.get("abi_version")),
             _int(kwargs.get("fee")),
             _int(kwargs.get("ttl")),
             _int(kwargs.get("amount")),
@@ -320,7 +320,6 @@ def _tx_native(tag: int, vsn: int, **kwargs):
         min_fee = std_fee(tx_native, tx_field_fee_index)
 
     # set the correct fee if fee is empty
-    print(f"MIN FEEE {kwargs.get('fee')} < {min_fee}:")
     if kwargs.get("fee") < min_fee:
         tx_native[tx_field_fee_index] = min_fee
     return encode_rlp(idf.TRANSACTION, tx_native), min_fee
@@ -489,10 +488,10 @@ class TxBuilder:
 
     # CONTRACTS
 
-    def tx_contract_create(self, account_id, code, call_data, amount, deposit, gas, gas_price, vm_version, abi_version, fee, ttl, nonce)-> str:
+    def tx_contract_create(self, owner_id, code, call_data, amount, deposit, gas, gas_price, vm_version, abi_version, fee, ttl, nonce)-> str:
         """
         Create a contract transaction
-        :param account_id: the account creating the contract
+        :param owner_id: the account creating the contract
         :param code: the binary code of the contract
         :param call_data: the call data for the contract
         :param amount: TODO: add definition
@@ -505,26 +504,8 @@ class TxBuilder:
         :param ttl: the ttl of the transaction
         :param nonce: the nonce of the account for the transaction
         """
-        if self.native_transactions:
-            tx = [
-                _int(idf.OBJECT_TAG_CONTRACT_CREATE_TRANSACTION),
-                _int(idf.VSN),
-                _id(idf.ID_TAG_ACCOUNT, account_id),
-                _int(nonce),
-                _binary(decode(code)),
-                _int(vm_version) + _int(abi_version, 2),
-                _int(fee),
-                _int(ttl),
-                _int(deposit),
-                _int(amount),
-                _int(gas),
-                _int(gas_price),
-                _binary(decode(call_data)),
-            ]
-            return encode_rlp(idf.TRANSACTION, tx), contract_id(account_id, nonce)
-        # use internal endpoints transaction
         body = dict(
-            owner_id=account_id,
+            owner_id=owner_id,
             amount=amount,
             deposit=deposit,
             fee=fee,
@@ -537,13 +518,16 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce
         )
-        tx = self.api.post_contract_create(body=body)
-        return tx.tx, tx.contract_id
+        tx_native, min_fee = _tx_native(idf.OBJECT_TAG_CONTRACT_CREATE_TRANSACTION, idf.VSN, **body)
+        # compute the absolute ttl and the nonce
+        return tx_native, contract_id(owner_id, nonce)
+        # tx = self.api.post_contract_create(body=body)
+        # return tx.tx, tx.contract_id
 
-    def tx_contract_call(self, account_id, contract_id, call_data, function, arg, amount, gas, gas_price, vm_version, abi_version, fee, ttl, nonce)-> str:
+    def tx_contract_call(self, caller_id, contract_id, call_data, function, arg, amount, gas, gas_price, abi_version, fee, ttl, nonce)-> str:
         """
         Create a contract call
-        :param account_id: the account creating the contract
+        :param caller_id: the account creating the contract
         :param contract_id: the contract to call
         :param call_data: the call data for the contract
         :param function: the function to execute
@@ -557,37 +541,23 @@ class TxBuilder:
         :param ttl: the ttl of the transaction
         :param nonce: the nonce of the account for the transaction
         """
-        if self.native_transactions:
-            tx = [
-                _int(idf.OBJECT_TAG_CONTRACT_CALL_TRANSACTION),
-                _int(idf.VSN),
-                _id(idf.ID_TAG_ACCOUNT, account_id),
-                _int(nonce),
-                _id(idf.contract_id),
-                _int(vm_version) + _int(abi_version, 2),
-                _int(fee),
-                _int(ttl),
-                _int(amount),
-                _int(gas),
-                _int(gas_price),
-                _binary(call_data),
-            ]
-            return encode_rlp(idf.TRANSACTION, tx)
-        # use internal endpoints transaction
+
         body = dict(
             call_data=call_data,
-            caller_id=account_id,
+            caller_id=caller_id,
             contract_id=contract_id,
             amount=amount,
             fee=fee,
             gas=gas,
             gas_price=gas_price,
-            vm_version=vm_version,
             abi_version=abi_version,
             ttl=ttl,
             nonce=nonce
         )
-        return self.api.post_contract_call(body=body).tx
+        tx_native, min_fee = _tx_native(idf.OBJECT_TAG_CONTRACT_CALL_TRANSACTION, idf.VSN, **body)
+        # compute the absolute ttl and the nonce
+        return tx_native
+        # return self.api.post_contract_call(body=body).tx
 
     # ORACLES
 

@@ -24,7 +24,7 @@ contract Identity =
 def _sophia_contract_tx_create_online(chain_fixture):
     # runt tests
     contract = chain_fixture.NODE_CLI.Contract(aer_identity_contract)
-    contract.tx_create(chain_fixture.ACCOUNT, gas=100000, fee=200000000000000)
+    contract.tx_create(chain_fixture.ACCOUNT, gas=100000)
     assert contract.address is not None
     assert len(contract.address) > 0
     assert contract.address.startswith('ct')
@@ -33,11 +33,11 @@ def _sophia_contract_tx_create_online(chain_fixture):
 def _sophia_contract_tx_call_online(chain_fixture):
 
     contract = chain_fixture.NODE_CLI.Contract(aer_identity_contract)
-    tx = contract.tx_create(chain_fixture.ACCOUNT, gas=100000, fee=200000000000000)
+    tx = contract.tx_create(chain_fixture.ACCOUNT, gas=100000)
     print("contract: ", contract.address)
     print("tx contract: ", tx)
 
-    _, _, _, _, result = contract.tx_call(chain_fixture.ACCOUNT, 'main', '42', gas=500000, fee=200000000000000)
+    _, _, _, _, result = contract.tx_call(chain_fixture.ACCOUNT, 'main', '42', gas=500000)
     assert result is not None
     assert result.return_type == 'ok'
     print("return", result.return_value)
@@ -52,7 +52,7 @@ def _sophia_contract_tx_call_online(chain_fixture):
 def test_sophia_contract_tx_create_native(chain_fixture):
     # save settings and go online
     original = chain_fixture.NODE_CLI.set_native(True)
-    _sophia_contract_tx_create_online()
+    _sophia_contract_tx_create_online(chain_fixture)
     # restore settings
     chain_fixture.NODE_CLI.set_native(original)
 
@@ -60,7 +60,7 @@ def test_sophia_contract_tx_create_native(chain_fixture):
 def test_sophia_contract_tx_call_native(chain_fixture):
     # save settings and go online
     original = chain_fixture.NODE_CLI.set_native(False)
-    _sophia_contract_tx_call_online()
+    _sophia_contract_tx_call_online(chain_fixture)
     # restore settings
     chain_fixture.NODE_CLI.set_native(original)
 
@@ -76,7 +76,7 @@ def test_sophia_contract_tx_create_debug(chain_fixture):
 def test_sophia_contract_tx_call_debug(chain_fixture):
     # save settings and go online
     original = chain_fixture.NODE_CLI.set_native(False)
-    _sophia_contract_tx_call_online()
+    _sophia_contract_tx_call_online(chain_fixture)
     # restore settings
     chain_fixture.NODE_CLI.set_native(original)
 

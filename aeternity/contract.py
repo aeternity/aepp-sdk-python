@@ -64,7 +64,7 @@ class Contract:
             nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
             # build the transaction
             tx = txb.tx_contract_call(account.get_address(), self.address, call_data, function, arg,
-                                      amount, gas, gas_price, vm_version, abi_version,
+                                      amount, gas, gas_price, abi_version,
                                       fee, ttl, nonce)
             # sign the transaction
             tx_signed, sg, tx_hash = self.client.sign_transaction(account, tx)
