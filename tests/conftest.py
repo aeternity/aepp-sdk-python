@@ -43,7 +43,7 @@ def account_path(chain_fixture):
 
 
 @pytest.fixture
-def chain_fixture():
+def chain_fixture(scope="module"):
 
     # create a new account and fill it with some money
     ACCOUNT = Account.generate()

@@ -89,7 +89,7 @@ def encode_rlp(prefix, data):
     :param data: the array that has to be encoded in rlp
     """
     if not isinstance(data, list):
-        raise ValueError("data to be encoded to rlp must be an array")
+        raise ValueError("data to be encoded to rlp must be a list")
     payload = rlp.encode(data)
     return encode(prefix, payload)
 

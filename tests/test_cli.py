@@ -49,7 +49,7 @@ def test_cli_top():
 
 
 def test_cli_generate_account(tempdir):
-    with tempdir() as tmp_path:
+    with tempdir as tmp_path:
         account_key = os.path.join(tmp_path, 'key')
         j = call_aecli('account', 'create', account_key, '--password', 'secret', '--overwrite')
         gen_address = j.get("Address")
@@ -61,7 +61,7 @@ def test_cli_generate_account(tempdir):
 
 
 def test_cli_generate_account_and_account_info(tempdir):
-    with tempdir() as tmp_path:
+    with tempdir as tmp_path:
         account_path = os.path.join(tmp_path, 'key')
         j = call_aecli('account', 'create', account_path, '--password', 'secret')
         gen_address = j.get("Address")
@@ -71,7 +71,7 @@ def test_cli_generate_account_and_account_info(tempdir):
 
 
 def test_cli_read_account_fail(tempdir):
-    with tempdir() as tmp_path:
+    with tempdir as tmp_path:
         account_path = os.path.join(tmp_path, 'key')
         j = call_aecli('account', 'create', account_path, '--password', 'secret')
         try:
@@ -83,7 +83,7 @@ def test_cli_read_account_fail(tempdir):
 
 
 # @pytest.mark.skip('Fails with account not founds only on the master build server')
-def test_cli_spend(account_path, chain_fixture):
+def test_cli_spend(chain_fixture, account_path):
     # generate a new address
     recipient_address = Account.generate().get_address()
     # call the cli

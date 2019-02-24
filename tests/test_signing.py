@@ -46,7 +46,7 @@ def test_signing_keystore_load():
 
 
 def test_signing_keystore_save_load(tempdir):
-    with tempdir() as tmp_path:
+    with tempdir as tmp_path:
         original_account = Account.generate()
         filename = original_account.save_to_keystore(tmp_path, "whatever")
         path = os.path.join(tmp_path, filename)
@@ -66,7 +66,7 @@ def test_signing_keystore_save_load(tempdir):
 
 
 def test_signing_keystore_save_load_wrong_pwd(tempdir):
-    with tempdir() as tmp_path:
+    with tempdir as tmp_path:
         original_account = Account.generate()
         filename = original_account.save_to_keystore(tmp_path, "whatever")
         path = os.path.join(tmp_path, filename)
