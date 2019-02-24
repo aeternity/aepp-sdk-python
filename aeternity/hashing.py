@@ -172,7 +172,7 @@ def contract_id(owner_id, nonce):
     :param owner_id: the account creating the conctract
     :param nonce: the nonce of the contract creation transaction
     """
-    return hash_encode("ct", decode(owner_id) + _int(nonce))
+    return hash_encode(identifiers.CONTRACT_ID, decode(owner_id) + _int(nonce))
 
 
 def oracle_id(account_id):
@@ -180,7 +180,7 @@ def oracle_id(account_id):
     Compute the oracle id of a oracle registration
     :parm account_id: the account registering the oracle
     """
-    return f"ok_{account_id[3:]}"
+    return f"{identifiers.ORACLE_ID}_{account_id[3:]}"
 
 
 def oracle_query_id(sender_id, nonce, oracle_id):
@@ -190,9 +190,7 @@ def oracle_query_id(sender_id, nonce, oracle_id):
     :param nonce: the nonce of the query transaction
     :param oracle_id: the oracle id
     """
-    def _int32(val):
-        return val.to_bytes(32, byteorder='big')
-    return hash_encode("oq", decode(sender_id) + _int32(nonce) + decode(oracle_id))
+    return hash_encode(identifiers.ORACLE_QUERY_ID, decode(sender_id) + _int(nonce, byte_lenght=32) + decode(oracle_id))
 
 
 def randint(upper_bound=2**64):

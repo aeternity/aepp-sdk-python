@@ -377,7 +377,7 @@ def _tx_native(tag: int, vsn: int, op: int=1, **kwargs):
             _int(vsn),
             _id(idf.ID_TAG_ORACLE, kwargs.get("oracle_id")),
             _int(kwargs.get("nonce")),
-            _binary(kwargs.get("query_id")),
+            decode(kwargs.get("query_id")),
             _binary(kwargs.get("response")),
             _int(0 if response_ttl.get("type") == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
             _int(response_ttl.get("value")),
