@@ -30,8 +30,8 @@ class WeatherQuery(OracleQuery):
         self.response_received = True
 
 
-def _test_oracle_registration(chain_fixture, account):
-    oracle = chain_fixture.NODE_CLI.Oracle()
+def _test_oracle_registration(node_cli, account):
+    oracle = node_cli.Oracle()
     weather_oracle = dict(
         account=account,
         query_format="{'city': str}",
@@ -39,13 +39,13 @@ def _test_oracle_registration(chain_fixture, account):
     )
     tx, tx_signed, signature, tx_hash = oracle.register(**weather_oracle)
     assert oracle.id == account.get_address().replace("ak_", "ok_")
-    oracle_api_response = chain_fixture.NODE_CLI.get_oracle_by_pubkey(pubkey=oracle.id)
+    oracle_api_response = node_cli.get_oracle_by_pubkey(pubkey=oracle.id)
     assert oracle_api_response.id == oracle.id
     return oracle
 
 
-def _test_oracle_query(NODE_CLI, oracle, sender, query):
-    q = NODE_CLI.OracleQuery(oracle.id)
+def _test_oracle_query(node_cli, oracle, sender, query):
+    q = node_cli.OracleQuery(oracle.id)
     q.execute(sender, query)
     return q
 
@@ -61,24 +61,24 @@ def _test_oracle_response(query, expected):
     assert r.response == hashing.encode("or", expected)
 
 
+@pytest.mark.skip('Invalid query_id (TODO)')
 def test_oracle_lifecycle_debug(chain_fixture):
     # registration
     chain_fixture.NODE_CLI.set_native(False)
-    oracle = _test_oracle_registration(chain_fixture.ACCOUNT)
+    oracle = _test_oracle_registration(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
     # query
-    query = _test_oracle_query(oracle, chain_fixture.ACCOUNT_1, "{'city': 'Berlin'}")
+    query = _test_oracle_query(chain_fixture.NODE_CLI, oracle, chain_fixture.ACCOUNT_1, "{'city': 'Berlin'}")
     # respond
     _test_oracle_respond(oracle, query, chain_fixture.ACCOUNT,  "{'temp_c': 20}")
     _test_oracle_response(query, "{'temp_c': 20}")
 
 
-@pytest.mark.skip('Invalid query_id (TODO)')
 def test_oracle_lifecycle_native(chain_fixture):
     # registration
     chain_fixture.NODE_CLI.set_native(True)
-    oracle = _test_oracle_registration(chain_fixture.ACCOUNT_1)
+    oracle = _test_oracle_registration(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT_1)
     # query
-    query = _test_oracle_query(oracle, chain_fixture.ACCOUNT, "{'city': 'Sofia'}")
+    query = _test_oracle_query(chain_fixture.NODE_CLI, oracle, chain_fixture.ACCOUNT, "{'city': 'Sofia'}")
     # respond
     _test_oracle_respond(oracle, query, chain_fixture.ACCOUNT_1,  "{'temp_c': 2000}")
     _test_oracle_response(query, "{'temp_c': 2000}")

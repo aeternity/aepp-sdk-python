@@ -1,4 +1,4 @@
-from aeternity.hashing import _int, _binary, _id, encode, decode, encode_rlp, hash_encode, contract_id
+from aeternity.hashing import _int, _binary, _id, encode, decode, encode_rlp, decode_rlp, hash_encode, contract_id
 from aeternity.openapi import OpenAPICli
 from aeternity.config import ORACLE_DEFAULT_TTL_TYPE_DELTA
 from aeternity import identifiers as idf
@@ -45,36 +45,50 @@ class TxSigner:
         return encoded_signed_tx, encoded_signature, tx_hash
 
 
-def _tx_native(tag: int, vsn: int, **kwargs):
-        def std_fee(tx_raw, fee_idx, base_gas_multiplier=1):
-            tx_copy = tx_raw  # create a copy of the input
-            tx_copy[fee_idx] = _int(0)
-            return (BASE_GAS * base_gas_multiplier + len(rlp.encode(tx_copy)) * GAS_PER_BYTE) * GAS_PRICE
+def _tx_native(tag: int, vsn: int, op: int=1, **kwargs):
+    def std_fee(tx_raw, fee_idx, base_gas_multiplier=1):
+        tx_copy = tx_raw  # create a copy of the input
+        tx_copy[fee_idx] = _int(0)
+        return (BASE_GAS * base_gas_multiplier + len(rlp.encode(tx_copy)) * GAS_PER_BYTE) * GAS_PRICE
 
-        def oracle_fee(tx_raw, fee_idx, ttl_idx):
-            tx_copy = tx_raw  # create a copy of the input
-            tx_copy[fee_idx] = _int(0)
-            relative_ttl = tx_copy[ttl_idx]
-            fee = (BASE_GAS + len(rlp.encode(tx_copy)) * GAS_PER_BYTE)
-            fee += math.ceiling(32000 * relative_ttl / math.floor(60 * 24 * 365 / KEY_BLOCK_INTERVAL))
-            return fee * GAS_PRICE
+    def oracle_fee(tx_raw, fee_idx, relative_ttl):
+        tx_copy = tx_raw  # create a copy of the input
+        tx_copy[fee_idx] = _int(0)
+        fee = (BASE_GAS + len(rlp.encode(tx_copy)) * GAS_PER_BYTE)
+        fee += math.ceil(32000 * relative_ttl / math.floor(60 * 24 * 365 / KEY_BLOCK_INTERVAL))
+        return fee * GAS_PRICE
 
-        if tag == idf.OBJECT_TAG_SPEND_TRANSACTION:
-        tx_native = [
-            _int(tag),
-            _int(vsn),
-            _id(idf.ID_TAG_ACCOUNT, kwargs.get("sender_id")),
-            _id(idf.ID_TAG_ACCOUNT, kwargs.get("recipient_id")),
-            _int(kwargs.get("amount")),
-            _int(kwargs.get("fee")),  # index 5
-            _int(kwargs.get("ttl")),
-            _int(kwargs.get("nonce")),
-            _binary(kwargs.get("payload"))
-        ]
-        tx_field_fee_index = 5
-        min_fee = std_fee(tx_native, tx_field_fee_index)
-        print(f"TX_SPEND MIN FEEEEEE {min_fee}")
-        elif tag == idf.OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION:
+    if tag == idf.OBJECT_TAG_SPEND_TRANSACTION:
+        if op == 1:
+            tx_native = [
+                _int(tag),
+                _int(vsn),
+                _id(idf.ID_TAG_ACCOUNT, kwargs.get("sender_id")),
+                _id(idf.ID_TAG_ACCOUNT, kwargs.get("recipient_id")),
+                _int(kwargs.get("amount")),
+                _int(kwargs.get("fee")),  # index 5
+                _int(kwargs.get("ttl")),
+                _int(kwargs.get("nonce")),
+                _binary(kwargs.get("payload"))
+            ]
+            tx_field_fee_index = 5
+            min_fee = std_fee(tx_native, tx_field_fee_index)
+        else:
+            tx_native = decode_rlp(kwargs.get("tx"))
+            body = dict(
+                type="SpendTx",
+                vsn=int.from_bytes(tx_native[1], "big"),
+                sender_id=encode(idf.ACCOUNT_ID, tx_native[2]),
+                recipient_id=encode(idf.ACCOUNT_ID, tx_native[3]),
+                amount=int.from_bytes(tx_native[4], "big"),
+                fee=int.from_bytes(tx_native[5], "big"),
+                ttl=int.from_bytes(tx_native[6], "big"),
+                nonce=int.from_bytes(tx_native[7], "big"),
+                payload=tx_native[8].hex(),
+            )
+            return body
+
+    elif tag == idf.OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION:
         tx_native = [
             _int(tag),
             _int(vsn),
@@ -86,7 +100,7 @@ def _tx_native(tag: int, vsn: int, **kwargs):
         ]
         tx_field_fee_index = 5
         min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif tag == idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION:
+    elif tag == idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION:
         tx_native = [
             _int(tag),
             _int(vsn),
@@ -99,7 +113,7 @@ def _tx_native(tag: int, vsn: int, **kwargs):
         ]
         tx_field_fee_index = 6
         min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif tag == idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION:
+    elif tag == idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION:
         # first asseble the pointers
         def pointer_tag(pointer):
             return {
@@ -124,7 +138,7 @@ def _tx_native(tag: int, vsn: int, **kwargs):
         ]
         tx_field_fee_index = 8
         min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif tag == idf.OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION:
+    elif tag == idf.OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION:
         tx_native = [
             _int(tag),
             _int(vsn),
@@ -137,7 +151,7 @@ def _tx_native(tag: int, vsn: int, **kwargs):
         ]
         tx_field_fee_index = 6
         min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif tag == idf.OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION:
+    elif tag == idf.OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION:
         tx_native = [
             _int(tag),
             _int(vsn),
@@ -184,7 +198,7 @@ def _tx_native(tag: int, vsn: int, **kwargs):
         ]
         tx_field_fee_index = 6
         min_fee = std_fee(tx_native, tx_field_fee_index,  base_gas_multiplier=30)
-        elif tag == idf.OBJECT_TAG_CHANNEL_CREATE_TRANSACTION:
+    elif tag == idf.OBJECT_TAG_CHANNEL_CREATE_TRANSACTION:
         tx_native = [
             _int(tag),
             _int(vsn),
@@ -202,7 +216,7 @@ def _tx_native(tag: int, vsn: int, **kwargs):
         ]
         tx_field_fee_index = 9
         min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif tag == idf.OBJECT_TAG_CHANNEL_DEPOSIT_TRANSACTION:
+    elif tag == idf.OBJECT_TAG_CHANNEL_DEPOSIT_TRANSACTION:
         tx_native = [
             _int(tag),
             _int(vsn),
@@ -217,7 +231,7 @@ def _tx_native(tag: int, vsn: int, **kwargs):
         ]
         tx_field_fee_index = 6
         min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif tag == idf.OBJECT_TAG_CHANNEL_WITHDRAW_TRANSACTION:
+    elif tag == idf.OBJECT_TAG_CHANNEL_WITHDRAW_TRANSACTION:
         tx_native = [
             _int(tag),
             _int(vsn),
@@ -232,7 +246,7 @@ def _tx_native(tag: int, vsn: int, **kwargs):
         ]
         tx_field_fee_index = 6
         min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif tag == idf.OBJECT_TAG_CHANNEL_CLOSE_MUTUAL_TRANSACTION:
+    elif tag == idf.OBJECT_TAG_CHANNEL_CLOSE_MUTUAL_TRANSACTION:
         tx_native = [
             _int(tag),
             _int(vsn),
@@ -246,7 +260,7 @@ def _tx_native(tag: int, vsn: int, **kwargs):
         ]
         tx_field_fee_index = 7
         min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif tag == idf.OBJECT_TAG_CHANNEL_CLOSE_SOLO_TRANSACTION:
+    elif tag == idf.OBJECT_TAG_CHANNEL_CLOSE_SOLO_TRANSACTION:
         tx_native = [
             _int(tag),
             _int(vsn),
@@ -260,7 +274,7 @@ def _tx_native(tag: int, vsn: int, **kwargs):
         ]
         tx_field_fee_index = 7
         min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif tag == idf.OBJECT_TAG_CHANNEL_SLASH_TRANSACTION:
+    elif tag == idf.OBJECT_TAG_CHANNEL_SLASH_TRANSACTION:
         tx_native = [
             _int(tag),
             _int(vsn),
@@ -274,7 +288,7 @@ def _tx_native(tag: int, vsn: int, **kwargs):
         ]
         tx_field_fee_index = 7
         min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif tag == idf.OBJECT_TAG_CHANNEL_SETTLE_TRANSACTION:
+    elif tag == idf.OBJECT_TAG_CHANNEL_SETTLE_TRANSACTION:
         tx_native = [
             _int(tag),
             _int(vsn),
@@ -288,7 +302,7 @@ def _tx_native(tag: int, vsn: int, **kwargs):
         ]
         tx_field_fee_index = 7
         min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif tag == idf.OBJECT_TAG_CHANNEL_SNAPSHOT_TRANSACTION:
+    elif tag == idf.OBJECT_TAG_CHANNEL_SNAPSHOT_TRANSACTION:
         tx_native = [
             _int(tag),
             _int(vsn),
@@ -318,7 +332,74 @@ def _tx_native(tag: int, vsn: int, **kwargs):
         ]
         tx_field_fee_index = 9
         min_fee = std_fee(tx_native, tx_field_fee_index)
-
+    elif tag == idf.OBJECT_TAG_ORACLE_REGISTER_TRANSACTION:
+        oracle_ttl = kwargs.get("oracle_ttl", {})
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("account_id")),
+            _int(kwargs.get("nonce")),
+            _binary(kwargs.get("query_format")),
+            _binary(kwargs.get("response_format")),
+            _int(kwargs.get("query_fee")),
+            _int(0 if oracle_ttl.get("type") == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
+            _int(oracle_ttl.get("value")),
+            _int(kwargs.get("fee")),
+            _int(kwargs.get("ttl")),
+            _int(kwargs.get("vm_version")),
+        ]
+        tx_field_fee_index = 9
+        min_fee = oracle_fee(tx_native, tx_field_fee_index, oracle_ttl.get("value"))
+    elif tag == idf.OBJECT_TAG_ORACLE_QUERY_TRANSACTION:
+        query_ttl = kwargs.get("query_ttl", {})
+        response_ttl = kwargs.get("response_ttl", {})
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_ACCOUNT, kwargs.get("sender_id")),
+            _int(kwargs.get("nonce")),
+            _id(idf.ID_TAG_ORACLE, kwargs.get("oracle_id")),
+            _binary(kwargs.get("query")),
+            _int(kwargs.get("query_fee")),
+            _int(0 if query_ttl.get("type") == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
+            _int(query_ttl.get("value")),
+            _int(0 if response_ttl.get("type") == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
+            _int(response_ttl.get("value")),
+            _int(kwargs.get("fee")),
+            _int(kwargs.get("ttl")),
+        ]
+        tx_field_fee_index = 11
+        min_fee = oracle_fee(tx_native, tx_field_fee_index, query_ttl.get("value"))
+    elif tag == idf.OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION:
+        response_ttl = kwargs.get("response_ttl", {})
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_ORACLE, kwargs.get("oracle_id")),
+            _int(kwargs.get("nonce")),
+            _binary(kwargs.get("query_id")),
+            _binary(kwargs.get("response")),
+            _int(0 if response_ttl.get("type") == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
+            _int(response_ttl.get("value")),
+            _int(kwargs.get("fee")),
+            _int(kwargs.get("ttl")),
+        ]
+        tx_field_fee_index = 8
+        min_fee = oracle_fee(tx_native, tx_field_fee_index, response_ttl.get("value"))
+    elif tag == idf.OBJECT_TAG_ORACLE_EXTEND_TRANSACTION:
+        oracle_ttl = kwargs.get("oracle_ttl", {})
+        tx_native = [
+            _int(tag),
+            _int(vsn),
+            _id(idf.ID_TAG_ORACLE, kwargs.get("oracle_id")),
+            _int(kwargs.get("nonce")),
+            _int(0 if oracle_ttl.get("type", {}) == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
+            _int(oracle_ttl.get("value")),
+            _int(kwargs.get("fee")),
+            _int(kwargs.get("ttl")),
+        ]
+        tx_field_fee_index = 6
+        min_fee = oracle_fee(tx_native, tx_field_fee_index, oracle_ttl.get("value"))
     # set the correct fee if fee is empty
     if kwargs.get("fee") < min_fee:
         tx_native[tx_field_fee_index] = min_fee
@@ -330,7 +411,7 @@ class TxBuilder:
     TxBuilder is used to build and post transactions to the chain.
     """
 
-    def __init__(self, native, api):
+    def __init__(self, native=None, api=None):
         pass
 
     @staticmethod
@@ -568,24 +649,6 @@ class TxBuilder:
         """
         Create a register oracle transaction
         """
-
-        if self.native_transactions:
-            tx = [
-                _int(idf.OBJECT_TAG_ORACLE_REGISTER_TRANSACTION),
-                _int(idf.VSN),
-                _id(idf.ID_TAG_ACCOUNT, account_id),
-                _int(nonce),
-                _binary(query_format),
-                _binary(response_format),
-                _int(query_fee),
-                _int(0 if ttl_type == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
-                _int(ttl_value),
-                _int(fee),
-                _int(ttl),
-                _int(vm_version),
-            ]
-            return encode_rlp(idf.TRANSACTION, tx)
-        # use internal endpoints transaction
         body = dict(
             account_id=account_id,
             query_format=query_format,
@@ -599,8 +662,11 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce
         )
-        tx = self.api.post_oracle_register(body=body)
-        return tx.tx
+        tx_native, min_fee = _tx_native(idf.OBJECT_TAG_ORACLE_REGISTER_TRANSACTION, idf.VSN, **body)
+        # compute the absolute ttl and the nonce
+        return tx_native
+        # tx = self.api.post_oracle_register(body=body)
+        # return tx.tx
 
     def tx_oracle_query(self, oracle_id, sender_id, query,
                         query_fee, query_ttl_type, query_ttl_value,
@@ -610,24 +676,6 @@ class TxBuilder:
         Create a oracle query transaction
         """
 
-        if self.native_transactions:
-            tx = [
-                _int(idf.OBJECT_TAG_ORACLE_QUERY_TRANSACTION),
-                _int(idf.VSN),
-                _id(idf.ID_TAG_ACCOUNT, sender_id),
-                _int(nonce),
-                _id(idf.ID_TAG_ORACLE, oracle_id),
-                _binary(query),
-                _int(query_fee),
-                _int(0 if query_ttl_type == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
-                _int(query_ttl_value),
-                _int(0 if response_ttl_type == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
-                _int(response_ttl_value),
-                _int(fee),
-                _int(ttl),
-            ]
-            return encode_rlp(idf.TRANSACTION, tx)
-        # use internal endpoints transaction
         body = dict(
             sender_id=sender_id,
             oracle_id=oracle_id,
@@ -645,8 +693,11 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce,
         )
-        tx = self.api.post_oracle_query(body=body)
-        return tx.tx
+        tx_native, min_fee = _tx_native(idf.OBJECT_TAG_ORACLE_QUERY_TRANSACTION, idf.VSN, **body)
+        # compute the absolute ttl and the nonce
+        return tx_native
+        # tx = self.api.post_oracle_query(body=body)
+        # return tx.tx
 
     def tx_oracle_respond(self, oracle_id, query_id, response,
                           response_ttl_type, response_ttl_value,
@@ -654,22 +705,6 @@ class TxBuilder:
         """
         Create a oracle response transaction
         """
-
-        if self.native_transactions:
-            tx = [
-                _int(idf.OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION),
-                _int(idf.VSN),
-                _id(idf.ID_TAG_ORACLE, oracle_id),
-                _int(nonce),
-                _binary(query_id),
-                _binary(response),
-                _int(0 if response_ttl_type == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
-                _int(response_ttl_value),
-                _int(fee),
-                _int(ttl),
-            ]
-            return encode_rlp(idf.TRANSACTION, tx)
-        # use internal endpoints transaction
         body = dict(
             response_ttl=dict(
                 type=response_ttl_type,
@@ -682,8 +717,11 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce,
         )
-        tx = self.api.post_oracle_respond(body=body)
-        return tx.tx
+        tx_native, min_fee = _tx_native(idf.OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION, idf.VSN, **body)
+        # compute the absolute ttl and the nonce
+        return tx_native
+        # tx = self.api.post_oracle_respond(body=body)
+        # return tx.tx
 
     def tx_oracle_extend(self, oracle_id,
                          ttl_type, ttl_value,
@@ -691,20 +729,6 @@ class TxBuilder:
         """
         Create a oracle extends transaction
         """
-
-        if self.native_transactions:
-            tx = [
-                _int(idf.OBJECT_TAG_ORACLE_EXTEND_TRANSACTION),
-                _int(idf.VSN),
-                _id(idf.ID_TAG_ORACLE, oracle_id),
-                _int(nonce),
-                _int(0 if ttl_type == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
-                _int(ttl_value),
-                _int(fee),
-                _int(ttl),
-            ]
-            return encode_rlp(idf.TRANSACTION, tx)
-        # use internal endpoints transaction
         body = dict(
             oracle_id=oracle_id,
             oracle_ttl=dict(
@@ -715,5 +739,18 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce,
         )
-        tx = self.api.post_oracle_extend(body=body)
-        return tx.tx
+        tx_native, min_fee = _tx_native(idf.OBJECT_TAG_ORACLE_EXTEND_TRANSACTION, idf.VSN, **body)
+        # compute the absolute ttl and the nonce
+        return tx_native
+        # tx = self.api.post_oracle_extend(body=body)
+        # return tx.tx
+
+
+class TxBuilderDebug:
+    def __init__(self, api: OpenAPICli):
+        """
+        :param native: if the transactions should be built by the sdk (True) or requested to the debug api (False)
+        """
+        if api is None:
+            raise ValueError("A initialized api rest client has to be provided to build a transaction using the node internal API ")
+        self.api = api
