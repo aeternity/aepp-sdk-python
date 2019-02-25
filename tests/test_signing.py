@@ -46,35 +46,33 @@ def test_signing_keystore_load():
 
 
 def test_signing_keystore_save_load(tempdir):
-    with tempdir as tmp_path:
-        original_account = Account.generate()
-        filename = original_account.save_to_keystore(tmp_path, "whatever")
-        path = os.path.join(tmp_path, filename)
-        print(f"\nAccount keystore is {path}")
-        # now load again the same
-        a = Account.from_keystore(path, "whatever")
-        assert a.get_address() == original_account.get_address()
-    with tempdir() as tmp_path:
-        original_account = Account.generate()
-        filename = "account_ks"
-        filename = original_account.save_to_keystore(tmp_path, "whatever", filename=filename)
-        path = os.path.join(tmp_path, filename)
-        print(f"\nAccount keystore is {path}")
-        # now load again the same
-        a = Account.from_keystore(path, "whatever")
-        assert a.get_address() == original_account.get_address()
+    original_account = Account.generate()
+    filename = original_account.save_to_keystore(tempdir, "whatever")
+    path = os.path.join(tempdir, filename)
+    print(f"\nAccount keystore is {path}")
+    # now load again the same
+    a = Account.from_keystore(path, "whatever")
+    assert a.get_address() == original_account.get_address()
+    ######
+    original_account = Account.generate()
+    filename = "account_ks"
+    filename = original_account.save_to_keystore(tempdir, "whatever", filename=filename)
+    path = os.path.join(tempdir, filename)
+    print(f"\nAccount keystore is {path}")
+    # now load again the same
+    a = Account.from_keystore(path, "whatever")
+    assert a.get_address() == original_account.get_address()
 
 
 def test_signing_keystore_save_load_wrong_pwd(tempdir):
-    with tempdir as tmp_path:
-        original_account = Account.generate()
-        filename = original_account.save_to_keystore(tmp_path, "whatever")
-        path = os.path.join(tmp_path, filename)
-        print(f"\nAccount keystore is {path}")
-        # now load again the same
-        with raises(ValueError):
-            a = Account.from_keystore(path, "nononon")
-            assert a.get_address() == original_account.get_address()
+    original_account = Account.generate()
+    filename = original_account.save_to_keystore(tempdir, "whatever")
+    path = os.path.join(tempdir, filename)
+    print(f"\nAccount keystore is {path}")
+    # now load again the same
+    with raises(ValueError):
+        a = Account.from_keystore(path, "nononon")
+        assert a.get_address() == original_account.get_address()
 
 
 def test_signing_is_signature_valid():

@@ -21,10 +21,10 @@ contract Identity =
 #
 
 
-def _sophia_contract_tx_create_online(chain_fixture):
+def _sophia_contract_tx_create_online(node_cli, account):
     # runt tests
-    contract = chain_fixture.NODE_CLI.Contract(aer_identity_contract)
-    contract.tx_create(chain_fixture.ACCOUNT, gas=100000)
+    contract = node_cli.Contract(aer_identity_contract)
+    contract.tx_create(account, gas=100000)
     assert contract.address is not None
     assert len(contract.address) > 0
     assert contract.address.startswith('ct')

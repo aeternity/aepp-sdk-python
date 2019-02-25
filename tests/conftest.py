@@ -34,15 +34,6 @@ def random_domain(length=10):
 
 
 @pytest.fixture
-def account_path(chain_fixture):
-    with tempdir() as tmp_path:
-        # save the private key on file
-        sender_path = os.path.join(tmp_path, 'sender')
-        chain_fixture.ACCOUNT.save_to_keystore_file(sender_path, 'aeternity_bc')
-        yield sender_path
-
-
-@pytest.fixture
 def chain_fixture(scope="module"):
 
     # create a new account and fill it with some money

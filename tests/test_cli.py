@@ -15,6 +15,13 @@ current_folder = os.path.dirname(os.path.abspath(__file__))
 aecli_exe = os.path.join(current_folder, '..', 'aecli')
 
 
+def _account_path(tempdir, account):
+    # save the private key on file
+    sender_path = os.path.join(tempdir, 'sender')
+    account.save_to_keystore_file(sender_path, 'aeternity_bc')
+    return sender_path
+
+
 def call_aecli(*params):
     args = [aecli_exe, '-u', NODE_URL, '-d', NODE_URL_DEBUG] + list(params) + ['--wait', '--json']
     cmd = " ".join(args)
@@ -49,41 +56,39 @@ def test_cli_top():
 
 
 def test_cli_generate_account(tempdir):
-    with tempdir as tmp_path:
-        account_key = os.path.join(tmp_path, 'key')
-        j = call_aecli('account', 'create', account_key, '--password', 'secret', '--overwrite')
-        gen_address = j.get("Address")
-        assert utils.is_valid_hash(gen_address, prefix='ak')
-        # make sure the folder contains the keys
-        files = sorted(os.listdir(tmp_path))
-        assert len(files) == 1
-        assert files[0].startswith("key")
+    account_key = os.path.join(tempdir, 'key')
+    j = call_aecli('account', 'create', account_key, '--password', 'secret', '--overwrite')
+    gen_address = j.get("Address")
+    assert utils.is_valid_hash(gen_address, prefix='ak')
+    # make sure the folder contains the keys
+    files = sorted(os.listdir(tempdir))
+    assert len(files) == 1
+    assert files[0].startswith("key")
 
 
 def test_cli_generate_account_and_account_info(tempdir):
-    with tempdir as tmp_path:
-        account_path = os.path.join(tmp_path, 'key')
-        j = call_aecli('account', 'create', account_path, '--password', 'secret')
-        gen_address = j.get("Address")
-        assert utils.is_valid_hash(gen_address, prefix='ak')
-        j1 = call_aecli('account', 'address', account_path, '--password', 'secret')
-        assert utils.is_valid_hash(j1.get('Address'), prefix='ak')
+    account_path = os.path.join(tempdir, 'key')
+    j = call_aecli('account', 'create', account_path, '--password', 'secret')
+    gen_address = j.get("Address")
+    assert utils.is_valid_hash(gen_address, prefix='ak')
+    j1 = call_aecli('account', 'address', account_path, '--password', 'secret')
+    assert utils.is_valid_hash(j1.get('Address'), prefix='ak')
 
 
 def test_cli_read_account_fail(tempdir):
-    with tempdir as tmp_path:
-        account_path = os.path.join(tmp_path, 'key')
-        j = call_aecli('account', 'create', account_path, '--password', 'secret')
-        try:
-            j1 = call_aecli('account', 'address', account_path, '--password', 'WRONGPASS')
-            assert j.get("Address") != j1.get("Address")
-        except CalledProcessError:
-            # this is fine because invalid passwords exists the command with retcode 1
-            pass
+    account_path = os.path.join(tempdir, 'key')
+    j = call_aecli('account', 'create', account_path, '--password', 'secret')
+    try:
+        j1 = call_aecli('account', 'address', account_path, '--password', 'WRONGPASS')
+        assert j.get("Address") != j1.get("Address")
+    except CalledProcessError:
+        # this is fine because invalid passwords exists the command with retcode 1
+        pass
 
 
 # @pytest.mark.skip('Fails with account not founds only on the master build server')
-def test_cli_spend(chain_fixture, account_path):
+def test_cli_spend(chain_fixture, tempdir):
+    account_path = _account_path(tempdir, chain_fixture.ACCOUNT)
     # generate a new address
     recipient_address = Account.generate().get_address()
     # call the cli
@@ -95,8 +100,9 @@ def test_cli_spend(chain_fixture, account_path):
     assert recipient_account.balance == 90
 
 
-def test_cli_spend_invalid_amount(account_path):
+def test_cli_spend_invalid_amount(chain_fixture, tempdir):
     with pytest.raises(subprocess.CalledProcessError):
+        account_path = _account_path(tempdir, chain_fixture.ACCOUNT)
         receipient_address = Account.generate().get_address()
         call_aecli('account', 'spend', account_path,  receipient_address, '-1', '--password', 'secret')
 
@@ -140,6 +146,7 @@ def test_cli_inspect_transaction_by_hash(chain_fixture):
     assert j.get("tx", {}).get("amount") == amount
 
 
+@pytest.mark.skip("Name claim is outdated")
 def test_cli_name_claim(account_path, chain_fixture, random_domain):
     # create a random domain
     domain = random_domain()
@@ -149,7 +156,8 @@ def test_cli_name_claim(account_path, chain_fixture, random_domain):
     chain_fixture.NODE_CLI.AEName(domain).status == AEName.Status.CLAIMED
 
 
-def test_cli_phases_spend(account_path, chain_fixture):
+def test_cli_phases_spend(chain_fixture, tempdir):
+    account_path = _account_path(tempdir, chain_fixture.ACCOUNT)
     # generate a new address
     recipient_id = Account.generate().get_address()
     # step one, generate transaction
