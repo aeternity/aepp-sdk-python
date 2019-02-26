@@ -9,8 +9,4 @@ logging.root.setLevel(logging.DEBUG)
 
 
 # default values for tests
-TEST_FEE = 20000  # TODO: remove
 TEST_TTL = 50
-
-
-
