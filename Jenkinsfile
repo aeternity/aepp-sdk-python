@@ -12,7 +12,6 @@ pipeline {
 
   environment {
     DOCKER_COMPOSE = "docker-compose -p ${env.BUILD_TAG} -H 127.0.0.1:2376"
-    SCANNER_HOME = tool 'default-sonarqube-scanner'
   }
 
   stages {
@@ -21,12 +20,9 @@ pipeline {
           withCredentials([usernamePassword(credentialsId: 'genesis-wallet',
                                           usernameVariable: 'WALLET_PUB',
                                           passwordVariable: 'WALLET_PRIV')]) {
+          sh "${env.DOCKER_COMPOSE} pull node"
           sh "${env.DOCKER_COMPOSE} run sdk flake8"
           sh "${env.DOCKER_COMPOSE} run sdk make test"
-          // run sonar?
-          // withSonarQubeEnv('default-sonarqube-server') {
-          //   sh "${env.SCANNER_HOME}/bin/sonar-scanner -X"
-          // }
         }
       }
     }
