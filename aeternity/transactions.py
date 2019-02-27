@@ -46,14 +46,22 @@ class TxSigner:
 
 
 def _tx_native(tag: int, vsn: int, op: int=1, **kwargs):
+
     def std_fee(tx_raw, fee_idx, base_gas_multiplier=1):
+        # calculates the standard minimum transaction fee
         tx_copy = tx_raw  # create a copy of the input
-        tx_copy[fee_idx] = _int(0)
+        tx_copy[fee_idx] = _int(0, 8)
         return (BASE_GAS * base_gas_multiplier + len(rlp.encode(tx_copy)) * GAS_PER_BYTE) * GAS_PRICE
+
+    def contract_fee(tx_raw, fee_idx, gas, base_gas_multiplier=1):
+        # estimate the contract creation fee
+        tx_copy = tx_raw  # create a copy of the input
+        tx_copy[fee_idx] = _int(0, 8)
+        return (BASE_GAS * base_gas_multiplier + gas + len(rlp.encode(tx_copy)) * GAS_PER_BYTE) * GAS_PRICE
 
     def oracle_fee(tx_raw, fee_idx, relative_ttl):
         tx_copy = tx_raw  # create a copy of the input
-        tx_copy[fee_idx] = _int(0)
+        tx_copy[fee_idx] = _int(0, 8)
         fee = (BASE_GAS + len(rlp.encode(tx_copy)) * GAS_PER_BYTE)
         fee += math.ceil(32000 * relative_ttl / math.floor(60 * 24 * 365 / KEY_BLOCK_INTERVAL))
         return fee * GAS_PRICE
@@ -181,7 +189,7 @@ def _tx_native(tag: int, vsn: int, op: int=1, **kwargs):
         ]
         tx_field_fee_index = 6
         # TODO: verify the fee caluclation for the contract
-        min_fee = std_fee(tx_native, tx_field_fee_index,  base_gas_multiplier=5)
+        min_fee = contract_fee(tx_native, tx_field_fee_index, kwargs.get("gas"),  base_gas_multiplier=5)
     elif tag == idf.OBJECT_TAG_CONTRACT_CALL_TRANSACTION:
         tx_native = [
             _int(tag),
@@ -198,7 +206,7 @@ def _tx_native(tag: int, vsn: int, op: int=1, **kwargs):
             _binary(decode(kwargs.get("call_data"))),
         ]
         tx_field_fee_index = 6
-        min_fee = std_fee(tx_native, tx_field_fee_index,  base_gas_multiplier=30)
+        min_fee = contract_fee(tx_native, tx_field_fee_index, kwargs.get("gas"),  base_gas_multiplier=30)
     elif tag == idf.OBJECT_TAG_CHANNEL_CREATE_TRANSACTION:
         tx_native = [
             _int(tag),
