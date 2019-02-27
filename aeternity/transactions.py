@@ -171,7 +171,7 @@ def _tx_native(tag: int, vsn: int, op: int=1, **kwargs):
             _int(kwargs.get("nonce")),
             _binary(decode(kwargs.get("code"))),
             _int(kwargs.get("vm_version")) + _int(kwargs.get("abi_version"), 2),
-            _int(kwargs.get("fee")),  
+            _int(kwargs.get("fee")),
             _int(kwargs.get("ttl")),
             _int(kwargs.get("deposit")),
             _int(kwargs.get("amount")),
