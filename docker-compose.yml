@@ -23,6 +23,7 @@ services:
     volumes:
       - ${PWD}/docker/aeternity.yaml:/home/aeterinty/aeternity.yaml
       - ${PWD}/docker/keys/node:/home/aeterinty/node/keys
+      - ${PWD}/docker/accounts.json:/home/aeternity/node/data/aecore/.genesis/accounts_test.json
       - node_db:/home/aeterinty/node/data/mnesia
       - node_keys:/home/aeterinty/node/keys
 
