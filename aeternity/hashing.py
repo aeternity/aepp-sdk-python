@@ -132,16 +132,16 @@ def namehash_encode(prefix, name):
     return encode(prefix, namehash(name))
 
 
-def _int(val: int, byte_lenght: int = None) -> bytes:
+def _int(val: int, byte_length: int = None) -> bytes:
     """
     Encode and int to a big endian byte array
     :param val: the value to encode
     :param byte_length: number of bytes that should be used to encoded the number, by default is the minimum
     """
     if val == 0:
-        size = 1 if byte_lenght is None else byte_lenght
+        size = 1 if byte_length is None else byte_length
         return val.to_bytes(size, byteorder='big')
-    size = (val.bit_length() + 7) // 8 if byte_lenght is None else byte_lenght
+    size = (val.bit_length() + 7) // 8 if byte_length is None else byte_length
     return val.to_bytes(size, byteorder='big')
 
 
@@ -190,7 +190,7 @@ def oracle_query_id(sender_id, nonce, oracle_id):
     :param nonce: the nonce of the query transaction
     :param oracle_id: the oracle id
     """
-    return hash_encode(identifiers.ORACLE_QUERY_ID, decode(sender_id) + _int(nonce, byte_lenght=32) + decode(oracle_id))
+    return hash_encode(identifiers.ORACLE_QUERY_ID, decode(sender_id) + _int(nonce, byte_length=32) + decode(oracle_id))
 
 
 def randint(upper_bound=2**64):
