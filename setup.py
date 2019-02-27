@@ -54,7 +54,7 @@ setup(
     ],
     classifiers=[
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: ISC License (ISCL)',
         'Intended Audience :: Developers',
@@ -62,6 +62,6 @@ setup(
     ],
     zip_safe=False,
     tests_require=[
-        'pytest==3.5.0'
+        'pytest==4.3.0'
     ],
 )
