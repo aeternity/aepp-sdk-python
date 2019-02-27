@@ -1,12 +1,8 @@
 import requests
-import sys
 import semver
 from collections import MutableSequence
 from . import __compatibility__
 
-# vm version specification
-# https://github.com/aeternity/protocol/blob/master/contracts/contract_vms.md#virtual-machines-on-the-%C3%A6ternity-blockchain
-AEVM_NO_VM = 0
 # fee calculation
 GAS_PER_BYTE = 20
 BASE_GAS = 15000
@@ -17,13 +13,13 @@ NAME_MAX_TLL = 36000
 NAME_CLIENT_TTL = 60000
 DEFAULT_NAME_TTL = 500
 # default relative ttl in number of blocks  for executing transaction on the chain
-MAX_TX_TTL = sys.maxsize
+MAX_TX_TTL = 256
 DEFAULT_TX_TTL = 0
 # default fee for posting transaction
-DEFAULT_FEE = 20000
+DEFAULT_FEE = 0
 # contracts
-CONTRACT_DEFAULT_GAS = 170000
-CONTRACT_DEFAULT_GAS_PRICE = 1
+CONTRACT_DEFAULT_GAS = 100000
+CONTRACT_DEFAULT_GAS_PRICE = 1000000000
 CONTRACT_DEFAULT_DEPOSIT = 0
 CONTRACT_DEFAULT_VM_VERSION = 1
 CONTRACT_DEFAULT_AMOUNT = 0
@@ -35,8 +31,6 @@ ORACLE_DEFAULT_TTL_TYPE_BLOCK = 'block'
 ORACLE_DEFAULT_TTL_VALUE = 500
 ORACLE_DEFAULT_QUERY_TTL_VALUE = 10
 ORACLE_DEFAULT_RESPONSE_TTL_VALUE = 10
-ORACLE_DEFAULT_VM_VERSION = AEVM_NO_VM
-
 
 # network id
 DEFAULT_NETWORK_ID = "ae_mainnet"

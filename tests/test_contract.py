@@ -2,7 +2,6 @@ import pytest
 from pytest import raises
 
 from aeternity.contract import ContractError, Contract
-from tests import ACCOUNT, NODE_CLI
 from aeternity import hashing, utils
 
 aer_identity_contract = '''
@@ -22,23 +21,23 @@ contract Identity =
 #
 
 
-def _sophia_contract_tx_create_online():
+def _sophia_contract_tx_create_online(node_cli, account):
     # runt tests
-    contract = NODE_CLI.Contract(aer_identity_contract)
-    contract.tx_create(ACCOUNT, gas=100000, fee=150000)
+    contract = node_cli.Contract(aer_identity_contract)
+    contract.tx_create(account, gas=100000)
     assert contract.address is not None
     assert len(contract.address) > 0
     assert contract.address.startswith('ct')
 
 
-def _sophia_contract_tx_call_online():
+def _sophia_contract_tx_call_online(node_cli, account):
 
-    contract = NODE_CLI.Contract(aer_identity_contract)
-    tx = contract.tx_create(ACCOUNT, gas=100000, fee=150000)
+    contract = node_cli.Contract(aer_identity_contract)
+    tx = contract.tx_create(account, gas=100000)
     print("contract: ", contract.address)
     print("tx contract: ", tx)
 
-    _, _, _, _, result = contract.tx_call(ACCOUNT, 'main', '42', gas=500000, fee=1000000)
+    _, _, _, _, result = contract.tx_call(account, 'main', '42', gas=500000)
     assert result is not None
     assert result.return_type == 'ok'
     print("return", result.return_value)
@@ -50,77 +49,79 @@ def _sophia_contract_tx_call_online():
     assert remote_type == 'word'
 
 
-def test_sophia_contract_tx_create_native():
+def test_sophia_contract_tx_create_native(chain_fixture):
     # save settings and go online
-    original = NODE_CLI.set_native(False)
-    _sophia_contract_tx_create_online()
+    original = chain_fixture.NODE_CLI.set_native(True)
+    _sophia_contract_tx_create_online(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
     # restore settings
-    NODE_CLI.set_native(original)
+    chain_fixture.NODE_CLI.set_native(original)
 
 
-def test_sophia_contract_tx_call_native():
+def test_sophia_contract_tx_call_native(chain_fixture):
     # save settings and go online
-    original = NODE_CLI.set_native(False)
-    _sophia_contract_tx_call_online()
+    original = chain_fixture.NODE_CLI.set_native(True)
+    _sophia_contract_tx_call_online(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
     # restore settings
-    NODE_CLI.set_native(original)
+    chain_fixture.NODE_CLI.set_native(original)
 
 
-def test_sophia_contract_tx_create_debug():
+@pytest.mark.skip('Debug transaction disabled')
+def test_sophia_contract_tx_create_debug(chain_fixture):
     # save settings and go online
-    original = NODE_CLI.set_native(False)
-    _sophia_contract_tx_create_online()
+    original = chain_fixture.NODE_CLI.set_native(False)
+    _sophia_contract_tx_create_online(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
     # restore settings
-    NODE_CLI.set_native(original)
+    chain_fixture.NODE_CLI.set_native(original)
 
 
-def test_sophia_contract_tx_call_debug():
+@pytest.mark.skip('Debug transaction disabled')
+def test_sophia_contract_tx_call_debug(chain_fixture):
     # save settings and go online
-    original = NODE_CLI.set_native(False)
-    _sophia_contract_tx_call_online()
+    original = chain_fixture.NODE_CLI.set_native(False)
+    _sophia_contract_tx_call_online(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
     # restore settings
-    NODE_CLI.set_native(original)
+    chain_fixture.NODE_CLI.set_native(original)
 
 # test contracts
 
 
-def test_sophia_contract_compile():
-    contract = NODE_CLI.Contract(aer_identity_contract)
+def test_sophia_contract_compile(chain_fixture):
+    contract = chain_fixture.NODE_CLI.Contract(aer_identity_contract)
     assert contract is not None
     utils.is_valid_hash(contract.bytecode, prefix='cb')
 
 
 @pytest.mark.skip("static call are disabled since 1.0.0")
-def test_sophia_contract_call():
-    contract = NODE_CLI.Contract(aer_identity_contract)
+def test_sophia_contract_call(chain_fixture):
+    contract = chain_fixture.NODE_CLI.Contract(aer_identity_contract)
     result = contract.call('main', '1')
     assert result is not None
     assert result.out
 
 
-def test_sophia_encode_calldata():
-    contract = NODE_CLI.Contract(aer_identity_contract)
+def test_sophia_encode_calldata(chain_fixture):
+    contract = chain_fixture.NODE_CLI.Contract(aer_identity_contract)
     result = contract.encode_calldata('main', '1')
     assert result is not None
     assert utils.is_valid_hash(result, prefix='cb')
 
 
-def test_sophia_broken_contract_compile():
+def test_sophia_broken_contract_compile(chain_fixture):
     with raises(ContractError):
-        contract = NODE_CLI.Contract(broken_contract)
+        contract = chain_fixture.NODE_CLI.Contract(broken_contract)
         print(contract.source_code)
 
 
-def test_sophia_broken_contract_call():
+def test_sophia_broken_contract_call(chain_fixture):
     with raises(ContractError):
-        contract = NODE_CLI.Contract(broken_contract)
+        contract = chain_fixture.NODE_CLI.Contract(broken_contract)
         result = contract.call('IdentityBroken.main', '1')
         print(result)
 
 
-def test_sophia_broken_encode_calldata():
+def test_sophia_broken_encode_calldata(chain_fixture):
     with raises(ContractError):
-        contract = NODE_CLI.Contract(broken_contract)
+        contract = chain_fixture.NODE_CLI.Contract(broken_contract)
         result = contract.encode_calldata('IdentityBroken.main', '1')
         print(result)
 
@@ -129,8 +130,8 @@ def test_sophia_broken_encode_calldata():
 #
 
 
-def test_evm_contract_compile():
-    contract = NODE_CLI.Contract(aer_identity_contract, abi=Contract.EVM)
+def test_evm_contract_compile(chain_fixture):
+    contract = chain_fixture.NODE_CLI.Contract(aer_identity_contract, abi=Contract.EVM)
     print(contract)
     assert contract.bytecode is not None
     assert utils.is_valid_hash(contract.bytecode, prefix='cb')
@@ -139,36 +140,36 @@ def test_evm_contract_compile():
 
 
 @pytest.mark.skip('This call fails with an out of gas exception')
-def test_evm_contract_call():
-    contract = NODE_CLI.Contract(aer_identity_contract, abi=Contract.EVM)
+def test_evm_contract_call(chain_fixture):
+    contract = chain_fixture.NODE_CLI.Contract(aer_identity_contract, abi=Contract.EVM)
     result = contract.call('main', '1')
     assert result is not None
     assert result.out
 
 
-def test_evm_encode_calldata():
-    contract = NODE_CLI.Contract(aer_identity_contract, abi=Contract.EVM)
+def test_evm_encode_calldata(chain_fixture):
+    contract = chain_fixture.NODE_CLI.Contract(aer_identity_contract, abi=Contract.EVM)
     result = contract.encode_calldata('main', '1')
     assert result is not None
     assert result == hashing.encode('cb', 'main1')
 
 
-def test_evm_broken_contract_compile():
+def test_evm_broken_contract_compile(chain_fixture):
     with raises(ContractError):
-        contract = NODE_CLI.Contract(broken_contract, abi=Contract.EVM)
+        contract = chain_fixture.NODE_CLI.Contract(broken_contract, abi=Contract.EVM)
         print(contract.source_code)
 
 
-def test_evm_broken_contract_call():
+def test_evm_broken_contract_call(chain_fixture):
     with raises(ContractError):
-        contract = NODE_CLI.Contract(broken_contract, abi=Contract.EVM)
+        contract = chain_fixture.NODE_CLI.Contract(broken_contract, abi=Contract.EVM)
         result = contract.call('IdentityBroken.main', '1')
         print(result)
 
 
-def test_evm_broken_encode_calldata():
+def test_evm_broken_encode_calldata(chain_fixture):
     with raises(ContractError):
-        contract = NODE_CLI.Contract(broken_contract, abi=Contract.EVM)
+        contract = chain_fixture.NODE_CLI.Contract(broken_contract, abi=Contract.EVM)
         # with raises(AException):
         result = contract.encode_calldata('IdentityBroken.main', '1')
         print(result)

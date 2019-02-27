@@ -846,7 +846,7 @@ def chain_play(height,  limit, force, wait, json_):
             limit -= 1
             if limit <= 0:
                 break
-            g = cli.get_generation_by_hash(hash=g.key_block.get("prev_key_hash"))
+            g = cli.get_generation_by_hash(hash=g.key_block.prev_key_hash)
     except Exception as e:
         print(e)
         g = None

@@ -115,3 +115,26 @@ OBJECT_TAG_CHANNEL_SNAPSHOT_TRANSACTION = 59
 OBJECT_TAG_POI = 60
 OBJECT_TAG_MICRO_BODY = 101
 OBJECT_TAG_LIGHT_MICRO_BLOCK = 102
+
+
+# VM Identifiers
+# vm version specification
+# https://github.com/aeternity/protocol/blob/master/contracts/contract_vms.md#virtual-machines-on-the-%C3%A6ternity-blockchain
+NO_VM = 0
+VM_SOPHIA = 1
+VM_SOLIDITY = 2
+VM_SOPHIA_IMPROVEMENTS = 3
+# abi
+NO_ABI = 0
+ABI_SOPHIA = 1
+ABI_SOLIDITY = 2
+# Contracts identifiers
+# For Roma
+CONTRACT_ROMA_VM = 0  # this is to maintain retrocompatibility
+CONTRACT_ROMA_ABI = 1
+# For Minerva: 196609  # that is int.from_bytes(int(3).to_bytes(2, "big") + int(1).to_bytes(2, "big"), "big")
+CONTRACT_MINERVA_VM = 3
+CONTRACT_MINERVA_ABI = 1
+
+# Oracles
+ORACLE_DEFAULT_VM_VERSION = NO_VM
