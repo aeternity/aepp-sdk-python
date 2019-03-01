@@ -1,9 +1,11 @@
-from aeternity.hashing import _int, _binary, _id, encode, decode, encode_rlp, decode_rlp, hash_encode, contract_id
+from aeternity.hashing import _int, _int_decode, _binary, _id, encode, decode, encode_rlp, decode_rlp, hash_encode, contract_id
 from aeternity.openapi import OpenAPICli
 from aeternity.config import ORACLE_DEFAULT_TTL_TYPE_DELTA
 from aeternity import identifiers as idf
+from aeternity.exceptions import UnsupportedTransactionType
 import rlp
 import math
+import namedtupled
 
 BASE_GAS = 15000
 GAS_PER_BYTE = 20
@@ -34,18 +36,43 @@ class TxSigner:
         :return: encoded_signed_tx, encoded_signature, tx_hash
         """
         # decode the transaction if not in native mode
-        transaction = decode(tx.tx) if hasattr(tx, idf.TRANSACTION) else decode(tx)
+        transaction = _tx_native(op=UNPACK_TX, tx=tx.tx if hasattr(tx, "tx") else tx)
+        # get the transaction as byte list
+        tx_raw = decode(transaction.tx)
         # sign the transaction
-        signature = self.account.sign(_binary(self.network_id) + transaction)
+        signature = self.account.sign(_binary(self.network_id) + tx_raw)
         # encode the transaction
-        encoded_signed_tx, encoded_signature = self.encode_signed_transaction(transaction, signature)
+        encoded_signed_tx, encoded_signature = self.encode_signed_transaction(tx_raw, signature)
         # compute the hash
         tx_hash = TxBuilder.compute_tx_hash(encoded_signed_tx)
-        # return the
-        return encoded_signed_tx, encoded_signature, tx_hash
+        # return the object
+        tx = dict(
+          data=transaction.data,
+          tx=encoded_signed_tx,
+          hash=tx_hash,
+          signature=encoded_signature,
+          network_id=self.network_id,
+        )
+        return namedtupled.map(tx, _nt_name="TxObject")
 
 
-def _tx_native(tag: int, vsn: int, op: int=1, **kwargs):
+class TxObject:
+    def __init__(self, tx_data, tx, hash):
+        self.data = tx_data
+        self.tx = tx
+        self.hash = hash
+        self._as_bytes = decode(self.tx)
+
+    def set_properties(self, **kwargs):
+        for k, v in kwargs.items():
+            self.__setattr__(k, v)
+
+
+PACK_TX = 1
+UNPACK_TX = 0
+
+
+def _tx_native(op, **kwargs):
 
     def std_fee(tx_raw, fee_idx, base_gas_multiplier=1):
         # calculates the standard minimum transaction fee
@@ -66,8 +93,29 @@ def _tx_native(tag: int, vsn: int, op: int=1, **kwargs):
         fee += math.ceil(32000 * relative_ttl / math.floor(60 * 24 * 365 / KEY_BLOCK_INTERVAL))
         return fee * GAS_PRICE
 
+    def build_tx_object(tx_data, tx_raw, fee_idx, min_fee):
+        if tx_data.get("fee") < min_fee:
+            tx_native[fee_idx] = _int(min_fee)
+            tx_data["fee"] = min_fee
+        tx_encoded = encode_rlp(idf.TRANSACTION, tx_native)
+        tx = dict(
+            data=tx_data,
+            tx=tx_encoded,
+            hash=TxBuilder.compute_tx_hash(tx_encoded),
+        )
+        return namedtupled.map(tx, _nt_name="TxObject")
+
+    if op == PACK_TX:
+        tag = kwargs.get("tag", 0)
+        vsn = kwargs.get("vsn", 1)
+    else:
+        tx_native = decode_rlp(kwargs.get("tx", []))
+        tag = int.from_bytes(tx_native[0], "big")
+
     if tag == idf.OBJECT_TAG_SPEND_TRANSACTION:
-        if op == 1:
+        tx = {}
+        tx_field_fee_index = 5
+        if op == PACK_TX:  # pack transaction
             tx_native = [
                 _int(tag),
                 _int(vsn),
@@ -79,23 +127,23 @@ def _tx_native(tag: int, vsn: int, op: int=1, **kwargs):
                 _int(kwargs.get("nonce")),
                 _binary(kwargs.get("payload"))
             ]
-            tx_field_fee_index = 5
             min_fee = std_fee(tx_native, tx_field_fee_index)
-        else:
+            tx = build_tx_object(kwargs, tx_native, tx_field_fee_index, min_fee)
+        else:  # unpack transaction
             tx_native = decode_rlp(kwargs.get("tx"))
-            body = dict(
-                type="SpendTx",
-                vsn=int.from_bytes(tx_native[1], "big"),
+            tx_data = dict(
+                tag=tag,
+                vsn=_int_decode(tx_native[1]),
                 sender_id=encode(idf.ACCOUNT_ID, tx_native[2]),
                 recipient_id=encode(idf.ACCOUNT_ID, tx_native[3]),
-                amount=int.from_bytes(tx_native[4], "big"),
-                fee=int.from_bytes(tx_native[5], "big"),
-                ttl=int.from_bytes(tx_native[6], "big"),
-                nonce=int.from_bytes(tx_native[7], "big"),
+                amount=_int_decode(tx_native[4]),
+                fee=_int_decode(tx_native[5]),
+                ttl=_int_decode(tx_native[6]),
+                nonce=_int_decode(tx_native[7]),
                 payload=tx_native[8].hex(),
             )
-            return body
-
+            tx = build_tx_object(tx_data, tx_native, tx_field_fee_index, tx_data.get("fee"))
+        return tx
     elif tag == idf.OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION:
         tx_native = [
             _int(tag),
@@ -409,10 +457,8 @@ def _tx_native(tag: int, vsn: int, op: int=1, **kwargs):
         ]
         tx_field_fee_index = 6
         min_fee = oracle_fee(tx_native, tx_field_fee_index, oracle_ttl.get("value"))
-    # set the correct fee if fee is empty
-    if kwargs.get("fee") < min_fee:
-        tx_native[tx_field_fee_index] = min_fee
-    return encode_rlp(idf.TRANSACTION, tx_native), min_fee
+    else:
+        raise UnsupportedTransactionType(f"Unusupported transaction tag {tag}")
 
 
 class TxBuilder:
@@ -420,7 +466,7 @@ class TxBuilder:
     TxBuilder is used to build and post transactions to the chain.
     """
 
-    def __init__(self, native=None, api=None):
+    def __init__(self):
         pass
 
     @staticmethod
@@ -445,6 +491,8 @@ class TxBuilder:
         """
         # use internal endpoints transaction
         body = {
+            "tag": idf.OBJECT_TAG_SPEND_TRANSACTION,
+            "vsn": idf.VSN,
             "recipient_id": recipient_id,
             "amount": amount,
             "fee":  fee,
@@ -453,9 +501,7 @@ class TxBuilder:
             "ttl": ttl,
             "nonce": nonce,
         }
-        tx_native, min_fee = _tx_native(idf.OBJECT_TAG_SPEND_TRANSACTION, idf.VSN, **body)
-        # compute the absolute ttl and the nonce
-        return tx_native
+        return _tx_native(op=PACK_TX, **body)
         # return self.api.post_spend(body=body).tx
 
     # NAMING #

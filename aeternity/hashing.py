@@ -145,6 +145,15 @@ def _int(val: int, byte_length: int = None) -> bytes:
     return val.to_bytes(size, byteorder='big')
 
 
+def _int_decode(data: bytes) -> int:
+    """
+    Interpret a byte array to an integer (big endian)
+    """
+    if len(data) == 0:
+        return 0
+    return int.from_bytes(data, "big")
+
+
 def _binary(val):
     """
     Encode a value to bytes.
