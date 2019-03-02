@@ -5,7 +5,7 @@ import random
 from aeternity.transactions import TxSigner
 from aeternity.signing import Account
 from aeternity.openapi import OpenAPIClientException
-from aeternity import config, aens, openapi, transactions, contract, oracles, defaults
+from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers
 
 from aeternity.exceptions import TransactionWaitTimeoutExpired, TransactionHashMismatch
 
@@ -104,10 +104,10 @@ class NodeClient:
 
     def _get_nonce_ttl(self, account_address: str, relative_ttl: int):
         """
-        Helper method to compute both ttl and nonce for an account
+        Helper method to compute both absoulute ttl and  nonce for an account
         :return: (nonce, ttl)
         """
-        ttl = self.compute_absolute_ttl(relative_ttl)
+        ttl = self.compute_absolute_ttl(relative_ttl) if relative_ttl > 0 else 0
         nonce = self.get_next_nonce(account_address)
         return nonce, ttl
 
@@ -129,10 +129,10 @@ class NodeClient:
         block = None
         if hash is None:
             return block
-        if hash.startswith("kh_"):
+        if hash.startswith(f"{identifiers.KEY_BLOCK_HASH}_"):
             # key block
             block = self.api.get_key_block_by_hash(hash=hash)
-        elif hash.startswith("mh_"):
+        elif hash.startswith(f"{identifiers.MICRO_BLOCK_HASH}_"):
             # micro block
             block = self.api.get_micro_block_header_by_hash(hash=hash)
         return block
@@ -159,21 +159,28 @@ class NodeClient:
         tx = s.sign_encode_transaction(tx)
         return tx
 
-    def spend(self, account: Account, recipient_id, amount, payload="", fee=config.DEFAULT_FEE, tx_ttl=config.DEFAULT_TX_TTL):
+    def spend(self, account: Account,
+              recipient_id: str,
+              amount: int,
+              payload: str="",
+              fee: int=defaults.FEE,
+              tx_ttl: int=defaults.TX_TTL):
         """
         Create and execute a spend transaction
         """
-        # retrieve the nonce and ttl
-        nonce, tx_ttl = self._get_nonce_ttl(account.get_address(), tx_ttl)
+        # retrieve the nonce
+        account.nonce = self.get_next_nonce(account.get_address()) if account.nonce == 0 else account.nonce + 1
+        # retrieve ttl
+        tx_ttl = self.compute_absolute_ttl(tx_ttl)
         # build the transaction
-        tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, amount, payload, fee, tx_ttl, nonce)
+        tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, amount, payload, fee, tx_ttl, account.nonce)
         # execute the transaction
         tx = self.sign_transaction(account, tx.tx)
         # post the transaction
         self.broadcast_transaction(tx.tx, tx_hash=tx.hash)
         return tx
 
-    def wait_for_transaction(self, tx_hash, max_retries=config.MAX_RETRIES, polling_interval=config.POLLING_INTERVAL):
+    def wait_for_transaction(self, tx_hash, max_retries=defaults.MAX_RETRIES, polling_interval=defaults.POLLING_INTERVAL):
         """
         Wait for a transaction to be mined for an account
         The method will wait for a specific transaction to be included in the chain,
