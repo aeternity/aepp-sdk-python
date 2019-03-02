@@ -19,7 +19,7 @@ SIGNATURE = "sg"  # base58	Signature
 TRANSACTION_HASH = "th"  # base58	Transaction hash
 
 # Base 64
-CONTRACT_BYTE_ARRAY = "cb"  # base64	Contract byte array
+BYTECODE = "cb"  # base64	Contract byte array
 ORACLE_RESPONSE = "or"  # base64	Oracle response
 ORACLE_QUERY = "ov"  # base64	Oracle query
 PROOF_OF_INCLUSION = "pi"  # base64	Proof of Inclusion
@@ -47,7 +47,7 @@ IDENTIFIERS_B58 = set([
 
 # Indentifiers with base64
 IDENTIFIERS_B64 = set([
-    CONTRACT_BYTE_ARRAY,
+    BYTECODE,
     ORACLE_RESPONSE,
     ORACLE_QUERY,
     PROOF_OF_INCLUSION,

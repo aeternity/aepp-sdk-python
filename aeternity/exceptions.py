@@ -55,10 +55,15 @@ class TransactionWaitTimeoutExpired(AException):
         self.reason = reason
 
 
-class UnsupportedEpochVersion(AException):
+class UnsupportedNodeVersion(AException):
     """Raised when the node target runs an unsupported version"""
 
 
-class ConfigException(AException):
+class ConfigException(Exception):
     """Raised in case of configuration errors"""
+    pass
+
+
+class UnsupportedTransactionType(Exception):
+    """Raised for unknow transaction tag"""
     pass

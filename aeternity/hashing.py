@@ -170,6 +170,17 @@ def _binary(val):
     raise ValueError("Byte serialization not supported")
 
 
+def _binary_decode(data, data_type=None):
+    """
+    Decodes a bite arrya to the selected datatype or to hex if no data_type is provided
+    """
+    if data_type == int:
+        return _int_decode(data)
+    if data_type == str:
+        return data.decode("utf-8")
+    return data.hex()
+
+
 def _id(id_tag, hash_id):
     """Utility function to create and _id type"""
     return _int(id_tag) + decode(hash_id)
