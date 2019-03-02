@@ -112,7 +112,6 @@ class Contract:
             tx_signed = self.client.sign_transaction(account, tx)
             # post the transaction to the chain
             self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
-            
             return tx
         except OpenAPIClientException as e:
             raise ContractError(e)
