@@ -5,76 +5,79 @@ import random
 from aeternity.transactions import TxSigner
 from aeternity.signing import Account
 from aeternity.openapi import OpenAPIClientException
-from aeternity.exceptions import NameNotAvailable, InsufficientFundsException
-from aeternity.exceptions import TransactionHashMismatch, TransactionWaitTimeoutExpired, TransactionNotFoundException
-from aeternity import config, aens, openapi, transactions, contract, oracles
+from aeternity import config, aens, openapi, transactions, contract, oracles, defaults
 
+from aeternity.exceptions import TransactionWaitTimeoutExpired, TransactionHashMismatch
 
 logger = logging.getLogger(__name__)
 logging.root.setLevel(logging.DEBUG)
 
 
-class NodeRequestError(Exception):
-    pass
+class Config:
+    def __init__(self,
+                 external_url='http://localhost:3013',
+                 internal_url='http://localhost:3113',
+                 websocket_url='http://localhost:3014',
+                 force_compatibility=False,
+                 **kwargs):
+        """
+        :param external_url: the node external url
+        :param internal_url: the node internal url
+        :param websocket_url: the node websocket url
+        :param blocking_mode: block the client waiting for transactions (default False)
+        :param native: build transaction natively (do not use the node internal endpoints) (default True)
+        :param force_compatibility: ingnore node version compatibility check (default False)
+        :param debug: enable debug logging (default False)
+        """
+        # endpoint urls
+        self.api_url = external_url
+        self.api_url_internal = internal_url
+        self.websocket_url = websocket_url
+        self.force_compatibility = force_compatibility
+        self.blocking_mode = kwargs.get("blocking_mode", False)
+        # defaults # TODO: pass defaults to the tx builder
+        self.tx_gas_per_byte = kwargs.get("tx_gas_per_byte", defaults.GAS_PER_BYTE)
+        self.tx_base_gas = kwargs.get("tx_base_gas", defaults.BASE_GAS)
+        self.tx_gas_price = kwargs.get("tx_gas_price", defaults.GAS_PRICE)
+        # get the version
+        self.network_id = kwargs.get("network_id", None)
+        # contracts defautls
+        self.contract_gas = kwargs.get("contract_gas", defaults.CONTRACT_GAS)
+        self.contract_gas_price = kwargs.get("contract_gas_price", defaults.CONTRACT_GAS_PRICE)
+        # oracles default
+        self.orcale_ttl_type = kwargs.get("oracle_ttl_type", defaults.ORACLE_TTL_TYPE)
+        # debug
+        self.debug = kwargs.get("debug", False)
+
+    def __str__(self):
+        return f'ws:{self.websocket_url} ext:{self.api_url} int:{self.api_url_internal}'
 
 
 class NodeClient:
 
-    exception_by_reason = {
-        'Name not found': NameNotAvailable,
-        'No funds in account': InsufficientFundsException,
-        'Transaction not found': TransactionNotFoundException,
-    }
-
-    def __init__(self, configs=None, blocking_mode=False, native=True, offline=False, force_compatibility=False, debug=False):
+    def __init__(self, config=Config()):
         """
         Initialize a new EpochClient
-        :param configs: the list of configurations to use or empty for default (default None)
-        :param blocking_mode: block the client waiting for transactions (default False)
-        :param native: build transaction natively (do not use the node internal endpoints) (default True)
-        :param offline: do not attempt to connect to a node (sign only) (default False)
-        :param force_compatibility: ingnore node version compatibility check (default False)
-        :param debug: enable debug logging (default False)
+        :param config: the configuration to use or empty for default (default None)
         """
-        if configs is None:
-            configs = config.Config.get_defaults()
-        if isinstance(configs, config.Config):
-            configs = [configs]
-        self._configs = configs
-        self._active_config_idx = 0
-        self._top_block = None
+        self.config = config
         # determine how the transaction are going to be created
         # if running offline they are forced to be native
-        self.native = native if not offline else True
         # shall the client work in blocking mode
-        self.blocking_mode = blocking_mode if not offline else False
-        self.offline = offline
         # instantiate the api client
-        self.api = None if offline else openapi.OpenAPICli(configs[0].api_url,
-                                                           configs[0].api_url_internal,
-                                                           debug=debug,
-                                                           force_compatibility=force_compatibility)
+        self.api = openapi.OpenAPICli(url=config.api_url,
+                                      url_internal=config.api_url_internal,
+                                      debug=config.debug,
+                                      force_compatibility=config.force_compatibility)
         # instantiate the transaction builder object
-        self.tx_builder = transactions.TxBuilder(native=self.native, api=self.api)
-
-    def set_native(self, build_native_transactions: bool):
-        prev_status = self.native
-        self.native = build_native_transactions
-        self.tx_builder.native_transactions = build_native_transactions
-        return prev_status
+        self.tx_builder = transactions.TxBuilder()
+        # network id
+        if self.config.network_id is None:
+            self.config.network_id = self.api.get_status().network_id
 
     # enable composition
     def __getattr__(self, attr):
         return getattr(self.api, attr)
-
-    def _get_active_config(self):
-        return self._configs[self._active_config_idx]
-
-    def _use_next_config(self):
-        self._active_config_idx = (self._active_config_idx) + 1 % len(self._configs)
-
-    def update_top_block(self):
-        self._top_block = self.get_top_block()
 
     def compute_absolute_ttl(self, relative_ttl):
         """
@@ -143,19 +146,18 @@ class NodeClient:
         if tx_hash is not None and reply.tx_hash != tx_hash:
             raise TransactionHashMismatch(f"Transaction hash doesn't match, expected {tx_hash} got {reply.tx_hash}")
 
-        if self.blocking_mode:
+        if self.config.blocking_mode:
             self.wait_for_transaction(reply.tx_hash)
         return reply.tx_hash
 
     def sign_transaction(self, account: Account, tx: str) -> (str, str, str):
         """
         Sign a transaction
-        :return (tx_signed, signature, tx_hash):  the signed transaction, the signature and the hash of the transaction
+        :return: the transaction for the transaction
         """
-        s = TxSigner(account, self._get_active_config().network_id)
-        tx_signed, signature, tx_hash = s.sign_encode_transaction(tx)
-
-        return tx_signed, signature, tx_hash
+        s = TxSigner(account, self.config.network_id)
+        tx = s.sign_encode_transaction(tx)
+        return tx
 
     def spend(self, account: Account, recipient_id, amount, payload="", fee=config.DEFAULT_FEE, tx_ttl=config.DEFAULT_TX_TTL):
         """
@@ -166,10 +168,10 @@ class NodeClient:
         # build the transaction
         tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, amount, payload, fee, tx_ttl, nonce)
         # execute the transaction
-        tx_signed, signature, tx_hash = self.sign_transaction(account, tx)
+        tx = self.sign_transaction(account, tx.tx)
         # post the transaction
-        self.broadcast_transaction(tx_signed, tx_hash=tx_hash)
-        return tx, tx_signed, signature, tx_hash
+        self.broadcast_transaction(tx.tx, tx_hash=tx.hash)
+        return tx
 
     def wait_for_transaction(self, tx_hash, max_retries=config.MAX_RETRIES, polling_interval=config.POLLING_INTERVAL):
         """

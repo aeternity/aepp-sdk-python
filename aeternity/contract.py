@@ -1,5 +1,5 @@
 from aeternity.openapi import OpenAPIClientException, UnsupportedNodeVersion
-from aeternity import utils, config, hashing
+from aeternity import utils, defaults, hashing
 from aeternity.identifiers import CONTRACT_ID, CONTRACT_ROMA_VM, CONTRACT_ROMA_ABI, CONTRACT_MINERVA_VM, CONTRACT_MINERVA_ABI
 import semver
 
@@ -39,13 +39,13 @@ class Contract:
             self.bytecode = self.compile(self.source_code)
 
     def tx_call(self, account, function, arg,
-                amount=config.CONTRACT_DEFAULT_AMOUNT,
-                gas=config.CONTRACT_DEFAULT_GAS,
-                gas_price=config.CONTRACT_DEFAULT_GAS_PRICE,
-                fee=config.DEFAULT_FEE,
+                amount=defaults.CONTRACT_AMOUNT,
+                gas=defaults.CONTRACT_GAS,
+                gas_price=defaults.CONTRACT_GAS_PRICE,
+                fee=defaults.FEE,
                 vm_version=None,
                 abi_version=None,
-                tx_ttl=config.DEFAULT_TX_TTL):
+                tx_ttl=defaults.TX_TTL):
         """Call a sophia contract"""
 
         if not utils.is_valid_hash(self.address, prefix=CONTRACT_ID):
@@ -78,15 +78,15 @@ class Contract:
 
     def tx_create(self,
                   account,
-                  amount=config.CONTRACT_DEFAULT_AMOUNT,
-                  deposit=config.CONTRACT_DEFAULT_DEPOSIT,
+                  amount=defaults.CONTRACT_AMOUNT,
+                  deposit=defaults.CONTRACT_DEPOSIT,
                   init_state="()",
-                  gas=config.CONTRACT_DEFAULT_GAS,
-                  gas_price=config.CONTRACT_DEFAULT_GAS_PRICE,
-                  fee=config.DEFAULT_FEE,
+                  gas=defaults.CONTRACT_GAS,
+                  gas_price=defaults.CONTRACT_GAS_PRICE,
+                  fee=defaults.FEE,
                   vm_version=None,
                   abi_version=None,
-                  tx_ttl=config.DEFAULT_TX_TTL):
+                  tx_ttl=defaults.TX_TTL):
         """
         Create a contract and deploy it to the chain
         :return: address
@@ -107,7 +107,7 @@ class Contract:
                                         amount, deposit, gas, gas_price, vm_version, abi_version,
                                         fee, ttl, nonce)
             # store the contract address in the instance variabl
-            self.address = hashing.contract_id(account.get_address(), nonce     )
+            self.address = hashing.contract_id(account.get_address(), nonce)
             # sign the transaction
             tx_signed = self.client.sign_transaction(account, tx)
             # post the transaction to the chain

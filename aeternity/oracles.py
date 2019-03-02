@@ -1,6 +1,6 @@
 import logging
-from aeternity import config, hashing
-from aeternity.identifiers import ORACLE_ID, ORACLE_DEFAULT_VM_VERSION
+from aeternity import hashing, defaults
+from aeternity.identifiers import ORACLE_ID
 
 logger = logging.getLogger(__name__)
 
@@ -16,13 +16,13 @@ class OracleQuery():
         self.client = client
 
     def execute(self, sender, query,
-                query_fee=config.ORACLE_DEFAULT_QUERY_FEE,
-                query_ttl_type=config.ORACLE_DEFAULT_TTL_TYPE_DELTA,
-                query_ttl_value=config.ORACLE_DEFAULT_QUERY_TTL_VALUE,
-                response_ttl_type=config.ORACLE_DEFAULT_TTL_TYPE_DELTA,
-                response_ttl_value=config.ORACLE_DEFAULT_RESPONSE_TTL_VALUE,
-                fee=config.DEFAULT_FEE,
-                tx_ttl=config.DEFAULT_TX_TTL):
+                query_fee=defaults.ORACLE_QUERY_FEE,
+                query_ttl_type=defaults.ORACLE_TTL_TYPE,
+                query_ttl_value=defaults.ORACLE_QUERY_TTL_VALUE,
+                response_ttl_type=defaults.ORACLE_TTL_TYPE,
+                response_ttl_value=defaults.ORACLE_RESPONSE_TTL_VALUE,
+                fee=defaults.FEE,
+                tx_ttl=defaults.TX_TTL):
         """
         Execute a query to the oracle
         """
@@ -63,12 +63,12 @@ class Oracle():
         self.query_id = None
 
     def register(self, account, query_format, response_format,
-                 query_fee=config.ORACLE_DEFAULT_QUERY_FEE,
-                 ttl_type=config.ORACLE_DEFAULT_TTL_TYPE_DELTA,
-                 ttl_value=config.ORACLE_DEFAULT_TTL_VALUE,
-                 vm_version=ORACLE_DEFAULT_VM_VERSION,
-                 fee=config.DEFAULT_FEE,
-                 tx_ttl=config.DEFAULT_TX_TTL):
+                 query_fee=defaults.ORACLE_QUERY_FEE,
+                 ttl_type=defaults.ORACLE_TTL_TYPE,
+                 ttl_value=defaults.ORACLE_TTL_VALUE,
+                 vm_version=defaults.ORACLE_VM_VERSION,
+                 fee=defaults.FEE,
+                 tx_ttl=defaults.TX_TTL):
         """
         Execute a registration of an oracle
         """
@@ -95,10 +95,10 @@ class Oracle():
         return tx_signed
 
     def respond(self, account, query_id, response,
-                response_ttl_type=config.ORACLE_DEFAULT_TTL_TYPE_DELTA,
-                response_ttl_value=config.ORACLE_DEFAULT_RESPONSE_TTL_VALUE,
-                fee=config.DEFAULT_FEE,
-                tx_ttl=config.DEFAULT_TX_TTL):
+                response_ttl_type=defaults.ORACLE_TTL_TYPE,
+                response_ttl_value=defaults.ORACLE_RESPONSE_TTL_VALUE,
+                fee=defaults.FEE,
+                tx_ttl=defaults.TX_TTL):
         """
         Post a response to an oracle query
         """
@@ -121,10 +121,10 @@ class Oracle():
         return tx_signed
 
     def extend(self, account, query_id, response,
-               ttl_type=config.ORACLE_DEFAULT_TTL_TYPE_DELTA,
-               ttl_value=config.ORACLE_DEFAULT_TTL_VALUE,
-               fee=config.DEFAULT_FEE,
-               tx_ttl=config.DEFAULT_TX_TTL):
+               ttl_type=defaults.ORACLE_TTL_TYPE,
+               ttl_value=defaults.ORACLE_TTL_VALUE,
+               fee=defaults.FEE,
+               tx_ttl=defaults.TX_TTL):
         """
         Extend the ttl of an oracle
         """
