@@ -135,6 +135,10 @@ CONTRACT_ROMA_ABI = 1
 # For Minerva: 196609  # that is int.from_bytes(int(3).to_bytes(2, "big") + int(1).to_bytes(2, "big"), "big")
 CONTRACT_MINERVA_VM = 3
 CONTRACT_MINERVA_ABI = 1
-
 # Oracles
-ORACLE_DEFAULT_VM_VERSION = NO_VM
+ORACLE_TTL_TYPE_DELTA = 'delta'
+ORACLE_TTL_TYPE_BLOCK = 'block'
+
+# Network IDS
+NETWORK_ID_MAINNET = "ae_mainnet"
+NETWORK_ID_TESTNET = "ae_uat"

@@ -2,15 +2,11 @@ from aeternity.hashing import _int, _int_decode, _binary, _binary_decode, _id, e
 from aeternity.openapi import OpenAPICli
 from aeternity.config import ORACLE_DEFAULT_TTL_TYPE_DELTA, ORACLE_DEFAULT_TTL_TYPE_BLOCK
 from aeternity import identifiers as idf
+from aeternity import defaults
 from aeternity.exceptions import UnsupportedTransactionType
 import rlp
 import math
 import namedtupled
-
-BASE_GAS = 15000
-GAS_PER_BYTE = 20
-GAS_PRICE = 1000000000
-KEY_BLOCK_INTERVAL = 3
 
 PACK_TX = 1
 UNPACK_TX = 0
@@ -65,20 +61,20 @@ def _tx_native(op, **kwargs):
         # calculates the standard minimum transaction fee
         tx_copy = tx_raw  # create a copy of the input
         tx_copy[fee_idx] = _int(0, 8)
-        return (BASE_GAS * base_gas_multiplier + len(rlp.encode(tx_copy)) * GAS_PER_BYTE) * GAS_PRICE
+        return (defaults.BASE_GAS * base_gas_multiplier + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) * defaults.GAS_PRICE
 
     def contract_fee(tx_raw, fee_idx, gas, base_gas_multiplier=1):
         # estimate the contract creation fee
         tx_copy = tx_raw  # create a copy of the input
         tx_copy[fee_idx] = _int(0, 8)
-        return (BASE_GAS * base_gas_multiplier + gas + len(rlp.encode(tx_copy)) * GAS_PER_BYTE) * GAS_PRICE
+        return (defaults.BASE_GAS * base_gas_multiplier + gas + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) * defaults.GAS_PRICE
 
     def oracle_fee(tx_raw, fee_idx, relative_ttl):
         tx_copy = tx_raw  # create a copy of the input
         tx_copy[fee_idx] = _int(0, 8)
-        fee = (BASE_GAS + len(rlp.encode(tx_copy)) * GAS_PER_BYTE)
-        fee += math.ceil(32000 * relative_ttl / math.floor(60 * 24 * 365 / KEY_BLOCK_INTERVAL))
-        return fee * GAS_PRICE
+        fee = (defaults.BASE_GAS + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE)
+        fee += math.ceil(32000 * relative_ttl / math.floor(60 * 24 * 365 / defaults.KEY_BLOCK_INTERVAL))
+        return fee * defaults.GAS_PRICE
 
     def build_tx_object(tx_data, tx_raw, fee_idx, min_fee):
         if tx_data.get("fee") < min_fee:
@@ -92,7 +88,6 @@ def _tx_native(op, **kwargs):
         )
         return namedtupled.map(tx, _nt_name="TxObject")
 
-    tx = {}
     # prepare tag and version
     if op == PACK_TX:
         tag = kwargs.get("tag", 0)
