@@ -13,10 +13,9 @@ def _test_node_spend(node_cli, sender_account):
 
 @pytest.mark.skip('Debug transaction disabled')
 def test_node_spend_debug(chain_fixture):
-    chain_fixture.NODE_CLI.set_native(False)
+    # TODO: create a debug impl and test
     _test_node_spend(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
 
 
 def test_node_spend_native(chain_fixture):
-    chain_fixture.NODE_CLI.set_native(True)
     _test_node_spend(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)

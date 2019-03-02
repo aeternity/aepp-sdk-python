@@ -136,10 +136,10 @@ def test_cli_inspect_transaction_by_hash(chain_fixture):
     # fill the account from genesys
     na = Account.generate()
     amount = random.randint(50, 150)
-    _, _, _, tx_hash = chain_fixture.NODE_CLI.spend(chain_fixture.ACCOUNT, na.get_address(), amount)
+    tx = chain_fixture.NODE_CLI.spend(chain_fixture.ACCOUNT, na.get_address(), amount)
     # now inspect the transaction
-    j = call_aecli('inspect', tx_hash)
-    assert j.get("hash") == tx_hash
+    j = call_aecli('inspect', tx.hash)
+    assert j.get("hash") == tx.hash
     assert j.get("block_height") > 0
     assert j.get("tx", {}).get("recipient_id") == na.get_address()
     assert j.get("tx", {}).get("sender_id") == chain_fixture.ACCOUNT.get_address()
@@ -164,11 +164,11 @@ def test_cli_phases_spend(chain_fixture, tempdir):
     nonce = chain_fixture.NODE_CLI.get_account_by_pubkey(pubkey=chain_fixture.ACCOUNT.get_address()).nonce + 1
     j = call_aecli('tx', 'spend', chain_fixture.ACCOUNT.get_address(), recipient_id, '100', '--nonce', f'{nonce}')
     # assert chain_fixture.ACCOUNT.get_address == j.get("Sender account")
-    assert recipient_id == j.get("Recipient account")
+    assert recipient_id == j.get("data", {}).get("recipient_id")
     # step 2, sign the transaction
-    tx_unsigned = j.get("Encoded")
+    tx_unsigned = j.get("tx")
     s = call_aecli('account', 'sign', account_path, tx_unsigned, '--password', 'aeternity_bc', '--network-id', NETWORK_ID)
-    tx_signed = s.get("Signed")
+    tx_signed = s.get("tx")
     # recipient_account = chain_fixture.NODE_CLI.get_account_by_pubkey(pubkey=recipient_id)
     # assert recipient_account.balance == 0
     # step 3 broadcast

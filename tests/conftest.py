@@ -6,8 +6,7 @@ import tempfile
 import random
 import string
 from aeternity.signing import Account
-from aeternity.config import Config
-from aeternity.node import NodeClient
+from aeternity.node import NodeClient, Config
 
 
 PUBLIC_KEY = os.environ.get('WALLET_PUB')
@@ -42,14 +41,14 @@ def chain_fixture(scope="module"):
     # set the key folder as environment variables
     genesis = Account.from_public_private_key_strings(PUBLIC_KEY, PRIVATE_KEY)
 
-    Config.set_defaults(Config(
+    # Instantiate the node client for the tests
+    NODE_CLI = NodeClient(Config(
         external_url=NODE_URL,
         internal_url=NODE_URL_DEBUG,
-        network_id=NETWORK_ID
+        network_id=NETWORK_ID,
+        blocking_mode=True,
+        debug=True
     ))
-
-    # Instantiate the node client for the tests
-    NODE_CLI = NodeClient(blocking_mode=True, debug=True, native=False)
 
     NODE_CLI.spend(genesis, ACCOUNT.get_address(), 2000000000000000000)
     a = NODE_CLI.get_account_by_pubkey(pubkey=ACCOUNT.get_address())

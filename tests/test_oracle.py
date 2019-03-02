@@ -37,7 +37,7 @@ def _test_oracle_registration(node_cli, account):
         query_format="{'city': str}",
         response_format="{'temp_c': int}",
     )
-    tx, tx_signed, signature, tx_hash = oracle.register(**weather_oracle)
+    oracle.register(**weather_oracle)
     assert oracle.id == account.get_address().replace("ak_", "ok_")
     oracle_api_response = node_cli.get_oracle_by_pubkey(pubkey=oracle.id)
     assert oracle_api_response.id == oracle.id
@@ -51,7 +51,7 @@ def _test_oracle_query(node_cli, oracle, sender, query):
 
 
 def _test_oracle_respond(oracle, query, account, response):
-    tx, tx_signed, signature, tx_hash = oracle.respond(account, query.id, response)
+    oracle.respond(account, query.id, response)
 
 
 def _test_oracle_response(query, expected):
@@ -64,7 +64,7 @@ def _test_oracle_response(query, expected):
 @pytest.mark.skip('Debug transaction disabled')
 def test_oracle_lifecycle_debug(chain_fixture):
     # registration
-    chain_fixture.NODE_CLI.set_native(False)
+    # TODO: create a debug impl and test
     oracle = _test_oracle_registration(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
     # query
     query = _test_oracle_query(chain_fixture.NODE_CLI, oracle, chain_fixture.ACCOUNT_1, "{'city': 'Berlin'}")
@@ -75,7 +75,6 @@ def test_oracle_lifecycle_debug(chain_fixture):
 
 def test_oracle_lifecycle_native(chain_fixture):
     # registration
-    chain_fixture.NODE_CLI.set_native(True)
     oracle = _test_oracle_registration(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT_1)
     # query
     query = _test_oracle_query(chain_fixture.NODE_CLI, oracle, chain_fixture.ACCOUNT, "{'city': 'Sofia'}")
