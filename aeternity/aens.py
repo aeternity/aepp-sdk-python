@@ -119,26 +119,26 @@ class AEName:
         :param target: the public key to associate the name to (pointers)
         """
         # set the blocking to true
-        blocking_orig = self.client.blocking_mode
-        self.client.blocking_mode = True
+        blocking_orig = self.client.config.blocking_mode
+        self.client.config.blocking_mode = True
         #
         if not self.is_available():
             raise NameNotAvailable(self.domain)
         hashes = {}
         # run preclaim
-        t, s, g, h = self.preclaim(account, fee=preclaim_fee, tx_ttl=tx_ttl)
-        hashes['preclaim_tx'] = [t, s, g, h]
+        tx = self.preclaim(account, fee=preclaim_fee, tx_ttl=tx_ttl)
+        hashes['preclaim_tx'] = tx
         # run claim
-        t, s, g, h = self.claim(account, fee=claim_fee, tx_ttl=tx_ttl)
-        hashes['claim_tx'] = [t, s, g, h]
+        tx = self.claim(account, fee=claim_fee, tx_ttl=tx_ttl)
+        hashes['claim_tx'] = tx
         # target is the same of account is not specified
         if target is None:
             target = account.get_address()
         # run update
-        t, s, g, h = self.update(account, target, fee=update_fee, name_ttl=name_ttl, client_ttl=client_ttl)
-        hashes['update_tx'] = [t, s, g, h]
+        tx = self.update(account, target, fee=update_fee, name_ttl=name_ttl, client_ttl=client_ttl)
+        hashes['update_tx'] = tx
         # restore blocking value
-        self.client.blocking_mode = blocking_orig
+        self.client.config.blocking_mode = blocking_orig
         return hashes
 
     def preclaim(self, account, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
@@ -156,13 +156,13 @@ class AEName:
         # create spend_tx
         tx = txb.tx_name_preclaim(account.get_address(), commitment_id, fee, ttl, nonce)
         # sign the transaction
-        tx_signed, sg, tx_hash = self.client.sign_transaction(account, tx)
+        tx_signed = self.client.sign_transaction(account, tx.tx)
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed, tx_hash)
+        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
         # update local status
         self.status = AEName.Status.PRECLAIMED
-        self.preclaim_tx_hash = tx_hash
-        return tx, tx_signed, sg, tx_hash
+        self.preclaim_tx_hash = tx_signed.hash
+        return tx_signed
 
     def claim(self, account, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
         if self.preclaimed_block_height is None:
@@ -176,12 +176,12 @@ class AEName:
         # create transaction
         tx = txb.tx_name_claim(account.get_address(), name, self.preclaim_salt, fee, ttl, nonce)
         # sign the transaction
-        tx_signed, sg, tx_hash = self.client.sign_transaction(account, tx)
+        tx_signed = self.client.sign_transaction(account, tx.tx)
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed, tx_hash)
+        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
         # update status
         self.status = AEName.Status.CLAIMED
-        return tx, tx_signed, sg, tx_hash
+        return tx_signed
 
     def update(self, account, target,
                name_ttl=DEFAULT_NAME_TTL,
@@ -206,10 +206,10 @@ class AEName:
         # create transaction
         tx = txb.tx_name_update(account.get_address(), name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce)
         # sign the transaction
-        tx_signed, sg, tx_hash = self.client.sign_transaction(account, tx)
+        tx_signed = self.client.sign_transaction(account, tx.tx)
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed, tx_hash)
-        return tx, tx_signed, sg, tx_hash
+        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
+        return tx_signed
 
     def transfer_ownership(self, account, recipient_pubkey, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
         """
@@ -225,12 +225,12 @@ class AEName:
         # create transaction
         tx = txb.tx_name_transfer(account.get_address(), name_id, recipient_pubkey, fee, ttl, nonce)
         # sign the transaction
-        tx_signed, sg, tx_hash = self.client.sign_transaction(account, tx)
+        tx_signed = self.client.sign_transaction(account, tx.tx)
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed, tx_hash)
+        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
         # update the status
         self.status = NameStatus.TRANSFERRED
-        return tx, tx_signed, sg, tx_hash
+        return tx_signed
 
     def revoke(self, account, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
         """
@@ -246,9 +246,9 @@ class AEName:
         # create transaction
         tx = txb.tx_name_revoke(account.get_address(), name_id, fee, ttl, nonce)
         # sign the transaction
-        tx_signed, sg, tx_hash = self.client.sign_transaction(account, tx)
+        tx_signed = self.client.sign_transaction(account, tx.tx)
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed, tx_hash)
+        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
         # update the status
         self.status = NameStatus.REVOKED
-        return tx_hash
+        return tx_signed
