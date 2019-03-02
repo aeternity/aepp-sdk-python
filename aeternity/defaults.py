@@ -13,6 +13,7 @@ NAME_TTL = 500
 # default relative ttl in number of blocks  for executing transaction on the chain
 MAX_TX_TTL = 256
 TX_TTL = 0
+FEE = 0
 # contracts
 CONTRACT_GAS = 1000000000
 CONTRACT_GAS_PRICE = 1000000000
@@ -21,6 +22,7 @@ CONTRACT_AMOUNT = 0
 # oracles
 # https://github.com/aeternity/protocol/blob/master/oracles/oracles.md#technical-aspects-of-oracle-operations
 ORACLE_VM_VERSION = identifiers.NO_VM
+ORACLE_TTL_TYPE = identifiers.ORACLE_TTL_TYPE_DELTA
 ORACLE_QUERY_FEE = 0
 ORACLE_TTL_VALUE = 500
 ORACLE_QUERY_TTL_VALUE = 10

@@ -8,10 +8,10 @@ import namedtupled
 
 from aeternity import __version__
 
-from aeternity.node import NodeClient
+from aeternity.node import NodeClient, Config
 from aeternity.transactions import TxSigner
 # from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
-from . import utils, signing, aens, config
+from . import utils, signing, aens, defaults, config
 from aeternity.contract import Contract
 
 from datetime import datetime, timezone
@@ -20,8 +20,9 @@ from datetime import datetime, timezone
 logging.basicConfig(format='%(message)s', level=logging.INFO)
 
 
-CTX_NODE_URL = 'EPOCH_URL'
-CTX_NODE_URL_DEBUG = 'EPOCH_URL_DEBUG'
+CTX_NODE_URL = 'NODE_URL'
+CTX_NODE_URL_DEBUG = 'NODE_URL_DEBUG'
+CTX_NODE_WS = 'NODE_URL_WS'
 CTX_KEY_PATH = 'KEY_PATH'
 CTX_QUIET = 'QUIET'
 CTX_AET_DOMAIN = 'AET_NAME'
@@ -30,30 +31,27 @@ CTX_BLOCKING_MODE = 'CTX_BLOCKING_MODE'
 CTX_OUTPUT_JSON = 'CTX_OUTPUT_JSON'
 
 
-def _node_cli(offline=False, native=True, network_id=None):
+def _node_cli(network_id=None):
     try:
         ctx = click.get_current_context()
         # set the default configuration
-        url = ctx.obj.get(CTX_NODE_URL)
-        url_i = ctx.obj.get(CTX_NODE_URL_DEBUG)
-        url_i = url_i if url_i is not None else url
-        config.Config.set_defaults(config.Config(
-            external_url=url,
-            internal_url=url_i,
+        cfg = Config(
+            external_url=ctx.obj.get(CTX_NODE_URL),
+            internal_url=ctx.obj.get(CTX_NODE_URL_DEBUG),
+            websocket_url=ctx.obj.get(CTX_NODE_WS),
             force_compatibility=ctx.obj.get(CTX_FORCE_COMPATIBILITY),
+            blocking_mode=ctx.obj.get(CTX_BLOCKING_MODE),
             network_id=network_id
-        ))
+        )
+        # load the aeternity node client
+        return NodeClient(cfg)
+
     except config.ConfigException as e:
         print("Configuration error: ", e)
         exit(1)
     except config.UnsupportedNodeVersion as e:
         print(e)
         exit(1)
-
-    # load the aeternity node client
-    return NodeClient(blocking_mode=ctx.obj.get(CTX_BLOCKING_MODE),
-                      offline=offline,
-                      native=native)
 
 
 def _account(keystore_name, password=None):
@@ -126,7 +124,7 @@ def _po(label, value, offset=0, label_prefix=None):
         _pl(label, offset, value=value)
 
 
-def _print_object(data, title=None):
+def _print_object(data, title):
     ctx = click.get_current_context()
 
     if ctx.obj.get(CTX_OUTPUT_JSON, False):
@@ -157,15 +155,15 @@ _account_options = [
 ]
 
 _sign_options = [
-    click.option('--network-id', default=config.DEFAULT_NETWORK_ID, help="The network id to use when signing a transaction", show_default=True)
+    click.option('--network-id', default=defaults.NETWORK_ID, help="The network id to use when signing a transaction", show_default=True)
 ]
 
 _transaction_options = [
     click.option('--debug-tx', 'debug_tx', is_flag=True, default=False,
                  help='Use debug transaction generation endpoints from the node instead of the native python implementation'),
-    click.option('--ttl', 'ttl', type=int, default=config.DEFAULT_TX_TTL,
+    click.option('--ttl', 'ttl', type=int, default=defaults.TX_TTL,
                  help=f'Set the transaction ttl (relative number, ex 100)', show_default=True),
-    click.option('--fee', 'fee', type=int, default=config.DEFAULT_FEE,
+    click.option('--fee', 'fee', type=int, default=defaults.FEE,
                  help=f'Set the transaction fee', show_default=True),
     click.option('--nonce', 'nonce', type=int, default=0, help='Set the transaction nonce, if not set it will automatically generated'),
 ]
@@ -326,7 +324,7 @@ def account_balance(keystore_name, password, force, wait, json_):
 @click.argument('keystore_name', required=True)
 @click.argument('recipient_id', required=True)
 @click.argument('amount', required=True, type=int)
-@click.option('--ttl', default=config.DEFAULT_TX_TTL, help="Validity of the spend transaction in number of blocks (default forever)")
+@click.option('--ttl', default=defaults.TX_TTL, help="Validity of the spend transaction in number of blocks (default forever)")
 @sign_options
 def account_spend(keystore_name, recipient_id, amount, ttl, password, network_id, force, wait, json_):
     try:
@@ -334,16 +332,12 @@ def account_spend(keystore_name, recipient_id, amount, ttl, password, network_id
         account, keystore_path = _account(keystore_name, password=password)
         if not utils.is_valid_hash(recipient_id, prefix="ak"):
             raise ValueError("Invalid recipient address")
-        tx, tx_signed, signature, tx_hash = _node_cli(network_id=network_id).spend(account, recipient_id, amount, tx_ttl=ttl)
-        _print_object({
-            "Sender account": account.get_address(),
-            "Recipient account": recipient_id,
-            'Unsigned': tx,
-            'Signed': tx_signed,
-            'Hash': tx_hash
-        }, title='spend transaction')
-    except Exception as e:
-        print(e)
+        tx = _node_cli(network_id=network_id).spend(account, recipient_id, amount, tx_ttl=ttl)
+        _print_object(tx, title='spend transaction')
+    # except Exception as e:
+    #     print(e)
+    finally:
+        pass
 
 
 @account.command('sign', help="Sign a transaction")
@@ -357,16 +351,12 @@ def account_sign(keystore_name, password, network_id, unsigned_transaction, forc
         if not utils.is_valid_hash(unsigned_transaction, prefix="tx"):
             raise ValueError("Invalid transaction format")
         # force offline mode for the node_client
-        tx_signed, signature, tx_hash = TxSigner(account, network_id).sign_encode_transaction(unsigned_transaction)
-        _print_object({
-            'Signing account address': account.get_address(),
-            'Signature': signature,
-            'Unsigned': unsigned_transaction,
-            'Signed': tx_signed,
-            'Hash': tx_hash
-        }, title='signed transaction')
-    except Exception as e:
-        print(e)
+        tx = TxSigner(account, network_id).sign_encode_transaction(unsigned_transaction)
+        _print_object(tx, title='signed transaction')
+    # except Exception as e:
+    #     print(e)
+    finally:
+        pass
 
 #   _________  ____  ____
 #  |  _   _  ||_  _||_  _|
@@ -412,21 +402,12 @@ def tx_broadcast(signed_transaction, force, wait, json_):
 def tx_spend(sender_id, recipient_id, amount, debug_tx, ttl, fee, nonce, payload, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
-        cli = _node_cli(native=not debug_tx)
-        if debug_tx:
-            nonce, ttl = cli._get_nonce_ttl(sender_id, ttl)
+        cli = _node_cli()
         tx = cli.tx_builder.tx_spend(sender_id, recipient_id, amount, payload, fee, ttl, nonce)
         # print the results
-        _print_object({
-            "Sender account": sender_id,
-            "Recipient account": recipient_id,
-            "Amount": amount,
-            "TTL": ttl,
-            "fee": fee,
-            "Nonce": nonce,
-            "Payload": payload,
-            "Encoded": tx,
-        }, title='spend tx')
+        _print_object(tx, title='spend tx')
+    # finally:
+    #     pass
     except Exception as e:
         print(e)
 
@@ -448,9 +429,9 @@ def name():
 @name.command('claim', help="Claim a domain name")
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
-@click.option("--name-ttl", default=config.DEFAULT_NAME_TTL, help=f'Lifetime of the name in blocks', show_default=True)
-@click.option("--ttl", default=config.DEFAULT_TX_TTL, help=f'Lifetime of the claim request in blocks', show_default=True)
-@click.option("--fee", default=config.DEFAULT_FEE, help=f'Transaction fee', show_default=True)
+@click.option("--name-ttl", default=defaults.NAME_TTL, help=f'Lifetime of the name in blocks', show_default=True)
+@click.option("--ttl", default=defaults.TX_TTL, help=f'Lifetime of the claim request in blocks', show_default=True)
+@click.option("--fee", default=defaults.FEE, help=f'Transaction fee', show_default=True)
 @sign_options
 def name_register(keystore_name, domain, name_ttl, ttl, fee, password, network_id, force, wait, json_):
     try:
@@ -488,8 +469,8 @@ def name_register(keystore_name, domain, name_ttl, ttl, fee, password, network_i
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
 @click.argument('address', required=True)
-@click.option("--name-ttl", default=config.DEFAULT_NAME_TTL, help=f'Lifetime of the claim in blocks', show_default=True)
-@click.option("--ttl", default=config.DEFAULT_TX_TTL, help=f'Lifetime of the claim request in blocks', show_default=True)
+@click.option("--name-ttl", default=defaults.NAME_TTL, help=f'Lifetime of the claim in blocks', show_default=True)
+@click.option("--ttl", default=defaults.TX_TTL, help=f'Lifetime of the claim request in blocks', show_default=True)
 @sign_options
 def name_update(keystore_name, domain, address, name_ttl, ttl, password, network_id, force, wait, json_):
     """
@@ -503,13 +484,8 @@ def name_update(keystore_name, domain, address, name_ttl, ttl, password, network
         if name.status != name.Status.CLAIMED:
             print(f"Domain is {name.status} and cannot be transferred")
             exit(0)
-        _, signature, tx_hash = name.update(account, target=address, name_ttl=name_ttl, tx_ttl=ttl)
-        _print_object({
-            "Transaction hash": tx_hash,
-            "Signature": signature,
-            "Sender account": account.get_address(),
-            "Target ID": address
-        }, title=f"Name {domain} status update")
+        tx = name.update(account, target=address, name_ttl=name_ttl, tx_ttl=ttl)
+        _print_object(tx, title=f"Name {domain} status update")
     except Exception as e:
         print(e)
 
@@ -527,12 +503,8 @@ def name_revoke(keystore_name, domain, password, network_id, force, wait, json_)
         if name.status == name.Status.AVAILABLE:
             print("Domain is available, nothing to revoke")
             exit(0)
-        _, signature, tx_hash = name.revoke(account)
-        _print_object({
-            "Transaction hash": tx_hash,
-            "Signature": signature,
-            "Sender account": account.get_address(),
-        }, title=f"Name {domain} status revoke")
+        tx = name.revoke(account)
+        _print_object(tx, title=f"Name {domain} status revoke")
     except Exception as e:
         print(e)
 
@@ -554,13 +526,8 @@ def name_transfer(keystore_name, domain, address, password, network_id, force, w
         if name.status != name.Status.CLAIMED:
             print(f"Domain is {name.status} and cannot be transferred")
             exit(0)
-        _, signature, tx_hash = name.transfer_ownership(account, address)
-        _print_object({
-            "Transaction hash": tx_hash,
-            "Signature": signature,
-            "Sender account": account.get_address(),
-            "Target ID": address
-        }, title=f"Name {domain} status transfer to {address}")
+        tx = name.transfer_ownership(account, address)
+        _print_object(tx, title=f"Name {domain} status transfer to {address}")
     except Exception as e:
         print(e)
 
@@ -612,7 +579,7 @@ def contract_compile(contract_file):
             code = fp.read()
             c = _node_cli().Contract(Contract.SOPHIA)
             result = c.compile(code)
-            _print_object({"bytecode", result})
+            _print_object({"bytecode", result}, title="contract")
     except Exception as e:
         print(e)
 
@@ -620,7 +587,7 @@ def contract_compile(contract_file):
 @contract.command('deploy', help='Deploy a contract on the chain')
 @click.argument('keystore_name', required=True)
 @click.argument("contract_file", required=True)
-@click.option("--gas", default=config.CONTRACT_DEFAULT_GAS, help='Amount of gas to deploy the contract', show_default=True)
+@click.option("--gas", default=defaults.CONTRACT_GAS, help='Amount of gas to deploy the contract', show_default=True)
 @sign_options
 def contract_deploy(keystore_name, contract_file, gas, password, network_id, force, wait, json_):
     """
@@ -656,7 +623,7 @@ def contract_deploy(keystore_name, contract_file, gas, password, network_id, for
                 "Contract id": contract.id,
                 "Transaction hash": tx.tx_hash,
                 "Deploy descriptor": deploy_descriptor,
-            })
+            }, title="contract")
     except Exception as e:
         print(e)
 
@@ -667,7 +634,7 @@ def contract_deploy(keystore_name, contract_file, gas, password, network_id, for
 @click.argument("function", required=True)
 @click.argument("params", required=True)
 @click.argument("return_type", required=True)
-@click.option("--gas", default=config.CONTRACT_DEFAULT_GAS, help='Amount of gas to deploy the contract', show_default=True)
+@click.option("--gas", default=defaults.CONTRACT_GAS, help='Amount of gas to deploy the contract', show_default=True)
 @sign_options
 def contract_call(keystore_name, deploy_descriptor, function, params, return_type, gas,  password, network_id, force, wait, json_):
     try:
@@ -681,13 +648,8 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
             account, _ = _account(keystore_name, password=password)
 
             contract = _node_cli(network_id=network_id).Contract(source, bytecode=bytecode, address=address)
-            result = contract.tx_call(account, function, params, gas=gas)
-            _print_object({
-                'Contract id': contract.id,
-                'Gas price': result.gas_price,
-                'Gas used': result.gas_used,
-                'Return value (encoded)': result.return_value,
-            })
+            tx, result = contract.tx_call(account, function, params, gas=gas)
+            _print_object(tx, "contract call")
             if result.return_type == 'ok':
                 value, remote_type = contract.decode_data(result.return_value, return_type)
                 _print_object({
@@ -804,8 +766,9 @@ def chain_top(force, wait, json_):
     Print the information of the top block of the chain.
     """
     set_global_options(force, wait, json_)
-    data = _node_cli().get_top_block()
-    _print_object(data)
+    cli = _node_cli()
+    data = cli.get_top_block()
+    _print_object(data, f"top for node at {cli.config.api_url} ")
 
 
 @chain.command('status')
@@ -815,8 +778,9 @@ def chain_status(force, wait, json_):
     Print the node node status.
     """
     set_global_options(force, wait, json_)
-    data = _node_cli().get_status()
-    _print_object(data)
+    cli = _node_cli()
+    data = cli.get_status()
+    _print_object(data, f"status for node at {cli.config.api_url} ")
 
 
 @chain.command('play')
