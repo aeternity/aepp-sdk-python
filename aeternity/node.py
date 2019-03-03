@@ -1,12 +1,13 @@
 import logging
 import time
 import random
+from datetime import datetime, timedelta
+import namedtupled
 
 from aeternity.transactions import TxSigner
 from aeternity.signing import Account
 from aeternity.openapi import OpenAPIClientException
 from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers
-
 from aeternity.exceptions import TransactionWaitTimeoutExpired, TransactionHashMismatch
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,8 @@ class Config:
         self.contract_gas_price = kwargs.get("contract_gas_price", defaults.CONTRACT_GAS_PRICE)
         # oracles default
         self.orcale_ttl_type = kwargs.get("oracle_ttl_type", defaults.ORACLE_TTL_TYPE)
+        # chain defaults
+        self.key_block_interval = kwargs.get("key_block_interval", defaults.KEY_BLOCK_INTERVAL)
         # debug
         self.debug = kwargs.get("debug", False)
 
@@ -84,11 +87,15 @@ class NodeClient:
         Compute the absolute ttl by adding the ttl to the current height of the chain
         :param relative_ttl: the relative ttl, if 0 will set the ttl to 0
         """
-        absolute_ttl = 0
+        ttl = dict(
+            absolute_ttl=0,
+            height=self.get_current_key_block_height(),
+            estimated_expiration=datetime.now()
+        )
         if relative_ttl > 0:
-            height = self.get_current_key_block_height()
-            absolute_ttl = height + relative_ttl
-        return absolute_ttl
+            ttl["absolute_ttl"] = ttl["height"] + relative_ttl
+            ttl["estimated_expiration"] = datetime.now() + timedelta(minutes=self.config.key_block_interval * relative_ttl)
+        return namedtupled.map(ttl, _nt_name="TTL")
 
     def get_next_nonce(self, account_address):
         """
@@ -109,7 +116,7 @@ class NodeClient:
         """
         ttl = self.compute_absolute_ttl(relative_ttl) if relative_ttl > 0 else 0
         nonce = self.get_next_nonce(account_address)
-        return nonce, ttl
+        return nonce, ttl.absolute_ttl
 
     def get_top_block(self):
         """
@@ -173,7 +180,7 @@ class NodeClient:
         # retrieve ttl
         tx_ttl = self.compute_absolute_ttl(tx_ttl)
         # build the transaction
-        tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, amount, payload, fee, tx_ttl, account.nonce)
+        tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, amount, payload, fee, tx_ttl.absolute_ttl, account.nonce)
         # execute the transaction
         tx = self.sign_transaction(account, tx.tx)
         # post the transaction

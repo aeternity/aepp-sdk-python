@@ -118,6 +118,9 @@ def _po(label, value, offset=0, label_prefix=None):
         o = offset + 2
         for i, x in enumerate(value):
             _po(f"{label[:-1]} #{i+1}", x, o)
+    elif isinstance(value, datetime):
+        val = value.strftime("%Y-%m-%d %H:%M")
+        _pl(label, offset, value=val)
     else:
         if label.lower() == "time":
             value = datetime.fromtimestamp(value / 1000, timezone.utc).isoformat('T')
@@ -155,7 +158,7 @@ _account_options = [
 ]
 
 _sign_options = [
-    click.option('--network-id', default=defaults.NETWORK_ID, help="The network id to use when signing a transaction", show_default=True)
+    click.option('--network-id', default=None, help="The network id to use when signing a transaction")
 ]
 
 _transaction_options = [
@@ -334,10 +337,8 @@ def account_spend(keystore_name, recipient_id, amount, ttl, password, network_id
             raise ValueError("Invalid recipient address")
         tx = _node_cli(network_id=network_id).spend(account, recipient_id, amount, tx_ttl=ttl)
         _print_object(tx, title='spend transaction')
-    # except Exception as e:
-    #     print(e)
-    finally:
-        pass
+    except Exception as e:
+        print(e)
 
 
 @account.command('sign', help="Sign a transaction")
@@ -353,10 +354,8 @@ def account_sign(keystore_name, password, network_id, unsigned_transaction, forc
         # force offline mode for the node_client
         tx = TxSigner(account, network_id).sign_encode_transaction(unsigned_transaction)
         _print_object(tx, title='signed transaction')
-    # except Exception as e:
-    #     print(e)
-    finally:
-        pass
+    except Exception as e:
+        print(e)
 
 #   _________  ____  ____
 #  |  _   _  ||_  _||_  _|
@@ -406,8 +405,6 @@ def tx_spend(sender_id, recipient_id, amount, debug_tx, ttl, fee, nonce, payload
         tx = cli.tx_builder.tx_spend(sender_id, recipient_id, amount, payload, fee, ttl, nonce)
         # print the results
         _print_object(tx, title='spend tx')
-    # finally:
-    #     pass
     except Exception as e:
         print(e)
 
@@ -757,6 +754,24 @@ def inspect(obj, force, wait, json_):
 def chain(force, wait, json_):
     set_global_options(force, wait, json_)
     pass
+
+
+@chain.command('ttl')
+@click.argument('relative_ttl', type=int)
+@global_options
+def chain_ttl(relative_ttl, force, wait, json_):
+    """
+    Print the information of the top block of the chain.
+    """
+    try:
+        if relative_ttl < 0:
+            print("Error: the relative ttl must be a positive number")
+        set_global_options(force, wait, json_)
+        cli = _node_cli()
+        data = cli.compute_absolute_ttl(relative_ttl)
+        _print_object(data, f"ttl for node at {cli.config.api_url} ")
+    except Exception as e:
+        print("Error:", e)
 
 
 @chain.command('top')
