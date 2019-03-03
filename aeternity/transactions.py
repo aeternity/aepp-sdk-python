@@ -1,6 +1,5 @@
 from aeternity.hashing import _int, _int_decode, _binary, _binary_decode, _id, encode, decode, encode_rlp, decode_rlp, hash_encode
 from aeternity.openapi import OpenAPICli
-from aeternity.config import ORACLE_DEFAULT_TTL_TYPE_DELTA, ORACLE_DEFAULT_TTL_TYPE_BLOCK
 from aeternity import identifiers as idf
 from aeternity import defaults
 from aeternity.exceptions import UnsupportedTransactionType
@@ -522,7 +521,7 @@ def _tx_native(op, **kwargs):
                 _binary(kwargs.get("query_format")),
                 _binary(kwargs.get("response_format")),
                 _int(kwargs.get("query_fee")),
-                _int(0 if oracle_ttl.get("type") == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
+                _int(0 if oracle_ttl.get("type") == idf.ORACLE_TTL_TYPE_DELTA else 1),
                 _int(oracle_ttl.get("value")),
                 _int(kwargs.get("fee")),
                 _int(kwargs.get("ttl")),
@@ -540,7 +539,7 @@ def _tx_native(op, **kwargs):
                 response_format=_binary_decode(tx_native[5]),
                 query_fee=_int_decode(tx_native[6]),
                 oracle_ttl=dict(
-                    type=ORACLE_DEFAULT_TTL_TYPE_DELTA if _int_decode(tx_native[7]) else ORACLE_DEFAULT_TTL_TYPE_BLOCK,
+                    type=idf.ORACLE_TTL_TYPE_DELTA if _int_decode(tx_native[7]) else idf.ORACLE_TTL_TYPE_BLOCK,
                     value=_int_decode(tx_native[8]),
                 ),
                 fee=_int_decode(tx_native[9]),
@@ -565,9 +564,9 @@ def _tx_native(op, **kwargs):
                 _id(idf.ID_TAG_ORACLE, kwargs.get("oracle_id")),
                 _binary(kwargs.get("query")),
                 _int(kwargs.get("query_fee")),
-                _int(0 if query_ttl.get("type") == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
+                _int(0 if query_ttl.get("type") == idf.ORACLE_TTL_TYPE_DELTA else 1),
                 _int(query_ttl.get("value")),
-                _int(0 if response_ttl.get("type") == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
+                _int(0 if response_ttl.get("type") == idf.ORACLE_TTL_TYPE_DELTA else 1),
                 _int(response_ttl.get("value")),
                 _int(kwargs.get("fee")),
                 _int(kwargs.get("ttl")),
@@ -584,11 +583,11 @@ def _tx_native(op, **kwargs):
                 query=_binary_decode(tx_native[5]),
                 query_fee=_int_decode(tx_native[6]),
                 query_ttl=dict(
-                    type=ORACLE_DEFAULT_TTL_TYPE_DELTA if _int_decode(tx_native[7]) else ORACLE_DEFAULT_TTL_TYPE_BLOCK,
+                    type=idf.ORACLE_TTL_TYPE_DELTA if _int_decode(tx_native[7]) else idf.ORACLE_TTL_TYPE_BLOCK,
                     value=_int_decode(tx_native[8]),
                 ),
                 response_ttl=dict(
-                    type=ORACLE_DEFAULT_TTL_TYPE_DELTA if _int_decode(tx_native[9]) else ORACLE_DEFAULT_TTL_TYPE_BLOCK,
+                    type=idf.ORACLE_TTL_TYPE_DELTA if _int_decode(tx_native[9]) else idf.ORACLE_TTL_TYPE_BLOCK,
                     value=_int_decode(tx_native[10]),
                 ),
                 fee=_int_decode(tx_native[11]),
@@ -610,7 +609,7 @@ def _tx_native(op, **kwargs):
                 _int(kwargs.get("nonce")),
                 decode(kwargs.get("query_id")),
                 _binary(kwargs.get("response")),
-                _int(0 if response_ttl.get("type") == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
+                _int(0 if response_ttl.get("type") == idf.ORACLE_TTL_TYPE_DELTA else 1),
                 _int(response_ttl.get("value")),
                 _int(kwargs.get("fee")),
                 _int(kwargs.get("ttl")),
@@ -626,7 +625,7 @@ def _tx_native(op, **kwargs):
                 query_id=encode(idf.ORACLE_QUERY_ID, tx_native[4]),
                 response=_binary(tx_native[5]),
                 response_ttl=dict(
-                    type=ORACLE_DEFAULT_TTL_TYPE_DELTA if _int_decode(tx_native[6]) else ORACLE_DEFAULT_TTL_TYPE_BLOCK,
+                    type=idf.ORACLE_TTL_TYPE_DELTA if _int_decode(tx_native[6]) else idf.ORACLE_TTL_TYPE_BLOCK,
                     value=_int_decode(tx_native[7]),
                 ),
                 fee=_int_decode(tx_native[8]),
@@ -646,7 +645,7 @@ def _tx_native(op, **kwargs):
                 _int(vsn),
                 _id(idf.ID_TAG_ORACLE, kwargs.get("oracle_id")),
                 _int(kwargs.get("nonce")),
-                _int(0 if oracle_ttl.get("type", {}) == ORACLE_DEFAULT_TTL_TYPE_DELTA else 1),
+                _int(0 if oracle_ttl.get("type", {}) == idf.ORACLE_TTL_TYPE_DELTA else 1),
                 _int(oracle_ttl.get("value")),
                 _int(kwargs.get("fee")),
                 _int(kwargs.get("ttl")),
@@ -660,7 +659,7 @@ def _tx_native(op, **kwargs):
                 oracle_id=encode(idf.ORACLE_ID, tx_native[2]),
                 nonce=_int_decode(tx_native[3]),
                 oracle_ttl=dict(
-                    type=ORACLE_DEFAULT_TTL_TYPE_DELTA if _int_decode(tx_native[4]) else ORACLE_DEFAULT_TTL_TYPE_BLOCK,
+                    type=idf.ORACLE_TTL_TYPE_DELTA if _int_decode(tx_native[4]) else idf.ORACLE_TTL_TYPE_BLOCK,
                     value=_int_decode(tx_native[5]),
                 ),
                 fee=_int_decode(tx_native[6]),

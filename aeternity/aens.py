@@ -1,6 +1,6 @@
 from aeternity.exceptions import NameNotAvailable, MissingPreclaim, NameUpdateError, NameTooEarlyClaim, NameCommitmentIdMismatch
 from aeternity.openapi import OpenAPIClientException
-from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE, DEFAULT_NAME_TTL, NAME_CLIENT_TTL
+from aeternity import defaults
 from aeternity import hashing, utils, oracles
 from aeternity.identifiers import ACCOUNT_ID, NAME
 
@@ -78,13 +78,10 @@ class AEName:
         return self.status == NameStatus.CLAIMED
 
     def full_claim_blocking(self, account,
-                            preclaim_fee=DEFAULT_FEE,
-                            claim_fee=DEFAULT_FEE,
-                            update_fee=DEFAULT_FEE,
-                            name_ttl=DEFAULT_NAME_TTL,
-                            client_ttl=NAME_CLIENT_TTL,
+                            name_ttl=defaults.NAME_TTL,
+                            client_ttl=defaults.NAME_CLIENT_TTL,
                             target=None,
-                            tx_ttl=DEFAULT_TX_TTL):
+                            tx_ttl=defaults.TX_TTL):
         """
         Execute a name claim and updates the pointer to it.
 
@@ -109,29 +106,31 @@ class AEName:
             raise NameNotAvailable(self.domain)
         hashes = {}
         # run preclaim
-        tx = self.preclaim(account, fee=preclaim_fee, tx_ttl=tx_ttl)
+        tx = self.preclaim(account)
         hashes['preclaim_tx'] = tx
+        # wait for the block confirmation
+        self.client.wait_for_confirmation(tx.hash)
         # run claim
-        tx = self.claim(account, fee=claim_fee, tx_ttl=tx_ttl)
+        tx = self.claim(account, tx.metadata.salt, tx.hash)
         hashes['claim_tx'] = tx
         # target is the same of account is not specified
         if target is None:
             target = account.get_address()
         # run update
-        tx = self.update(account, target, fee=update_fee, name_ttl=name_ttl, client_ttl=client_ttl)
+        tx = self.update(account, target, name_ttl=name_ttl, client_ttl=client_ttl)
         hashes['update_tx'] = tx
         # restore blocking value
         self.client.config.blocking_mode = blocking_orig
         return hashes
 
-    def preclaim(self, account, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
+    def preclaim(self, account, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
         """
         Execute a name preclaim
         """
         # check which block we used to create the preclaim
         self.preclaimed_block_height = self.client.get_current_key_block_height()
         # calculate the commitment hash
-        self.preclaim_salt, commitment_id = hashing.commitment_id(self.domain)
+        commitment_id, self.preclaim_salt = hashing.commitment_id(self.domain)
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl
@@ -147,7 +146,7 @@ class AEName:
         self.preclaim_tx_hash = tx_signed.hash
         return tx_signed
 
-    def claim(self, account, domain, name_salt, preclaim_tx_hash, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
+    def claim(self, account, name_salt, preclaim_tx_hash, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
         self.preclaim_salt = name_salt
         # get the preclaim height
         try:
@@ -157,14 +156,14 @@ class AEName:
             raise MissingPreclaim(f"Preclaim transaction {preclaim_tx_hash} not found")
         # if the commitment_id mismatch
         pre_claim_commitment_id = pre_claim_tx.tx.commitment_id
-        _, commitment_id = hashing.commitment_id(domain, salt=name_salt)
+        commitment_id, _ = hashing.commitment_id(self.domain, salt=name_salt)
         if pre_claim_commitment_id != commitment_id:
             raise NameCommitmentIdMismatch(f"Committment id mismatch, wanted {pre_claim_commitment_id} got {commitment_id}")
         # if the transaction has not been mined
         if self.preclaimed_block_height <= 0:
             raise NameTooEarlyClaim(f"The pre-claim transaction has not been mined yet")
         # get the current height
-        current_height = self.client.get_top_block().height
+        current_height = self.client.get_current_key_block_height()
         safe_height = self.preclaimed_block_height + self.client.config.key_block_confirmation_num
         if current_height < safe_height:
             raise NameTooEarlyClaim(f"It is not safe to execute the name claim before height {safe_height}, current height: {current_height}")
@@ -185,10 +184,10 @@ class AEName:
         return tx_signed
 
     def update(self, account, target,
-               name_ttl=DEFAULT_NAME_TTL,
-               client_ttl=NAME_CLIENT_TTL,
-               fee=DEFAULT_FEE,
-               tx_ttl=DEFAULT_TX_TTL):
+               name_ttl=defaults.NAME_TTL,
+               client_ttl=defaults.NAME_CLIENT_TTL,
+               fee=defaults.FEE,
+               tx_ttl=defaults.TX_TTL):
 
         if not self.check_claimed():
             raise NameUpdateError('Must be claimed to update pointer')
@@ -212,7 +211,7 @@ class AEName:
         self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
         return tx_signed
 
-    def transfer_ownership(self, account, recipient_pubkey, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
+    def transfer_ownership(self, account, recipient_pubkey, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
         """
         transfer ownership of a name
         :return: the transaction
@@ -233,7 +232,7 @@ class AEName:
         self.status = NameStatus.TRANSFERRED
         return tx_signed
 
-    def revoke(self, account, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
+    def revoke(self, account, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
         """
         revoke a name
         :return: the transaction

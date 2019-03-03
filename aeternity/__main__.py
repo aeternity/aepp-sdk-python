@@ -11,7 +11,7 @@ from aeternity import __version__
 from aeternity.node import NodeClient, Config
 from aeternity.transactions import TxSigner
 # from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
-from . import utils, signing, aens, defaults, config
+from . import utils, signing, aens, defaults, exceptions
 from aeternity.contract import Contract
 
 from datetime import datetime, timezone
