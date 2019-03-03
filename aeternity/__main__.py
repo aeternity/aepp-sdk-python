@@ -755,7 +755,7 @@ def chain_status(force, wait, json_):
         data = cli.get_status()
         _print_object(data, f"status for node at {cli.config.api_url} ")
     except Exception as e:
-        _print_error(e)s
+        _print_error(e)
 
 
 @chain.command('network-id', help="Retrieve the network id of the target node")
