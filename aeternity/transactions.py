@@ -62,18 +62,19 @@ def _tx_native(op, **kwargs):
     def std_fee(tx_raw, fee_idx, base_gas_multiplier=1):
         # calculates the standard minimum transaction fee
         tx_copy = tx_raw  # create a copy of the input
-        tx_copy[fee_idx] = _int(0, 8)
+        tx_copy[fee_idx] = _int(0, 8)  # replace fee with a byte array of lenght 8
         return (defaults.BASE_GAS * base_gas_multiplier + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) * defaults.GAS_PRICE
 
     def contract_fee(tx_raw, fee_idx, gas, base_gas_multiplier=1):
         # estimate the contract creation fee
         tx_copy = tx_raw  # create a copy of the input
-        tx_copy[fee_idx] = _int(0, 8)
+        tx_copy[fee_idx] = _int(0, 8)  # replace fee with a byte array of lenght 8
         return (defaults.BASE_GAS * base_gas_multiplier + gas + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) * defaults.GAS_PRICE
 
     def oracle_fee(tx_raw, fee_idx, relative_ttl):
+        # estimate oracle fees
         tx_copy = tx_raw  # create a copy of the input
-        tx_copy[fee_idx] = _int(0, 8)
+        tx_copy[fee_idx] = _int(0, 8)  # replace fee with a byte array of lenght 8
         fee = (defaults.BASE_GAS + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE)
         fee += math.ceil(32000 * relative_ttl / math.floor(60 * 24 * 365 / defaults.KEY_BLOCK_INTERVAL))
         return fee * defaults.GAS_PRICE

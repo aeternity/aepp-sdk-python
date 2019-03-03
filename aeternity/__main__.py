@@ -46,12 +46,10 @@ def _node_cli(network_id=None):
         # load the aeternity node client
         return NodeClient(cfg)
 
-    except config.ConfigException as e:
-        print("Configuration error: ", e)
-        exit(1)
-    except config.UnsupportedNodeVersion as e:
-        print(e)
-        exit(1)
+    except exceptions.ConfigException as e:
+        _print_error(e, title="configuration error", exit_code=1)
+    except exceptions.UnsupportedNodeVersion as e:
+        _print_error(e, exit_code=1)
 
 
 def _account(keystore_name, password=None):
@@ -69,8 +67,7 @@ def _account(keystore_name, password=None):
             password = getpass.getpass("Enter the account password: ")
         return signing.Account.from_keystore(kf, password), os.path.abspath(kf)
     except Exception as e:
-        print(f"Keystore decryption failed: {e}")
-        exit(1)
+        _print_error(e, title="keystore decryption failed", exit_code=1)
 
 
 def _pl(label, offset, value=None):
@@ -141,6 +138,11 @@ def _print_object(data, title):
         return
 
     _po(title, data)
+
+
+def _print_error(err, title="error", exit_code=0):
+    _print_object({"message": str(err)}, title)
+    sys.exit(exit_code)
 
 
 # Commands
@@ -266,7 +268,7 @@ def account_create(keystore_name, password, overwrite, force, wait, json_):
             'Path': os.path.abspath(keystore_name)
         }, title='account')
     except Exception as e:
-        print(e)
+        _print_error(e, exit_code=1)
 
 
 @account.command('save', help='Save a private keys string to a password protected file account')
@@ -288,7 +290,7 @@ def account_save(keystore_name, private_key, password, overwrite, force, wait, j
             'Path': os.path.abspath(keystore_name)
         }, title='account')
     except Exception as e:
-        print(e)
+        _print_error(e, exit_code=1)
 
 
 @account.command('address', help="Print the account address (public key)")
@@ -305,7 +307,7 @@ def account_address(password, keystore_name, private_key, force, wait, json_):
             o["Signing key"] = account.get_private_key()
         _print_object(o, title='account')
     except Exception as e:
-        print(e)
+        _print_error(e, exit_code=1)
 
 
 @account.command('balance', help="Get the balance of a account")
@@ -318,7 +320,7 @@ def account_balance(keystore_name, password, force, wait, json_):
         account = _node_cli().get_account_by_pubkey(pubkey=account.get_address())
         _print_object(account, title='account')
     except Exception as e:
-        print(e)
+        _print_error(e, exit_code=1)
 
 
 @account.command('spend', help="Create a transaction to another account")
@@ -336,7 +338,7 @@ def account_spend(keystore_name, recipient_id, amount, ttl, password, network_id
         tx = _node_cli(network_id=network_id).spend(account, recipient_id, amount, tx_ttl=ttl)
         _print_object(tx, title='spend transaction')
     except Exception as e:
-        print(e)
+        _print_error(e, exit_code=1)
 
 
 @account.command('sign', help="Sign a transaction")
@@ -353,7 +355,7 @@ def account_sign(keystore_name, password, network_id, unsigned_transaction, forc
         tx = TxSigner(account, network_id).sign_encode_transaction(unsigned_transaction)
         _print_object(tx, title='signed transaction')
     except Exception as e:
-        print(e)
+        _print_error(e, exit_code=1)
 
 #   _________  ____  ____
 #  |  _   _  ||_  _||_  _|
@@ -387,7 +389,7 @@ def tx_broadcast(signed_transaction, force, wait, json_):
             "Transaction hash": tx_hash,
         }, title='transaction broadcast')
     except Exception as e:
-        print(e)
+        _print_error(e, exit_code=1)
 
 
 @tx.command('spend', help="Create a transaction to another account")
@@ -404,7 +406,7 @@ def tx_spend(sender_id, recipient_id, amount,  ttl, fee, nonce, payload, force, 
         # print the results
         _print_object(tx, title='spend tx')
     except Exception as e:
-        print(e)
+        _print_error(e, exit_code=1)
 
 #    _   _
 #   | \ | |
@@ -439,9 +441,9 @@ def name_pre_claim(keystore_name, domain, ttl, fee, nonce, password, network_id,
         tx = name.preclaim(account, fee, ttl)
         _print_object(tx, title='preclaim transaction')
     except ValueError as e:
-        print(e)
+        _print_error(e, exit_code=1)
     except Exception as e:
-        print("Error", e)
+        _print_error(e, exit_code=1)
 
 
 @name.command('claim', help="Claim a domain name")
@@ -462,10 +464,12 @@ def name_claim(keystore_name, domain, name_ttl, name_salt, preclaim_tx_hash, ttl
             print("Domain not available")
             exit(0)
         # claim
-        tx = name.claim(account, domain, name_salt, preclaim_tx_hash, fee=fee, tx_ttl=ttl)
+        tx = name.claim(account, name_salt, preclaim_tx_hash, fee=fee, tx_ttl=ttl)
         _print_object(tx, title=f'Name {domain} claim transaction')
     except ValueError as e:
-        print(e)
+        _print_error(e, exit_code=1)
+    except Exception as e:
+        _print_error(e, exit_code=1)
 
 
 @name.command('update')
@@ -490,7 +494,7 @@ def name_update(keystore_name, domain, address, name_ttl, ttl, fee, nonce, passw
         tx = name.update(account, target=address, name_ttl=name_ttl, tx_ttl=ttl)
         _print_object(tx, title=f"Name {domain} status update")
     except Exception as e:
-        print(e)
+        _print_error(e, exit_code=1)
 
 
 @name.command('revoke', help="Revoke a claimed name")
@@ -510,7 +514,7 @@ def name_revoke(keystore_name, domain, ttl, fee, nonce, password, network_id, fo
         tx = name.revoke(account)
         _print_object(tx, title=f"Name {domain} status revoke")
     except Exception as e:
-        print(e)
+        _print_error(e, exit_code=1)
 
 
 @name.command('transfer', help="Transfer a claimed domain to another account")
@@ -534,7 +538,7 @@ def name_transfer(keystore_name, domain, address, ttl, fee, nonce, password, net
         tx = name.transfer_ownership(account, address)
         _print_object(tx, title=f"Name {domain} status transfer to {address}")
     except Exception as e:
-        print(e)
+        _print_error(e, exit_code=1)
 
 
 #     _____            _                  _
@@ -561,7 +565,7 @@ def contract_compile(contract_file):
             result = c.compile(code)
             _print_object({"bytecode", result}, title="contract")
     except Exception as e:
-        print(e)
+        _print_error(e, exit_code=1)
 
 
 @contract.command('deploy', help='Deploy a contract on the chain')
@@ -605,7 +609,7 @@ def contract_deploy(keystore_name, contract_file, gas, password, network_id, for
                 "Deploy descriptor": deploy_descriptor,
             }, title="contract")
     except Exception as e:
-        print(e)
+        _print_error(e, exit_code=1)
 
 
 @contract.command('call', help='Execute a function of the contract')
@@ -639,7 +643,7 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
 
             pass
     except Exception as e:
-        print(e)
+        _print_error(e, exit_code=1)
 
 
 #    _____                           _
@@ -686,7 +690,7 @@ def inspect(obj, force, wait, json_):
         else:
             raise ValueError(f"input not recognized: {obj}")
     except Exception as e:
-        print(e)
+        _print_error(e)
 
 
 #     _____ _           _
@@ -721,7 +725,7 @@ def chain_ttl(relative_ttl, force, wait, json_):
         data = cli.compute_absolute_ttl(relative_ttl)
         _print_object(data, f"ttl for node at {cli.config.api_url} ")
     except Exception as e:
-        print("Error:", e)
+        _print_error(e)
 
 
 @chain.command('top')
@@ -736,7 +740,7 @@ def chain_top(force, wait, json_):
         data = cli.get_top_block()
         _print_object(data, f"top for node at {cli.config.api_url} ")
     except Exception as e:
-        print("Error:", e)
+        _print_error(e)
 
 
 @chain.command('status')
@@ -751,7 +755,7 @@ def chain_status(force, wait, json_):
         data = cli.get_status()
         _print_object(data, f"status for node at {cli.config.api_url} ")
     except Exception as e:
-        print("Error:", e)
+        _print_error(e)s
 
 
 @chain.command('network-id', help="Retrieve the network id of the target node")
@@ -766,7 +770,7 @@ def chain_network_id(force, wait, json_):
         data = cli.get_status().network_id
         _print_object({"Network ID": data}, f"network id for node at {cli.config.api_url} ")
     except Exception as e:
-        print("Error:", e)
+        _print_error(e)
 
 
 @chain.command('play')
@@ -798,7 +802,7 @@ def chain_play(height,  limit, force, wait, json_):
                 break
             g = cli.get_generation_by_hash(hash=g.key_block.prev_key_hash)
     except Exception as e:
-        print(e)
+        _print_error(e)
         g = None
         pass
 
