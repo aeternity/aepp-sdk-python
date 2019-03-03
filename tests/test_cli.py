@@ -129,7 +129,7 @@ def test_cli_inspect_key_block_by_hash(chain_fixture):
 
 def test_cli_inspect_name():
     j = call_aecli('inspect', 'whatever.test')
-    assert j.get("Status") == "AVAILABLE"
+    assert "name not found" in j.get("message", "").lower()
 
 
 def test_cli_inspect_transaction_by_hash(chain_fixture):

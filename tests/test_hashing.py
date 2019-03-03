@@ -1,4 +1,4 @@
-from aeternity import hashing, transactions
+from aeternity import hashing, transactions, node
 from pytest import raises
 
 
@@ -106,3 +106,15 @@ def test_hashing_oracle_id():
 
     for t in tt:
         assert (hashing.oracle_id(t[0]) == t[1]) == t[2]
+
+
+def test_hashing_committment_id(client_fixture, random_domain):
+    name, salt = "aeternity.test", 10692426485854419779
+    expected_committment = "cm_2by2qwnum96Z78WSFRJwhsC5qFzDgatrKk7PfH3yZ2wMBmsZF2"
+    cid, salt = hashing.commitment_id(name, salt)
+    assert expected_committment == cid
+
+    domain = random_domain
+    cid, salt = hashing.commitment_id(domain)
+    cr = client_fixture.NODE_CLI.get_commitment_id(name=domain, salt=salt)
+    assert cid == cr.commitment_id

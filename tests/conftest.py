@@ -33,6 +33,19 @@ def random_domain(length=10):
 
 
 @pytest.fixture
+def client_fixture(scope="module"):
+    # Instantiate the node client for the tests
+    NODE_CLI = NodeClient(Config(
+        external_url=NODE_URL,
+        internal_url=NODE_URL_DEBUG,
+        network_id=NETWORK_ID,
+        blocking_mode=True,
+        debug=True,
+    ))
+    return namedtupled.map({"NODE_CLI": NODE_CLI}, _nt_name="TestData")
+
+
+@pytest.fixture
 def chain_fixture(scope="module"):
 
     # create a new account and fill it with some money
@@ -47,7 +60,7 @@ def chain_fixture(scope="module"):
         internal_url=NODE_URL_DEBUG,
         network_id=NETWORK_ID,
         blocking_mode=True,
-        debug=True
+        debug=True,
     ))
 
     NODE_CLI.spend(genesis, ACCOUNT.get_address(), 2000000000000000000)

@@ -1,14 +1,6 @@
 from aeternity.aens import AEName
-from aeternity import hashing
 
 from pytest import raises
-
-
-def test_name_committment(chain_fixture, random_domain):
-    domain = random_domain
-    salt, cid = hashing.commitment_id(domain)
-    cr = chain_fixture.NODE_CLI.client.get_commitment_id(name=domain, salt=salt)
-    assert cid == cr.commitment_id
 
 
 def test_name_validation_fails(chain_fixture):
@@ -35,13 +27,15 @@ def test_name_status_available(chain_fixture, random_domain):
 def test_name_claim_lifecycle(chain_fixture, random_domain):
     try:
         domain = random_domain
-        name = chain_fixture.NODE_CLI.AEName(domain)
+        node_cli = chain_fixture.NODE_CLI
+        name = node_cli.AEName(domain)
         assert name.status == AEName.Status.UNKNOWN
         name.update_status()
         assert name.status == AEName.Status.AVAILABLE
-        name.preclaim(chain_fixture.ACCOUNT)
+        preclaim = name.preclaim(chain_fixture.ACCOUNT)
         assert name.status == AEName.Status.PRECLAIMED
-        name.claim(chain_fixture.ACCOUNT)
+        node_cli.wait_for_confirmation(preclaim.hash)
+        name.claim(chain_fixture.ACCOUNT, preclaim.metadata.salt, preclaim.hash)
         assert name.status == AEName.Status.CLAIMED
     except Exception as e:
         print(e)
@@ -97,15 +91,6 @@ def test_name_transfer_ownership(chain_fixture, random_domain):
     assert len(name.pointers) > 0, 'Pointers should not be empty'
     assert name.pointers[0].id == chain_fixture.ACCOUNT_1.get_address()
     assert name.pointers[0].key == "account_pubkey"
-
-
-# def test_transfer_failure_wrong_pubkey():
-#     client = NodeClient()
-#     name = chain_fixture.NODE_CLI.AEName(random_domain)
-#     name.full_claim_blocking()
-#     client.wait_for_next_block()
-#     with raises(AENSException):
-#         name.transfer_ownership('ak_deadbeef')
 
 
 def test_name_revocation(chain_fixture, random_domain):
