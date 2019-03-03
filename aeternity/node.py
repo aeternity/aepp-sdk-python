@@ -50,6 +50,11 @@ class Config:
         # chain defaults
         self.key_block_interval = kwargs.get("key_block_interval", defaults.KEY_BLOCK_INTERVAL)
         self.key_block_confirmation_num = kwargs.get("key_block_confirmation_num", defaults.KEY_BLOCK_CONFIRMATION_NUM)
+        # tuning
+        self.poll_tx_max_retries = kwargs.get("poll_tx_max_retries", defaults.POLL_TX_MAX_RETRIES)
+        self.poll_tx_retries_interval = kwargs.get("poll_tx_retries_interval", defaults.POLL_TX_RETRIES_INTERVAL)
+        self.poll_block_max_retries = kwargs.get("poll_block_max_retries", defaults.POLL_BLOCK_MAX_RETRIES)
+        self.poll_block_retries_interval = kwargs.get("poll_block_retries_interval", defaults.POLL_BLOCK_RETRIES_INTERVAL)
         # debug
         self.debug = kwargs.get("debug", False)
 
@@ -188,7 +193,7 @@ class NodeClient:
         self.broadcast_transaction(tx.tx, tx_hash=tx.hash)
         return tx
 
-    def wait_for_transaction(self, tx_hash, max_retries=defaults.MAX_RETRIES, polling_interval=defaults.POLLING_INTERVAL):
+    def wait_for_transaction(self, tx_hash, max_retries=None, polling_interval=None, confirm_transaction=False):
         """
         Wait for a transaction to be mined for an account
         The method will wait for a specific transaction to be included in the chain,
@@ -196,13 +201,20 @@ class NodeClient:
         - the chain reply with a 404 not found (the transaction was expunged)
         - the account nonce is >= of the transaction nonce (transaction is in an illegal state)
         - the ttl of the transaction or the one passed as parameter has been reached
-        :return: True if the transaction id found False otherwise
+        :return: the block height of the transaction if it has been found
+
+        Raises TransactionWaitTimeoutExpired if the transaction hasnt been found
         """
-        if max_retries <= 0:
+
+        retries = max_retries if max_retries is not None else self.config.poll_tx_max_retries
+        interval = polling_interval if polling_interval is not None else self.config.poll_tx_retries_interval
+        if retries <= 0:
             raise ValueError("Retries must be greater than 0")
 
+        # star tpolling
         n = 1
         total_sleep = 0
+        tx_height = -1
         while True:
             # query the transaction
             try:
@@ -212,15 +224,46 @@ class NodeClient:
                 # it may fail because it is not found that means that
                 # or it was invalid or the ttl has expired
                 raise TransactionWaitTimeoutExpired(tx_hash=tx_hash, reason=e.reason)
-            # if the tx.block_height > 0 we win
-            if tx.block_height > 0:
+            # if the tx.block_height >= min_block_height we are ok
+            if tx.block_height >= 0:
+                tx_height = tx.block_height
                 break
-            if n >= max_retries:
+            if n >= retries:
                 raise TransactionWaitTimeoutExpired(tx_hash=tx_hash, reason=f"The transaction was not included in {total_sleep} seconds, wait aborted")
             # calculate sleep time
-            sleep_time = (polling_interval ** n) + (random.randint(0, 1000) / 1000.0)
+            sleep_time = (interval ** n) + (random.randint(0, 1000) / 1000.0)
             time.sleep(sleep_time)
             total_sleep += sleep_time
+            # increment n
+            n += 1
+        return tx_height
+
+    def wait_for_confirmation(self, tx_hash, max_retries=None, polling_interval=None):
+        """
+        Wait for a transaction to be confirmed by at least "key_block_confirmation_num" blocks
+        """
+        # first wait for the transaction to be found
+        tx_height = self.wait_for_transaction(tx_hash)
+        # now caculate the min block height
+        min_block_height = tx_height + self.config.key_block_confirmation_num
+        # get teh
+        retries = max_retries if max_retries is not None else self.config.poll_block_max_retries
+        interval = polling_interval if polling_interval is not None else self.config.poll_block_retries_interval
+        if retries <= 0 or interval <= 0:
+            raise ValueError("max_retries and polling_interval must be greater than 0")
+        # star tpolling
+        n = 1
+        total_sleep = 0
+        while True:
+            current_height = self.get_current_key_block_height()
+            # if the tx.block_height >= min_block_height we are ok
+            if current_height >= min_block_height:
+                break
+            if n >= retries:
+                raise TransactionWaitTimeoutExpired(tx_hash=tx_hash, reason=f"The transaction was not included in {total_sleep} seconds, wait aborted")
+            # calculate sleep time
+            time.sleep(interval)
+            total_sleep += interval
             # increment n
             n += 1
 
