@@ -1,4 +1,4 @@
-from aeternity import hashing, transactions, node
+from aeternity import hashing, transactions
 from pytest import raises
 
 
