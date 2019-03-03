@@ -240,7 +240,8 @@ class NodeClient:
 
     def wait_for_confirmation(self, tx_hash, max_retries=None, polling_interval=None):
         """
-        Wait for a transaction to be confirmed by at least "key_block_confirmation_num" blocks
+        Wait for a transaction to be confirmed by at least "key_block_confirmation_num" blocks (default 3)
+        The amount of blocks can be configured in the Config object using key_block_confirmation_num parameter
         """
         # first wait for the transaction to be found
         tx_height = self.wait_for_transaction(tx_hash)

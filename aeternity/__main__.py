@@ -150,9 +150,12 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 # set global options TODO: this is a bit silly, we should probably switch back to stdlib
 _global_options = [
+    click.option('--json', 'json_', is_flag=True, default=False, help='Print output in JSON format'),
+]
+
+_online_options = [
     click.option('--force', is_flag=True, default=False, help='Ignore aeternity node version compatibility check'),
     click.option('--wait', is_flag=True, default=False, help='Wait for transactions to be included'),
-    click.option('--json', 'json_', is_flag=True, default=False, help='Print output in JSON format'),
 ]
 
 _account_options = [
@@ -178,28 +181,31 @@ def global_options(func):
     return func
 
 
+def online_options(func):
+    for option in reversed(_online_options):
+        func = option(func)
+    return func
+
+
 def account_options(func):
-    func = global_options(func)
     for option in reversed(_account_options):
         func = option(func)
     return func
 
 
 def sign_options(func):
-    func = account_options(func)
     for option in reversed(_sign_options):
         func = option(func)
     return func
 
 
 def transaction_options(func):
-    func = global_options(func)
     for option in reversed(_transaction_options):
         func = option(func)
     return func
 
 
-def set_global_options(force, wait, json_):
+def set_global_options(json_, force=False, wait=False):
     ctx = click.get_current_context()
     ctx.obj[CTX_FORCE_COMPATIBILITY] = force
     ctx.obj[CTX_BLOCKING_MODE] = wait
@@ -215,7 +221,7 @@ def set_global_options(force, wait, json_):
 @click.option('--debug-url', '-d', default=None, envvar='NODE_URL_DEBUG', metavar='URL')
 @global_options
 @click.version_option(version=__version__)
-def cli(ctx, url, debug_url, force, wait, json_):
+def cli(ctx, url, debug_url, json_):
     """
     Welcome to the aecli client.
 
@@ -224,7 +230,6 @@ def cli(ctx, url, debug_url, force, wait, json_):
     """
     ctx.obj[CTX_NODE_URL] = url
     ctx.obj[CTX_NODE_URL_DEBUG] = debug_url
-    set_global_options(force, wait, json_)
 
 
 @cli.command('config', help="Print the client configuration")
@@ -252,10 +257,11 @@ def account():
 @account.command('create', help="Create a new account")
 @click.argument('keystore_name')
 @click.option('--overwrite', default=False, is_flag=True, help="Overwrite existing keys without asking", show_default=True)
+@global_options
 @account_options
-def account_create(keystore_name, password, overwrite, force, wait, json_):
+def account_create(keystore_name, password, overwrite, json_):
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_)
         new_account = signing.Account.generate()
         # TODO: introduce default configuration path
         if not overwrite and os.path.exists(keystore_name):
@@ -275,10 +281,11 @@ def account_create(keystore_name, password, overwrite, force, wait, json_):
 @click.argument('keystore_name', required=True)
 @click.argument('private_key', required=True)
 @click.option('--overwrite', default=False, is_flag=True, help="Overwrite existing keys without asking", show_default=True)
+@global_options
 @account_options
-def account_save(keystore_name, private_key, password, overwrite, force, wait, json_):
+def account_save(keystore_name, private_key, password, overwrite, json_):
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_)
         account = signing.Account.from_private_key_string(private_key)
         if not overwrite and os.path.exists(keystore_name):
             click.confirm(f'Keystore file {keystore_name} already exists, overwrite?', abort=True)
@@ -296,10 +303,11 @@ def account_save(keystore_name, private_key, password, overwrite, force, wait, j
 @account.command('address', help="Print the account address (public key)")
 @click.argument('keystore_name')
 @click.option('--private-key', is_flag=True, help="Print the private key instead of the account address")
+@global_options
 @account_options
 def account_address(password, keystore_name, private_key, force, wait, json_):
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_, force, wait)
         account, keystore_path = _account(keystore_name, password=password)
         o = {'Address': account.get_address()}
         if private_key:
@@ -312,10 +320,12 @@ def account_address(password, keystore_name, private_key, force, wait, json_):
 
 @account.command('balance', help="Get the balance of a account")
 @click.argument('keystore_name')
+@global_options
 @account_options
+@online_options
 def account_balance(keystore_name, password, force, wait, json_):
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
         account = _node_cli().get_account_by_pubkey(pubkey=account.get_address())
         _print_object(account, title='account')
@@ -327,11 +337,14 @@ def account_balance(keystore_name, password, force, wait, json_):
 @click.argument('keystore_name', required=True)
 @click.argument('recipient_id', required=True)
 @click.argument('amount', required=True, type=int)
-@click.option('--ttl', default=defaults.TX_TTL, help="Validity of the spend transaction in number of blocks (default forever)")
+@global_options
+@account_options
+@online_options
+@transaction_options
 @sign_options
 def account_spend(keystore_name, recipient_id, amount, ttl, password, network_id, force, wait, json_):
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_, force, wait)
         account, keystore_path = _account(keystore_name, password=password)
         if not utils.is_valid_hash(recipient_id, prefix="ak"):
             raise ValueError("Invalid recipient address")
@@ -344,10 +357,12 @@ def account_spend(keystore_name, recipient_id, amount, ttl, password, network_id
 @account.command('sign', help="Sign a transaction")
 @click.argument('keystore_name', required=True)
 @click.argument('unsigned_transaction', required=True)
+@global_options
+@account_options
 @sign_options
-def account_sign(keystore_name, password, network_id, unsigned_transaction, force, wait, json_):
+def account_sign(keystore_name, password, network_id, unsigned_transaction, json_):
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_)
         account, keystore_path = _account(keystore_name, password=password)
         if not utils.is_valid_hash(unsigned_transaction, prefix="tx"):
             raise ValueError("Invalid transaction format")
@@ -378,9 +393,10 @@ def tx():
 @tx.command('broadcast', help='Broadcast a transaction to the network')
 @click.argument('signed_transaction', required=True)
 @global_options
+@online_options
 def tx_broadcast(signed_transaction, force, wait, json_):
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_, force, wait)
         if not utils.is_valid_hash(signed_transaction, prefix="tx"):
             raise ValueError("Invalid transaction format")
         cli = _node_cli()
@@ -396,11 +412,12 @@ def tx_broadcast(signed_transaction, force, wait, json_):
 @click.argument('sender_id', required=True)
 @click.argument('recipient_id', required=True)
 @click.argument('amount', required=True, type=int)
-@transaction_options
 @click.option('--payload', default="", help="Spend transaction payload")
+@global_options
+@transaction_options
 def tx_spend(sender_id, recipient_id, amount,  ttl, fee, nonce, payload, force, wait, json_):
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_, force, wait)
         cli = _node_cli()
         tx = cli.tx_builder.tx_spend(sender_id, recipient_id, amount, payload, fee, ttl, nonce)
         # print the results
@@ -426,11 +443,14 @@ def name():
 @name.command('pre-claim', help="Pre-claim a domain name")
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
+@global_options
+@account_options
+@online_options
 @transaction_options
 @sign_options
 def name_pre_claim(keystore_name, domain, ttl, fee, nonce, password, network_id, force, wait, json_):
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
         name = _node_cli(network_id=network_id).AEName(domain)
         name.update_status()
@@ -452,11 +472,14 @@ def name_pre_claim(keystore_name, domain, ttl, fee, nonce, password, network_id,
 @click.option("--name-ttl", default=defaults.NAME_TTL, help=f'Lifetime of the name in blocks', show_default=True, type=int)
 @click.option("--name-salt", help=f'Salt used for the pre-claim transaction', required=True, type=int)
 @click.option("--preclaim-tx-hash", help=f'The transaction hash of the pre-claim', required=True)
+@global_options
+@account_options
+@online_options
 @transaction_options
 @sign_options
 def name_claim(keystore_name, domain, name_ttl, name_salt, preclaim_tx_hash, ttl, fee, nonce, password, network_id, force, wait, json_):
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
         name = _node_cli(network_id=network_id).AEName(domain)
         name.update_status()
@@ -477,6 +500,9 @@ def name_claim(keystore_name, domain, name_ttl, name_salt, preclaim_tx_hash, ttl
 @click.argument('domain', required=True)
 @click.argument('address', required=True)
 @click.option("--name-ttl", default=defaults.NAME_TTL, help=f'Lifetime of the claim in blocks', show_default=True)
+@global_options
+@account_options
+@online_options
 @transaction_options
 @sign_options
 def name_update(keystore_name, domain, address, name_ttl, ttl, fee, nonce, password, network_id, force, wait, json_):
@@ -484,7 +510,7 @@ def name_update(keystore_name, domain, address, name_ttl, ttl, fee, nonce, passw
     Update a name pointer
     """
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
         name = _node_cli(network_id=network_id).AEName(domain)
         name.update_status()
@@ -500,11 +526,14 @@ def name_update(keystore_name, domain, address, name_ttl, ttl, fee, nonce, passw
 @name.command('revoke', help="Revoke a claimed name")
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
+@global_options
+@account_options
+@online_options
 @transaction_options
 @sign_options
 def name_revoke(keystore_name, domain, ttl, fee, nonce, password, network_id, force, wait, json_):
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
         name = _node_cli(network_id=network_id).AEName(domain)
         name.update_status()
@@ -521,6 +550,9 @@ def name_revoke(keystore_name, domain, ttl, fee, nonce, password, network_id, fo
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
 @click.argument('address')
+@global_options
+@account_options
+@online_options
 @transaction_options
 @sign_options
 def name_transfer(keystore_name, domain, address, ttl, fee, nonce, password, network_id, force, wait, json_):
@@ -528,7 +560,7 @@ def name_transfer(keystore_name, domain, address, ttl, fee, nonce, password, net
     Transfer a name to another account
     """
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
         name = _node_cli(network_id=network_id).AEName(domain)
         name.update_status()
@@ -572,6 +604,10 @@ def contract_compile(contract_file):
 @click.argument('keystore_name', required=True)
 @click.argument("contract_file", required=True)
 @click.option("--gas", default=defaults.CONTRACT_GAS, help='Amount of gas to deploy the contract', show_default=True)
+@global_options
+@account_options
+@online_options
+@transaction_options
 @sign_options
 def contract_deploy(keystore_name, contract_file, gas, password, network_id, force, wait, json_):
     """
@@ -585,7 +621,7 @@ def contract_deploy(keystore_name, contract_file, gas, password, network_id, for
     """
     try:
         with open(contract_file) as fp:
-            set_global_options(force, wait, json_)
+            set_global_options(json_, force, wait)
             account, _ = _account(keystore_name, password=password)
             code = fp.read()
             contract = _node_cli(network_id=network_id).Contract(code)
@@ -619,6 +655,10 @@ def contract_deploy(keystore_name, contract_file, gas, password, network_id, for
 @click.argument("params", required=True)
 @click.argument("return_type", required=True)
 @click.option("--gas", default=defaults.CONTRACT_GAS, help='Amount of gas to deploy the contract', show_default=True)
+@global_options
+@account_options
+@online_options
+@transaction_options
 @sign_options
 def contract_call(keystore_name, deploy_descriptor, function, params, return_type, gas,  password, network_id, force, wait, json_):
     try:
@@ -628,7 +668,7 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
             bytecode = contract.get('bytecode')
             address = contract.get('address')
 
-            set_global_options(force, wait, json_)
+            set_global_options(json_, force, wait)
             account, _ = _account(keystore_name, password=password)
 
             contract = _node_cli(network_id=network_id).Contract(source, bytecode=bytecode, address=address)
@@ -659,9 +699,10 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
 @cli.command("inspect", help="Get information on transactions, blocks, etc...")
 @click.argument('obj')
 @global_options
+@online_options
 def inspect(obj, force, wait, json_):
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_, force, wait)
         if obj.endswith(".test"):
             data = _node_cli().get_name_entry_by_name(name=obj)
             _print_object(data, title="name")
@@ -705,14 +746,16 @@ def inspect(obj, force, wait, json_):
 
 @cli.group(help="Interact with the blockchain")
 @global_options
-def chain(force, wait, json_):
-    set_global_options(force, wait, json_)
+@online_options
+def chain(json_, force, wait):
+    set_global_options(json_, force, wait)
     pass
 
 
 @chain.command('ttl')
 @click.argument('relative_ttl', type=int)
 @global_options
+@online_options
 def chain_ttl(relative_ttl, force, wait, json_):
     """
     Print the information of the top block of the chain.
@@ -720,7 +763,7 @@ def chain_ttl(relative_ttl, force, wait, json_):
     try:
         if relative_ttl < 0:
             print("Error: the relative ttl must be a positive number")
-        set_global_options(force, wait, json_)
+        set_global_options(json_, force, wait)
         cli = _node_cli()
         data = cli.compute_absolute_ttl(relative_ttl)
         _print_object(data, f"ttl for node at {cli.config.api_url} ")
@@ -730,12 +773,13 @@ def chain_ttl(relative_ttl, force, wait, json_):
 
 @chain.command('top')
 @global_options
-def chain_top(force, wait, json_):
+@online_options
+def chain_top(json_, force, wait):
     """
     Print the information of the top block of the chain.
     """
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_, force, wait)
         cli = _node_cli()
         data = cli.get_top_block()
         _print_object(data, f"top for node at {cli.config.api_url} ")
@@ -745,12 +789,13 @@ def chain_top(force, wait, json_):
 
 @chain.command('status')
 @global_options
-def chain_status(force, wait, json_):
+@online_options
+def chain_status(json_, force, wait):
     """
     Print the node node status.
     """
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_, force, wait)
         cli = _node_cli()
         data = cli.get_status()
         _print_object(data, f"status for node at {cli.config.api_url} ")
@@ -760,12 +805,13 @@ def chain_status(force, wait, json_):
 
 @chain.command('network-id', help="Retrieve the network id of the target node")
 @global_options
-def chain_network_id(force, wait, json_):
+@online_options
+def chain_network_id(json_, force, wait):
     """
     Print the node node status.
     """
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_, force, wait)
         cli = _node_cli()
         data = cli.get_status().network_id
         _print_object({"Network ID": data}, f"network id for node at {cli.config.api_url} ")
@@ -777,12 +823,13 @@ def chain_network_id(force, wait, json_):
 @click.option('--height', type=int, help="From which height should play the chain (default top)")
 @click.option('--limit', '-l', type=int, default=sys.maxsize, help="Limit the number of block to print")
 @global_options
+@online_options
 def chain_play(height,  limit, force, wait, json_):
     """
     play the blockchain backwards
     """
     try:
-        set_global_options(force, wait, json_)
+        set_global_options(json_, force, wait)
         cli = _node_cli()
         g = cli.get_generation_by_height(height=height) if height is not None else cli.get_current_generation()
         # check the limit
