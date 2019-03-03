@@ -780,10 +780,13 @@ def chain_top(force, wait, json_):
     """
     Print the information of the top block of the chain.
     """
-    set_global_options(force, wait, json_)
-    cli = _node_cli()
-    data = cli.get_top_block()
-    _print_object(data, f"top for node at {cli.config.api_url} ")
+    try:
+        set_global_options(force, wait, json_)
+        cli = _node_cli()
+        data = cli.get_top_block()
+        _print_object(data, f"top for node at {cli.config.api_url} ")
+    except Exception as e:
+        print("Error:", e)
 
 
 @chain.command('status')
@@ -792,10 +795,28 @@ def chain_status(force, wait, json_):
     """
     Print the node node status.
     """
-    set_global_options(force, wait, json_)
-    cli = _node_cli()
-    data = cli.get_status()
-    _print_object(data, f"status for node at {cli.config.api_url} ")
+    try:
+        set_global_options(force, wait, json_)
+        cli = _node_cli()
+        data = cli.get_status()
+        _print_object(data, f"status for node at {cli.config.api_url} ")
+    except Exception as e:
+        print("Error:", e)
+
+
+@chain.command('network-id', help="Retrieve the network id of the target node")
+@global_options
+def chain_network_id(force, wait, json_):
+    """
+    Print the node node status.
+    """
+    try:
+        set_global_options(force, wait, json_)
+        cli = _node_cli()
+        data = cli.get_status().network_id
+        _print_object({"Network ID": data}, f"network id for node at {cli.config.api_url} ")
+    except Exception as e:
+        print("Error:", e)
 
 
 @chain.command('play')
