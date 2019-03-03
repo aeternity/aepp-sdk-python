@@ -115,7 +115,7 @@ def hash_encode(prefix, data):
 
 def namehash(name):
     if isinstance(name, str):
-        name = name.encode('ascii')
+        name = name.lower().encode('ascii')
     # see:
     # https://github.com/aeternity/protocol/blob/master/AENS.md#hashing
     # and also:
@@ -139,7 +139,7 @@ def commitment_id(domain: str, salt: int=None)-> tuple:
     """
     name_salt = randint() if salt is None else salt
     commitment_id = hash_encode(identifiers.COMMITMENT, namehash(domain) + _int(name_salt, 32))
-    return name_salt, commitment_id
+    return commitment_id, name_salt
 
 
 def _int(val: int, byte_length: int = None) -> bytes:
