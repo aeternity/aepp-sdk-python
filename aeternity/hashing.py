@@ -132,6 +132,16 @@ def namehash_encode(prefix, name):
     return encode(prefix, namehash(name))
 
 
+def commitment_id(domain: str, salt: int=None)-> tuple:
+    """
+    Compute the commitment id
+    :return: the generated salt and the commitment_id
+    """
+    name_salt = randint() if salt is None else salt
+    commitment_id = hash_encode(identifiers.COMMITMENT, namehash(domain) + _int(name_salt, 32))
+    return name_salt, commitment_id
+
+
 def _int(val: int, byte_length: int = None) -> bytes:
     """
     Encode and int to a big endian byte array
@@ -184,6 +194,14 @@ def _binary_decode(data, data_type=None):
 def _id(id_tag, hash_id):
     """Utility function to create and _id type"""
     return _int(id_tag) + decode(hash_id)
+
+
+def name_id(name):
+    """
+    Encode a domain name
+    :param name: the domain name to encode
+    """
+    return encode(identifiers.NAME, name)
 
 
 def contract_id(owner_id, nonce):

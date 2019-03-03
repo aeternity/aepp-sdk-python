@@ -1,14 +1,14 @@
 from aeternity.aens import AEName
+from aeternity import hashing
 
 from pytest import raises
 
 
 def test_name_committment(chain_fixture, random_domain):
     domain = random_domain
-    name = chain_fixture.NODE_CLI.AEName(domain)
-    cl = name._get_commitment_id()
-    cr = name.client.get_commitment_id(name=name.domain, salt=name.preclaim_salt)
-    assert cl == cr.commitment_id
+    salt, cid = hashing.commitment_id(domain)
+    cr = chain_fixture.NODE_CLI.client.get_commitment_id(name=domain, salt=salt)
+    assert cid == cr.commitment_id
 
 
 def test_name_validation_fails(chain_fixture):

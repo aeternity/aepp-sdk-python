@@ -27,7 +27,9 @@ ORACLE_QUERY_FEE = 0
 ORACLE_TTL_VALUE = 500
 ORACLE_QUERY_TTL_VALUE = 10
 ORACLE_RESPONSE_TTL_VALUE = 10
-KEY_BLOCK_INTERVAL = 3
+# Chain
+KEY_BLOCK_INTERVAL = 3  # average time between key-blocks in minutes
+KEY_BLOCK_CONFIRMATION_NUM = 3  # number of key blocks to wait for to consider a key-block confirmed
 # network id
 NETWORK_ID = identifiers.NETWORK_ID_MAINNET
 # TUNING

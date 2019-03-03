@@ -19,7 +19,12 @@ class PreclaimFailed(AENSException):
     pass
 
 
-class TooEarlyClaim(AENSException):
+class NameTooEarlyClaim(Exception):
+    pass
+
+
+class NameCommitmentIdMismatch(Exception):
+    """ Raised when a commitment id cannot be verified """
     pass
 
 

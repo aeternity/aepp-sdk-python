@@ -1,8 +1,8 @@
-from aeternity.exceptions import NameNotAvailable, MissingPreclaim, NameUpdateError
+from aeternity.exceptions import NameNotAvailable, MissingPreclaim, NameUpdateError, NameTooEarlyClaim, NameCommitmentIdMismatch
 from aeternity.openapi import OpenAPIClientException
 from aeternity.config import DEFAULT_TX_TTL, DEFAULT_FEE, DEFAULT_NAME_TTL, NAME_CLIENT_TTL
 from aeternity import hashing, utils, oracles
-from aeternity.identifiers import ACCOUNT_ID, COMMITMENT, NAME
+from aeternity.identifiers import ACCOUNT_ID, NAME
 
 
 class NameStatus:
@@ -42,23 +42,6 @@ class AEName:
             or
             not cls.validate_name(pointer, raise_exception=False)
         )
-
-    @classmethod
-    def _get_name_id(cls, name):
-        """
-        Compute the name id
-        """
-        if isinstance(name, str):
-            name = name.encode('ascii')
-        return hashing.encode(NAME, name)
-
-    def _get_commitment_id(self):
-        """
-        Compute the commitment id
-        """
-        self.preclaim_salt = hashing.randint()
-        commitment_id = hashing.hash_encode(COMMITMENT, hashing.namehash(self.domain) + self.preclaim_salt.to_bytes(32, 'big'))
-        return commitment_id
 
     def _get_pointers(self, target):
         if target.startswith(ACCOUNT_ID):
@@ -148,7 +131,7 @@ class AEName:
         # check which block we used to create the preclaim
         self.preclaimed_block_height = self.client.get_current_key_block_height()
         # calculate the commitment hash
-        commitment_id = self._get_commitment_id()
+        self.preclaim_salt, commitment_id = hashing.commitment_id(self.domain)
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl
@@ -156,7 +139,7 @@ class AEName:
         # create spend_tx
         tx = txb.tx_name_preclaim(account.get_address(), commitment_id, fee, ttl, nonce)
         # sign the transaction
-        tx_signed = self.client.sign_transaction(account, tx.tx)
+        tx_signed = self.client.sign_transaction(account, tx.tx, metadata={"salt": self.preclaim_salt})
         # post the transaction to the chain
         self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
         # update local status
@@ -164,11 +147,29 @@ class AEName:
         self.preclaim_tx_hash = tx_signed.hash
         return tx_signed
 
-    def claim(self, account, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
-        if self.preclaimed_block_height is None:
-            raise MissingPreclaim('You must call preclaim before claiming a name')
-        # name encoded
-        name = AEName._get_name_id(self.domain)
+    def claim(self, account, domain, name_salt, preclaim_tx_hash, fee=DEFAULT_FEE, tx_ttl=DEFAULT_TX_TTL):
+        self.preclaim_salt = name_salt
+        # get the preclaim height
+        try:
+            pre_claim_tx = self.client.get_transaction_by_hash(hash=preclaim_tx_hash)
+            self.preclaimed_block_height = pre_claim_tx.block_height
+        except OpenAPIClientException:
+            raise MissingPreclaim(f"Preclaim transaction {preclaim_tx_hash} not found")
+        # if the commitment_id mismatch
+        pre_claim_commitment_id = pre_claim_tx.tx.commitment_id
+        _, commitment_id = hashing.commitment_id(domain, salt=name_salt)
+        if pre_claim_commitment_id != commitment_id:
+            raise NameCommitmentIdMismatch(f"Committment id mismatch, wanted {pre_claim_commitment_id} got {commitment_id}")
+        # if the transaction has not been mined
+        if self.preclaimed_block_height <= 0:
+            raise NameTooEarlyClaim(f"The pre-claim transaction has not been mined yet")
+        # get the current height
+        current_height = self.client.get_top_block().height
+        safe_height = self.preclaimed_block_height + self.client.config.key_block_confirmation_num
+        if current_height < safe_height:
+            raise NameTooEarlyClaim(f"It is not safe to execute the name claim before height {safe_height}, current height: {current_height}")
+        # name encode name
+        name = hashing.name_id(self.domain)
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl
@@ -189,7 +190,7 @@ class AEName:
                fee=DEFAULT_FEE,
                tx_ttl=DEFAULT_TX_TTL):
 
-        if self.status != NameStatus.CLAIMED:
+        if not self.check_claimed():
             raise NameUpdateError('Must be claimed to update pointer')
 
         if isinstance(target, oracles.Oracle):

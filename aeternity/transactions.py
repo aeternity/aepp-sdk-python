@@ -29,9 +29,11 @@ class TxSigner:
         encoded_signature = encode(idf.SIGNATURE, signature)
         return encoded_signed_tx, encoded_signature
 
-    def sign_encode_transaction(self, tx):
+    def sign_encode_transaction(self, tx, metadata: dict=None):
         """
         Sign, encode and compute the hash of a transaction
+        :param tx: the TxObject to be signed
+        :param metadata: additional data to include in the output of the signed transaction object
         :return: encoded_signed_tx, encoded_signature, tx_hash
         """
         # decode the transaction if not in native mode
@@ -47,6 +49,7 @@ class TxSigner:
         # return the object
         tx = dict(
             data=transaction.data,
+            metadata=metadata,
             tx=encoded_signed_tx,
             hash=tx_hash,
             signature=encoded_signature,

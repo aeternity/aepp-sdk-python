@@ -49,6 +49,7 @@ class Config:
         self.orcale_ttl_type = kwargs.get("oracle_ttl_type", defaults.ORACLE_TTL_TYPE)
         # chain defaults
         self.key_block_interval = kwargs.get("key_block_interval", defaults.KEY_BLOCK_INTERVAL)
+        self.key_block_confirmation_num = kwargs.get("key_block_confirmation_num", defaults.KEY_BLOCK_CONFIRMATION_NUM)
         # debug
         self.debug = kwargs.get("debug", False)
 
@@ -114,9 +115,9 @@ class NodeClient:
         Helper method to compute both absoulute ttl and  nonce for an account
         :return: (nonce, ttl)
         """
-        ttl = self.compute_absolute_ttl(relative_ttl) if relative_ttl > 0 else 0
+        ttl = self.compute_absolute_ttl(relative_ttl).absolute_ttl if relative_ttl > 0 else 0
         nonce = self.get_next_nonce(account_address)
-        return nonce, ttl.absolute_ttl
+        return nonce, ttl
 
     def get_top_block(self):
         """
@@ -157,13 +158,13 @@ class NodeClient:
             self.wait_for_transaction(reply.tx_hash)
         return reply.tx_hash
 
-    def sign_transaction(self, account: Account, tx: str) -> (str, str, str):
+    def sign_transaction(self, account: Account, tx: str, metadata: dict = None) -> tuple:
         """
         Sign a transaction
         :return: the transaction for the transaction
         """
         s = TxSigner(account, self.config.network_id)
-        tx = s.sign_encode_transaction(tx)
+        tx = s.sign_encode_transaction(tx, metadata)
         return tx
 
     def spend(self, account: Account,

@@ -162,8 +162,6 @@ _sign_options = [
 ]
 
 _transaction_options = [
-    click.option('--debug-tx', 'debug_tx', is_flag=True, default=False,
-                 help='Use debug transaction generation endpoints from the node instead of the native python implementation'),
     click.option('--ttl', 'ttl', type=int, default=defaults.TX_TTL,
                  help=f'Set the transaction ttl (relative number, ex 100)', show_default=True),
     click.option('--fee', 'fee', type=int, default=defaults.FEE,
@@ -211,8 +209,8 @@ def set_global_options(force, wait, json_):
 @click.group()
 @click.pass_context
 @click.version_option()
-@click.option('--url', '-u', default='https://sdk-mainnet.aepps.com', envvar='EPOCH_URL', help='Aeternity node url', metavar='URL')
-@click.option('--debug-url', '-d', default=None, envvar='EPOCH_URL_DEBUG', metavar='URL')
+@click.option('--url', '-u', default='https://sdk-mainnet.aepps.com', envvar='NODE_URL', help='Aeternity node url', metavar='URL')
+@click.option('--debug-url', '-d', default=None, envvar='NODE_URL_DEBUG', metavar='URL')
 @global_options
 @click.version_option(version=__version__)
 def cli(ctx, url, debug_url, force, wait, json_):
@@ -398,7 +396,7 @@ def tx_broadcast(signed_transaction, force, wait, json_):
 @click.argument('amount', required=True, type=int)
 @transaction_options
 @click.option('--payload', default="", help="Spend transaction payload")
-def tx_spend(sender_id, recipient_id, amount, debug_tx, ttl, fee, nonce, payload, force, wait, json_):
+def tx_spend(sender_id, recipient_id, amount,  ttl, fee, nonce, payload, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
         cli = _node_cli()
@@ -423,14 +421,12 @@ def name():
     pass
 
 
-@name.command('claim', help="Claim a domain name")
+@name.command('pre-claim', help="Pre-claim a domain name")
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
-@click.option("--name-ttl", default=defaults.NAME_TTL, help=f'Lifetime of the name in blocks', show_default=True)
-@click.option("--ttl", default=defaults.TX_TTL, help=f'Lifetime of the claim request in blocks', show_default=True)
-@click.option("--fee", default=defaults.FEE, help=f'Transaction fee', show_default=True)
+@transaction_options
 @sign_options
-def name_register(keystore_name, domain, name_ttl, ttl, fee, password, network_id, force, wait, json_):
+def name_pre_claim(keystore_name, domain, ttl, fee, nonce, password, network_id, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
         account, _ = _account(keystore_name, password=password)
@@ -440,24 +436,34 @@ def name_register(keystore_name, domain, name_ttl, ttl, fee, password, network_i
             print("Domain not available")
             exit(0)
         # preclaim
-        tx, tx_signed, sig, tx_hash = name.preclaim(account, fee, ttl)
-        _print_object({
-            'Signing account address': account.get_address(),
-            'Signature': sig,
-            'Unsigned': tx,
-            'Signed': tx_signed,
-            'Hash': tx_hash
-        }, title='preclaim transaction')
+        tx = name.preclaim(account, fee, ttl)
+        _print_object(tx, title='preclaim transaction')
+    except ValueError as e:
+        print(e)
+    except Exception as e:
+        print("Error", e)
+
+
+@name.command('claim', help="Claim a domain name")
+@click.argument('keystore_name', required=True)
+@click.argument('domain', required=True)
+@click.option("--name-ttl", default=defaults.NAME_TTL, help=f'Lifetime of the name in blocks', show_default=True, type=int)
+@click.option("--name-salt", help=f'Salt used for the pre-claim transaction', required=True, type=int)
+@click.option("--preclaim-tx-hash", help=f'The transaction hash of the pre-claim', required=True)
+@transaction_options
+@sign_options
+def name_claim(keystore_name, domain, name_ttl, name_salt, preclaim_tx_hash, ttl, fee, nonce, password, network_id, force, wait, json_):
+    try:
+        set_global_options(force, wait, json_)
+        account, _ = _account(keystore_name, password=password)
+        name = _node_cli(network_id=network_id).AEName(domain)
+        name.update_status()
+        if name.status != aens.AEName.Status.AVAILABLE:
+            print("Domain not available")
+            exit(0)
         # claim
-        tx, tx_signed, sig, tx_hash = name.claim(account, fee, ttl)
-        _print_object({
-            'Signing account address': account.get_address(),
-            'Signature': sig,
-            'Unsigned': tx,
-            'Signed': tx_signed,
-            'Hash': tx_hash
-        }, title='claim transaction')
-        _print_object({}, title=f"Name {domain} claimed")
+        tx = name.claim(account, domain, name_salt, preclaim_tx_hash, fee=fee, tx_ttl=ttl)
+        _print_object(tx, title=f'Name {domain} claim transaction')
     except ValueError as e:
         print(e)
 
@@ -467,9 +473,9 @@ def name_register(keystore_name, domain, name_ttl, ttl, fee, password, network_i
 @click.argument('domain', required=True)
 @click.argument('address', required=True)
 @click.option("--name-ttl", default=defaults.NAME_TTL, help=f'Lifetime of the claim in blocks', show_default=True)
-@click.option("--ttl", default=defaults.TX_TTL, help=f'Lifetime of the claim request in blocks', show_default=True)
+@transaction_options
 @sign_options
-def name_update(keystore_name, domain, address, name_ttl, ttl, password, network_id, force, wait, json_):
+def name_update(keystore_name, domain, address, name_ttl, ttl, fee, nonce, password, network_id, force, wait, json_):
     """
     Update a name pointer
     """
@@ -490,8 +496,9 @@ def name_update(keystore_name, domain, address, name_ttl, ttl, password, network
 @name.command('revoke', help="Revoke a claimed name")
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
+@transaction_options
 @sign_options
-def name_revoke(keystore_name, domain, password, network_id, force, wait, json_):
+def name_revoke(keystore_name, domain, ttl, fee, nonce, password, network_id, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
         account, _ = _account(keystore_name, password=password)
@@ -510,8 +517,9 @@ def name_revoke(keystore_name, domain, password, network_id, force, wait, json_)
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
 @click.argument('address')
+@transaction_options
 @sign_options
-def name_transfer(keystore_name, domain, address, password, network_id, force, wait, json_):
+def name_transfer(keystore_name, domain, address, ttl, fee, nonce, password, network_id, force, wait, json_):
     """
     Transfer a name to another account
     """
@@ -527,31 +535,6 @@ def name_transfer(keystore_name, domain, address, password, network_id, force, w
         _print_object(tx, title=f"Name {domain} status transfer to {address}")
     except Exception as e:
         print(e)
-
-
-#     ____                 _
-#    / __ \               | |
-#   | |  | |_ __ __ _  ___| | ___  ___
-#   | |  | | '__/ _` |/ __| |/ _ \/ __|
-#   | |__| | | | (_| | (__| |  __/\__ \
-#    \____/|_|  \__,_|\___|_|\___||___/
-#
-#
-@cli.group(help="Interact with oracles")
-def oracle():
-    pass
-
-
-@oracle.command('register')
-def oracle_register():
-    print("register oracle")
-    pass
-
-
-@oracle.command('query')
-def oracle_query():
-    print("query oracle")
-    pass
 
 
 #     _____            _                  _
@@ -658,16 +641,6 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
     except Exception as e:
         print(e)
 
-#     ___   _______          _        ______  _____     ________   ______
-#   .'   `.|_   __ \        / \     .' ___  ||_   _|   |_   __  |.' ____ \
-#  /  .-.  \ | |__) |      / _ \   / .'   \_|  | |       | |_ \_|| (___ \_|
-#  | |   | | |  __ /      / ___ \  | |         | |   _   |  _| _  _.____`.
-#  \  `-'  /_| |  \ \_  _/ /   \ \_\ `.___.'\ _| |__/ | _| |__/ || \____) |
-#   `.___.'|____| |___||____| |____|`.____ .'|________||________| \______.'
-#
-
-
-# TODO: implement cli for oracles
 
 #    _____                           _
 #   |_   _|                         | |
@@ -686,14 +659,8 @@ def inspect(obj, force, wait, json_):
     try:
         set_global_options(force, wait, json_)
         if obj.endswith(".test"):
-            name = _node_cli().AEName(obj)
-            name.update_status()
-            _print_object({
-                'Status': name.status,
-                'Name hash': name.name_hash,
-                'Pointers': name.pointers,
-                'TTL': name.name_ttl,
-            }, title="aens")
+            data = _node_cli().get_name_entry_by_name(name=obj)
+            _print_object(data, title="name")
         elif obj.startswith("kh_") or obj.startswith("mh_"):
             v = _node_cli().get_block_by_hash(obj)
             _print_object(v, title="block")
@@ -719,24 +686,7 @@ def inspect(obj, force, wait, json_):
         else:
             raise ValueError(f"input not recognized: {obj}")
     except Exception as e:
-        print("Error:", e)
-
-
-# @inspect.command('deploy', help='The contract deploy descriptor to inspect')
-# @click.argument('contract_deploy_descriptor')
-# def inspect_deploy(contract_deploy_descriptor):
-#     """
-#     Inspect a contract deploy file that has been generated with the command
-#     aecli account X contract CONTRACT_SOURCE deploy
-#     """
-#     try:
-#         with open(contract_deploy_descriptor) as fp:
-#             contract = json.load(fp)
-#             _print_object(contract)
-#             data = _node_cli().get_transaction_by_hash(hash=contract.get('transaction', 'N/A'))
-#             _print_object(data, "Transaction")
-#     except Exception as e:
-#         print(e)
+        print(e)
 
 
 #     _____ _           _
