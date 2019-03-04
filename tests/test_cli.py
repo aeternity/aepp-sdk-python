@@ -23,7 +23,7 @@ def _account_path(tempdir, account):
 
 
 def call_aecli(*params):
-    args = [aecli_exe, '-u', NODE_URL, '-d', NODE_URL_DEBUG] + list(params) + ['--wait', '--json']
+    args = [aecli_exe, '-u', NODE_URL, '-d', NODE_URL_DEBUG] + list(params) + ['--json']
     cmd = " ".join(args)
     print(cmd)
     status, output = subprocess.getstatusoutput(cmd)
@@ -92,7 +92,7 @@ def test_cli_spend(chain_fixture, tempdir):
     # generate a new address
     recipient_address = Account.generate().get_address()
     # call the cli
-    call_aecli('account', 'spend', account_path, recipient_address, "90", '--password', 'aeternity_bc', '--network-id', NETWORK_ID)
+    call_aecli('account', 'spend', account_path, recipient_address, "90", '--password', 'aeternity_bc', '--network-id', NETWORK_ID, '--wait')
     # test that the recipient account has the requested amount
     print(f"recipient address is {recipient_address}")
     recipient_account = chain_fixture.NODE_CLI.get_account_by_pubkey(pubkey=recipient_address)
