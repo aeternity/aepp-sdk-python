@@ -121,19 +121,20 @@ Enter the account password []:
 ```
 aecli inspect th_2CV4a7xxDYj5ysaDjXNoCSLxnkowGM5bbyAvtdoPvHZwTSYykX
 <transaction>
-  Block hash ________________________________________ mh_2Kw9ktNiU36uFC2Fs2FZtpFfok6GQZTt5rY6Vs5bS6jNBw6bzd
-  Block height ______________________________________ 46052
-  Hash ______________________________________________ th_2DWDxx2egaF887S4M7GGBWsEGqkQvPYcXsvJzqapd6CRLGKobJ
+  Block hash ________________________________________ mh_2vjFffExUZPVGo3q6CHRSzxVUhzLcUnQQUWpijFtSvKfoHwQWe
+  Block height ______________________________________ 12472
+  Hash ______________________________________________ th_2CV4a7xxDYj5ysaDjXNoCSLxnkowGM5bbyAvtdoPvHZwTSYykX
   <signatures 1>
-    Signature #1 ____________________________________ sg_CotVHb914KqZpSETmY4mWhpFpCCUdCJssYbJHx1iR6S94SrDPfTyqUfqQkoBW4dVSgU1kfFUJC9yc6sUaHSte2xBvCKzR
+    Signature #1 ____________________________________ sg_WtPeyKWN4zmcnZZXpAxCT8EvjF3qSjiUidc9cdxQooxe1JCLADTVbKDFm9S5bNwv3yq57PQKTG4XuUP4eTzD5jymPHpNu
+  </signatures>
   <tx>
     Amount __________________________________________ 5000000000000000000
-    Fee _____________________________________________ 20000000000000
-    Nonce ___________________________________________ 1059
+    Fee _____________________________________________ 20000
+    Nonce ___________________________________________ 146
     Payload _________________________________________ Faucet Tx
-    Recipient id ____________________________________ ak_BobY97QUVR4iDLg4k3RKmy6shZYx9FR75nLaN33GsVmSnhWxn
+    Recipient id ____________________________________ ak_2ioQbdSViNKjknaLUWphdRjpbTNVpMHpXf9X5ZkoVrhrCZGuyW
     Sender id _______________________________________ ak_2iBPH7HUz3cSDVEUWiHg76MZJ6tZooVNBmmxcgVK6VV8KAE688
-    Ttl _____________________________________________ 46102
+    Ttl _____________________________________________ 12522
     Type ____________________________________________ SpendTx
     Version _________________________________________ 1
   </tx>

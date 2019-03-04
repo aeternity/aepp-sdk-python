@@ -115,6 +115,7 @@ def _po(label, value, offset=0, label_prefix=None):
         o = offset + 2
         for i, x in enumerate(value):
             _po(f"{label[:-1]} #{i+1}", x, o)
+        _pl(f"</{label}>", offset)
     elif isinstance(value, datetime):
         val = value.strftime("%Y-%m-%d %H:%M")
         _pl(label, offset, value=val)
@@ -305,9 +306,9 @@ def account_save(keystore_name, private_key, password, overwrite, json_):
 @click.option('--private-key', is_flag=True, help="Print the private key instead of the account address")
 @global_options
 @account_options
-def account_address(password, keystore_name, private_key, force, wait, json_):
+def account_address(password, keystore_name, private_key, json_):
     try:
-        set_global_options(json_, force, wait)
+        set_global_options(json_)
         account, keystore_path = _account(keystore_name, password=password)
         o = {'Address': account.get_address()}
         if private_key:
@@ -342,13 +343,14 @@ def account_balance(keystore_name, password, force, wait, json_):
 @online_options
 @transaction_options
 @sign_options
-def account_spend(keystore_name, recipient_id, amount, ttl, password, network_id, force, wait, json_):
+def account_spend(keystore_name, recipient_id, amount, fee, ttl, nonce, password, network_id, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         account, keystore_path = _account(keystore_name, password=password)
+        account.nonce = nonce
         if not utils.is_valid_hash(recipient_id, prefix="ak"):
             raise ValueError("Invalid recipient address")
-        tx = _node_cli(network_id=network_id).spend(account, recipient_id, amount, tx_ttl=ttl)
+        tx = _node_cli(network_id=network_id).spend(account, recipient_id, amount, tx_ttl=ttl, fee=fee)
         _print_object(tx, title='spend transaction')
     except Exception as e:
         _print_error(e, exit_code=1)
