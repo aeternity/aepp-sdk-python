@@ -417,9 +417,9 @@ def tx_broadcast(signed_transaction, force, wait, json_):
 @click.option('--payload', default="", help="Spend transaction payload")
 @global_options
 @transaction_options
-def tx_spend(sender_id, recipient_id, amount,  ttl, fee, nonce, payload, force, wait, json_):
+def tx_spend(sender_id, recipient_id, amount,  ttl, fee, nonce, payload, json_):
     try:
-        set_global_options(json_, force, wait)
+        set_global_options(json_)
         cli = _node_cli()
         tx = cli.tx_builder.tx_spend(sender_id, recipient_id, amount, payload, fee, ttl, nonce)
         # print the results
