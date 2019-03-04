@@ -66,48 +66,49 @@ Commands:
 
 Use the environment variables
 
-- `EPOCH_URL` 
-- `EPOCH_URL_DEBUG`
+- `NODE_URL`
+- `NODE_URL_DEBUG`
 
 ### Example usage
 
-The following is a walkthrough to execute an offline spend transaction on the *sdk-edgenet* network
+The following is a walkthrough to execute an offline spend transaction on the *testnet* network
 
 1. Set the environment variables
 ```
-export EPOCH_URL=https://sdk-testnet.aepps.com
-export EPOCH_URL_DEBUG=https://sdk-testnet.aepps.com
+export NODE_URL=https://sdk-testnet.aepps.com
 ```
 
 ❗ When not set the command line client will connect to mainnet
 
 2. Retrieve the top block
 ```
-./aecli chain top
-<none>
+$ aecli chain top
+<top for node at https://sdk-testnet.aepps.com >
   Beneficiary _______________________________________ ak_2iBPH7HUz3cSDVEUWiHg76MZJ6tZooVNBmmxcgVK6VV8KAE688
-  Hash ______________________________________________ kh_2CkQuFZbxMh7KEjWQYphWxaTsTaL1tXrMDLyDwikKbwG1jNuRL
-  Height ____________________________________________ 12465
-  Miner _____________________________________________ ak_q6LAEutWqrmMLvSWE1dG4hN3dmLb8ixsJnkZUhsybGEti7Biv
-  Nonce _____________________________________________ 13307153327850546964
-  Prev hash _________________________________________ kh_oNMbgX3jW55tg3cr1DMpniCNfrJgQuqQUFEsXaozfhTca4rJt
-  Prev key hash _____________________________________ kh_oNMbgX3jW55tg3cr1DMpniCNfrJgQuqQUFEsXaozfhTca4rJt
-  State hash ________________________________________ bs_LaWiuHdYQ7Z1KBxXMeaPtYCG7JeCWU6ZqxfsGLTxYJU9cbsRq
-  Target ____________________________________________ 538660660
-  Time ______________________________________________ 2018-12-23T22:15:34.290000+00:00
-  Version ___________________________________________ 1
-</none>
+  Hash ______________________________________________ kh_WTqMQQRsvmbtP5yrKPxd4p2PPKiA51AuPyCkVJk7d7HVtkhS6
+  Height ____________________________________________ 46049
+  Info ______________________________________________ cb_Xfbg4g==
+  Miner _____________________________________________ ak_24yQXT3g2jNryZbY2veHYcgQn3PspfTnkTHbXMwNYDQd9NZAs5
+  Nonce _____________________________________________ 17848795956567990671
+  Prev hash _________________________________________ kh_B5Q3F7Gxbmg2z3prkay2uYohvhv4xXUKQzKKkbTdm7Z3GuQxU
+  Prev key hash _____________________________________ kh_B5Q3F7Gxbmg2z3prkay2uYohvhv4xXUKQzKKkbTdm7Z3GuQxU
+  State hash ________________________________________ bs_bkP3QdFKCWNetDHfwL3rJG2hEgRzZRAQN6jh33SKwUd17tBjp
+  Target ____________________________________________ 538409724
+  Time ______________________________________________ 2019-03-03T23:38:49.720000+00:00
+  Version ___________________________________________ 2
+</top for node at https://sdk-testnet.aepps.com >
 ```
 
 3. Create a new account
 
 ```
-aecli account create TEST.json
+aecli account create Bob.json
 Enter the account password []:
 <account>
-  Address ___________________________________________ ak_tMZTyGmbpZYdKde9pfjh8bnxD2PPEEXM4KQjarLNNaoPpwrxn
-  Path ______________________________________________ /..../TEST.json
+  Address ___________________________________________ ak_BobY97QUVR4iDLg4k3RKmy6shZYx9FR75nLaN33GsVmSnhWxn
+  Path ______________________________________________ /.../Bob.json
 </account>
+
 ```
 
 ❗ Make sure that you use a long and difficult-to-guess password for an account that you plan to use on mainnet
@@ -120,19 +121,19 @@ Enter the account password []:
 ```
 aecli inspect th_2CV4a7xxDYj5ysaDjXNoCSLxnkowGM5bbyAvtdoPvHZwTSYykX
 <transaction>
-  Block hash ________________________________________ mh_2vjFffExUZPVGo3q6CHRSzxVUhzLcUnQQUWpijFtSvKfoHwQWe
-  Block height ______________________________________ 12472
-  Hash ______________________________________________ th_2CV4a7xxDYj5ysaDjXNoCSLxnkowGM5bbyAvtdoPvHZwTSYykX
+  Block hash ________________________________________ mh_2Kw9ktNiU36uFC2Fs2FZtpFfok6GQZTt5rY6Vs5bS6jNBw6bzd
+  Block height ______________________________________ 46052
+  Hash ______________________________________________ th_2DWDxx2egaF887S4M7GGBWsEGqkQvPYcXsvJzqapd6CRLGKobJ
   <signatures 1>
-    Signature #1 ____________________________________ sg_WtPeyKWN4zmcnZZXpAxCT8EvjF3qSjiUidc9cdxQooxe1JCLADTVbKDFm9S5bNwv3yq57PQKTG4XuUP4eTzD5jymPHpNu
+    Signature #1 ____________________________________ sg_CotVHb914KqZpSETmY4mWhpFpCCUdCJssYbJHx1iR6S94SrDPfTyqUfqQkoBW4dVSgU1kfFUJC9yc6sUaHSte2xBvCKzR
   <tx>
     Amount __________________________________________ 5000000000000000000
-    Fee _____________________________________________ 20000
-    Nonce ___________________________________________ 146
+    Fee _____________________________________________ 20000000000000
+    Nonce ___________________________________________ 1059
     Payload _________________________________________ Faucet Tx
-    Recipient id ____________________________________ ak_2ioQbdSViNKjknaLUWphdRjpbTNVpMHpXf9X5ZkoVrhrCZGuyW
+    Recipient id ____________________________________ ak_BobY97QUVR4iDLg4k3RKmy6shZYx9FR75nLaN33GsVmSnhWxn
     Sender id _______________________________________ ak_2iBPH7HUz3cSDVEUWiHg76MZJ6tZooVNBmmxcgVK6VV8KAE688
-    Ttl _____________________________________________ 12522
+    Ttl _____________________________________________ 46102
     Type ____________________________________________ SpendTx
     Version _________________________________________ 1
   </tx>
@@ -142,11 +143,11 @@ aecli inspect th_2CV4a7xxDYj5ysaDjXNoCSLxnkowGM5bbyAvtdoPvHZwTSYykX
 6. Create another account
 
 ```
-aecli account create TEST1.json
+aecli account create Alice.json
 Enter the account password []:
 <account>
-  Address ___________________________________________ ak_2rT82n7BYbH9JCsgxWqJc4BbPb9UybxCeAGS2RtXc8pPxhWJDu
-  Path ______________________________________________ /..../TEST1.json
+  Address ___________________________________________ ak_9j8akv2PE2Mnt5khFeDvS9BGc3TBBrJkfcgaJHgBXcLLagX8M
+  Path ______________________________________________ /.../Alice.json
 </account>
 ```
 
@@ -154,25 +155,34 @@ Enter the account password []:
 7. Transfer some tokens to an account to the other
 
 ```
-aecli account spend TEST.json ak_2rT82n7BYbH9JCsgxWqJc4BbPb9UybxCeAGS2RtXc8pPxhWJDu 1000000000000000000 --network-id ae_uat  
+aecli account spend Bob.json ak_9j8akv2PE2Mnt5khFeDvS9BGc3TBBrJkfcgaJHgBXcLLagX8M 1000000000000000000
 Enter the account password []:
 <spend transaction>
-  Sender account ____________________________________ ak_2ioQbdSViNKjknaLUWphdRjpbTNVpMHpXf9X5ZkoVrhrCZGuyW
-  Recipient account _________________________________ ak_2rT82n7BYbH9JCsgxWqJc4BbPb9UybxCeAGS2RtXc8pPxhWJDu
-  Unsigned __________________________________________ tx_+FcMAaEB4pu+lXqNvHL+V7e1uq4GhGOTR6GA6xF1LNzT1sp/De6hAfP6rN+zuBu1JJBSjeuEBufFkXQ1fRK0iYsik1KyXgWWiA3gtrOnZAAAgk4ggjKtAYANBwQ3
-  Signed ____________________________________________ tx_+KELAfhCuEBlJaNys8hURnXUAqVYsmgjSApQh7PbGm+r4KoJQwUH+zU+0z2+Y+Q/ecU/bdBvwqO7UcOyVnWlvVEoDFLUXfAFuFn4VwwBoQHim76Veo28cv5Xt7W6rgaEY5NHoYDrEXUs3NPWyn8N7qEB8/qs37O4G7UkkFKN64QG58WRdDV9ErSJiyKTUrJeBZaIDeC2s6dkAACCTiCCMq0BgBH1MuI=
-  Hash ______________________________________________ th_2PbPcfBMJGXe4GeAYWVT1CiY3DocgAe1RPP47VP1xaU2X5quJd
+  <data>
+    Tag _____________________________________________ 12
+    Vsn _____________________________________________ 1
+    Sender id _______________________________________ ak_BobY97QUVR4iDLg4k3RKmy6shZYx9FR75nLaN33GsVmSnhWxn
+    Recipient id ____________________________________ ak_9j8akv2PE2Mnt5khFeDvS9BGc3TBBrJkfcgaJHgBXcLLagX8M
+    Amount __________________________________________ 1000000000000000000
+    Fee _____________________________________________ 16860000000000
+    Ttl _____________________________________________ 0
+    Nonce ___________________________________________ 4
+    Payload _________________________________________ 
+  </data>
+  Metadata
+  Tx ________________________________________________ tx_+KMLAfhCuEAKN05UwTV0fSgO5woziVNnAMBcDrh46XlNFTZTJQlI05fz/8pVSyrb1guCLcw8n7++O887k/JEu6/XHcCSHOMMuFv4WQwBoQEYh8aMDs7saMDBvys+lbKds3Omnzm4crYNbs9xGolBm6EBE9B4l/BeyxMO//3ANxwyT+ZHL52j9nAZosRe/YFuK4eIDeC2s6dkAACGD1WGT5gAAASAN24JGA==
+  Hash ______________________________________________ th_2gAL72dtnaeDcZoZA9MbfSL1JrWzNErMJuikmTRvBY8zhkGh91
+  Signature _________________________________________ sg_2LX9hnJRiYGSspzpS34QeN3PLT9bGSkFRbad9LXvLj5QUFoV5eHRf9SueDgLiiquCGbeFEBPBe7xMJidf8NMSuF16dngr
+  Network id ________________________________________ ae_uat
 </spend transaction>
 ```
 
-❗ You dont need to set the `network-id` parameter for the mainnet!
-
 8. Verify the balance of the new account
 ```
-aecli inspect ak_2rT82n7BYbH9JCsgxWqJc4BbPb9UybxCeAGS2RtXc8pPxhWJDu
+aecli inspect ak_9j8akv2PE2Mnt5khFeDvS9BGc3TBBrJkfcgaJHgBXcLLagX8M
 <account>
   Balance ___________________________________________ 1000000000000000000
-  Id ________________________________________________ ak_2rT82n7BYbH9JCsgxWqJc4BbPb9UybxCeAGS2RtXc8pPxhWJDu
+  Id ________________________________________________ ak_9j8akv2PE2Mnt5khFeDvS9BGc3TBBrJkfcgaJHgBXcLLagX8M
   Nonce _____________________________________________ 0
 </account>
 ```
