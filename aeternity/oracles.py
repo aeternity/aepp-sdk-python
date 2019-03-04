@@ -1,6 +1,6 @@
 import logging
-from aeternity import config, hashing
-from aeternity.identifiers import ORACLE_ID, ORACLE_DEFAULT_VM_VERSION
+from aeternity import hashing, defaults
+from aeternity.identifiers import ORACLE_ID
 
 logger = logging.getLogger(__name__)
 
@@ -16,13 +16,13 @@ class OracleQuery():
         self.client = client
 
     def execute(self, sender, query,
-                query_fee=config.ORACLE_DEFAULT_QUERY_FEE,
-                query_ttl_type=config.ORACLE_DEFAULT_TTL_TYPE_DELTA,
-                query_ttl_value=config.ORACLE_DEFAULT_QUERY_TTL_VALUE,
-                response_ttl_type=config.ORACLE_DEFAULT_TTL_TYPE_DELTA,
-                response_ttl_value=config.ORACLE_DEFAULT_RESPONSE_TTL_VALUE,
-                fee=config.DEFAULT_FEE,
-                tx_ttl=config.DEFAULT_TX_TTL):
+                query_fee=defaults.ORACLE_QUERY_FEE,
+                query_ttl_type=defaults.ORACLE_TTL_TYPE,
+                query_ttl_value=defaults.ORACLE_QUERY_TTL_VALUE,
+                response_ttl_type=defaults.ORACLE_TTL_TYPE,
+                response_ttl_value=defaults.ORACLE_RESPONSE_TTL_VALUE,
+                fee=defaults.FEE,
+                tx_ttl=defaults.TX_TTL):
         """
         Execute a query to the oracle
         """
@@ -39,13 +39,13 @@ class OracleQuery():
                                  fee, ttl, nonce
                                  )
         # sign the transaction
-        tx_signed, sg, tx_hash = self.client.sign_transaction(sender, tx)
+        tx_signed = self.client.sign_transaction(sender, tx.tx)
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed, tx_hash)
+        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
         # save the query id
         self.id = hashing.oracle_query_id(sender.get_address(), nonce, self.oracle_id)
         # return the transaction
-        return tx, tx_signed, sg, tx_hash
+        return tx_signed
 
     def get_response_object(self):
         # TODO: workaround for dashes in the parameter names
@@ -63,12 +63,12 @@ class Oracle():
         self.query_id = None
 
     def register(self, account, query_format, response_format,
-                 query_fee=config.ORACLE_DEFAULT_QUERY_FEE,
-                 ttl_type=config.ORACLE_DEFAULT_TTL_TYPE_DELTA,
-                 ttl_value=config.ORACLE_DEFAULT_TTL_VALUE,
-                 vm_version=ORACLE_DEFAULT_VM_VERSION,
-                 fee=config.DEFAULT_FEE,
-                 tx_ttl=config.DEFAULT_TX_TTL):
+                 query_fee=defaults.ORACLE_QUERY_FEE,
+                 ttl_type=defaults.ORACLE_TTL_TYPE,
+                 ttl_value=defaults.ORACLE_TTL_VALUE,
+                 vm_version=defaults.ORACLE_VM_VERSION,
+                 fee=defaults.FEE,
+                 tx_ttl=defaults.TX_TTL):
         """
         Execute a registration of an oracle
         """
@@ -84,21 +84,21 @@ class Oracle():
             vm_version, fee, ttl, nonce
         )
         # sign the transaction
-        tx_signed, sg, tx_hash = self.client.sign_transaction(account, tx)
+        tx_signed = self.client.sign_transaction(account, tx.tx)
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed, tx_hash)
+        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
         # register the oracle id
         # the oracle id is the account that register the oracle
         # with the prefix substituted by with ok_
         self.id = f"{ORACLE_ID}_{account.get_address()[3:]}"
         # return the transaction
-        return tx, tx_signed, sg, tx_hash
+        return tx_signed
 
     def respond(self, account, query_id, response,
-                response_ttl_type=config.ORACLE_DEFAULT_TTL_TYPE_DELTA,
-                response_ttl_value=config.ORACLE_DEFAULT_RESPONSE_TTL_VALUE,
-                fee=config.DEFAULT_FEE,
-                tx_ttl=config.DEFAULT_TX_TTL):
+                response_ttl_type=defaults.ORACLE_TTL_TYPE,
+                response_ttl_value=defaults.ORACLE_RESPONSE_TTL_VALUE,
+                fee=defaults.FEE,
+                tx_ttl=defaults.TX_TTL):
         """
         Post a response to an oracle query
         """
@@ -114,17 +114,17 @@ class Oracle():
                                    fee, ttl, nonce
                                    )
         # sign the transaction
-        tx_signed, sg, tx_hash = self.client.sign_transaction(account, tx)
+        tx_signed = self.client.sign_transaction(account, tx.tx)
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed, tx_hash)
+        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
         # return the transaction
-        return tx, tx_signed, sg, tx_hash
+        return tx_signed
 
     def extend(self, account, query_id, response,
-               ttl_type=config.ORACLE_DEFAULT_TTL_TYPE_DELTA,
-               ttl_value=config.ORACLE_DEFAULT_TTL_VALUE,
-               fee=config.DEFAULT_FEE,
-               tx_ttl=config.DEFAULT_TX_TTL):
+               ttl_type=defaults.ORACLE_TTL_TYPE,
+               ttl_value=defaults.ORACLE_TTL_VALUE,
+               fee=defaults.FEE,
+               tx_ttl=defaults.TX_TTL):
         """
         Extend the ttl of an oracle
         """
@@ -137,8 +137,8 @@ class Oracle():
         # create spend_tx
         tx = txb.tx_oracle_extend(self.id, ttl_type, ttl_value, fee, ttl, nonce)
         # sign the transaction
-        tx_signed, sg, tx_hash = self.client.sign_transaction(account, tx)
+        tx_signed = self.client.sign_transaction(account, tx.tx)
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed, tx_hash)
+        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
         # return the transaction
-        return tx, tx_signed, sg, tx_hash
+        return tx_signed

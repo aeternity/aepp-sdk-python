@@ -115,7 +115,7 @@ def hash_encode(prefix, data):
 
 def namehash(name):
     if isinstance(name, str):
-        name = name.encode('ascii')
+        name = name.lower().encode('ascii')
     # see:
     # https://github.com/aeternity/protocol/blob/master/AENS.md#hashing
     # and also:
@@ -132,6 +132,16 @@ def namehash_encode(prefix, name):
     return encode(prefix, namehash(name))
 
 
+def commitment_id(domain: str, salt: int=None)-> tuple:
+    """
+    Compute the commitment id
+    :return: the generated salt and the commitment_id
+    """
+    name_salt = randint() if salt is None else salt
+    commitment_id = hash_encode(identifiers.COMMITMENT, namehash(domain) + _int(name_salt, 32))
+    return commitment_id, name_salt
+
+
 def _int(val: int, byte_length: int = None) -> bytes:
     """
     Encode and int to a big endian byte array
@@ -143,6 +153,15 @@ def _int(val: int, byte_length: int = None) -> bytes:
         return val.to_bytes(size, byteorder='big')
     size = (val.bit_length() + 7) // 8 if byte_length is None else byte_length
     return val.to_bytes(size, byteorder='big')
+
+
+def _int_decode(data: bytes) -> int:
+    """
+    Interpret a byte array to an integer (big endian)
+    """
+    if len(data) == 0:
+        return 0
+    return int.from_bytes(data, "big")
 
 
 def _binary(val):
@@ -161,9 +180,28 @@ def _binary(val):
     raise ValueError("Byte serialization not supported")
 
 
+def _binary_decode(data, data_type=None):
+    """
+    Decodes a bite arrya to the selected datatype or to hex if no data_type is provided
+    """
+    if data_type == int:
+        return _int_decode(data)
+    if data_type == str:
+        return data.decode("utf-8")
+    return data.hex()
+
+
 def _id(id_tag, hash_id):
     """Utility function to create and _id type"""
     return _int(id_tag) + decode(hash_id)
+
+
+def name_id(name):
+    """
+    Encode a domain name
+    :param name: the domain name to encode
+    """
+    return encode(identifiers.NAME, name)
 
 
 def contract_id(owner_id, nonce):

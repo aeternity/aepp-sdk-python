@@ -5,7 +5,7 @@ from collections import namedtuple
 import namedtupled
 import logging
 
-from aeternity.exceptions import UnsupportedEpochVersion, ConfigException
+from aeternity.exceptions import UnsupportedNodeVersion, ConfigException
 import semver
 
 from . import __compatibility__
@@ -50,6 +50,7 @@ class OpenAPICli(object):
 
     def __init__(self, url, url_internal=None, debug=False, force_compatibility=False):
         try:
+            self.url, self.url_internal = url, url_internal
             # load the openapi json file from the node
             self.api_def = requests.get(f"{url}/api").json()
             self.api_version = self.api_def.get("info", {}).get("version", "unknown")
@@ -58,12 +59,12 @@ class OpenAPICli(object):
             match_max = semver.match(self.api_version, __compatibility__.get("to_version"))
             if (not match_min or not match_max) and not force_compatibility:
                 f, t = __compatibility__.get('from_version'), __compatibility__.get('to_version')
-                raise UnsupportedEpochVersion(
+                raise UnsupportedNodeVersion(
                     f"unsupported node version {self.api_version}, supported version are {f} and {t}")
         except requests.exceptions.ConnectionError as e:
-            raise ConfigException(f"Error connecting to the node at {self.api_url}, connection unavailable")
+            raise ConfigException(f"Error connecting to the node at {self.url}, connection unavailable")
         except Exception as e:
-            raise UnsupportedEpochVersion(f"Unable to connect to the node: {e}")
+            raise UnsupportedNodeVersion(f"Unable to connect to the node: {e}")
 
         # enable printing debug messages
         self.debug = debug
@@ -86,7 +87,7 @@ class OpenAPICli(object):
         self.base_url = f"{url}{base_path}"
         if url_internal is None:
             # do not build internal endpoints
-            self.skip_tags.append("internal")
+            self.skip_tags.add("internal")
         else:
             self.base_url_internal = f"{url_internal}{base_path}"
 

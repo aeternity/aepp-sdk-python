@@ -5,7 +5,9 @@ import pytest
 
 def _test_node_spend(node_cli, sender_account):
     account = Account.generate().get_address()
-    node_cli.spend(sender_account, account, 100)
+    tx = node_cli.spend(sender_account, account, 100)
+    assert account == tx.data.recipient_id
+    assert sender_account.get_address() == tx.data.sender_id
     account = node_cli.get_account_by_pubkey(pubkey=account)
     balance = account.balance
     assert balance > 0
@@ -13,10 +15,9 @@ def _test_node_spend(node_cli, sender_account):
 
 @pytest.mark.skip('Debug transaction disabled')
 def test_node_spend_debug(chain_fixture):
-    chain_fixture.NODE_CLI.set_native(False)
+    # TODO: create a debug impl and test
     _test_node_spend(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
 
 
 def test_node_spend_native(chain_fixture):
-    chain_fixture.NODE_CLI.set_native(True)
     _test_node_spend(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)

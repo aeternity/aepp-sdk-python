@@ -19,7 +19,7 @@ SIGNATURE = "sg"  # base58	Signature
 TRANSACTION_HASH = "th"  # base58	Transaction hash
 
 # Base 64
-CONTRACT_BYTE_ARRAY = "cb"  # base64	Contract byte array
+BYTECODE = "cb"  # base64	Contract byte array
 ORACLE_RESPONSE = "or"  # base64	Oracle response
 ORACLE_QUERY = "ov"  # base64	Oracle query
 PROOF_OF_INCLUSION = "pi"  # base64	Proof of Inclusion
@@ -47,7 +47,7 @@ IDENTIFIERS_B58 = set([
 
 # Indentifiers with base64
 IDENTIFIERS_B64 = set([
-    CONTRACT_BYTE_ARRAY,
+    BYTECODE,
     ORACLE_RESPONSE,
     ORACLE_QUERY,
     PROOF_OF_INCLUSION,
@@ -135,6 +135,10 @@ CONTRACT_ROMA_ABI = 1
 # For Minerva: 196609  # that is int.from_bytes(int(3).to_bytes(2, "big") + int(1).to_bytes(2, "big"), "big")
 CONTRACT_MINERVA_VM = 3
 CONTRACT_MINERVA_ABI = 1
-
 # Oracles
-ORACLE_DEFAULT_VM_VERSION = NO_VM
+ORACLE_TTL_TYPE_DELTA = 'delta'
+ORACLE_TTL_TYPE_BLOCK = 'block'
+
+# Network IDS
+NETWORK_ID_MAINNET = "ae_mainnet"
+NETWORK_ID_TESTNET = "ae_uat"

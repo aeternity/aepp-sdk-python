@@ -53,7 +53,6 @@ def test_api_get_block_by_hash(chain_fixture):
             account = Account.generate().get_address()
             chain_fixture.NODE_CLI.spend(chain_fixture.ACCOUNT, account, 100)
         # wait for the next block
-        # client.wait_for_next_block()
         block = chain_fixture.NODE_CLI.get_block_by_hash(hash=latest_block.hash)
         # assert block.hash == latest_block.hash
         assert block.height == latest_block.height

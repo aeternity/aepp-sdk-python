@@ -37,7 +37,7 @@ def _sophia_contract_tx_call_online(node_cli, account):
     print("contract: ", contract.address)
     print("tx contract: ", tx)
 
-    _, _, _, _, result = contract.tx_call(account, 'main', '42', gas=500000)
+    _, result = contract.tx_call(account, 'main', '42', gas=500000)
     assert result is not None
     assert result.return_type == 'ok'
     print("return", result.return_value)
@@ -51,36 +51,30 @@ def _sophia_contract_tx_call_online(node_cli, account):
 
 def test_sophia_contract_tx_create_native(chain_fixture):
     # save settings and go online
-    original = chain_fixture.NODE_CLI.set_native(True)
     _sophia_contract_tx_create_online(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
     # restore settings
-    chain_fixture.NODE_CLI.set_native(original)
 
 
 def test_sophia_contract_tx_call_native(chain_fixture):
     # save settings and go online
-    original = chain_fixture.NODE_CLI.set_native(True)
     _sophia_contract_tx_call_online(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
     # restore settings
-    chain_fixture.NODE_CLI.set_native(original)
 
 
 @pytest.mark.skip('Debug transaction disabled')
 def test_sophia_contract_tx_create_debug(chain_fixture):
+    # TODO: create a debug impl and test
     # save settings and go online
-    original = chain_fixture.NODE_CLI.set_native(False)
     _sophia_contract_tx_create_online(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
     # restore settings
-    chain_fixture.NODE_CLI.set_native(original)
 
 
 @pytest.mark.skip('Debug transaction disabled')
 def test_sophia_contract_tx_call_debug(chain_fixture):
+    # TODO: create a debug impl and test
     # save settings and go online
-    original = chain_fixture.NODE_CLI.set_native(False)
     _sophia_contract_tx_call_online(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
     # restore settings
-    chain_fixture.NODE_CLI.set_native(original)
 
 # test contracts
 

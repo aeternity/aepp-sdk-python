@@ -1,12 +1,13 @@
 
 from aeternity.signing import Account
 from aeternity import transactions
+import pytest
 
 
 def _execute_test(test_cases, NODE_CLI):
     for tt in test_cases:
         # get a native transaction
-        txbn = transactions.TxBuilder(api=NODE_CLI, native=True)
+        txbn = transactions.TxBuilder()
         txn = getattr(txbn, tt.get("tx"))(**tt["native"])
         # get a debug transaction
         txbd = transactions.TxBuilder(api=NODE_CLI, native=False)
@@ -62,6 +63,7 @@ def test_transaction_fee_calculation():
         # get a debug transaction
 
 
+@pytest.mark.skip("Debug trasnsaction disabled")
 def test_transaction_spend(chain_fixture):
 
     recipient_id = Account.generate().get_address()
@@ -88,10 +90,10 @@ def test_transaction_spend(chain_fixture):
 
     for tt in tts:
         # get a native transaction
-        txbn = transactions.TxBuilder(api=chain_fixture.NODE_CLI, native=True)
+        txbn = transactions.TxBuilder()
         txn = txbn.tx_spend(tt["native"][0], tt["native"][1], tt["native"][2], tt["native"][3], tt["native"][4], tt["native"][5], tt["native"][6])
         # get a debug transaction
-        txbd = transactions.TxBuilder(api=chain_fixture.NODE_CLI, native=False)
+        txbd = transactions.TxBuilder()
         txd = txbd.tx_spend(tt["debug"][0], tt["debug"][1], tt["debug"][2], tt["debug"][3], tt["debug"][4], tt["debug"][5], tt["debug"][6])
         # theys should be the same
         if tt["match"]:
@@ -100,6 +102,7 @@ def test_transaction_spend(chain_fixture):
             assert txn != txd
 
 
+@pytest.mark.skip("Debug trasnsaction disabled")
 def test_transaction_oracle_register(chain_fixture):
     # account_id, recipient_id, amount, payload, fee, ttl, nonce
     tts = [

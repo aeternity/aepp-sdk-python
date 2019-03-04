@@ -23,6 +23,7 @@ class Account:
         self.verifying_key = verifying_key
         pub_key = self.verifying_key.encode(encoder=RawEncoder)
         self.address = hashing.encode(ACCOUNT_ID, pub_key)
+        self.nonce = 0
 
     def get_address(self):
         """get the keypair public_key base58 encoded and prefixed (ak_...)"""
