@@ -122,8 +122,8 @@ def _tx_native(op, **kwargs):
             tx_data = dict(
                 tag=tag,
                 vsn=_int_decode(tx_native[1]),
-                sender_id=encode(idf.ACCOUNT_ID, tx_native[2]),
-                recipient_id=encode(idf.ACCOUNT_ID, tx_native[3]),
+                sender_id=encode(idf.ACCOUNT_ID, tx_native[2][1:]),
+                recipient_id=encode(idf.ACCOUNT_ID, tx_native[3][1:]),
                 amount=_int_decode(tx_native[4]),
                 fee=_int_decode(tx_native[5]),
                 ttl=_int_decode(tx_native[6]),
@@ -151,9 +151,9 @@ def _tx_native(op, **kwargs):
             tx_data = dict(
                 tag=tag,
                 vsn=_int_decode(tx_native[1]),
-                account_id=encode(idf.ACCOUNT_ID, tx_native[2]),
+                account_id=encode(idf.ACCOUNT_ID, tx_native[2][1:]),
                 nonce=_int_decode(tx_native[3]),
-                commitment_id=encode(idf.COMMITMENT, tx_native[4]),
+                commitment_id=encode(idf.COMMITMENT, tx_native[4][1:]),
                 fee=_int_decode(tx_native[5]),
                 ttl=_int_decode(tx_native[6]),
             )
@@ -180,7 +180,7 @@ def _tx_native(op, **kwargs):
             tx_data = dict(
                 tag=tag,
                 vsn=_int_decode(tx_native[1]),
-                account_id=encode(idf.ACCOUNT_ID, tx_native[2]),
+                account_id=encode(idf.ACCOUNT_ID, tx_native[2][1:]),
                 nonce=_int_decode(tx_native[3]),
                 name=_binary_decode(tx_native[4], str),
                 name_salt=_binary_decode(tx_native[5], int),
@@ -222,9 +222,9 @@ def _tx_native(op, **kwargs):
             tx_data = dict(
                 tag=tag,
                 vsn=_int_decode(tx_native[1]),
-                account_id=encode(idf.ACCOUNT_ID, tx_native[2]),
+                account_id=encode(idf.ACCOUNT_ID, tx_native[2][1:]),
                 nonce=_int_decode(tx_native[3]),
-                name=encode(idf.NAME, tx_native[4]),
+                name=encode(idf.NAME, tx_native[4][1:]),
                 name_ttl=_int_decode(tx_native[5]),
                 pointers=[],  # TODO: decode pointers
                 client_ttl=_int_decode(tx_native[7]),
@@ -254,10 +254,10 @@ def _tx_native(op, **kwargs):
             tx_data = dict(
                 tag=tag,
                 vsn=_int_decode(tx_native[1]),
-                account_id=encode(idf.ACCOUNT_ID, tx_native[2]),
+                account_id=encode(idf.ACCOUNT_ID, tx_native[2][1:]),
                 nonce=_int_decode(tx_native[3]),
-                name=encode(idf.NAME, tx_native[4]),
-                recipient_id=encode(idf.ACCOUNT_ID, tx_native[5]),
+                name=encode(idf.NAME, tx_native[4][1:]),
+                recipient_id=encode(idf.ACCOUNT_ID, tx_native[5][1:]),
                 fee=_int_decode(tx_native[6]),
                 ttl=_int_decode(tx_native[7]),
             )
@@ -283,9 +283,9 @@ def _tx_native(op, **kwargs):
             tx_data = dict(
                 tag=tag,
                 vsn=_int_decode(tx_native[1]),
-                account_id=encode(idf.ACCOUNT_ID, tx_native[2]),
+                account_id=encode(idf.ACCOUNT_ID, tx_native[2][1:]),
                 nonce=_int_decode(tx_native[3]),
-                name=encode(idf.NAME, tx_native[4]),
+                name=encode(idf.NAME, tx_native[4][1:]),
                 fee=_int_decode(tx_native[5]),
                 ttl=_int_decode(tx_native[6]),
             )
@@ -319,9 +319,9 @@ def _tx_native(op, **kwargs):
             tx_data = dict(
                 tag=tag,
                 vsn=_int_decode(tx_native[1]),
-                owner_id=encode(idf.ACCOUNT_ID, tx_native[2]),
+                owner_id=encode(idf.ACCOUNT_ID, tx_native[2][1:]),
                 nonce=_int_decode(tx_native[3]),
-                code=encode(idf.BYTECODE, tx_native[4]),
+                code=encode(idf.BYTECODE, tx_native[4][1:]),
                 vm_version=_int_decode(tx_native[5][0:vml - 2]),
                 abi_version=_int_decode(tx_native[5][vml - 2:]),
                 fee=_int_decode(tx_native[6]),
@@ -330,7 +330,7 @@ def _tx_native(op, **kwargs):
                 amount=_int_decode(tx_native[9]),
                 gas=_int_decode(tx_native[10]),
                 gas_price=_int_decode(tx_native[11]),
-                call_data=encode(idf.BYTECODE, tx_native[12]),
+                call_data=encode(idf.BYTECODE, tx_native[12][1:]),
             )
             min_fee = tx_data.get("fee")
         else:
@@ -360,16 +360,16 @@ def _tx_native(op, **kwargs):
             tx_data = dict(
                 tag=tag,
                 vsn=_int_decode(tx_native[1]),
-                caller_id=encode(idf.ACCOUNT_ID, tx_native[2]),
+                caller_id=encode(idf.ACCOUNT_ID, tx_native[2][1:]),
                 nonce=_int_decode(tx_native[3]),
-                contract_id=encode(idf.CONTRACT_ID, tx_native[4]),
+                contract_id=encode(idf.CONTRACT_ID, tx_native[4][1:]),
                 abi_version=_int_decode(tx_native[5]),
                 fee=_int_decode(tx_native[6]),
                 ttl=_int_decode(tx_native[7]),
                 amount=_int_decode(tx_native[8]),
                 gas=_int_decode(tx_native[9]),
                 gas_price=_int_decode(tx_native[10]),
-                call_data=encode(idf.BYTECODE, tx_native[11]),
+                call_data=encode(idf.BYTECODE, tx_native[11][1:]),
             )
             min_fee = tx_data.get("fee")
         else:
@@ -534,7 +534,7 @@ def _tx_native(op, **kwargs):
             tx_data = dict(
                 tag=tag,
                 vsn=_int_decode(tx_native[1]),
-                account_id=encode(idf.ACCOUNT_ID, tx_native[2]),
+                account_id=encode(idf.ACCOUNT_ID, tx_native[2][1:]),
                 nonce=_int_decode(tx_native[3]),
                 query_format=_binary_decode(tx_native[4]),
                 response_format=_binary_decode(tx_native[5]),
@@ -578,9 +578,9 @@ def _tx_native(op, **kwargs):
             tx_data = dict(
                 tag=tag,
                 vsn=_int_decode(tx_native[1]),
-                sender_id=encode(idf.ACCOUNT_ID, tx_native[2]),
+                sender_id=encode(idf.ACCOUNT_ID, tx_native[2][1:]),
                 nonce=_int_decode(tx_native[3]),
-                oracle_id=encode(idf.ORACLE_ID, tx_native[4]),
+                oracle_id=encode(idf.ORACLE_ID, tx_native[4][1:]),
                 query=_binary_decode(tx_native[5]),
                 query_fee=_int_decode(tx_native[6]),
                 query_ttl=dict(
@@ -621,9 +621,9 @@ def _tx_native(op, **kwargs):
             tx_data = dict(
                 tag=tag,
                 vsn=_int_decode(tx_native[1]),
-                oracle_id=encode(idf.ORACLE_ID, tx_native[2]),
+                oracle_id=encode(idf.ORACLE_ID, tx_native[2][1:]),
                 nonce=_int_decode(tx_native[3]),
-                query_id=encode(idf.ORACLE_QUERY_ID, tx_native[4]),
+                query_id=encode(idf.ORACLE_QUERY_ID, tx_native[4][1:]),
                 response=_binary(tx_native[5]),
                 response_ttl=dict(
                     type=idf.ORACLE_TTL_TYPE_DELTA if _int_decode(tx_native[6]) else idf.ORACLE_TTL_TYPE_BLOCK,
@@ -657,7 +657,7 @@ def _tx_native(op, **kwargs):
             tx_data = dict(
                 tag=tag,
                 vsn=_int_decode(tx_native[1]),
-                oracle_id=encode(idf.ORACLE_ID, tx_native[2]),
+                oracle_id=encode(idf.ORACLE_ID, tx_native[2][1:]),
                 nonce=_int_decode(tx_native[3]),
                 oracle_ttl=dict(
                     type=idf.ORACLE_TTL_TYPE_DELTA if _int_decode(tx_native[4]) else idf.ORACLE_TTL_TYPE_BLOCK,
@@ -691,10 +691,10 @@ class TxBuilder:
         tx_raw = decode(encoded_tx)
         return hash_encode(idf.TRANSACTION_HASH, tx_raw)
 
-    def tx_spend(self, account_id, recipient_id, amount, payload, fee, ttl, nonce)-> tuple:
+    def tx_spend(self, sender_id, recipient_id, amount, payload, fee, ttl, nonce)-> tuple:
         """
         create a spend transaction
-        :param account_id: the public key of the sender
+        :param sender_id: the public key of the sender
         :param recipient_id: the public key of the recipient
         :param amount: the amount to send
         :param payload: the payload associated with the data
@@ -709,7 +709,7 @@ class TxBuilder:
             recipient_id=recipient_id,
             amount=amount,
             fee=fee,
-            sender_id=account_id,
+            sender_id=sender_id,
             payload=payload,
             ttl=ttl,
             nonce=nonce,
