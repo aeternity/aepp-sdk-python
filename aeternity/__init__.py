@@ -1,4 +1,4 @@
-__version__ = '2.0.0a1'
+__version__ = '2.0.0'
 
 __compatibility__ = dict(
     from_version=">=1.4.0",
