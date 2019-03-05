@@ -1,5 +1,5 @@
-pytest==3.5.0
-pytest-cov==2.6.0
+pytest==4.3.0
+pytest-cov==2.6.1
 base58==0.2.5
 click==7.0
 deprecation==2.0.5
@@ -10,3 +10,4 @@ requests==2.20.0
 websocket_client==0.48.0
 validators==0.12.1
 semver==2.8.1
+namedtupled==0.3.3

@@ -5,10 +5,11 @@ import json
 import uuid
 
 from nacl.encoding import RawEncoder, HexEncoder
-from nacl.signing import SigningKey
+from nacl.signing import SigningKey, VerifyKey
 from nacl.exceptions import CryptoError
 from nacl.pwhash import argon2id
 from nacl import secret, utils as nacl_utils
+from aeternity.identifiers import ACCOUNT_ID
 
 
 from aeternity import hashing, utils
@@ -21,7 +22,8 @@ class Account:
         self.signing_key = signing_key
         self.verifying_key = verifying_key
         pub_key = self.verifying_key.encode(encoder=RawEncoder)
-        self.address = hashing.encode("ak", pub_key)
+        self.address = hashing.encode(ACCOUNT_ID, pub_key)
+        self.nonce = 0
 
     def get_address(self):
         """get the keypair public_key base58 encoded and prefixed (ak_...)"""
@@ -107,7 +109,7 @@ class Account:
     def _raw_key(cls, key_string):
         """decode a key with different method between signing and addresses"""
         key_string = str(key_string)
-        if utils.is_valid_hash(key_string, prefix='ak'):
+        if utils.is_valid_hash(key_string, prefix=ACCOUNT_ID):
             return hashing.decode(key_string.strip())
         return bytes.fromhex(key_string.strip())
 
@@ -212,3 +214,20 @@ def keystore_open(k, password):
     encrypted = bytes.fromhex(k.get("crypto", {}).get("ciphertext"))
     private_key = box.decrypt(encrypted, nonce=nonce, encoder=RawEncoder)
     return private_key
+
+
+def is_signature_valid(account_id, signature, data: bytes) -> bool:
+    """
+    Verify the signature of a message
+    :param account_id: the account id signing the message
+    :param signature: the signature of the messagfe
+    :param data: the message that has been signed
+    :return: true if the signature for the message is valid, false otherwise
+    """
+    try:
+        id = hashing.decode(account_id) if isinstance(account_id, str) else account_id
+        sg = hashing.decode(signature) if isinstance(signature, str) else signature
+        VerifyKey(id).verify(data, sg)
+        return True
+    except Exception as e:
+        return False

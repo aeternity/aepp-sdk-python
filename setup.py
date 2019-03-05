@@ -37,7 +37,7 @@ setup(
     author='Andrea Giacobino',
     author_email='aepp-dev@aeternity.com',
     url='https://github.com/aeternity/aepp-sdk-python',
-    python_requires='>=3.5',
+    python_requires='>=3.6',
     license='ISC',
     scripts=['aecli'],
     packages=find_packages(),
@@ -49,11 +49,12 @@ setup(
         'requests == 2.20.0',
         'websocket_client == 0.48.0',
         'validators == 0.12.1',
-        'semver==2.8.1'
+        'semver==2.8.1',
+        'namedtupled==0.3.3'
     ],
     classifiers=[
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: ISC License (ISCL)',
         'Intended Audience :: Developers',
@@ -61,6 +62,6 @@ setup(
     ],
     zip_safe=False,
     tests_require=[
-        'pytest==3.5.0'
+        'pytest==4.3.0'
     ],
 )

@@ -2,7 +2,13 @@ import re
 import requests
 import keyword
 from collections import namedtuple
+import namedtupled
 import logging
+
+from aeternity.exceptions import UnsupportedNodeVersion, ConfigException
+import semver
+
+from . import __compatibility__
 
 
 class OpenAPIArgsException(Exception):
@@ -42,9 +48,24 @@ class OpenAPICli(object):
         "boolean": "bool",
     }
 
-    def __init__(self, url, url_internal=None, debug=False):
-        # load the openapi json file from the node
-        self.api_def = requests.get(f"{url}/api").json()
+    def __init__(self, url, url_internal=None, debug=False, force_compatibility=False):
+        try:
+            self.url, self.url_internal = url, url_internal
+            # load the openapi json file from the node
+            self.api_def = requests.get(f"{url}/api").json()
+            self.api_version = self.api_def.get("info", {}).get("version", "unknown")
+            # retrieve the version of the node we are connecting to
+            match_min = semver.match(self.api_version, __compatibility__.get("from_version"))
+            match_max = semver.match(self.api_version, __compatibility__.get("to_version"))
+            if (not match_min or not match_max) and not force_compatibility:
+                f, t = __compatibility__.get('from_version'), __compatibility__.get('to_version')
+                raise UnsupportedNodeVersion(
+                    f"unsupported node version {self.api_version}, supported version are {f} and {t}")
+        except requests.exceptions.ConnectionError as e:
+            raise ConfigException(f"Error connecting to the node at {self.url}, connection unavailable")
+        except Exception as e:
+            raise UnsupportedNodeVersion(f"Unable to connect to the node: {e}")
+
         # enable printing debug messages
         self.debug = debug
 
@@ -66,7 +87,7 @@ class OpenAPICli(object):
         self.base_url = f"{url}{base_path}"
         if url_internal is None:
             # do not build internal endpoints
-            self.skip_tags.append("internal")
+            self.skip_tags.add("internal")
         else:
             self.base_url_internal = f"{url_internal}{base_path}"
 
@@ -183,7 +204,7 @@ class OpenAPICli(object):
                     raw = http_reply.json()
                     return list(raw.values())[0]
                 jr = http_reply.json()
-                return namedtuple(api_response.schema, jr.keys())(**jr)
+                return namedtupled.map(jr, _nt_name=api_response.schema)
             # error
             raise OpenAPIClientException(f"Error: {api_response.desc}", code=http_reply.status_code)
         # register the method

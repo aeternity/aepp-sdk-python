@@ -19,7 +19,12 @@ class PreclaimFailed(AENSException):
     pass
 
 
-class TooEarlyClaim(AENSException):
+class NameTooEarlyClaim(Exception):
+    pass
+
+
+class NameCommitmentIdMismatch(Exception):
+    """ Raised when a commitment id cannot be verified """
     pass
 
 
@@ -48,8 +53,28 @@ class TransactionHashMismatch(AException):
     pass
 
 
-class TransactionWaitTimeoutExpired(Exception):
+class TransactionWaitTimeoutExpired(AException):
     """Raised when a transaction hasn't been found after waiting for an amount of time"""
+
     def __init__(self, tx_hash, reason):
         self.tx_hash = tx_hash
         self.reason = reason
+
+
+class BlockWaitTimeoutExpired(Exception):
+    """Raised when a block height hasn't been reached after waiting for an amount of time"""
+    pass
+
+
+class UnsupportedNodeVersion(AException):
+    """Raised when the node target runs an unsupported version"""
+
+
+class ConfigException(Exception):
+    """Raised in case of configuration errors"""
+    pass
+
+
+class UnsupportedTransactionType(Exception):
+    """Raised for unknow transaction tag"""
+    pass

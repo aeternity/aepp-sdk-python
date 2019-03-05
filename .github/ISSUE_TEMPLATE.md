@@ -1,5 +1,3 @@
-Issue tracker is **ONLY** used for reporting bugs or feature request. NO SUPPORT REQUESTS ACCEPTED! Use [stackoverflow](https://stackoverflow.com/tags/aeternity) for supporting issues.
-
 <!--- Provide a general summary of the issue in the Title above -->
 
 ## Expected Behavior
@@ -25,7 +23,7 @@ Issue tracker is **ONLY** used for reporting bugs or feature request. NO SUPPORT
 
 <!--- Provide a general summary of the issue in the Title above -->
 
-## [Epoch](https://github.com/aeternity/epoch/releases) Version
+## [Aeternity Node](https://github.com/aeternity/aeternity/releases) Version
 
 ## Detailed Description
 <!--- Provide a detailed description of the change or addition you are proposing -->

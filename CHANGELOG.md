@@ -5,6 +5,23 @@ log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [2.0.0]
+
+### Added
+
+- Compatibility with aeternity node >= 1.4.0 and < 3.0.0
+- Transaction serialization/deserialization support
+- Automatic fee calculation
+
+### Removed
+
+- Compatibility with aeternity node < 1.4.0
+
+### Changed
+
+- Rename references of `epoch` to `node`
+- CLI interface for aens claim
+
 ## [1.1.2]
 
 ### Changed
@@ -239,7 +256,7 @@ refer to the [documentation](docs/keystore_format_change.md) about how to update
 
 ### Changed
 
-- Switch to curve ed25519 (from secp256k1) to align with Epoch protocol changes
+- Switch to curve ed25519 (from secp256k1) to align with Node protocol changes
 - Generate basic API directly from Swagger files, also validate input data
 
 ### Fixed

@@ -89,7 +89,7 @@ def encode_rlp(prefix, data):
     :param data: the array that has to be encoded in rlp
     """
     if not isinstance(data, list):
-        raise ValueError("data to be encoded to rlp must be an array")
+        raise ValueError("data to be encoded to rlp must be a list")
     payload = rlp.encode(data)
     return encode(prefix, payload)
 
@@ -115,7 +115,7 @@ def hash_encode(prefix, data):
 
 def namehash(name):
     if isinstance(name, str):
-        name = name.encode('ascii')
+        name = name.lower().encode('ascii')
     # see:
     # https://github.com/aeternity/protocol/blob/master/AENS.md#hashing
     # and also:
@@ -132,13 +132,36 @@ def namehash_encode(prefix, name):
     return encode(prefix, namehash(name))
 
 
-def _int(val: int) -> bytes:
+def commitment_id(domain: str, salt: int=None)-> tuple:
+    """
+    Compute the commitment id
+    :return: the generated salt and the commitment_id
+    """
+    name_salt = randint() if salt is None else salt
+    commitment_id = hash_encode(identifiers.COMMITMENT, namehash(domain) + _int(name_salt, 32))
+    return commitment_id, name_salt
+
+
+def _int(val: int, byte_length: int = None) -> bytes:
     """
     Encode and int to a big endian byte array
+    :param val: the value to encode
+    :param byte_length: number of bytes that should be used to encoded the number, by default is the minimum
     """
     if val == 0:
-        return val.to_bytes(1, byteorder='big')
-    return val.to_bytes((val.bit_length() + 7) // 8, byteorder='big')
+        size = 1 if byte_length is None else byte_length
+        return val.to_bytes(size, byteorder='big')
+    size = (val.bit_length() + 7) // 8 if byte_length is None else byte_length
+    return val.to_bytes(size, byteorder='big')
+
+
+def _int_decode(data: bytes) -> int:
+    """
+    Interpret a byte array to an integer (big endian)
+    """
+    if len(data) == 0:
+        return 0
+    return int.from_bytes(data, "big")
 
 
 def _binary(val):
@@ -157,9 +180,28 @@ def _binary(val):
     raise ValueError("Byte serialization not supported")
 
 
+def _binary_decode(data, data_type=None):
+    """
+    Decodes a bite arrya to the selected datatype or to hex if no data_type is provided
+    """
+    if data_type == int:
+        return _int_decode(data)
+    if data_type == str:
+        return data.decode("utf-8")
+    return data.hex()
+
+
 def _id(id_tag, hash_id):
     """Utility function to create and _id type"""
     return _int(id_tag) + decode(hash_id)
+
+
+def name_id(name):
+    """
+    Encode a domain name
+    :param name: the domain name to encode
+    """
+    return encode(identifiers.NAME, name)
 
 
 def contract_id(owner_id, nonce):
@@ -168,7 +210,7 @@ def contract_id(owner_id, nonce):
     :param owner_id: the account creating the conctract
     :param nonce: the nonce of the contract creation transaction
     """
-    return hash_encode("ct", decode(owner_id) + _int(nonce))
+    return hash_encode(identifiers.CONTRACT_ID, decode(owner_id) + _int(nonce))
 
 
 def oracle_id(account_id):
@@ -176,7 +218,7 @@ def oracle_id(account_id):
     Compute the oracle id of a oracle registration
     :parm account_id: the account registering the oracle
     """
-    return f"ok_{account_id[3:]}"
+    return f"{identifiers.ORACLE_ID}_{account_id[3:]}"
 
 
 def oracle_query_id(sender_id, nonce, oracle_id):
@@ -186,9 +228,7 @@ def oracle_query_id(sender_id, nonce, oracle_id):
     :param nonce: the nonce of the query transaction
     :param oracle_id: the oracle id
     """
-    def _int32(val):
-        return val.to_bytes(32, byteorder='big')
-    return hash_encode("oq", decode(sender_id) + _int32(nonce) + decode(oracle_id))
+    return hash_encode(identifiers.ORACLE_QUERY_ID, decode(sender_id) + _int(nonce, byte_length=32) + decode(oracle_id))
 
 
 def randint(upper_bound=2**64):
