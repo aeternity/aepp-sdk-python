@@ -338,19 +338,20 @@ def account_balance(keystore_name, password, force, wait, json_):
 @click.argument('keystore_name', required=True)
 @click.argument('recipient_id', required=True)
 @click.argument('amount', required=True, type=int)
+@click.argument('payload', type=str)
 @global_options
 @account_options
 @online_options
 @transaction_options
 @sign_options
-def account_spend(keystore_name, recipient_id, amount, fee, ttl, nonce, password, network_id, force, wait, json_):
+def account_spend(keystore_name, recipient_id, amount, payload, fee, ttl, nonce, password, network_id, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         account, keystore_path = _account(keystore_name, password=password)
         account.nonce = nonce
         if not utils.is_valid_hash(recipient_id, prefix="ak"):
             raise ValueError("Invalid recipient address")
-        tx = _node_cli(network_id=network_id).spend(account, recipient_id, amount, tx_ttl=ttl, fee=fee)
+        tx = _node_cli(network_id=network_id).spend(account, recipient_id, amount, tx_ttl=ttl, fee=fee, payload=payload)
         _print_object(tx, title='spend transaction')
     except Exception as e:
         _print_error(e, exit_code=1)
@@ -368,6 +369,7 @@ def account_sign(keystore_name, password, network_id, unsigned_transaction, json
         account, keystore_path = _account(keystore_name, password=password)
         if not utils.is_valid_hash(unsigned_transaction, prefix="tx"):
             raise ValueError("Invalid transaction format")
+        network_id = defaults.NETWORK_ID if network_id is None else network_id
         # force offline mode for the node_client
         tx = TxSigner(account, network_id).sign_encode_transaction(unsigned_transaction)
         _print_object(tx, title='signed transaction')

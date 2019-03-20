@@ -170,6 +170,7 @@ def _binary(val):
     If the value is an int it will be encoded as bytes big endian
     Raises ValueError if the input is not an int or string
     """
+
     if isinstance(val, int) or isinstance(val, float):
         s = int(math.ceil(val.bit_length() / 8))
         return val.to_bytes(s, 'big')
@@ -177,6 +178,8 @@ def _binary(val):
         return val.encode("utf-8")
     if isinstance(val, bytes):
         return val
+    if val is None:
+        return bytes([])
     raise ValueError("Byte serialization not supported")
 
 

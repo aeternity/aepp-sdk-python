@@ -58,7 +58,6 @@ class TxSigner:
 
 
 def _tx_native(op, **kwargs):
-
     def std_fee(tx_raw, fee_idx, base_gas_multiplier=1):
         # calculates the standard minimum transaction fee
         tx_copy = tx_raw  # create a copy of the input
