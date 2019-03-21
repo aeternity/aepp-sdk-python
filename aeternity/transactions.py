@@ -80,8 +80,11 @@ def _tx_native(op, **kwargs):
         return fee * defaults.GAS_PRICE
 
     def build_tx_object(tx_data, tx_raw, fee_idx, min_fee):
-        # adjust the minimum fee
-        if tx_data.get("fee") < min_fee:
+        # if fee is not set use the min fee
+        if tx_data.get("fee") <= 0:
+            tx_data["fee"] = min_fee
+        # if it is set check that is greater then the minimum fee
+        elif tx_data.get("fee") < min_fee:
             raise TransactionFeeTooLow(f'Minimum transaction fee is {min_fee}, provided fee is {tx_data.get("fee")}')
         tx_native[fee_idx] = _int(tx_data.get("fee"))
         tx_encoded = encode_rlp(idf.TRANSACTION, tx_native)
@@ -131,8 +134,6 @@ def _tx_native(op, **kwargs):
                 nonce=_int_decode(tx_native[7]),
                 payload=_binary_decode(tx_native[8]),
             )
-            print("native", tx_native)
-            print("ffeee", _int_decode(tx_native[5]), tx_native[5])
             min_fee = tx_data.get("fee")
         else:
             raise Exception("Invalid operation")

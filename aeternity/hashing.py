@@ -148,6 +148,8 @@ def _int(val: int, byte_length: int = None) -> bytes:
     :param val: the value to encode
     :param byte_length: number of bytes that should be used to encoded the number, by default is the minimum
     """
+    if val < 0:
+        raise ValueError(f"Unsupported negative value {val}")
     if val == 0:
         size = 1 if byte_length is None else byte_length
         return val.to_bytes(size, byteorder='big')
