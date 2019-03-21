@@ -14,6 +14,8 @@ from aeternity.identifiers import ACCOUNT_ID
 
 from aeternity import hashing, utils
 
+from deprecated import deprecated
+
 
 class Account:
     """Implement private/public key functionalities"""
@@ -29,11 +31,20 @@ class Account:
         """get the keypair public_key base58 encoded and prefixed (ak_...)"""
         return self.address
 
+    @deprecated(version='2.0.0', reason="Use get_secret_key instead")
     def get_private_key(self):
-        """get the private key hex encoded"""
-        pk = self.signing_key.encode(encoder=HexEncoder).decode('utf-8')
-        pb = self.verifying_key.encode(encoder=HexEncoder).decode('utf-8')
-        return f"{pk}{pb}"
+        """
+        Get the private key hex encoded
+        """
+        return self.get_secret_key()
+
+    def get_secret_key(self) -> str:
+        """
+        Get the secret key as a hex encoded string
+        """
+        sk = self.signing_key.encode(encoder=HexEncoder).decode('utf-8')
+        pk = self.verifying_key.encode(encoder=HexEncoder).decode('utf-8')
+        return f"{sk}{pk}"
 
     def sign(self, data):
         """
