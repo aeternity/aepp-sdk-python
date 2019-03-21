@@ -9,9 +9,7 @@ from nacl.signing import SigningKey, VerifyKey
 from nacl.exceptions import CryptoError
 from nacl.pwhash import argon2id
 from nacl import secret, utils as nacl_utils
-from aeternity.identifiers import ACCOUNT_ID
-
-
+from aeternity.identifiers import ACCOUNT_ID, ACCOUNT_API_FORMAT, ACCOUNT_SOFIA_FORMAT, ACCOUNT_RAW_FORMAT
 from aeternity import hashing, utils
 
 from deprecated import deprecated
@@ -27,9 +25,25 @@ class Account:
         self.address = hashing.encode(ACCOUNT_ID, pub_key)
         self.nonce = 0
 
-    def get_address(self):
-        """get the keypair public_key base58 encoded and prefixed (ak_...)"""
-        return self.address
+    def get_address(self, format=ACCOUNT_API_FORMAT):
+        """
+        Get the account address
+        :param format: the format of the address, possible values are 'api', 'sofia', 'raw', default is 'api'
+
+        when the format is:
+        - api the address is base58 encoded with ak_ as prefix
+        - sofia the addres is hex encoded with 0x as prefix
+        - raw the address is returned as a byte array
+
+        raise ValueError when the format is not recognized
+        """
+        if format == ACCOUNT_API_FORMAT or format is None:
+            return self.address
+        elif format == ACCOUNT_RAW_FORMAT:
+            return self.verifying_key.encode()
+        elif format == ACCOUNT_SOFIA_FORMAT:
+            return f'0x{self.verifying_key.encode(encoder=HexEncoder).decode("utf-8")}'
+        raise ValueError(f'Unrecognized format {format} for address encoding')
 
     @deprecated(version='2.0.0', reason="Use get_secret_key instead")
     def get_private_key(self):
