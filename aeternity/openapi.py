@@ -62,7 +62,7 @@ class OpenAPICli(object):
                 raise UnsupportedNodeVersion(
                     f"unsupported node version {self.api_version}, supported version are {f} and {t}")
         except requests.exceptions.ConnectionError as e:
-            raise ConfigException(f"Error connecting to the node at {self.url}, connection unavailable")
+            raise ConfigException(f"Error connecting to the node at {self.url}, connection unavailable", e)
         except Exception as e:
             raise UnsupportedNodeVersion(f"Unable to connect to the node: {e}")
 

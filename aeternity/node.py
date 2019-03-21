@@ -112,7 +112,7 @@ class NodeClient:
         try:
             account = self.api.get_account_by_pubkey(pubkey=account_address)
             return account.nonce + 1
-        except Exception as e:
+        except Exception:
             return 1
 
     def _get_nonce_ttl(self, account_address: str, relative_ttl: int):
@@ -175,9 +175,9 @@ class NodeClient:
     def spend(self, account: Account,
               recipient_id: str,
               amount: int,
-              payload: str="",
-              fee: int=defaults.FEE,
-              tx_ttl: int=defaults.TX_TTL):
+              payload: str = "",
+              fee: int = defaults.FEE,
+              tx_ttl: int = defaults.TX_TTL):
         """
         Create and execute a spend transaction
         """

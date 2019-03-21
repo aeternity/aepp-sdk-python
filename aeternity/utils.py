@@ -27,7 +27,7 @@ def is_valid_hash(hash_str, prefix=None):
             raise ValueError('Invalid prefix')
         # a match was found
         return True
-    except ValueError as e:
+    except ValueError:
         return False
 
 
