@@ -2,7 +2,7 @@ from aeternity.hashing import _int, _int_decode, _binary, _binary_decode, _id, e
 from aeternity.openapi import OpenAPICli
 from aeternity import identifiers as idf
 from aeternity import defaults
-from aeternity.exceptions import UnsupportedTransactionType
+from aeternity.exceptions import UnsupportedTransactionType, TransactionFeeTooLow
 import rlp
 import math
 import namedtupled
@@ -80,9 +80,10 @@ def _tx_native(op, **kwargs):
         return fee * defaults.GAS_PRICE
 
     def build_tx_object(tx_data, tx_raw, fee_idx, min_fee):
+        # adjust the minimum fee 
         if tx_data.get("fee") < min_fee:
-            tx_native[fee_idx] = _int(min_fee)
-            tx_data["fee"] = min_fee
+            raise TransactionFeeTooLow(f'Minimum transaction fee is {min_fee}, provided fee is {tx_data.get("fee")}')
+        tx_native[fee_idx] = _int(tx_data.get("fee"))
         tx_encoded = encode_rlp(idf.TRANSACTION, tx_native)
         tx = dict(
             data=tx_data,
@@ -130,6 +131,8 @@ def _tx_native(op, **kwargs):
                 nonce=_int_decode(tx_native[7]),
                 payload=_binary_decode(tx_native[8]),
             )
+            print("native", tx_native)
+            print("ffeee", _int_decode(tx_native[5]), tx_native[5])
             min_fee = tx_data.get("fee")
         else:
             raise Exception("Invalid operation")
