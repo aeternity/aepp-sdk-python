@@ -229,5 +229,5 @@ def is_signature_valid(account_id, signature, data: bytes) -> bool:
         sg = hashing.decode(signature) if isinstance(signature, str) else signature
         VerifyKey(id).verify(data, sg)
         return True
-    except Exception as e:
+    except Exception:
         return False

@@ -132,7 +132,7 @@ def namehash_encode(prefix, name):
     return encode(prefix, namehash(name))
 
 
-def commitment_id(domain: str, salt: int=None)-> tuple:
+def commitment_id(domain: str, salt: int = None) -> tuple:
     """
     Compute the commitment id
     :return: the generated salt and the commitment_id

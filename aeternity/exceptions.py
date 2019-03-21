@@ -79,6 +79,7 @@ class UnsupportedTransactionType(Exception):
     """Raised for unknow transaction tag"""
     pass
 
+
 class TransactionFeeTooLow(Exception):
     """Raised for transaction fee with too low value"""
     pass
