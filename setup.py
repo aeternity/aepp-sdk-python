@@ -50,7 +50,8 @@ setup(
         'websocket_client == 0.48.0',
         'validators == 0.12.1',
         'semver==2.8.1',
-        'namedtupled==0.3.3'
+        'namedtupled==0.3.3',
+        'Deprecated==1.2.5'
     ],
     classifiers=[
         'Programming Language :: Python',
