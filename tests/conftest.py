@@ -11,9 +11,9 @@ from aeternity.node import NodeClient, Config
 
 PUBLIC_KEY = os.environ.get('WALLET_PUB')
 PRIVATE_KEY = os.environ.get('WALLET_PRIV')
-NODE_URL = os.environ.get('TEST_URL')
-NODE_URL_DEBUG = os.environ.get('TEST_DEBUG_URL')
-NETWORK_ID = os.environ.get('TEST_NETWORK_ID')
+NODE_URL = os.environ.get('TEST_URL', 'http://localhost:3013')
+NODE_URL_DEBUG = os.environ.get('TEST_DEBUG_URL', 'http://localhost:3113')
+NETWORK_ID = os.environ.get('TEST_NETWORK_ID', 'ae_devnet')
 
 
 @pytest.fixture

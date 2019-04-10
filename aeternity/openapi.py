@@ -8,8 +8,6 @@ import logging
 from aeternity.exceptions import UnsupportedNodeVersion, ConfigException
 import semver
 
-from . import __compatibility__
-
 
 class OpenAPIArgsException(Exception):
     """Raised when there is an error in method arguments"""
