@@ -48,19 +48,24 @@ class OpenAPICli(object):
         "boolean": "bool",
     }
 
-    def __init__(self, url, url_internal=None, debug=False, force_compatibility=False):
+    def __init__(self, url, url_internal=None, debug=False, compatibility_version_range=(None, None), force_compatibility=False):
         try:
             self.url, self.url_internal = url, url_internal
             # load the openapi json file from the node
             self.api_def = requests.get(f"{url}/api").json()
+            if self.api_def.get('api') is not None:  # TODO: workaround for different swagger styles
+                self.api_def = self.api_def.get('api', {})
             self.api_version = self.api_def.get("info", {}).get("version", "unknown")
-            # retrieve the version of the node we are connecting to
-            match_min = semver.match(self.api_version, __compatibility__.get("from_version"))
-            match_max = semver.match(self.api_version, __compatibility__.get("to_version"))
+            # evaluate min version
+            lower_bound = compatibility_version_range[0]
+            match_min = True if lower_bound is None else semver.match(self.api_version, lower_bound)
+            # evaluate max version
+            upper_bound = compatibility_version_range[1]
+            match_max = True if upper_bound is None else semver.match(self.api_version, upper_bound)
+            # evalutate the version range
             if (not match_min or not match_max) and not force_compatibility:
-                f, t = __compatibility__.get('from_version'), __compatibility__.get('to_version')
                 raise UnsupportedNodeVersion(
-                    f"unsupported node version {self.api_version}, supported version are {f} and {t}")
+                    f"unsupported node version {self.api_version}, supported version are {lower_bound} and {upper_bound}")
         except requests.exceptions.ConnectionError as e:
             raise ConfigException(f"Error connecting to the node at {self.url}, connection unavailable", e)
         except Exception as e:
