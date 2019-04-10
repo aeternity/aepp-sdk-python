@@ -748,8 +748,8 @@ class TxBuilder:
         """
         create a preclaim transaction
         :param account_id: the account registering the name
-        :param commitment_id: the commitment id
-        :param commitment_hash:  the commitment hash
+        :param name: the actual name to claim
+        :param name_salt: the salt used to create the committment_id during preclaim
         :param fee:  the fee for the transaction
         :param ttl:  the ttl for the transaction
         :param nonce: the nonce of the account for the transaction
