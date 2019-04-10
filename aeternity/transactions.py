@@ -174,7 +174,7 @@ def _tx_native(op, **kwargs):
                 _int(vsn),
                 _id(idf.ID_TAG_ACCOUNT, kwargs.get("account_id")),
                 _int(kwargs.get("nonce")),
-                decode(kwargs.get("name")),
+                _binary(kwargs.get("name")),
                 _binary(kwargs.get("name_salt")),
                 _int(kwargs.get("fee")),
                 _int(kwargs.get("ttl"))
