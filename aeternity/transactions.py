@@ -878,7 +878,7 @@ class TxBuilder:
 
     def tx_contract_call(self, caller_id, contract_id, call_data, function, arg, amount, gas, gas_price, abi_version, fee, ttl, nonce) -> tuple:
         """
-        Create a contract call
+        Create a Contract Call trnsaction
         :param caller_id: the account creating the contract
         :param contract_id: the contract to call
         :param call_data: the call data for the contract
@@ -887,7 +887,6 @@ class TxBuilder:
         :param amount: TODO: add definition
         :param gas: TODO: add definition
         :param gas_price: TODO: add definition
-        :param vm_version: TODO: add definition
         :param abi_version: TODO: add definition
         :param fee: the transaction fee
         :param ttl: the ttl of the transaction

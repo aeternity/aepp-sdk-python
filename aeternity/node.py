@@ -274,13 +274,13 @@ class NodeClient:
     def AEName(self, domain):
         return aens.AEName(domain, client=self)
 
-    # support contract
-    def Contract(self, source_code, bytecode=None, address=None, abi=contract.Contract.SOPHIA):
-        return contract.Contract(source_code, client=self, bytecode=bytecode, address=address, abi=abi)
-
     # support oralces
     def Oracle(self):
         return oracles.Oracle(self)
 
     def OracleQuery(self, oracle_id, query_id=None):
         return oracles.OracleQuery(self, oracle_id, id=query_id)
+
+    # support contract
+    def Contract(self):
+        return contract.Contract(client=self)

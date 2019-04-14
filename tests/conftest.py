@@ -7,6 +7,7 @@ import random
 import string
 from aeternity.signing import Account
 from aeternity.node import NodeClient, Config
+from aeternity.contract import CompilerClient
 
 
 PUBLIC_KEY = os.environ.get('WALLET_PUB')
@@ -14,6 +15,7 @@ PRIVATE_KEY = os.environ.get('WALLET_PRIV')
 NODE_URL = os.environ.get('TEST_URL', 'http://localhost:3013')
 NODE_URL_DEBUG = os.environ.get('TEST_DEBUG_URL', 'http://localhost:3113')
 NETWORK_ID = os.environ.get('TEST_NETWORK_ID', 'ae_devnet')
+COMPILER_URL = os.environ.get("COMPILER_URL", 'http://localhost:3080')
 
 
 @pytest.fixture
@@ -72,3 +74,9 @@ def chain_fixture(scope="module"):
     print(f"Test account (1) is {ACCOUNT_1.get_address()} with balance {a.balance}")
 
     return namedtupled.map({"NODE_CLI": NODE_CLI, "ACCOUNT": ACCOUNT, "ACCOUNT_1": ACCOUNT_1}, _nt_name="TestData")
+
+
+@pytest.fixture
+def compiler_fixture(scope="module"):
+    compiler = CompilerClient(COMPILER_URL)
+    return namedtupled.map({"COMPILER": compiler}, _nt_name="TestData")
