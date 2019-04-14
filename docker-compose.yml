@@ -14,7 +14,7 @@ services:
       - .:/app
 
   node:
-    image: aeternity/aeternity:${TAG}
+    image: aeternity/aeternity:${NODE_TAG}
     hostname: node
     expose: [3013, 3113]
     environment:
@@ -26,6 +26,12 @@ services:
       - ${PWD}/docker/accounts.json:/home/aeternity/node/data/aecore/.genesis/accounts_test.json
       - node_db:/home/aeterinty/node/data/mnesia
       - node_keys:/home/aeterinty/node/keys
+  
+
+  compiler:
+    image: aeternity/aesophia_http:${COMPILER_TAG}
+    hostname: compiler
+    expose: [3080]
 
 volumes:
   node_db:
