@@ -7,6 +7,10 @@ import namedtupled
 from requests import ConnectionError
 
 
+CONTRACT_INIT_NOPARAM_CALLDATA = "cb_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACC5yVbyizFJqfWYeqUF89obIgnMVzkjQAYrtsG9n5" + \
+    "+Z6gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAnHQYrA=="
+
+
 class CompilerError(exceptions.AException):
     """
     Throw when the compiler apis return an error
@@ -113,7 +117,7 @@ class Contract:
         pass
 
     def call(self, contract_id,
-             account, function, arg, call_data,
+             account, function, arg, calldata,
              amount=defaults.CONTRACT_AMOUNT,
              gas=defaults.CONTRACT_GAS,
              gas_price=defaults.CONTRACT_GAS_PRICE,
@@ -141,24 +145,31 @@ class Contract:
             # get the account nonce and ttl
             nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
             # build the transaction
-            tx = txb.tx_contract_call(account.get_address(), self.address, call_data, function, arg,
+            tx = txb.tx_contract_call(account.get_address(), self.address, calldata, function, arg,
                                       amount, gas, gas_price, abi_version,
                                       fee, ttl, nonce)
             # sign the transaction
             tx_signed = self.client.sign_transaction(account, tx.tx)
             # post the transaction to the chain
             self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
-            # unsigned transaction of the call
-            call_obj = self.client.get_transaction_info_by_hash(hash=tx_signed.hash)
-            return tx_signed, call_obj
+            return tx_signed
         except exceptions.OpenAPIClientException as e:
             raise ContractError(e)
 
+    def get_call_object(self, tx_hash):
+        """
+        retrieve the call object for a contract call transactio
+        """
+        # unsigned transaction of the call
+        call_object = self.client.get_transaction_info_by_hash(hash=tx_hash)
+        return call_object
+
     def create(self,
                account,
+               bytecode,
                amount=defaults.CONTRACT_AMOUNT,
                deposit=defaults.CONTRACT_DEPOSIT,
-               init_call_data=None,
+               init_call_data=CONTRACT_INIT_NOPARAM_CALLDATA,
                gas=defaults.CONTRACT_GAS,
                gas_price=defaults.CONTRACT_GAS_PRICE,
                fee=defaults.FEE,
@@ -167,7 +178,7 @@ class Contract:
                tx_ttl=defaults.TX_TTL):
         """
         Create a contract and deploy it to the chain
-        :return: address
+        :return: the transaction
         """
         try:
             # retrieve the correct vm/abi version
@@ -179,7 +190,7 @@ class Contract:
             # get the account nonce and ttl
             nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
             # build the transaction
-            tx = txb.tx_contract_create(account.get_address(), self.bytecode, init_call_data,
+            tx = txb.tx_contract_create(account.get_address(), bytecode, init_call_data,
                                         amount, deposit, gas, gas_price, vm_version, abi_version,
                                         fee, ttl, nonce)
             # store the contract address in the instance variabl
@@ -188,7 +199,7 @@ class Contract:
             tx_signed = self.client.sign_transaction(account, tx)
             # post the transaction to the chain
             self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
-            return tx
+            return tx_signed
         except exceptions.OpenAPIClientException as e:
             raise ContractError(e)
 

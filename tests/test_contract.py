@@ -23,35 +23,130 @@ contract Identity =
 #
 
 
-def _sophia_contract_tx_create_online(node_cli, account, compiler_fixture):
-    # runt tests
-    compiled_contract = compiler_fixture.COMPILER.compile(test_sophia_contract)
-    node_cli.Contract(bytecode=compiled_contract)
-    #
-    contract = node_cli.Contract(test_sophia_contract)
-    contract.tx_create(account, gas=100000)
-    assert contract.address is not None
-    assert len(contract.address) > 0
-    assert contract.address.startswith('ct')
+def _sophia_contract_tx_create_online(node_cli, account):
+    tests = [
+        {
+            "sourcecode": "contract SimpleStorage =\n  record state = { data : int }\n  function init(value : int) : state = " +
+            "{ data = value }\n  function get() : int = state.data\n  function set(value : int) = put(state{data = value})",
+            "bytecode": "cb_+QYYRgKgf6Gy7VnRXycsYSiFGAUHhMs+Oeg+RJvmPzCSAnxk8LT5BKX5AUmgOoWULXtHOgf10E7h2cFqXOqxa3kc6pKJYRpEw" +
+            "/nlugeDc2V0uMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoP///////////////////////////////////////" +
+            "///AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC4YAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAP///////////////////////////////////////////jJoEnsSQdsAgNxJqQzA+rc5DsuLDKUV7ETxQp+ItyJgJS3g" +
+            "2dldLhgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA////////////////////" +
+            "///////////////////////uEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+" +
+            "QKLoOIjHWzfyTkW3kyzqYV79lz0D8JW9KFJiz9+fJgMGZNEhGluaXS4wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+            "ACg//////////////////////////////////////////8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALkBoAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEA//////////////////////////////////////////8AAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+            "YD//////////////////////////////////////////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAuQFEYgAAj2IAAMKRgICAUX9J7" +
+            "EkHbAIDcSakMwPq3OQ7LiwylFexE8UKfiLciYCUtxRiAAE5V1CAgFF/4iMdbN/JORbeTLOphXv2XPQPwlb0oUmLP358mAwZk0QUYgAA0VdQgFF/O" +
+            "oWULXtHOgf10E7h2cFqXOqxa3kc6pKJYRpEw/nlugcUYgABG1dQYAEZUQBbYAAZWWAgAZCBUmAgkANgAFmQgVKBUllgIAGQgVJgIJADYAOBUpBZY" +
+            "ABRWVJgAFJgAPNbYACAUmAA81tgAFFRkFZbYCABUVGQUIOSUICRUFCAWZCBUllgIAGQgVJgIJADYAAZWWAgAZCBUmAgkANgAFmQgVKBUllgIAGQg" +
+            "VJgIJADYAOBUoFSkFCQVltgIAFRUVlQgJFQUGAAUYFZkIFSkFBgAFJZkFCQVltQUFlQUGIAAMpWhTIuMS4w4SWVhA==""",
+            "calldata": "cb_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDiIx1s38k5Ft5Ms6mFe/Zc9A/CVvShSYs/fnyYDBmTRAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACo7j+li"  # init(42)
+        },
+        {
+            "sourcecode": "contract Identity =\n  type state = ()\n  function main(z : int) = z",
+            "bytecode": "cb_+QP1RgKgpVq1Ib2r2ug+UktHvfWSQ8P35HJQHM6qikqBu1DwgtT5Avv5ASqgaPJnYzj/UIg5q6R3Se/6i+h+8oTyB/s9mZhwH" +
+            "NU4h8WEbWFpbrjAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKD//////////////////////////////////////" +
+            "////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAuEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAA+QHLoLnJVvKLMUmp9Zh6pQXz2hsiCcxXOSNABiu2wb2fn5nqhGluaXS4YAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP//////////////////////////////////////////7kBQAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+            "AAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEA//////////////////////////////////////////8AAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA///////////////////////////////////////////uMxiAABkYgAAhJGAgIBRf7nJVvKLMUmp9" +
+            "Zh6pQXz2hsiCcxXOSNABiu2wb2fn5nqFGIAAMBXUIBRf2jyZ2M4/1CIOaukd0nv+ovofvKE8gf7PZmYcBzVOIfFFGIAAK9XUGABGVEAW2AAGVlgI" +
+            "AGQgVJgIJADYAOBUpBZYABRWVJgAFJgAPNbYACAUmAA81tZWWAgAZCBUmAgkANgABlZYCABkIFSYCCQA2ADgVKBUpBWW2AgAVFRWVCAkVBQgJBQk" +
+            "FZbUFCCkVBQYgAAjFaFMi4xLjBJtQib",
+            "calldata": "cb_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACC5yVbyizFJqfWYeqUF89obIgnMVzkjQAYrtsG9n5+Z6gAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAnHQYrA=="  # init()
+        }
+
+    ]
+    for t in tests:
+        contract = node_cli.Contract()
+        contract.create(account, t.get("bytecode"), init_call_data=t.get("calldata"), gas=100000)
+        deployed = node_cli.get_contract(pubkey=contract.address)
+        assert deployed.active is True
+        assert deployed.owner_id == account.get_address()
 
 
 def _sophia_contract_tx_call_online(node_cli, account):
+    tests = [
+        {
+            "sourcecode": "contract SimpleStorage =\n  record state = { data : int }\n  function init(value : int) : state = " +
+            "{ data = value }\n  function get() : int = state.data\n  function set(value : int) = put(state{data = value})",
+            "bytecode": "cb_+QYYRgKgf6Gy7VnRXycsYSiFGAUHhMs+Oeg+RJvmPzCSAnxk8LT5BKX5AUmgOoWULXtHOgf10E7h2cFqXOqxa3kc6pKJYRpEw" +
+            "/nlugeDc2V0uMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoP///////////////////////////////////////" +
+            "///AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC4YAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAP///////////////////////////////////////////jJoEnsSQdsAgNxJqQzA+rc5DsuLDKUV7ETxQp+ItyJgJS3g" +
+            "2dldLhgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA////////////////////" +
+            "///////////////////////uEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+" +
+            "QKLoOIjHWzfyTkW3kyzqYV79lz0D8JW9KFJiz9+fJgMGZNEhGluaXS4wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+            "ACg//////////////////////////////////////////8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALkBoAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEA//////////////////////////////////////////8AAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+            "YD//////////////////////////////////////////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAuQFEYgAAj2IAAMKRgICAUX9J7" +
+            "EkHbAIDcSakMwPq3OQ7LiwylFexE8UKfiLciYCUtxRiAAE5V1CAgFF/4iMdbN/JORbeTLOphXv2XPQPwlb0oUmLP358mAwZk0QUYgAA0VdQgFF/O" +
+            "oWULXtHOgf10E7h2cFqXOqxa3kc6pKJYRpEw/nlugcUYgABG1dQYAEZUQBbYAAZWWAgAZCBUmAgkANgAFmQgVKBUllgIAGQgVJgIJADYAOBUpBZY" +
+            "ABRWVJgAFJgAPNbYACAUmAA81tgAFFRkFZbYCABUVGQUIOSUICRUFCAWZCBUllgIAGQgVJgIJADYAAZWWAgAZCBUmAgkANgAFmQgVKBUllgIAGQg" +
+            "VJgIJADYAOBUoFSkFCQVltgIAFRUVlQgJFQUGAAUYFZkIFSkFBgAFJZkFCQVltQUFlQUGIAAMpWhTIuMS4w4SWVhA==""",
+            "init.calldata": "cb_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDiIx1s38k5Ft5Ms6mFe/Zc9A/CVvShSYs/fnyYDBmTRAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACo7j+li",  # init(42)
+            "call.function": "set",
+            "call.arguments": [24],
+            "call.calldata": "cb_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACA6hZQte0c6B/XQTuHZwWpc6rFreRzqkolhGkTD+eW6BwAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABhl+sL5",
+            "return.value": "cb_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAArMtts"  # 0,
+        },
+        {
+            "sourcecode": "contract Identity =\n  type state = ()\n  function main(z : int) = z",
+            "bytecode": "cb_+QP1RgKgpVq1Ib2r2ug+UktHvfWSQ8P35HJQHM6qikqBu1DwgtT5Avv5ASqgaPJnYzj/UIg5q6R3Se/6i+h+8oTyB/s9mZhwH" +
+            "NU4h8WEbWFpbrjAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKD//////////////////////////////////////" +
+            "////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAuEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAA+QHLoLnJVvKLMUmp9Zh6pQXz2hsiCcxXOSNABiu2wb2fn5nqhGluaXS4YAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP//////////////////////////////////////////7kBQAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+            "AAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEA//////////////////////////////////////////8AAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA///////////////////////////////////////////uMxiAABkYgAAhJGAgIBRf7nJVvKLMUmp9" +
+            "Zh6pQXz2hsiCcxXOSNABiu2wb2fn5nqFGIAAMBXUIBRf2jyZ2M4/1CIOaukd0nv+ovofvKE8gf7PZmYcBzVOIfFFGIAAK9XUGABGVEAW2AAGVlgI" +
+            "AGQgVJgIJADYAOBUpBZYABRWVJgAFJgAPNbYACAUmAA81tZWWAgAZCBUmAgkANgABlZYCABkIFSYCCQA2ADgVKBUpBWW2AgAVFRWVCAkVBQgJBQk" +
+            "FZbUFCCkVBQYgAAjFaFMi4xLjBJtQib",
+            "init.calldata": "cb_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACC5yVbyizFJqfWYeqUF89obIgnMVzkjQAYrtsG9n5+Z6gAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAnHQYrA==",  # init()
+            "call.function": "main",
+            "call.arguments": [42],
+            "call.calldata": "cb_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBo8mdjOP9QiDmrpHdJ7/qL6H7yhPIH+z2ZmHAc1TiHxQAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACo7dbVl",
+            "return.value": "cb_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACr8s/aY"  # 42
 
-    contract = node_cli.Contract(test_sophia_contract)
-    tx = contract.tx_create(account, gas=100000)
-    print("contract: ", contract.address)
-    print("tx contract: ", tx)
+        }
 
-    _, result = contract.tx_call(account, 'main', '42', gas=500000)
-    assert result is not None
-    assert result.return_type == 'ok'
-    print("return", result.return_value)
-    print("raw", hashing.decode(result.return_value))
-    # assert result.return_value.lower() == hashing.encode("cb", f'{hex(42)[2:].zfill(64).lower()}')
-
-    val, remote_type = contract.decode_data(result.return_value, 'int')
-    assert val == 42
-    assert remote_type == 'word'
+    ]
+    for t in tests:
+        contract = node_cli.Contract()
+        contract.create(account, t.get("bytecode"), init_call_data=t.get("init.calldata"), gas=100000)
+        deployed = node_cli.get_contract(pubkey=contract.address)
+        assert deployed.active is True
+        assert deployed.owner_id == account.get_address()
+        tx = contract.call(contract.address, account, t.get("call.function"), t.get("call.arguments"), t.get("call.calldata"),  gas=100000)
+        # retrieve the call object
+        call = contract.get_call_object(tx.hash)
+        assert call.return_value == t.get("return.value")
+        assert call.return_type == "ok"
 
 
 def test_sophia_contract_tx_create_native(chain_fixture):
@@ -266,72 +361,3 @@ def test_sophia_contract_call(chain_fixture):
     result = contract.call('main', '1')
     assert result is not None
     assert result.out
-
-
-def test_sophia_broken_contract_compile(chain_fixture):
-    with raises(ContractError):
-        contract = chain_fixture.NODE_CLI.Contract(broken_contract)
-        print(contract.source_code)
-
-
-def test_sophia_broken_contract_call(chain_fixture):
-    with raises(ContractError):
-        contract = chain_fixture.NODE_CLI.Contract(broken_contract)
-        result = contract.call('IdentityBroken.main', '1')
-        print(result)
-
-
-def test_sophia_broken_encode_calldata(chain_fixture):
-    with raises(ContractError):
-        contract = chain_fixture.NODE_CLI.Contract(broken_contract)
-        result = contract.encode_calldata('IdentityBroken.main', '1')
-        print(result)
-
-#
-# EVM
-#
-
-
-def test_evm_contract_compile(chain_fixture):
-    contract = chain_fixture.NODE_CLI.Contract(test_sophia_contract, abi=Contract.EVM)
-    print(contract)
-    assert contract.bytecode is not None
-    assert utils.is_valid_hash(contract.bytecode, prefix='cb')
-
-# TODO This call fails with an out of gas exception
-
-
-@pytest.mark.skip('This call fails with an out of gas exception')
-def test_evm_contract_call(chain_fixture):
-    contract = chain_fixture.NODE_CLI.Contract(test_sophia_contract, abi=Contract.EVM)
-    result = contract.call('main', '1')
-    assert result is not None
-    assert result.out
-
-
-def test_evm_encode_calldata(chain_fixture):
-    contract = chain_fixture.NODE_CLI.Contract(test_sophia_contract, abi=Contract.EVM)
-    result = contract.encode_calldata('main', '1')
-    assert result is not None
-    assert result == hashing.encode('cb', 'main1')
-
-
-def test_evm_broken_contract_compile(chain_fixture):
-    with raises(ContractError):
-        contract = chain_fixture.NODE_CLI.Contract(broken_contract, abi=Contract.EVM)
-        print(contract.source_code)
-
-
-def test_evm_broken_contract_call(chain_fixture):
-    with raises(ContractError):
-        contract = chain_fixture.NODE_CLI.Contract(broken_contract, abi=Contract.EVM)
-        result = contract.call('IdentityBroken.main', '1')
-        print(result)
-
-
-def test_evm_broken_encode_calldata(chain_fixture):
-    with raises(ContractError):
-        contract = chain_fixture.NODE_CLI.Contract(broken_contract, abi=Contract.EVM)
-        # with raises(AException):
-        result = contract.encode_calldata('IdentityBroken.main', '1')
-        print(result)
