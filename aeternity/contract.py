@@ -68,6 +68,21 @@ class CompilerClient(object):
         }
         return self.compiler_cli.decode_data(body=body)
 
+    def decode_calldata_with_bytecode(self, bytecode, encoded_calldata):
+        body = {
+            "calldata": encoded_calldata,
+            "bytecode": bytecode
+        }
+        return self.compiler_cli.decode_calldata_bytecode(body=body)
+
+    def decode_calldata_with_sourcecode(self, sourcecode, function, encoded_calldata):
+        body = {
+            "source": sourcecode,
+            "function": function,
+            "calldata": encoded_calldata
+        }
+        return self.compiler_cli.decode_calldata_source(body=body)
+
 
 class ContractError(Exception):
     pass
