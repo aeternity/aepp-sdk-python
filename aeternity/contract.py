@@ -62,10 +62,10 @@ class CompilerClient(object):
         return self.compiler_cli.encode_calldata(body=body)
 
     def decode_data(self, sophia_type, encoded_data):
-        body = dict(
-            data=encoded_data,
-            sophia_type=sophia_type
-        )
+        body = {
+            "data": encoded_data,
+            "sophia-type": sophia_type
+        }
         return self.compiler_cli.decode_data(body=body)
 
 
