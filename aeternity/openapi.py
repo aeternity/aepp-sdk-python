@@ -86,7 +86,7 @@ class OpenAPICli(object):
             return all_cap_re.sub(r'\1_\2', s1).lower()
 
         # prepare the baseurl
-        base_path = self.api_def.get('basePath', '/')
+        base_path = self.api_def.get('basePath', '').rstrip('/')
         self.base_url = f"{url}{base_path}"
         if url_internal is None:
             # do not build internal endpoints
@@ -103,13 +103,14 @@ class OpenAPICli(object):
 
         for query_path, path in self.api_def.get("paths").items():
             for m, func in path.items():
+                func_tags = func.get("tags", [])
                 # exclude the paths/method tagged with skip_tags
-                if not self.skip_tags.isdisjoint(func.get("tags")):
+                if len(func_tags) > 0 and not self.skip_tags.isdisjoint(func_tags):
                     continue
                 # get if is an internal or external endpoint
-                endpoint_url = self.base_url_internal if "internal" in func.get("tags", []) else self.base_url
+                endpoint_url = self.base_url_internal if "internal" in func_tags else self.base_url
                 api = Api(
-                    name=p2s(func['operationId']),
+                    name=p2s(func.get('operationId')),
                     doc=func.get("description"),
                     params=[],
                     responses={},
@@ -196,7 +197,7 @@ class OpenAPICli(object):
                     logging.debug(f">>>> ENDPOINT {target_endpoint}\n >> QUERY \n{query_params}\n >> BODY \n{post_body} \n >> REPLY \n{http_reply.text}", )
             # unknown error
             if api_response is None:
-                raise OpenAPIClientException(f"Unknown error {http_reply.status_code} - {http_reply.text}", code=http_reply.status_code)
+                raise OpenAPIClientException(f"Unknown error {target_endpoint} {http_reply.status_code} - {http_reply.text}", code=http_reply.status_code)
             # success
             if http_reply.status_code == 200:
                 # parse the http_reply
