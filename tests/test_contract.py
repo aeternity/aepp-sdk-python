@@ -1,22 +1,5 @@
 import pytest
-from pytest import raises
 
-from aeternity.contract import ContractError, Contract
-from aeternity import hashing, utils
-
-test_sophia_contract = '''
-contract SimpleStorage =
-  record state = { data : int }
-  function init(value : int) : state = { data = value }
-  function get() : int = state.data
-  function set(value : int) = put(state{data = value})
-'''
-
-broken_contract = '''
-contract Identity =
-  BROKEN state = ()
-  function main(x : int) = x
-'''
 
 #
 # SOPHIA
@@ -165,7 +148,6 @@ def test_sophia_contract_tx_create_debug(chain_fixture):
     # TODO: create a debug impl and test
     # save settings and go online
     _sophia_contract_tx_create_online(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
-    # restore settings
 
 
 @pytest.mark.skip('Debug transaction disabled')
@@ -173,13 +155,11 @@ def test_sophia_contract_tx_call_debug(chain_fixture):
     # TODO: create a debug impl and test
     # save settings and go online
     _sophia_contract_tx_call_online(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
-    # restore settings
 
 # test contracts
 
 
 def test_sophia_contract_compile(compiler_fixture):
-
     tests = [
         {
             "sourcecode": "contract SimpleStorage =\n  record state = { data : int }\n  function init(value : int) : state = " +
@@ -357,7 +337,6 @@ def test_sophia_decode_calldata_sourcecode(compiler_fixture):
 
 @pytest.mark.skip("static call are disabled since 1.0.0")
 def test_sophia_contract_call(chain_fixture):
-    contract = chain_fixture.NODE_CLI.Contract(test_sophia_contract)
+    contract = chain_fixture.NODE_CLI.Contract()
     result = contract.call('main', '1')
     assert result is not None
-    assert result.out
