@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.ci
-    depends_on: [node]
+    depends_on: [node, compiler]
     entrypoint: docker/wait-for-it.sh node:3013 --
     env_file: [./docker/sdk.env]
     environment:
