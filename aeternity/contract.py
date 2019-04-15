@@ -7,10 +7,6 @@ import namedtupled
 from requests import ConnectionError
 
 
-CONTRACT_INIT_NOPARAM_CALLDATA = "cb_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACC5yVbyizFJqfWYeqUF89obIgnMVzkjQAYrtsG9n5" + \
-    "+Z6gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAnHQYrA=="
-
-
 class CompilerError(exceptions.AException):
     """
     Throw when the compiler apis return an error
@@ -58,6 +54,8 @@ class CompilerClient(object):
     def encode_calldata(self, source_code, function_name, arguments=[]):
         if not isinstance(arguments, list):
             arguments = [arguments]
+        if arguments is None:
+            arguments = []
         body = dict(
             source=source_code,
             function=function_name,
@@ -169,7 +167,7 @@ class Contract:
                bytecode,
                amount=defaults.CONTRACT_AMOUNT,
                deposit=defaults.CONTRACT_DEPOSIT,
-               init_call_data=CONTRACT_INIT_NOPARAM_CALLDATA,
+               init_calldata=defaults.CONTRACT_INIT_CALLDATA,
                gas=defaults.CONTRACT_GAS,
                gas_price=defaults.CONTRACT_GAS_PRICE,
                fee=defaults.FEE,
@@ -190,17 +188,17 @@ class Contract:
             # get the account nonce and ttl
             nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
             # build the transaction
-            tx = txb.tx_contract_create(account.get_address(), bytecode, init_call_data,
+            tx = txb.tx_contract_create(account.get_address(), bytecode, init_calldata,
                                         amount, deposit, gas, gas_price, vm_version, abi_version,
                                         fee, ttl, nonce)
             # store the contract address in the instance variabl
             self.address = hashing.contract_id(account.get_address(), nonce)
             # sign the transaction
-            tx_signed = self.client.sign_transaction(account, tx)
+            tx_signed = self.client.sign_transaction(account, tx, metadata={"contract_id": self.address})
             # post the transaction to the chain
             self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
             return tx_signed
-        except exceptions.OpenAPIClientException as e:
+        except openapi.OpenAPIClientException as e:
             raise ContractError(e)
 
     def _get_vm_abi_versions(self):
