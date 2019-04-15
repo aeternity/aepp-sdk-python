@@ -17,6 +17,10 @@ class TxSigner:
     """
 
     def __init__(self, account, network_id):
+        if account is None:
+            raise ValueError("Account must be set to sign transactions")
+        if network_id is None:
+            raise ValueError("Network ID must be set to sign transactions")
         self.account = account
         self.network_id = network_id
 

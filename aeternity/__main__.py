@@ -9,8 +9,8 @@ import namedtupled
 from aeternity import __version__
 
 from aeternity.node import NodeClient, Config
-from aeternity.transactions import TxSigner
-# from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
+from aeternity.transactions import TxSigner, TxBuilder
+from aeternity.identifiers import NETWORK_ID_MAINNET
 from . import utils, signing, aens, defaults, exceptions
 from aeternity.contract import CompilerClient
 
@@ -164,7 +164,7 @@ _account_options = [
 ]
 
 _sign_options = [
-    click.option('--network-id', default=None, help="The network id to use when signing a transaction")
+    click.option('--network-id', default=NETWORK_ID_MAINNET, help="The network id to use when signing a transaction", show_default=True)
 ]
 
 _transaction_options = [
@@ -421,8 +421,7 @@ def tx_broadcast(signed_transaction, force, wait, json_):
 def tx_spend(sender_id, recipient_id, amount,  ttl, fee, nonce, payload, json_):
     try:
         set_global_options(json_)
-        cli = _node_cli()
-        tx = cli.tx_builder.tx_spend(sender_id, recipient_id, amount, payload, fee, ttl, nonce)
+        tx = TxBuilder().tx_spend(sender_id, recipient_id, amount, payload, fee, ttl, nonce)
         # print the results
         _print_object(tx, title='spend tx')
     except Exception as e:
