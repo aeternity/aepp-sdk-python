@@ -1,0 +1,5 @@
+contract SimpleStorage =
+  record state = { data : int }
+  function init(value : int) : state = { data = value }
+  function get() : int = state.data
+  function set(value : int) = put(state{data = value})
