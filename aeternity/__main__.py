@@ -584,12 +584,12 @@ def name_transfer(keystore_name, domain, address, ttl, fee, nonce, password, net
 #
 #
 
-@cli.group(help='Deploy and execute contracts on the chain')
-def contracts():
+@cli.group(help="Interact with Æternity smart contract compiler")
+def compiler():
     pass
 
 
-@contracts.command('compile', help="Compile a contract")
+@compiler.command('compile', help="Compile a contract")
 @click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
 @click.argument("contract_file")
 @global_options
@@ -600,12 +600,15 @@ def contract_compile(contract_file, compiler_url, json_):
             code = fp.read()
             c = CompilerClient(compiler_url)
             result = c.compile(code)
+            if click.confirm(f'Save contract bytecode to file ({contract_file}.bin) ?', default=True, show_default=True):
+                with open(f"{contract_file}.bin", "w") as fp:
+                    fp.write(result.bytecode)
             _print_object(result, title="contract")
     except Exception as e:
         _print_error(e, exit_code=1)
 
 
-@contracts.command('aci', help="Get the aci of a contract")
+@compiler.command('aci', help="Get the aci of a contract")
 @click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
 @click.argument("contract_file")
 @global_options
@@ -621,11 +624,11 @@ def contract_aci(contract_file, compiler_url, json_):
         _print_error(e, exit_code=1)
 
 
-@contracts.command('encode-calldata', help="Enocode the calldata to invoke a contract")
+@compiler.command('encode-calldata', help="Enocode the calldata to invoke a contract")
 @click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
 @click.argument("contract_file")
 @click.argument("function_name")
-@click.argument("arguments")
+@click.option("--arguments", default=None, help="Argument of the function if any, comma separated")
 @global_options
 def contract_encode_calldata(contract_file, function_name, arguments, compiler_url, json_):
     try:
@@ -633,13 +636,16 @@ def contract_encode_calldata(contract_file, function_name, arguments, compiler_u
         with open(contract_file) as fp:
             code = fp.read()
             c = CompilerClient(compiler_url)
-            result = c.encode_calldata(code, function_name, arguments=arguments.split(","))
+            arguments = [] if arguments is None else arguments.split(",")
+            result = c.encode_calldata(code, function_name, arguments=arguments)
             _print_object(result, title="contract")
-    except Exception as e:
-        _print_error(e, exit_code=1)
+    # except Exception as e:
+    #     _print_error(e, exit_code=1)
+    finally:
+        pass
 
 
-@contracts.command('decode-calldata', help="Enocode the calldata to invoke a contract")
+@compiler.command('decode-data', help="Decode the data retrieve from a contract")
 @click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
 @click.argument("sophia_type")
 @click.argument("encoded_data")

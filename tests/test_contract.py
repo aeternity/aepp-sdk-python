@@ -55,7 +55,7 @@ def _sophia_contract_tx_create_online(node_cli, account):
     ]
     for t in tests:
         contract = node_cli.Contract()
-        contract.create(account, t.get("bytecode"), init_call_data=t.get("calldata"), gas=100000)
+        contract.create(account, t.get("bytecode"), init_calldata=t.get("calldata"), gas=100000)
         deployed = node_cli.get_contract(pubkey=contract.address)
         assert deployed.active is True
         assert deployed.owner_id == account.get_address()
@@ -121,7 +121,7 @@ def _sophia_contract_tx_call_online(node_cli, account):
     ]
     for t in tests:
         contract = node_cli.Contract()
-        contract.create(account, t.get("bytecode"), init_call_data=t.get("init.calldata"), gas=100000)
+        contract.create(account, t.get("bytecode"), init_calldata=t.get("init.calldata"), gas=100000)
         deployed = node_cli.get_contract(pubkey=contract.address)
         assert deployed.active is True
         assert deployed.owner_id == account.get_address()
@@ -212,6 +212,14 @@ def test_sophia_encode_calldata(compiler_fixture):
             "arguments":  [42],
             "calldata": "cb_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDiIx1s38k5Ft5Ms6mFe/Zc9A/CVvShSYs/fnyYDBmTRAAAAAAAAAAAA" +
             "AAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACo7j+li",
+            "match": True
+        },
+        {
+            "sourcecode": "contract Identity =\n  type state = ()\n  function main(z : int) = z",
+            "function": "init",
+            "arguments":  [],
+            "calldata": "cb_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACC5yVbyizFJqfWYeqUF89obIgnMVzkjQAYrtsG9n5+Z6gAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAnHQYrA==",
             "match": True
         },
     ]
