@@ -174,7 +174,7 @@ def _tx_native(op, **kwargs):
                 _int(vsn),
                 _id(idf.ID_TAG_ACCOUNT, kwargs.get("account_id")),
                 _int(kwargs.get("nonce")),
-                decode(kwargs.get("name")),
+                _binary(kwargs.get("name")),
                 _binary(kwargs.get("name_salt")),
                 _int(kwargs.get("fee")),
                 _int(kwargs.get("ttl"))
@@ -748,8 +748,8 @@ class TxBuilder:
         """
         create a preclaim transaction
         :param account_id: the account registering the name
-        :param commitment_id: the commitment id
-        :param commitment_hash:  the commitment hash
+        :param name: the actual name to claim
+        :param name_salt: the salt used to create the committment_id during preclaim
         :param fee:  the fee for the transaction
         :param ttl:  the ttl for the transaction
         :param nonce: the nonce of the account for the transaction
@@ -878,7 +878,7 @@ class TxBuilder:
 
     def tx_contract_call(self, caller_id, contract_id, call_data, function, arg, amount, gas, gas_price, abi_version, fee, ttl, nonce) -> tuple:
         """
-        Create a contract call
+        Create a Contract Call trnsaction
         :param caller_id: the account creating the contract
         :param contract_id: the contract to call
         :param call_data: the call data for the contract
@@ -887,7 +887,6 @@ class TxBuilder:
         :param amount: TODO: add definition
         :param gas: TODO: add definition
         :param gas_price: TODO: add definition
-        :param vm_version: TODO: add definition
         :param abi_version: TODO: add definition
         :param fee: the transaction fee
         :param ttl: the ttl of the transaction

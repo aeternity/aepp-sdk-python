@@ -12,7 +12,7 @@ from aeternity.node import NodeClient, Config
 from aeternity.transactions import TxSigner
 # from aeternity.oracle import Oracle, OracleQuery, NoOracleResponse
 from . import utils, signing, aens, defaults, exceptions
-from aeternity.contract import Contract
+from aeternity.contract import CompilerClient
 
 from datetime import datetime, timezone
 
@@ -585,25 +585,77 @@ def name_transfer(keystore_name, domain, address, ttl, fee, nonce, password, net
 #
 #
 
-@click.group('contract', help='Deploy and execute contracts on the chain')
-def contract():
+@cli.group(help='Deploy and execute contracts on the chain')
+def contracts():
     pass
 
 
-@contract.command(help="Compile a contract")
+@contracts.command('compile', help="Compile a contract")
+@click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
 @click.argument("contract_file")
-def contract_compile(contract_file):
+@global_options
+def contract_compile(contract_file, compiler_url, json_):
     try:
+        set_global_options(json_, False, False)
         with open(contract_file) as fp:
             code = fp.read()
-            c = _node_cli().Contract(Contract.SOPHIA)
+            c = CompilerClient(compiler_url)
             result = c.compile(code)
-            _print_object({"bytecode", result}, title="contract")
+            _print_object(result, title="contract")
     except Exception as e:
         _print_error(e, exit_code=1)
 
 
-@contract.command('deploy', help='Deploy a contract on the chain')
+@contracts.command('aci', help="Get the aci of a contract")
+@click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
+@click.argument("contract_file")
+@global_options
+def contract_aci(contract_file, compiler_url, json_):
+    try:
+        set_global_options(json_, False, False)
+        with open(contract_file) as fp:
+            code = fp.read()
+            c = CompilerClient(compiler_url)
+            result = c.aci(code)
+            _print_object(result, title="contract")
+    except Exception as e:
+        _print_error(e, exit_code=1)
+
+
+@contracts.command('encode-calldata', help="Enocode the calldata to invoke a contract")
+@click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
+@click.argument("contract_file")
+@click.argument("function_name")
+@click.argument("arguments")
+@global_options
+def contract_encode_calldata(contract_file, function_name, arguments, compiler_url, json_):
+    try:
+        set_global_options(json_, False, False)
+        with open(contract_file) as fp:
+            code = fp.read()
+            c = CompilerClient(compiler_url)
+            result = c.encode_calldata(code, function_name, arguments=arguments.split(","))
+            _print_object(result, title="contract")
+    except Exception as e:
+        _print_error(e, exit_code=1)
+
+
+@contracts.command('decode-calldata', help="Enocode the calldata to invoke a contract")
+@click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
+@click.argument("sophia_type")
+@click.argument("encoded_data")
+@global_options
+def contract_decode_data(contract_file, encoded_data, sophia_type, compiler_url, json_):
+    try:
+        set_global_options(json_, False, False)
+        c = CompilerClient(compiler_url)
+        result = c.decode_data(sophia_type, encoded_data)
+        _print_object(result, title="contract")
+    except Exception as e:
+        _print_error(e, exit_code=1)
+
+
+@contracts.command('deploy', help='Deploy a contract on the chain')
 @click.argument('keystore_name', required=True)
 @click.argument("contract_file", required=True)
 @click.option("--gas", default=defaults.CONTRACT_GAS, help='Amount of gas to deploy the contract', show_default=True)
@@ -651,7 +703,7 @@ def contract_deploy(keystore_name, contract_file, gas, password, network_id, for
         _print_error(e, exit_code=1)
 
 
-@contract.command('call', help='Execute a function of the contract')
+@contracts.command('call', help='Execute a function of the contract')
 @click.argument('keystore_name', required=True)
 @click.argument("deploy_descriptor", required=True)
 @click.argument("function", required=True)

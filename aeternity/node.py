@@ -9,6 +9,7 @@ from aeternity.signing import Account
 from aeternity.openapi import OpenAPIClientException
 from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers
 from aeternity.exceptions import TransactionWaitTimeoutExpired, TransactionHashMismatch
+from aeternity import __node_compatibility__
 
 logger = logging.getLogger(__name__)
 logging.root.setLevel(logging.DEBUG)
@@ -77,7 +78,8 @@ class NodeClient:
         self.api = openapi.OpenAPICli(url=config.api_url,
                                       url_internal=config.api_url_internal,
                                       debug=config.debug,
-                                      force_compatibility=config.force_compatibility)
+                                      force_compatibility=config.force_compatibility,
+                                      compatibility_version_range=__node_compatibility__)
         # instantiate the transaction builder object
         self.tx_builder = transactions.TxBuilder()
         # network id
@@ -272,13 +274,13 @@ class NodeClient:
     def AEName(self, domain):
         return aens.AEName(domain, client=self)
 
-    # support contract
-    def Contract(self, source_code, bytecode=None, address=None, abi=contract.Contract.SOPHIA):
-        return contract.Contract(source_code, client=self, bytecode=bytecode, address=address, abi=abi)
-
     # support oralces
     def Oracle(self):
         return oracles.Oracle(self)
 
     def OracleQuery(self, oracle_id, query_id=None):
         return oracles.OracleQuery(self, oracle_id, id=query_id)
+
+    # support contract
+    def Contract(self):
+        return contract.Contract(client=self)

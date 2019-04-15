@@ -1,5 +1,5 @@
 from tests.conftest import PUBLIC_KEY
-from aeternity import __compatibility__
+from aeternity import __node_compatibility__
 from aeternity.signing import Account
 from aeternity import openapi
 import semver
@@ -15,14 +15,14 @@ def test_api_get_account(chain_fixture):
 
 def test_api_get_version(chain_fixture):
     version = chain_fixture.NODE_CLI.get_version()
-    assert semver.match(version, __compatibility__.get("from_version"))
-    assert semver.match(version, __compatibility__.get("to_version"))
+    assert semver.match(version, __node_compatibility__[0])
+    assert semver.match(version, __node_compatibility__[1])
 
 
 def test_api_get_status(chain_fixture):
     version = chain_fixture.NODE_CLI.get_version()
-    assert semver.match(version, __compatibility__.get("from_version"))
-    assert semver.match(version, __compatibility__.get("to_version"))
+    assert semver.match(version, __node_compatibility__[0])
+    assert semver.match(version, __node_compatibility__[1])
 
 
 def test_api_get_top_block(chain_fixture):

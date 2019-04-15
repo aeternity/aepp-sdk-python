@@ -108,13 +108,26 @@ def test_hashing_oracle_id():
         assert (hashing.oracle_id(t[0]) == t[1]) == t[2]
 
 
-def test_hashing_committment_id(client_fixture, random_domain):
-    name, salt = "aeternity.test", 10692426485854419779
-    expected_committment = "cm_2by2qwnum96Z78WSFRJwhsC5qFzDgatrKk7PfH3yZ2wMBmsZF2"
-    cid, salt = hashing.commitment_id(name, salt)
-    assert expected_committment == cid
+def test_hashing_committment_id(random_domain):
 
-    domain = random_domain
-    cid, salt = hashing.commitment_id(domain)
-    cr = client_fixture.NODE_CLI.get_commitment_id(name=domain, salt=salt)
-    assert cid == cr.commitment_id
+    tests = [
+        {
+            "domain": "aeternity.test",
+            "salt": 10692426485854419779,
+            "commitment_id": "cm_2by2qwnum96Z78WSFRJwhsC5qFzDgatrKk7PfH3yZ2wMBmsZF2"
+        },
+        {
+            "domain": "whatever.test",
+            "salt": 4703192432112,
+            "commitment_id": "cm_2GDk2XGBEqgNKM2sz63EVhsWi6ZGxjR1M7TMFZQvcBUin1As6"
+        },
+        {
+            "domain": "aepps.test",
+            "salt": 723907012945811264198,
+            "commitment_id": "cm_pQu4wAuiyhe1mHqZzh3yNA4JwBPaess3MY7MnZFG9vsFjD5yE"
+        },
+    ]
+
+    for t in tests:
+        cid, salt = hashing.commitment_id(t.get("domain"), t.get("salt"))
+        assert t.get("commitment_id") == cid

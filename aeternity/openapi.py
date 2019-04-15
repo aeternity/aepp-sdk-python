@@ -8,8 +8,6 @@ import logging
 from aeternity.exceptions import UnsupportedNodeVersion, ConfigException
 import semver
 
-from . import __compatibility__
-
 
 class OpenAPIArgsException(Exception):
     """Raised when there is an error in method arguments"""
@@ -48,19 +46,24 @@ class OpenAPICli(object):
         "boolean": "bool",
     }
 
-    def __init__(self, url, url_internal=None, debug=False, force_compatibility=False):
+    def __init__(self, url, url_internal=None, debug=False, compatibility_version_range=(None, None), force_compatibility=False):
         try:
             self.url, self.url_internal = url, url_internal
             # load the openapi json file from the node
             self.api_def = requests.get(f"{url}/api").json()
+            if self.api_def.get('api') is not None:  # TODO: workaround for different swagger styles
+                self.api_def = self.api_def.get('api', {})
             self.api_version = self.api_def.get("info", {}).get("version", "unknown")
-            # retrieve the version of the node we are connecting to
-            match_min = semver.match(self.api_version, __compatibility__.get("from_version"))
-            match_max = semver.match(self.api_version, __compatibility__.get("to_version"))
+            # evaluate min version
+            lower_bound = compatibility_version_range[0]
+            match_min = True if lower_bound is None else semver.match(self.api_version, lower_bound)
+            # evaluate max version
+            upper_bound = compatibility_version_range[1]
+            match_max = True if upper_bound is None else semver.match(self.api_version, upper_bound)
+            # evalutate the version range
             if (not match_min or not match_max) and not force_compatibility:
-                f, t = __compatibility__.get('from_version'), __compatibility__.get('to_version')
                 raise UnsupportedNodeVersion(
-                    f"unsupported node version {self.api_version}, supported version are {f} and {t}")
+                    f"unsupported node version {self.api_version}, supported version are {lower_bound} and {upper_bound}")
         except requests.exceptions.ConnectionError as e:
             raise ConfigException(f"Error connecting to the node at {self.url}, connection unavailable", e)
         except Exception as e:
@@ -83,7 +86,7 @@ class OpenAPICli(object):
             return all_cap_re.sub(r'\1_\2', s1).lower()
 
         # prepare the baseurl
-        base_path = self.api_def.get('basePath', '/')
+        base_path = self.api_def.get('basePath', '').rstrip('/')
         self.base_url = f"{url}{base_path}"
         if url_internal is None:
             # do not build internal endpoints
@@ -100,13 +103,14 @@ class OpenAPICli(object):
 
         for query_path, path in self.api_def.get("paths").items():
             for m, func in path.items():
+                func_tags = func.get("tags", [])
                 # exclude the paths/method tagged with skip_tags
-                if not self.skip_tags.isdisjoint(func.get("tags")):
+                if len(func_tags) > 0 and not self.skip_tags.isdisjoint(func_tags):
                     continue
                 # get if is an internal or external endpoint
-                endpoint_url = self.base_url_internal if "internal" in func.get("tags", []) else self.base_url
+                endpoint_url = self.base_url_internal if "internal" in func_tags else self.base_url
                 api = Api(
-                    name=p2s(func['operationId']),
+                    name=p2s(func.get('operationId')),
                     doc=func.get("description"),
                     params=[],
                     responses={},
@@ -193,7 +197,7 @@ class OpenAPICli(object):
                     logging.debug(f">>>> ENDPOINT {target_endpoint}\n >> QUERY \n{query_params}\n >> BODY \n{post_body} \n >> REPLY \n{http_reply.text}", )
             # unknown error
             if api_response is None:
-                raise OpenAPIClientException(f"Unknown error {http_reply.status_code} - {http_reply.text}", code=http_reply.status_code)
+                raise OpenAPIClientException(f"Unknown error {target_endpoint} {http_reply.status_code} - {http_reply.text}", code=http_reply.status_code)
             # success
             if http_reply.status_code == 200:
                 # parse the http_reply
