@@ -10,3 +10,4 @@ build
 coverage.xml
 docker-compose.override.yml
 test-results.xml
+.coverage
