@@ -2,7 +2,7 @@ from pytest import raises
 from tests import TEST_TTL
 from aeternity.signing import Account, is_signature_valid
 from aeternity.utils import is_valid_hash
-from aeternity import hashing
+from aeternity import hashing, identifiers
 import os
 
 
@@ -96,3 +96,15 @@ def test_signing_is_signature_valid():
         hashing._base64_decode(account_b64),
         hashing._base64_decode(sg_b64),
         msg)
+
+
+def test_signing_get_address():
+    a = Account.from_private_key_string(
+        '3960180c89e27fcc1559f631d664a4b56b569aa5768ba827ddc9ba9616fecd9d8134464ef14b1433790e259d40b6ad8ca39f397a2bbc5261eeba1018a67ce35a')
+    assert(a.get_address() == 'ak_yuMB5S3yiTwRVJC1NcNEGppcGAbq26qFWNJTCJWnLqoihCpCG')
+    assert(a.get_address(format=identifiers.ACCOUNT_API_FORMAT) == 'ak_yuMB5S3yiTwRVJC1NcNEGppcGAbq26qFWNJTCJWnLqoihCpCG')
+    assert(a.get_address(format=identifiers.ACCOUNT_API_FORMAT) != 'ak_xuMB5S3yiTwRVJC1NcNEGppcGAbq26qFWNJTCJWnLqoihCpCG')
+    assert(a.get_address(format=identifiers.ACCOUNT_SOFIA_FORMAT) == '0x8134464ef14b1433790e259d40b6ad8ca39f397a2bbc5261eeba1018a67ce35a')
+    assert(a.get_address(format=identifiers.ACCOUNT_SOFIA_FORMAT) != '8134464ef14b1433790e259d40b6ad8ca39f397a2bbc5261eeba1018a67ce35a')
+    assert(a.get_address(format=identifiers.ACCOUNT_RAW_FORMAT) == b'\x814FN\xf1K\x143y\x0e%\x9d@\xb6\xad\x8c\xa3\x9f9z+\xbcRa\xee\xba\x10\x18\xa6|\xe3Z')
+    assert(a.get_address(format=identifiers.ACCOUNT_RAW_FORMAT) != b'\x814FN\xf1K\x143y\x0e%\x9d@\xb6\x00\x8c\xa3\x9f9z+\xbcRa\xee\xba\x10\x18\xa6|\xe3Z')

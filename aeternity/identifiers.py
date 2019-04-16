@@ -56,6 +56,10 @@ IDENTIFIERS_B64 = set([
     TRANSACTION
 ])
 
+# Account address encoding formats
+ACCOUNT_API_FORMAT = 'api'
+ACCOUNT_SOFIA_FORMAT = 'sofia'
+ACCOUNT_RAW_FORMAT = 'raw'
 
 # RLP Identifiers
 

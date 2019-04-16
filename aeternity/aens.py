@@ -167,14 +167,12 @@ class AEName:
         safe_height = self.preclaimed_block_height + self.client.config.key_block_confirmation_num
         if current_height < safe_height:
             raise NameTooEarlyClaim(f"It is not safe to execute the name claim before height {safe_height}, current height: {current_height}")
-        # name encode name
-        name = hashing.name_id(self.domain)
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl
         nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
         # create transaction
-        tx = txb.tx_name_claim(account.get_address(), name, self.preclaim_salt, fee, ttl, nonce)
+        tx = txb.tx_name_claim(account.get_address(), self.domain, self.preclaim_salt, fee, ttl, nonce)
         # sign the transaction
         tx_signed = self.client.sign_transaction(account, tx.tx)
         # post the transaction to the chain

@@ -44,3 +44,8 @@ publish-test:
 	@echo publish on test.pypi.org
 	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 	@echo done
+
+changelog:
+	@echo build changelog
+	gitolog -t keepachangelog -s angular . -o CHANGELOG.md 
+	@echo done
