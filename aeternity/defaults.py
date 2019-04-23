@@ -41,4 +41,6 @@ POLL_TX_MAX_RETRIES = 8  # used in exponential backoff when checking a transacti
 POLL_TX_RETRIES_INTERVAL = 2  # in seconds
 POLL_BLOCK_MAX_RETRIES = 20  # number of retries
 POLL_BLOCK_RETRIES_INTERVAL = 30  # in seconds
-#
+#channels
+CHANNEL_ENDPOINT = 'channel'
+CHANNEL_URL = 'ws://127.0.0.1:3014'
