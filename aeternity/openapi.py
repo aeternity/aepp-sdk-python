@@ -147,7 +147,7 @@ class OpenAPICli(object):
                 for code, r in func.get('responses', {}).items():
                     api.responses[int(code)] = Resp(
                         desc=r.get("description"),
-                        schema=r.get("schema", {"$ref": ""}).get("$ref",).replace("#/definitions/", "")
+                        schema=r.get("schema", {"$ref": ""}).get("$ref", "inline_response_200").replace("#/definitions/", "")
                     )
                 # create the method
                 self._add_api_method(api)
