@@ -385,23 +385,44 @@ def _tx_native(op, **kwargs):
         return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
 
     elif tag == idf.OBJECT_TAG_CHANNEL_CREATE_TRANSACTION:
-        tx_native = [
-            _int(tag),
-            _int(vsn),
-            _id(idf.ID_TAG_ACCOUNT, kwargs.get("initiator")),
-            _int(kwargs.get("initiator_amount")),
-            _id(idf.ID_TAG_ACCOUNT, kwargs.get("responder")),
-            _int(kwargs.get("responder_amount")),
-            _int(kwargs.get("channel_reserve")),
-            _int(kwargs.get("lock_period")),
-            _int(kwargs.get("ttl")),
-            _int(kwargs.get("fee")),
-            # _[id(delegate_ids)], TODO: handle delegate ids
-            _binary(kwargs.get("state_hash")),
-            _int(kwargs.get("nonce")),
-        ]
         tx_field_fee_index = 9
-        min_fee = std_fee(tx_native, tx_field_fee_index)
+        if op == PACK_TX:  # pack transaction
+            tx_native = [
+                _int(tag),
+                _int(vsn),
+                _id(idf.ID_TAG_ACCOUNT, kwargs.get("initiator")),
+                _int(kwargs.get("initiator_amount")),
+                _id(idf.ID_TAG_ACCOUNT, kwargs.get("responder")),
+                _int(kwargs.get("responder_amount")),
+                _int(kwargs.get("channel_reserve")),
+                _int(kwargs.get("lock_period")),
+                _int(kwargs.get("ttl")),
+                _int(kwargs.get("fee")),
+                [_id(d) for d in kwargs.get("delegate_ids", [])],
+                _binary(kwargs.get("state_hash")),
+                _int(kwargs.get("nonce")),
+            ]
+            min_fee = std_fee(tx_native, tx_field_fee_index)
+        elif op == UNPACK_TX:  # unpack transaction
+            tx_data = dict(
+                tag=tag,
+                vsn=_int_decode(tx_native[1]),
+                initiator=encode(idf.ACCOUNT_ID, tx_native[2][1:]),
+                initiator_amount=_int_decode(tx_native[3]),
+                responder=encode(idf.ACCOUNT_ID, tx_native[4][1:]),
+                responder_amount=_int_decode(tx_native[5]),
+                channel_reserve=_int_decode(tx_native[6]),
+                lock_period=_int_decode(tx_native[7]),
+                ttl=_int_decode(tx_native[8]),
+                fee=_int_decode(tx_native[9]),
+                delegate_ids=[encode(idf.ACCOUNT_ID, d[1:]) for d in tx_native[10]],
+                state_hash=tx_native[11],
+                nonce=_int_decode(tx_native[12]),
+            )
+            min_fee = tx_data.get("fee")
+        else:
+            raise Exception("Invalid operation")
+        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
     elif tag == idf.OBJECT_TAG_CHANNEL_DEPOSIT_TRANSACTION:
         tx_native = [
             _int(tag),
