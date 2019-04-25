@@ -77,6 +77,26 @@ ID_TAG_ORACLE = 4
 ID_TAG_CONTRACT = 5
 ID_TAG_CHANNEL = 6
 
+# Maps numeric tags to string prefixes
+ID_TAG_TO_PREFIX = {
+    ID_TAG_ACCOUNT: ACCOUNT_ID,
+    ID_TAG_CHANNEL: CHANNEL,
+    ID_TAG_COMMITMENT: COMMITMENT,
+    ID_TAG_CONTRACT: CONTRACT_ID,
+    ID_TAG_NAME: NAME,
+    ID_TAG_ORACLE: ORACLE_ID
+}
+
+# Maps string prefixes to numeric tags
+ID_PREFIX_TO_TAG = {
+    ACCOUNT_ID: ID_TAG_ACCOUNT,
+    CHANNEL: ID_TAG_CHANNEL,
+    COMMITMENT: ID_TAG_COMMITMENT,
+    CONTRACT_ID: ID_TAG_CONTRACT,
+    NAME: ID_TAG_NAME,
+    ORACLE_ID: ID_TAG_ORACLE
+}
+
 # Object tags
 # see https://github.com/aeternity/protocol/blob/master/serializations.md#binary-serialization
 
