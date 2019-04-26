@@ -1,8 +1,3 @@
-import asyncio
-
-from aeternity import transactions, signing, channel
-
-
 def test_channel_connection():
     """
     temporarily pass the test for CI
