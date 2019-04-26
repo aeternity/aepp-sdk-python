@@ -324,12 +324,17 @@ def account_address(password, keystore_name, private_key, json_):
 @global_options
 @account_options
 @online_options
-def account_balance(keystore_name, password, force, wait, json_):
+@click.option('--height', type=int, default=None, help="Retrieve the balance at the provided height")
+def account_balance(keystore_name, password, height, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
+        if height is not None and height > 0:
+            account = _node_cli().get_account_by_pubkey_and_height(pubkey=account.get_address(), height=height)
+            _print_object(account, title=f"account at {height}")
+            return
         account = _node_cli().get_account_by_pubkey(pubkey=account.get_address())
-        _print_object(account, title='account')
+        _print_object(account, title="account")
     except Exception as e:
         _print_error(e, exit_code=1)
 
@@ -764,7 +769,8 @@ def contract_call_info(tx_hash, force, wait, json_):
 @click.argument('obj')
 @global_options
 @online_options
-def inspect(obj, force, wait, json_):
+@click.option('--height', type=int, default=None, help="only for accounts, retrieve an account at the specified height")
+def inspect(obj, height, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         if obj.endswith(".test"):
@@ -777,8 +783,12 @@ def inspect(obj, force, wait, json_):
             v = _node_cli().get_transaction_by_hash(hash=obj)
             _print_object(v, title="transaction")
         elif obj.startswith("ak_"):
-            v = _node_cli().get_account_by_pubkey(pubkey=obj)
-            _print_object(v, title="account")
+            if height is not None and height > 0:
+                account = _node_cli().get_account_by_pubkey_and_height(pubkey=obj, height=height)
+                _print_object(account, title=f"account at {height}")
+                return
+            account = _node_cli().get_account_by_pubkey(pubkey=obj)
+            _print_object(account, title="account")
         elif obj.startswith("ct_"):
             v = _node_cli().get_contract(pubkey=obj)
             _print_object(v, title="contract")
