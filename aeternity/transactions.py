@@ -211,7 +211,7 @@ def _tx_native(op, **kwargs):
                     "contract_pubkey": idf.ID_TAG_CONTRACT,
                     "channel_pubkey": idf.ID_TAG_CHANNEL
                 }.get(pointer.get("key"))
-            ptrs = [[_binary(p.get("key")), _id(pointer_tag(p), p.get("id"))] for p in kwargs.get("pointers", [])]
+            ptrs = [[_binary(p.get("key")), _id(p.get("id"))] for p in kwargs.get("pointers", [])]
             # then build the transaction
             tx_native = [
                 _int(tag),
@@ -794,7 +794,7 @@ def _tx_native(op, **kwargs):
                 vsn=_int_decode(tx_native[1]),
                 oracle_id=_id_decode(tx_native[2]),
                 nonce=_int_decode(tx_native[3]),
-                query_id=_id_decode(tx_native[4]),
+                query_id=encode(idf.ORACLE_QUERY_ID, tx_native[4]),
                 response=_binary(tx_native[5]),
                 response_ttl=dict(
                     type=idf.ORACLE_TTL_TYPE_DELTA if _int_decode(tx_native[6]) else idf.ORACLE_TTL_TYPE_BLOCK,
