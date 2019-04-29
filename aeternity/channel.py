@@ -36,13 +36,26 @@ class Channel(object):
             [channel_options.existing_channel_id] (str) - Existing channel id (required if reestablishing a channel)
             [channel_options.offchain_tx] (str) - Offchain transaction (required if reestablishing a channel)
             [channel_options.timeout_idle] (int) - The time waiting for a new event to be initiated (default: 600000)
-            [channel_options.timeout_funding_create] (int) - The time waiting for the initiator to produce the create channel transaction after the noise session had been established (default: 120000)
-            [channel_options.timeout_funding_sign] (int) - The time frame the other client has to sign an off-chain update after our client had initiated and signed it. This applies only for double signed on-chain intended updates: channel create transaction, deposit, withdrawal and etc. (default: 120000)
-            [channel_options.timeout_funding_lock] (int) - The time frame the other client has to confirm an on-chain transaction reaching maturity (passing minimum depth) after the local node has detected this. This applies only for double signed on-chain intended updates: channel create transaction, deposit, withdrawal and etc. (default: 360000)
-            [channel_options.timeout_sign] (int) - The time frame the client has to return a signed off-chain update or to decline it. This applies for all off-chain updates (default: 500000)
-            [channel_options.timeout_accept] (int) - The time frame the other client has to react to an event. This applies for all off-chain updates that are not meant to land on-chain, as well as some special cases: opening a noise connection, mutual closing acknowledgement and reestablishing an existing channel (default: 120000)
-            [channel_options.timeout_initialized] (int) - the time frame the responder has to accept an incoming noise session. Applicable only for initiator (default: timeout_accept's value)
-            [channel_options.timeout_awaiting_open] (int) - The time frame the initiator has to start an outgoing noise session to the responder's node. Applicable only for responder (default: timeout_idle's value)
+            [channel_options.timeout_funding_create] (int) - The time waiting for the initiator to produce
+            the create channel transaction after the noise session had been established (default: 120000)
+            [channel_options.timeout_funding_sign] (int) - The time frame the other client has to sign an off-chain update
+                                                            after our client had initiated and signed it. This applies only
+                                                            for double signed on-chain intended updates: channel create transaction,
+                                                            deposit, withdrawal and etc. (default: 120000)
+            [channel_options.timeout_funding_lock] (int) - The time frame the other client has to confirm an on-chain transaction
+                                                            reaching maturity (passing minimum depth) after the local node has detected this.
+                                                            This applies only for double signed on-chain intended updates:
+                                                            channel create transaction, deposit, withdrawal and etc. (default: 360000)
+            [channel_options.timeout_sign] (int) - The time frame the client has to return a signed off-chain update or to decline it.
+                                                    This applies for all off-chain updates (default: 500000)
+            [channel_options.timeout_accept] (int) - The time frame the other client has to react to an event.
+                                                    This applies for all off-chain updates that are not meant to land on-chain,
+                                                    as well as some special cases: opening a noise connection, mutual closing acknowledgement and
+                                                    reestablishing an existing channel (default: 120000)
+            [channel_options.timeout_initialized] (int) - the time frame the responder has to accept an incoming noise session.
+                                                        Applicable only for initiator (default: timeout_accept's value)
+            [channel_options.timeout_awaiting_open] (int) - The time frame the initiator has to start an outgoing noise session to the responder's node.
+                                                            Applicable only for responder (default: timeout_idle's value)
             channel_options.sign (function) - Function which verifies and signs transactions
         """
         options_keys = {'sign', 'endpoint', 'url'}
@@ -85,15 +98,15 @@ class Channel(object):
         return f"{url}/{endpoint}?{param_string}".replace("'", "")
 
     async def __channel_call(self, method, params):
-            """
-            Construct and send channel messages over the websocket
-            """
-            message = {
-                "jsonrpc": "2.0",
-                "method": method,
-                "params": params
-            }
-            await self.ws.send(json.dumps(message))
+        """
+        Construct and send channel messages over the websocket
+        """
+        message = {
+            "jsonrpc": "2.0",
+            "method": method,
+            "params": params
+        }
+        await self.ws.send(json.dumps(message))
 
     def balances(self, accounts=None):
         """
