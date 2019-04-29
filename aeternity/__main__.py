@@ -122,6 +122,13 @@ def _po(label, value, offset=0, label_prefix=None):
     else:
         if label.lower() == "time":
             value = datetime.fromtimestamp(value / 1000, timezone.utc).isoformat('T')
+        elif label.lower() in ["amount", "balance", "channel_amount",
+                               "channel_reserve", "deposit", "fee", "gas_price",
+                               "gas", "initiator_amount_final", "initiator_amount",
+                               "push_amount", "query_fee", "responder_amount_final",
+                               "responder_amount", "round", "solo_round"]:
+            value = utils.format_amount(value)
+
         _pl(label, offset, value=value)
 
 
