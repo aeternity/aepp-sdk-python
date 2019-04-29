@@ -369,6 +369,30 @@ def account_spend(keystore_name, recipient_id, amount, payload, fee, ttl, nonce,
         _print_error(e, exit_code=1)
 
 
+@account.command('transfer', help="Create a transaction to tranfer a percentage of funds to another account")
+@click.argument('keystore_name', required=True)
+@click.argument('recipient_id', required=True)
+@click.argument('transfer_amount', required=True, type=float)
+@click.option('--payload', default="", help="Spend transaction payload")
+@click.option('--include-fee', is_flag=True, default=True, help="Whatever to include the fee in the amount transfered")
+@global_options
+@account_options
+@online_options
+@transaction_options
+@sign_options
+def account_transfer_amount(keystore_name, recipient_id, transfer_amount, include_fee, payload, fee, ttl, nonce, password, network_id, force, wait, json_):
+    try:
+        set_global_options(json_, force, wait)
+        account, keystore_path = _account(keystore_name, password=password)
+        account.nonce = nonce
+        if not utils.is_valid_hash(recipient_id, prefix="ak"):
+            raise ValueError("Invalid recipient address")
+        tx = _node_cli(network_id=network_id).transfer_funds(account, recipient_id, transfer_amount, tx_ttl=ttl, payload=payload, include_fee=include_fee)
+        _print_object(tx, title='spend transaction')
+    except Exception as e:
+        _print_error(e, exit_code=1)
+
+
 @account.command('sign', help="Sign a transaction")
 @click.argument('keystore_name', required=True)
 @click.argument('unsigned_transaction', required=True)
