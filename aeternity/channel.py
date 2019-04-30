@@ -142,7 +142,7 @@ class Channel(object):
                     default: [initiator_id, responder_id]
         """
         accounts = accounts if accounts else [self.params.initiator_id, self.params.responder_id]
-        asyncio.ensure_future(self.__channel_call('channels.get.balances', {'accounts': accounts}))
+        self.__trigger_channel_call('channels.get.balances', {'accounts': accounts})
 
     async def __sign_channel_tx(self, tx):
         """
