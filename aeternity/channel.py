@@ -156,6 +156,22 @@ class Channel(object):
             }
         })
 
+    def leave(self):
+        """
+        Leave Channel
+
+        Todo: add state check and set after queue implementation
+        """
+        self.__trigger_channel_call('channels.leave', {})
+
+    def shutdown(self):
+        """
+        Trigger mutual close
+
+        Todo: add state check and set after queue implementation
+        """
+        self.__trigger_channel_call('channels.shutdown', {})
+
     def state(self):
         """
         Get current offchain state
