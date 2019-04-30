@@ -108,6 +108,12 @@ class Channel(object):
         }
         await self.ws.send(json.dumps(message))
 
+    def __trigger_channel_call(self, method, params):
+        """
+        Fire and forget channel call
+        """
+        asyncio.ensure_future(self.__channel_call(method, params))
+
     def balances(self, accounts=None):
         """
         Get balances
