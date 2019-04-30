@@ -270,6 +270,37 @@ class NodeClient:
             # increment n
             n += 1
 
+    def transfer_funds(self, account: Account,
+                       recipient_id: str,
+                       percentage: float,
+                       payload: str = "",
+                       tx_ttl: int = defaults.TX_TTL,
+                       include_fee=True):
+        """
+        Create and execute a spend transaction
+        """
+        if percentage < 0 or percentage > 1:
+            raise ValueError(f"Percentage should be a number between 0 and 1, got {percentage}")
+        account_on_chain = self.get_account_by_pubkey(pubkey=account.get_address())
+        request_transfer_amount = int(account_on_chain.balance * percentage)
+        # retrieve the nonce
+        account.nonce = account_on_chain.nonce + 1
+        # retrieve ttl
+        tx_ttl = self.compute_absolute_ttl(tx_ttl)
+        # build the transaction
+        tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, request_transfer_amount, payload, defaults.FEE, tx_ttl.absolute_ttl, account.nonce)
+        # if the request_transfer_amount should include the fee keep calculating the fee
+        if include_fee:
+            amount = request_transfer_amount
+            while (amount + tx.data.fee) > request_transfer_amount:
+                amount = request_transfer_amount - tx.data.fee
+                tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, amount, payload, defaults.FEE, tx_ttl.absolute_ttl, account.nonce)
+        # execute the transaction
+        tx = self.sign_transaction(account, tx.tx)
+        # post the transaction
+        self.broadcast_transaction(tx.tx, tx_hash=tx.hash)
+        return tx
+
     # support naming
     def AEName(self, domain):
         return aens.AEName(domain, client=self)
