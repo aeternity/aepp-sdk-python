@@ -136,3 +136,19 @@ class Channel(object):
         """
         signedTx = self.sign(tx)
         await self.__channel_call(f'channels.{self.params.role}_sign', {'tx': signedTx.tx})
+
+    def leave(self):
+        """
+        Leave Channel
+
+        Todo: add state check and set after queue implementation
+        """
+        self.__trigger_channel_call('channels.leave', {})
+
+    def shutdown(self):
+        """
+        Trigger mutual close
+
+        Todo: add state check and set after queue implementation
+        """
+        self.__trigger_channel_call('channels.shutdown', {})
