@@ -133,5 +133,3 @@ class Channel(object):
 
     def state(self):
         asyncio.ensure_future(self.__channel_call('channels.get.offchain_state', {}))
-
-    
