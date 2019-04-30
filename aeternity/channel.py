@@ -130,3 +130,8 @@ class Channel(object):
         """
         signedTx = self.sign(tx)
         await self.__channel_call(f'channels.{self.params.role}_sign', {'tx': signedTx.tx})
+
+    def state(self):
+        asyncio.ensure_future(self.__channel_call('channels.get.offchain_state', {}))
+
+    
