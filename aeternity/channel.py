@@ -184,6 +184,58 @@ class Channel(object):
         """
         asyncio.ensure_future(self.__channel_call('channels.get.offchain_state', {}))
 
+    def deposit(self, amount):
+        """
+        Deposit tokens into the channel
+
+        After the channel had been opened any of the participants can initiate a deposit.
+        The process closely resembles the update. The most notable difference is that the
+        transaction has been co-signed: it is channel_deposit_tx and after the procedure
+        is finished - it is being posted on-chain.
+
+        Any of the participants can initiate a deposit. The only requirements are:
+
+            - Channel is already opened
+            - No off-chain update/deposit/withdrawal is currently being performed
+            - Channel is not being closed or in a solo closing state
+            - The deposit amount must be equal to or greater than zero, and cannot exceed
+              the available balance on the channel (minus the channel_reserve)
+        """
+        asyncio.ensure_future(
+            self.__enqueue_action({
+                'method': 'channels.deposit',
+                'params': {
+                    'amount': amount
+                }
+            })
+        )
+
+    def withdraw(self, amount):
+        """
+        Withdraw tokens from the channel
+
+        After the channel had been opened any of the participants can initiate a withdrawal.
+        The process closely resembles the update. The most notable difference is that the
+        transaction has been co-signed: it is channel_withdraw_tx and after the procedure
+        is finished - it is being posted on-chain.
+
+        Any of the participants can initiate a withdrawal. The only requirements are:
+
+            - Channel is already opened
+            - No off-chain update/deposit/withdrawal is currently being performed
+            - Channel is not being closed or in a solo closing state
+            - The withdrawal amount must be equal to or greater than zero, and cannot exceed
+              the available balance on the channel (minus the channel_reserve)
+        """
+        asyncio.ensure_future(
+            self.__enqueue_action({
+                'method': 'channels.withdraw',
+                'params': {
+                    'amount': amount
+                }
+            })
+        )
+
     def __process_queue(self):
         if not self.action_queue.empty() and not self.is_locked:
             task = self.action_queue.get()
