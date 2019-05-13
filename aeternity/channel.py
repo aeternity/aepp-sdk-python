@@ -1,5 +1,7 @@
 import asyncio
 import json
+from enum import Enum
+from queue import Queue
 
 import namedtupled
 import websockets
@@ -17,7 +19,7 @@ class Channel(object):
         Initialize the Channel object
 
         Args:
-            channel_options: dict containing chaneel options.
+            channel_options: dict containing channel options
 
             channel_options contains/can contain following keys:
 
@@ -53,7 +55,7 @@ class Channel(object):
                                                     as well as some special cases: opening a noise connection, mutual closing acknowledgement and
                                                     reestablishing an existing channel (default: 120000)
             [channel_options.timeout_initialized] (int) - the time frame the responder has to accept an incoming noise session.
-                                                        Applicable only for initiator (default: timeout_accept's value)
+                                                        Applicable only for initiator (default: timeout_accept value)
             [channel_options.timeout_awaiting_open] (int) - The time frame the initiator has to start an outgoing noise session to the responder's node.
                                                             Applicable only for responder (default: timeout_idle's value)
             channel_options.sign (function) - Function which verifies and signs transactions
@@ -65,11 +67,17 @@ class Channel(object):
         self.params = {k: channel_options[k] for k in channel_options.keys() if k not in options_keys}
         self.url = self.__channel_url(wsUrl, self.params, endpoint)
         self.params = namedtupled.map(self.params)
+        self.status = None
+        self.id = None
+        self.is_locked = False
+        self.round = 0
+        self.action_queue = Queue()
 
     def create(self):
         """
         Invoke to establish the websocket connection and initialize the state channel
         """
+        self.status = ChannelState.CHANNEL_OPEN
         asyncio.ensure_future(self.__start_ws())
 
     async def __start_ws(self):
@@ -82,11 +90,15 @@ class Channel(object):
 
     async def __message_handler(self):
         """
-        Message handler for incoming messages
+        Message handler for incoming messagesl
         """
         async for message in self.ws:
             print(message)
             msg = namedtupled.map(json.loads(message))
+            if msg.method == "channels.info":
+                self.status = ChannelState(msg.params.data.event)
+                if msg.params.channel_id is not None:
+                    self.id = msg.params.channel_id
             if msg.method == f"channels.sign.{self.params.role}_sign":
                 await self.__sign_channel_tx(msg.params.data.tx)
 
@@ -107,6 +119,8 @@ class Channel(object):
             "params": params
         }
         await self.ws.send(json.dumps(message))
+        if not self.action_queue.empty() and not self.is_locked:
+            self.__process_queue()
 
     def balances(self, accounts=None):
         """
@@ -129,4 +143,40 @@ class Channel(object):
         Sign the transactions received over channel by the provided sign method
         """
         signedTx = self.sign(tx)
-        await self.__channel_call(f'channels.{self.params.role}_sign', {'tx': signedTx.tx})
+        await self.__enqueue_action({
+                            'method': f'channels.{self.params.role}_sign',
+                            'params': {
+                                'tx': signedTx.tx
+                                }
+                            })
+
+    def __process_queue(self):
+        if not self.action_queue.empty() and not self.is_locked:
+            task = self.action_queue.get()
+            self.is_locked = True
+            asyncio.ensure_future(self.__channel_call(task["method"], task["params"]))
+            self.action_queue.task_done()
+            self.is_locked = False
+
+    async def __enqueue_action(self, task=None):
+        if task is not None:
+            self.action_queue.put(task)
+            self.__process_queue()
+
+
+class ChannelState(Enum):
+    """
+    Enum for state channel messages/state
+    """
+    CHANNEL_OPEN = 'channel_open'
+    CHANNEL_CLOSED = 'channel_closed'
+    CHANNEL_ACCEPT = 'channel_accept'
+    DIED = 'died'
+    FUNDING_CREATED = 'funding_created'
+    FUNDING_SIGNED = 'funding_signed'
+    FUNDING_LOCKED = 'funding_locked'
+    OWN_FUNDING_LOCKED = 'own_funding_locked'
+    REESTABLISH = 'channel_reestablish'
+    LEAVE = 'leave'
+    SHUTDOWN = 'shutdown'
+    OPEN = 'open'
