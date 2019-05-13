@@ -46,3 +46,23 @@ def test_utils_is_valid_name():
         got = utils.is_valid_aens_name(a[0])
         expected = a[1]
         assert got == expected
+
+
+def test_utils_format_amount():
+    # input (hash_str, prefix, expected output)
+    args = [
+        (1000000000000000000, "1AE"),
+        (2000000000000000000, "2AE"),
+        (20000000000000000000, "20AE"),
+        (20100000000000000000, "20.1AE"),
+        (2000000000000000, "0.002AE"),
+        (1116270000000000000000, "1116.27AE"),
+        (28000000001760, "0.00002800000000176AE"),
+        (0, "0AE")
+
+    ]
+
+    for a in args:
+        got = utils.format_amount(a[0])
+        expected = a[1]
+        assert got == expected

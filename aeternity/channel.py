@@ -144,11 +144,17 @@ class Channel(object):
         """
         signedTx = self.sign(tx)
         await self.__enqueue_action({
-                            'method': f'channels.{self.params.role}_sign',
-                            'params': {
-                                'tx': signedTx.tx
-                                }
-                            })
+            'method': f'channels.{self.params.role}_sign',
+            'params': {
+                'tx': signedTx.tx
+            }
+        })
+
+    def state(self):
+        """
+        Get current offchain state
+        """
+        asyncio.ensure_future(self.__channel_call('channels.get.offchain_state', {}))
 
     def __process_queue(self):
         if not self.action_queue.empty() and not self.is_locked:
