@@ -122,6 +122,12 @@ class Channel(object):
         if not self.action_queue.empty() and not self.is_locked:
             self.__process_queue()
 
+    def __trigger_channel_call(self, method, params):
+        """
+        Fire and forget channel call
+        """
+        asyncio.ensure_future(self.__channel_call(method, params))
+
     def balances(self, accounts=None):
         """
         Get balances
@@ -136,7 +142,7 @@ class Channel(object):
                     default: [initiator_id, responder_id]
         """
         accounts = accounts if accounts else [self.params.initiator_id, self.params.responder_id]
-        asyncio.ensure_future(self.__channel_call('channels.get.balances', {'accounts': accounts}))
+        self.__channel_call('channels.get.balances', {'accounts': accounts})
 
     async def __sign_channel_tx(self, tx):
         """
@@ -149,6 +155,28 @@ class Channel(object):
                 'tx': signedTx.tx
             }
         })
+
+    def leave(self):
+        """
+        Leave Channel
+        """
+        asyncio.ensure_future(
+            self.__enqueue_action({
+                'method': 'channels.leave',
+                'params': {}
+            })
+        )
+
+    def shutdown(self):
+        """
+        Trigger mutual close
+        """
+        asyncio.ensure_future(
+            self.__enqueue_action({
+                'method': 'channels.shutdown',
+                'params': {}
+            })
+        )
 
     def state(self):
         """
