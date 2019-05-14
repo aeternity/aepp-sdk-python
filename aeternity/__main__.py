@@ -960,5 +960,10 @@ def chain_play(height,  limit, force, wait, json_):
 
 
 # run the client
-cli(obj={})
-exit(0)
+def run():
+    cli(obj={})
+    exit(0)
+
+
+if __name__ == "__main__":
+    run()
