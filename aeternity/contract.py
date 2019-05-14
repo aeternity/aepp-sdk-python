@@ -160,6 +160,10 @@ class Contract:
         """
         # unsigned transaction of the call
         call_object = self.client.get_transaction_info_by_hash(hash=tx_hash)
+        # version 3.x.x
+        if hasattr(call_object, "call_info"):
+            return call_object.call_info
+        # version 2.5.x
         return call_object
 
     def create(self,
