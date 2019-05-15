@@ -9,6 +9,7 @@ authors = [
 license = "ISC"
 homepage = "https://github.com/aeternity/aepp-sdk-python"
 repository = "https://github.com/aeternity/aepp-sdk-python"
+readme = "README.md"
 keywords = ["aeternity", "blockchain", "sdk"]
 include = ["CHANGELOG.md"]
 classifiers = [
