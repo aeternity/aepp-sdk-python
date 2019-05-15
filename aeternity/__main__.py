@@ -830,6 +830,9 @@ def inspect(obj, height, force, wait, json_):
                 queries=cli.get_oracle_queries_by_pubkey(pubkey=obj)
             )
             _print_object(data, title="oracle context")
+        elif obj.startswith("tx_"):
+            v = _node_cli().verify(obj)
+            _print_object(v, title="tx")
         elif obj.isdigit() and int(obj) >= 0:
             v = _node_cli().get_key_block_by_height(height=int(obj))
             _print_object(v, title="block")

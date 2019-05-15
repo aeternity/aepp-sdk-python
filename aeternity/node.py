@@ -301,6 +301,13 @@ class NodeClient:
         self.broadcast_transaction(tx.tx, tx_hash=tx.hash)
         return tx
 
+    def verify(self, encoded_tx):
+        """
+        Unpack and verify an encoded transaction
+        """
+        decoded = transactions._tx_native(transactions.UNPACK_TX, tx=encoded_tx)
+        return decoded
+
     # support naming
     def AEName(self, domain):
         return aens.AEName(domain, client=self)

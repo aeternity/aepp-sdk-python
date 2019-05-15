@@ -111,7 +111,18 @@ def _tx_native(op, **kwargs):
         raise Exception("Invalid operation")
 
     # check the tags
-    if tag == idf.OBJECT_TAG_SPEND_TRANSACTION:
+    if tag == idf.OBJECT_TAG_SIGNED_TRANSACTION:
+        if op == UNPACK_TX:
+            print(f"TX LENGTH {len(tx_native[3])}")
+            tx_data = dict(
+                tag=tag,
+                vsn=_int_decode(tx_native[1]),
+                signature=[encode("sg", sg) for sg in tx_native[2]],
+                tx=_tx_native(op, tx=encode("tx", tx_native[3])).data,
+            )
+            return namedtupled.map(tx_data, _nt_name="TxObject")
+        return None
+    elif tag == idf.OBJECT_TAG_SPEND_TRANSACTION:
         tx_field_fee_index = 5
         if op == PACK_TX:  # pack transaction
             tx_native = [
