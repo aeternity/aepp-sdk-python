@@ -46,7 +46,7 @@ setup(
         'click == 7.0',
         'rlp == 0.6.0',
         'PyNaCl == 1.3.0',
-        'requests == 2.20.0',
+        'requests == 2.0.0',
         'websockets == 7.0',
         'validators == 0.12.1',
         'semver == 2.8.1',
