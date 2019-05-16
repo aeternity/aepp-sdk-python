@@ -47,11 +47,11 @@ setup(
         'rlp == 0.6.0',
         'PyNaCl == 1.3.0',
         'requests == 2.20.0',
-        'websocket_client == 0.48.0',
+        'websockets == 7.0',
         'validators == 0.12.1',
-        'semver==2.8.1',
-        'namedtupled==0.3.3',
-        'Deprecated==1.2.5'
+        'semver == 2.8.1',
+        'namedtupled == 0.3.3',
+        'Deprecated == 1.2.5'
     ],
     classifiers=[
         'Programming Language :: Python',
