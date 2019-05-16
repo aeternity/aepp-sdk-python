@@ -6,7 +6,7 @@ import sys
 import getpass
 import namedtupled
 
-from aeternity import __version__
+from aeternity import _version
 
 from aeternity.node import NodeClient, Config
 from aeternity.transactions import TxSigner, TxBuilder
@@ -228,7 +228,7 @@ def set_global_options(json_, force=False, wait=False):
 @click.option('--url', '-u', default='https://sdk-mainnet.aepps.com', envvar='NODE_URL', help='Aeternity node url', metavar='URL')
 @click.option('--debug-url', '-d', default=None, envvar='NODE_URL_DEBUG', metavar='URL')
 @global_options
-@click.version_option(version=__version__)
+@click.version_option(version=_version())
 def cli(ctx, url, debug_url, json_):
     """
     Welcome to the aecli client.
