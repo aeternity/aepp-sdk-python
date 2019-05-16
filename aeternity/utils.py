@@ -54,7 +54,7 @@ def is_valid_aens_name(domain_name):
     return True
 
 
-def format_amount(value: int, precision: int = -18, unit_label: str="AE") -> str:
+def format_amount(value: int, precision: int = -18, unit_label: str = "AE") -> str:
     """
     Format a number as ERC20 token (1e18) and adding the unit
 

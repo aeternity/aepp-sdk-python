@@ -1,6 +1,5 @@
 from aeternity import exceptions
 from aeternity import utils, defaults, hashing, openapi, identifiers
-import semver
 import requests
 import namedtupled
 from requests import ConnectionError
