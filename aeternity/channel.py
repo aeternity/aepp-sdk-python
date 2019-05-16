@@ -14,6 +14,9 @@ class Channel(object):
     Create a state channel
     """
 
+    ping_interval = 10
+    ping_timeout = 5
+
     def __init__(self, channel_options):
         """
         Initialize the Channel object
@@ -93,14 +96,14 @@ class Channel(object):
         Message handler for incoming messagesl
         """
         async for message in self.ws:
-            print(message)
+            print(f"Incoming: {message}")
             msg = namedtupled.map(json.loads(message))
             if msg.method == "channels.info":
                 self.status = ChannelState(msg.params.data.event)
                 if msg.params.channel_id is not None:
                     self.id = msg.params.channel_id
             if msg.method == f"channels.sign.{self.params.role}_sign":
-                await self.__sign_channel_tx(msg.params.data.tx)
+                self.__sign_channel_tx(msg.params.data.tx)
 
     def __channel_url(self, url, params, endpoint):
         """
@@ -118,15 +121,10 @@ class Channel(object):
             "method": method,
             "params": params
         }
+        print(f"Sending: { json.dumps(message) }")
         await self.ws.send(json.dumps(message))
         if not self.action_queue.empty() and not self.is_locked:
             self.__process_queue()
-
-    def __trigger_channel_call(self, method, params):
-        """
-        Fire and forget channel call
-        """
-        asyncio.ensure_future(self.__channel_call(method, params))
 
     def balances(self, accounts=None):
         """
@@ -142,14 +140,14 @@ class Channel(object):
                     default: [initiator_id, responder_id]
         """
         accounts = accounts if accounts else [self.params.initiator_id, self.params.responder_id]
-        self.__channel_call('channels.get.balances', {'accounts': accounts})
+        asyncio.ensure_future(self.__channel_call('channels.get.balances', {'accounts': accounts}))
 
-    async def __sign_channel_tx(self, tx):
+    def __sign_channel_tx(self, tx):
         """
         Sign the transactions received over channel by the provided sign method
         """
         signedTx = self.sign(tx)
-        await self.__enqueue_action({
+        self.__enqueue_action({
             'method': f'channels.{self.params.role}_sign',
             'params': {
                 'tx': signedTx.tx
@@ -160,23 +158,19 @@ class Channel(object):
         """
         Leave Channel
         """
-        asyncio.ensure_future(
-            self.__enqueue_action({
-                'method': 'channels.leave',
-                'params': {}
-            })
-        )
+        self.__enqueue_action({
+            'method': 'channels.leave',
+            'params': {}
+        })
 
     def shutdown(self):
         """
         Trigger mutual close
         """
-        asyncio.ensure_future(
-            self.__enqueue_action({
-                'method': 'channels.shutdown',
-                'params': {}
-            })
-        )
+        self.__enqueue_action({
+            'method': 'channels.shutdown',
+            'params': {}
+        })
 
     def state(self):
         """
@@ -201,14 +195,12 @@ class Channel(object):
             - The deposit amount must be equal to or greater than zero, and cannot exceed
               the available balance on the channel (minus the channel_reserve)
         """
-        asyncio.ensure_future(
-            self.__enqueue_action({
-                'method': 'channels.deposit',
-                'params': {
-                    'amount': amount
-                }
-            })
-        )
+        self.__enqueue_action({
+            'method': 'channels.deposit',
+            'params': {
+                'amount': amount
+            }
+        })
 
     def withdraw(self, amount):
         """
@@ -227,14 +219,12 @@ class Channel(object):
             - The withdrawal amount must be equal to or greater than zero, and cannot exceed
               the available balance on the channel (minus the channel_reserve)
         """
-        asyncio.ensure_future(
-            self.__enqueue_action({
-                'method': 'channels.withdraw',
-                'params': {
-                    'amount': amount
-                }
-            })
-        )
+        self.__enqueue_action({
+            'method': 'channels.withdraw',
+            'params': {
+                'amount': amount
+            }
+        })
 
     def __process_queue(self):
         if not self.action_queue.empty() and not self.is_locked:
@@ -244,7 +234,7 @@ class Channel(object):
             self.action_queue.task_done()
             self.is_locked = False
 
-    async def __enqueue_action(self, task=None):
+    def __enqueue_action(self, task=None):
         if task is not None:
             self.action_queue.put(task)
             self.__process_queue()
