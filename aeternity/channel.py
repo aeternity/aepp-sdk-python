@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import json
 from enum import Enum
 from queue import Queue
@@ -8,14 +9,16 @@ import websockets
 
 from aeternity import defaults
 
+logger = logging.getLogger(__name__)
+
 
 class Channel(object):
     """
     Create a state channel
     """
 
-    ping_interval = 10
-    ping_timeout = 5
+    PING_INTERVAL = 10
+    PING_TIMEOUT = 5
 
     def __init__(self, channel_options):
         """
@@ -87,7 +90,7 @@ class Channel(object):
         """
         Set up websocket and attach the message handler
         """
-        async with websockets.connect(self.url) as websocket:
+        async with websockets.connect(self.url, ping_interval=self.PING_INTERVAL, ping_timeout=self.PING_TIMEOUT) as websocket:
             self.ws = websocket
             await self.__message_handler()
 
@@ -96,7 +99,7 @@ class Channel(object):
         Message handler for incoming messagesl
         """
         async for message in self.ws:
-            print(f"Incoming: {message}")
+            logger.debug(f"Incoming: {message}")
             msg = namedtupled.map(json.loads(message))
             if msg.method == "channels.info":
                 self.status = ChannelState(msg.params.data.event)
@@ -121,7 +124,7 @@ class Channel(object):
             "method": method,
             "params": params
         }
-        print(f"Sending: { json.dumps(message) }")
+        logger.debug(f"Sending: { json.dumps(message) }")
         await self.ws.send(json.dumps(message))
         if not self.action_queue.empty() and not self.is_locked:
             self.__process_queue()
