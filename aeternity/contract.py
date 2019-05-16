@@ -1,6 +1,5 @@
 from aeternity import exceptions
-from aeternity import utils, defaults, hashing, openapi
-from aeternity.identifiers import CONTRACT_ID, CONTRACT_ROMA_VM, CONTRACT_ROMA_ABI, CONTRACT_MINERVA_VM, CONTRACT_MINERVA_ABI
+from aeternity import utils, defaults, hashing, openapi, identifiers
 import semver
 import requests
 import namedtupled
@@ -125,12 +124,12 @@ class Contract:
              tx_ttl=defaults.TX_TTL):
         """Call a sophia contract"""
 
-        if not utils.is_valid_hash(contract_id, prefix=CONTRACT_ID):
+        if not utils.is_valid_hash(contract_id, prefix=identifiers.CONTRACT_ID):
             raise ValueError(f"Invalid contract id {contract_id}")
         # check if the contract exists
         try:
             self.client.get_contract(pubkey=contract_id)
-        except exceptions.OpenAPIClientException as e:
+        except exceptions.OpenAPIClientException:
             raise ContractError(f"Contratct {contract_id} not found")
 
         try:
@@ -209,8 +208,11 @@ class Contract:
         """
         Check the version of the node and retrieve the correct values for abi and vm version
         """
-        if semver.match(self.client.api_version, "<=1.4.0"):
-            return CONTRACT_ROMA_VM, CONTRACT_ROMA_ABI
-        if semver.match(self.client.api_version, "<3.0.0"):
-            return CONTRACT_MINERVA_VM, CONTRACT_MINERVA_ABI
+        protocol_version = self.client.get_consensus_protocol_version()
+        if protocol_version == identifiers.PROTOCOL_ROMA:
+            return identifiers.CONTRACT_ROMA_VM, identifiers.CONTRACT_ROMA_ABI
+        if protocol_version == identifiers.PROTOCOL_MINERVA:
+            return identifiers.CONTRACT_MINERVA_VM, identifiers.CONTRACT_MINERVA_ABI
+        if protocol_version == identifiers.PROTOCOL_FORTUNA:
+            return identifiers.CONTRACT_FORTUNA_VM, identifiers.CONTRACT_FORTUNA_ABI
         raise exceptions.UnsupportedNodeVersion(f"Version {self.client.api_version} is not supported")
