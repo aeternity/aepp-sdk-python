@@ -115,7 +115,7 @@ class Channel(object):
         param_string = '&'.join('{!s}={!r}'.format(key, val) for (key, val) in params.items())
         return f"{url}/{endpoint}?{param_string}".replace("'", "")
 
-    async def __channel_call(self, method, params):
+    def __channel_call(self, method, params):
         """
         Construct and send channel messages over the websocket
         """
@@ -125,7 +125,7 @@ class Channel(object):
             "params": params
         }
         logger.debug(f"Sending: { json.dumps(message) }")
-        await self.ws.send(json.dumps(message))
+        asyncio.ensure_future(self.ws.send(json.dumps(message)))
         if not self.action_queue.empty() and not self.is_locked:
             self.__process_queue()
 
@@ -143,7 +143,7 @@ class Channel(object):
                     default: [initiator_id, responder_id]
         """
         accounts = accounts if accounts else [self.params.initiator_id, self.params.responder_id]
-        asyncio.ensure_future(self.__channel_call('channels.get.balances', {'accounts': accounts}))
+        self.__channel_call('channels.get.balances', {'accounts': accounts})
 
     def __sign_channel_tx(self, tx):
         """
@@ -179,7 +179,7 @@ class Channel(object):
         """
         Get current offchain state
         """
-        asyncio.ensure_future(self.__channel_call('channels.get.offchain_state', {}))
+        self.__channel_call('channels.get.offchain_state', {})
 
     def deposit(self, amount):
         """
@@ -233,7 +233,7 @@ class Channel(object):
         if not self.action_queue.empty() and not self.is_locked:
             task = self.action_queue.get()
             self.is_locked = True
-            asyncio.ensure_future(self.__channel_call(task["method"], task["params"]))
+            self.__channel_call(task["method"], task["params"])
             self.action_queue.task_done()
             self.is_locked = False
 
