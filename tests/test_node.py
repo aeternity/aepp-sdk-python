@@ -21,3 +21,13 @@ def test_node_spend_debug(chain_fixture):
 
 def test_node_spend_native(chain_fixture):
     _test_node_spend(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
+
+
+@pytest.mark.parametrize("height,protocol_version", [(0, 1), (1, 1), (2, 2), (3, 2), (4, 3), (5, 3)])
+def test_node_get_protocol_version(chain_fixture, height, protocol_version):
+    # this test assumes that the configuration of the node bein tested has the follwing configuration:
+    #   hard_forks:
+    #      "1": 0
+    #      "2": 2
+    #      "3": 4
+    assert(chain_fixture.NODE_CLI.get_consensus_protocol_version(height)) == protocol_version

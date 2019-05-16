@@ -301,6 +301,24 @@ class NodeClient:
         self.broadcast_transaction(tx.tx, tx_hash=tx.hash)
         return tx
 
+    def get_consensus_protocol_version(self, height: int = None) -> int:
+        """
+        Get the consesus protocol version number
+        :param height: the height to get the protocol version for, if None the current height will be used
+        :return: the version
+        """
+        if height is None:
+            height = self.get_current_key_block_height()
+        if height < 0:
+            raise ValueError("heigth must be a number >= 0")
+        status = self.get_status()
+        effective_at_height = -1
+        version = 0
+        for p in status.protocols:
+            if height >= p.effective_at_height and p.effective_at_height > effective_at_height:
+                version, effective_at_height = p.version, p.effective_at_height
+        return version
+
     # support naming
     def AEName(self, domain):
         return aens.AEName(domain, client=self)
