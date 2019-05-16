@@ -319,6 +319,13 @@ class NodeClient:
                 version, effective_at_height = p.version, p.effective_at_height
         return version
 
+    def verify(self, encoded_tx):
+        """
+        Unpack and verify an encoded transaction
+        """
+        decoded = transactions._tx_native(transactions.UNPACK_TX, tx=encoded_tx)
+        return decoded
+
     # support naming
     def AEName(self, domain):
         return aens.AEName(domain, client=self)
