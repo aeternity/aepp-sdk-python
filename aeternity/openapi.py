@@ -67,7 +67,7 @@ class OpenAPICli(object):
         except requests.exceptions.ConnectionError as e:
             raise ConfigException(f"Error connecting to the node at {self.url}, connection unavailable", e)
         except Exception as e:
-            raise UnsupportedNodeVersion(f"Unable to connect to the node: {e}")
+            raise UnsupportedNodeVersion(f"Unable to connect to the node at {url}: {e}")
 
         # enable printing debug messages
         self.debug = debug
