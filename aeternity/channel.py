@@ -100,15 +100,17 @@ class Channel(object):
         """
         async for message in self.ws:
             logger.debug(f"Incoming: {message}")
-            msg = namedtupled.map(json.loads(message))
-            if msg.method == "channels.info":
-                self.status = ChannelState(msg.params.data.event)
+            msg = json.loads(message)
+            if msg['method'] == "channels.info":
+                self.status = ChannelState(msg['params']['data']['event'])
                 if self.status == ChannelState.OPEN:
-                    self.id = msg.params.channel_id
-            if msg.method == f"channels.sign.{self.params.role}_sign":
-                self.__sign_channel_tx(f'channels.{self.params.role}_sign', msg.params.data.tx)
-            if msg.method == "channels.sign.shutdown_sign" or msg.method == "channels.sign.shutdown_sign_ack":
-                self.__sign_channel_tx(msg.method.replace("sign.", ""), msg.params.data.tx)
+                    self.id = msg['params']['channel_id']
+            if msg['method'].startswith("channels.sign"):
+                tx = msg['params']['data']['tx']
+                if msg['method'] == f"channels.sign.{self.params.role}_sign":
+                    self.__sign_channel_tx(f'channels.{self.params.role}_sign', tx)
+                else:
+                    self.__sign_channel_tx(msg['method'].replace("sign.", ""), tx)
 
     def __channel_url(self, url, params, endpoint):
         """
@@ -267,3 +269,6 @@ class ChannelState(Enum):
     LEAVE = 'leave'
     SHUTDOWN = 'shutdown'
     OPEN = 'open'
+    DEPOSIT_CREATED = 'deposit_created'
+    OWN_DEPOSIT_LOCKED = 'own_deposit_locked'
+    DEPOSIT_LOCKED = 'deposit_locked'
