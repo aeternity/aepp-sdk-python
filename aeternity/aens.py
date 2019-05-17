@@ -158,7 +158,7 @@ class AEName:
         pre_claim_commitment_id = pre_claim_tx.tx.commitment_id
         commitment_id, _ = hashing.commitment_id(self.domain, salt=name_salt)
         if pre_claim_commitment_id != commitment_id:
-            raise NameCommitmentIdMismatch(f"Committment id mismatch, wanted {pre_claim_commitment_id} got {commitment_id}")
+            raise NameCommitmentIdMismatch(f"Commitment id mismatch, wanted {pre_claim_commitment_id} got {commitment_id}")
         # if the transaction has not been mined
         if self.preclaimed_block_height <= 0:
             raise NameTooEarlyClaim(f"The pre-claim transaction has not been mined yet")
