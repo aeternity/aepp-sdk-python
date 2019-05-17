@@ -65,11 +65,17 @@ class Channel(object):
             [channel_options.timeout_awaiting_open] (int) - The time frame the initiator has to start an outgoing noise session to the responder's node.
                                                             Applicable only for responder (default: timeout_idle's value)
             channel_options.sign (function) - Function which verifies and signs transactions
+            channel_options.offchain_message_handler (function) - Callback method to receive off-chain messages.
+                                                                  If not provided, all the incoming messages will be ignored.
+            channel_options.error_handler (function) - Callback method to receive error messages.
+                                                        If not provided, all error messages will be ignored.
         """
-        options_keys = {'sign', 'endpoint', 'url'}
+        options_keys = {'sign', 'endpoint', 'url', 'offchain_message_handler', 'error_handler'}
         endpoint = channel_options.get('endpoint', defaults.CHANNEL_ENDPOINT)
         wsUrl = channel_options.get('url', defaults.CHANNEL_URL)
         self.sign = channel_options.get('sign', None)
+        self.offchain_message_handler = channel_options.get('offchain_message_handler', None)
+        self.error_handler = channel_options.get('error_handler', None)
         self.params = {k: channel_options[k] for k in channel_options.keys() if k not in options_keys}
         self.url = self.__channel_url(wsUrl, self.params, endpoint)
         self.params = namedtupled.map(self.params)
@@ -101,16 +107,21 @@ class Channel(object):
         async for message in self.ws:
             logger.debug(f'Incoming: {message}')
             msg = json.loads(message)
-            if msg['method'] == 'channels.info':
-                self.status = ChannelState(msg['params']['data']['event'])
-                if self.status == ChannelState.OPEN:
-                    self.id = msg['params']['channel_id']
-            if msg['method'].startswith('channels.sign'):
-                tx = msg['params']['data']['tx']
-                if msg['method'] == f'channels.sign.{self.params.role}_sign':
-                    self.__sign_channel_tx(f'channels.{self.params.role}_sign', tx)
-                else:
-                    self.__sign_channel_tx(msg['method'].replace('sign.', ''), tx)
+            if 'error' in msg and self.error_handler is not None:
+                self.error_handler(msg)
+            elif 'method' in msg:
+                if msg['method'] == 'channels.info':
+                    self.status = ChannelState(msg['params']['data']['event'])
+                    if self.status == ChannelState.OPEN:
+                        self.id = msg['params']['channel_id']
+                if msg['method'] == 'channels.message' and self.offchain_message_handler is not None:
+                    self.offchain_message_handler(msg)
+                if msg['method'].startswith('channels.sign'):
+                    tx = msg['params']['data']['tx']
+                    if msg['method'] == f'channels.sign.{self.params.role}_sign':
+                        self.__sign_channel_tx(f'channels.{self.params.role}_sign', tx)
+                    else:
+                        self.__sign_channel_tx(msg['method'].replace('sign.', ''), tx)
 
     def __channel_url(self, url, params, endpoint):
         """
@@ -148,6 +159,27 @@ class Channel(object):
         """
         accounts = accounts if accounts else [self.params.initiator_id, self.params.responder_id]
         self.__channel_call('channels.get.balances', {'accounts': accounts})
+
+    def send_message(self, message, recipient):
+        """
+        Send generic message
+
+        If message is an object it will be serialized into JSON string
+        before sending.
+
+        If there is ongoing update that has not yet been finished the message
+        will be sent after that update is finalized.
+        """
+        if type(message) is dict:
+            message = json.dumps(message)
+
+        self.__enqueue_action({
+            'method': 'channels.message',
+            'params': {
+                'info': message,
+                'to': recipient
+            }
+        })
 
     def __sign_channel_tx(self, method, tx):
         """
