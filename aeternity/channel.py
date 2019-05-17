@@ -272,3 +272,6 @@ class ChannelState(Enum):
     DEPOSIT_CREATED = 'deposit_created'
     OWN_DEPOSIT_LOCKED = 'own_deposit_locked'
     DEPOSIT_LOCKED = 'deposit_locked'
+    WITHDRAW_CREATED = 'withdraw_created'
+    OWN_WITHDRAW_LOCKED = 'own_withdraw_locked'
+    WITHDRAW_LOCKED = 'withdraw_locked'
