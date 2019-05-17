@@ -6,7 +6,7 @@ import sys
 import getpass
 import namedtupled
 
-from aeternity import __version__
+from aeternity import _version
 
 from aeternity.node import NodeClient, Config
 from aeternity.transactions import TxSigner, TxBuilder
@@ -122,6 +122,13 @@ def _po(label, value, offset=0, label_prefix=None):
     else:
         if label.lower() == "time":
             value = datetime.fromtimestamp(value / 1000, timezone.utc).isoformat('T')
+        elif label.lower() in ["amount", "balance", "channel_amount",
+                               "channel_reserve", "deposit", "fee", "gas_price",
+                               "gas", "initiator_amount_final", "initiator_amount",
+                               "push_amount", "query_fee", "responder_amount_final",
+                               "responder_amount", "round", "solo_round"]:
+            value = utils.format_amount(value)
+
         _pl(label, offset, value=value)
 
 
@@ -221,7 +228,7 @@ def set_global_options(json_, force=False, wait=False):
 @click.option('--url', '-u', default='https://sdk-mainnet.aepps.com', envvar='NODE_URL', help='Aeternity node url', metavar='URL')
 @click.option('--debug-url', '-d', default=None, envvar='NODE_URL_DEBUG', metavar='URL')
 @global_options
-@click.version_option(version=__version__)
+@click.version_option(version=_version())
 def cli(ctx, url, debug_url, json_):
     """
     Welcome to the aecli client.
@@ -324,12 +331,17 @@ def account_address(password, keystore_name, private_key, json_):
 @global_options
 @account_options
 @online_options
-def account_balance(keystore_name, password, force, wait, json_):
+@click.option('--height', type=int, default=None, help="Retrieve the balance at the provided height")
+def account_balance(keystore_name, password, height, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
+        if height is not None and height > 0:
+            account = _node_cli().get_account_by_pubkey_and_height(pubkey=account.get_address(), height=height)
+            _print_object(account, title=f"account at {height}")
+            return
         account = _node_cli().get_account_by_pubkey(pubkey=account.get_address())
-        _print_object(account, title='account')
+        _print_object(account, title="account")
     except Exception as e:
         _print_error(e, exit_code=1)
 
@@ -352,6 +364,30 @@ def account_spend(keystore_name, recipient_id, amount, payload, fee, ttl, nonce,
         if not utils.is_valid_hash(recipient_id, prefix="ak"):
             raise ValueError("Invalid recipient address")
         tx = _node_cli(network_id=network_id).spend(account, recipient_id, amount, tx_ttl=ttl, fee=fee, payload=payload)
+        _print_object(tx, title='spend transaction')
+    except Exception as e:
+        _print_error(e, exit_code=1)
+
+
+@account.command('transfer', help="Create a transaction to transfer a percentage of funds to another account")
+@click.argument('keystore_name', required=True)
+@click.argument('recipient_id', required=True)
+@click.argument('transfer_amount', required=True, type=float)
+@click.option('--payload', default="", help="Spend transaction payload")
+@click.option('--include-fee', is_flag=True, default=True, help="Whatever to include the fee in the amount transferred")
+@global_options
+@account_options
+@online_options
+@transaction_options
+@sign_options
+def account_transfer_amount(keystore_name, recipient_id, transfer_amount, include_fee, payload, fee, ttl, nonce, password, network_id, force, wait, json_):
+    try:
+        set_global_options(json_, force, wait)
+        account, keystore_path = _account(keystore_name, password=password)
+        account.nonce = nonce
+        if not utils.is_valid_hash(recipient_id, prefix="ak"):
+            raise ValueError("Invalid recipient address")
+        tx = _node_cli(network_id=network_id).transfer_funds(account, recipient_id, transfer_amount, tx_ttl=ttl, payload=payload, include_fee=include_fee)
         _print_object(tx, title='spend transaction')
     except Exception as e:
         _print_error(e, exit_code=1)
@@ -624,7 +660,7 @@ def contract_aci(contract_file, compiler_url, json_):
         _print_error(e, exit_code=1)
 
 
-@compiler.command('encode-calldata', help="Enocode the calldata to invoke a contract")
+@compiler.command('encode-calldata', help="Encode the calldata to invoke a contract")
 @click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
 @click.argument("contract_file")
 @click.argument("function_name")
@@ -764,7 +800,8 @@ def contract_call_info(tx_hash, force, wait, json_):
 @click.argument('obj')
 @global_options
 @online_options
-def inspect(obj, force, wait, json_):
+@click.option('--height', type=int, default=None, help="only for accounts, retrieve an account at the specified height")
+def inspect(obj, height, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         if obj.endswith(".test"):
@@ -777,8 +814,12 @@ def inspect(obj, force, wait, json_):
             v = _node_cli().get_transaction_by_hash(hash=obj)
             _print_object(v, title="transaction")
         elif obj.startswith("ak_"):
-            v = _node_cli().get_account_by_pubkey(pubkey=obj)
-            _print_object(v, title="account")
+            if height is not None and height > 0:
+                account = _node_cli().get_account_by_pubkey_and_height(pubkey=obj, height=height)
+                _print_object(account, title=f"account at {height}")
+                return
+            account = _node_cli().get_account_by_pubkey(pubkey=obj)
+            _print_object(account, title="account")
         elif obj.startswith("ct_"):
             v = _node_cli().get_contract(pubkey=obj)
             _print_object(v, title="contract")
@@ -789,6 +830,9 @@ def inspect(obj, force, wait, json_):
                 queries=cli.get_oracle_queries_by_pubkey(pubkey=obj)
             )
             _print_object(data, title="oracle context")
+        elif obj.startswith("tx_"):
+            v = _node_cli().verify(obj)
+            _print_object(v, title="tx")
         elif obj.isdigit() and int(obj) >= 0:
             v = _node_cli().get_key_block_by_height(height=int(obj))
             _print_object(v, title="block")
@@ -919,5 +963,10 @@ def chain_play(height,  limit, force, wait, json_):
 
 
 # run the client
-cli(obj={})
-exit(0)
+def run():
+    cli(obj={})
+    exit(0)
+
+
+if __name__ == "__main__":
+    run()

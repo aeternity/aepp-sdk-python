@@ -28,7 +28,7 @@ class Config:
         :param websocket_url: the node websocket url
         :param blocking_mode: block the client waiting for transactions (default False)
         :param native: build transaction natively (do not use the node internal endpoints) (default True)
-        :param force_compatibility: ingnore node version compatibility check (default False)
+        :param force_compatibility: ignore node version compatibility check (default False)
         :param debug: enable debug logging (default False)
         """
         # endpoint urls
@@ -43,7 +43,7 @@ class Config:
         self.tx_gas_price = kwargs.get("tx_gas_price", defaults.GAS_PRICE)
         # get the version
         self.network_id = kwargs.get("network_id", None)
-        # contracts defautls
+        # contracts defaults
         self.contract_gas = kwargs.get("contract_gas", defaults.CONTRACT_GAS)
         self.contract_gas_price = kwargs.get("contract_gas_price", defaults.CONTRACT_GAS_PRICE)
         # oracles default
@@ -119,7 +119,7 @@ class NodeClient:
 
     def _get_nonce_ttl(self, account_address: str, relative_ttl: int):
         """
-        Helper method to compute both absoulute ttl and  nonce for an account
+        Helper method to compute both absolute ttl and  nonce for an account
         :return: (nonce, ttl)
         """
         ttl = self.compute_absolute_ttl(relative_ttl).absolute_ttl if relative_ttl > 0 else 0
@@ -213,7 +213,7 @@ class NodeClient:
         if retries <= 0:
             raise ValueError("Retries must be greater than 0")
 
-        # star tpolling
+        # start polling
         n = 1
         total_sleep = 0
         tx_height = -1
@@ -247,14 +247,14 @@ class NodeClient:
         """
         # first wait for the transaction to be found
         tx_height = self.wait_for_transaction(tx_hash)
-        # now caculate the min block height
+        # now calculate the min block height
         min_block_height = tx_height + self.config.key_block_confirmation_num
         # get teh
         retries = max_retries if max_retries is not None else self.config.poll_block_max_retries
         interval = polling_interval if polling_interval is not None else self.config.poll_block_retries_interval
         if retries <= 0 or interval <= 0:
             raise ValueError("max_retries and polling_interval must be greater than 0")
-        # star tpolling
+        # start polling
         n = 1
         total_sleep = 0
         while True:
@@ -270,11 +270,67 @@ class NodeClient:
             # increment n
             n += 1
 
+    def transfer_funds(self, account: Account,
+                       recipient_id: str,
+                       percentage: float,
+                       payload: str = "",
+                       tx_ttl: int = defaults.TX_TTL,
+                       include_fee=True):
+        """
+        Create and execute a spend transaction
+        """
+        if percentage < 0 or percentage > 1:
+            raise ValueError(f"Percentage should be a number between 0 and 1, got {percentage}")
+        account_on_chain = self.get_account_by_pubkey(pubkey=account.get_address())
+        request_transfer_amount = int(account_on_chain.balance * percentage)
+        # retrieve the nonce
+        account.nonce = account_on_chain.nonce + 1
+        # retrieve ttl
+        tx_ttl = self.compute_absolute_ttl(tx_ttl)
+        # build the transaction
+        tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, request_transfer_amount, payload, defaults.FEE, tx_ttl.absolute_ttl, account.nonce)
+        # if the request_transfer_amount should include the fee keep calculating the fee
+        if include_fee:
+            amount = request_transfer_amount
+            while (amount + tx.data.fee) > request_transfer_amount:
+                amount = request_transfer_amount - tx.data.fee
+                tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, amount, payload, defaults.FEE, tx_ttl.absolute_ttl, account.nonce)
+        # execute the transaction
+        tx = self.sign_transaction(account, tx.tx)
+        # post the transaction
+        self.broadcast_transaction(tx.tx, tx_hash=tx.hash)
+        return tx
+
+    def get_consensus_protocol_version(self, height: int = None) -> int:
+        """
+        Get the consensus protocol version number
+        :param height: the height to get the protocol version for, if None the current height will be used
+        :return: the version
+        """
+        if height is None:
+            height = self.get_current_key_block_height()
+        if height < 0:
+            raise ValueError("height must be a number >= 0")
+        status = self.get_status()
+        effective_at_height = -1
+        version = 0
+        for p in status.protocols:
+            if height >= p.effective_at_height and p.effective_at_height > effective_at_height:
+                version, effective_at_height = p.version, p.effective_at_height
+        return version
+
+    def verify(self, encoded_tx):
+        """
+        Unpack and verify an encoded transaction
+        """
+        decoded = transactions._tx_native(transactions.UNPACK_TX, tx=encoded_tx)
+        return decoded
+
     # support naming
     def AEName(self, domain):
         return aens.AEName(domain, client=self)
 
-    # support oralces
+    # support oracles
     def Oracle(self):
         return oracles.Oracle(self)
 

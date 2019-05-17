@@ -36,6 +36,7 @@ def call_aecli(*params):
         return output
 
 
+@pytest.mark.skip('Not required with the new packaging method')
 def test_cli_version():
     v = call_aecli('--version')
     print(v, aeternity.__version__)

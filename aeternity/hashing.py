@@ -8,7 +8,7 @@ import math
 from nacl.hash import blake2b
 from nacl.encoding import RawEncoder
 
-from aeternity import identifiers
+from aeternity import identifiers, utils
 
 
 def _base58_encode(data):
@@ -184,7 +184,7 @@ def _binary(val):
 
 def _binary_decode(data, data_type=None):
     """
-    Decodes a bite arrya to the selected datatype or to hex if no data_type is provided
+    Decodes a bite array to the selected datatype or to hex if no data_type is provided
     """
     if data_type == int:
         return _int_decode(data)
@@ -193,9 +193,25 @@ def _binary_decode(data, data_type=None):
     return data.hex()
 
 
-def _id(id_tag, hash_id):
+def _id(id_str):
     """Utility function to create and _id type"""
-    return _int(id_tag) + decode(hash_id)
+    if not utils.is_valid_hash(id_str):
+        raise ValueError(f"Unrecognized entity {id_str}")
+    id_tag = identifiers.ID_PREFIX_TO_TAG.get(id_str[0:2])
+    if id_tag is None:
+        raise ValueError(f"Unrecognized prefix {id_str[0:2]}")
+    return _int(id_tag) + decode(id_str)
+
+
+def _id_decode(data):
+    """
+    Decode and id object to it's API representation
+    """
+    id_tag = _int_decode(data[0:1])
+    prefix = identifiers.ID_TAG_TO_PREFIX.get(id_tag)
+    if prefix is None:
+        raise ValueError(f"Unrecognized id tag {id_tag}")
+    return encode(prefix, data[1:])
 
 
 def name_id(name):
@@ -209,7 +225,7 @@ def name_id(name):
 def contract_id(owner_id, nonce):
     """
     Compute the contract id of a contract
-    :param owner_id: the account creating the conctract
+    :param owner_id: the account creating the contract
     :param nonce: the nonce of the contract creation transaction
     """
     return hash_encode(identifiers.CONTRACT_ID, decode(owner_id) + _int(nonce))

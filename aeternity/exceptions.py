@@ -66,7 +66,7 @@ class BlockWaitTimeoutExpired(Exception):
     pass
 
 
-class UnsupportedNodeVersion(AException):
+class UnsupportedNodeVersion(Exception):
     """Raised when the node target runs an unsupported version"""
 
 

@@ -45,7 +45,7 @@ IDENTIFIERS_B58 = set([
     TRANSACTION_HASH,
 ])
 
-# Indentifiers with base64
+# Identifiers with base64
 IDENTIFIERS_B64 = set([
     BYTECODE,
     ORACLE_RESPONSE,
@@ -76,6 +76,26 @@ ID_TAG_COMMITMENT = 3
 ID_TAG_ORACLE = 4
 ID_TAG_CONTRACT = 5
 ID_TAG_CHANNEL = 6
+
+# Maps numeric tags to string prefixes
+ID_TAG_TO_PREFIX = {
+    ID_TAG_ACCOUNT: ACCOUNT_ID,
+    ID_TAG_CHANNEL: CHANNEL,
+    ID_TAG_COMMITMENT: COMMITMENT,
+    ID_TAG_CONTRACT: CONTRACT_ID,
+    ID_TAG_NAME: NAME,
+    ID_TAG_ORACLE: ORACLE_ID
+}
+
+# Maps string prefixes to numeric tags
+ID_PREFIX_TO_TAG = {
+    ACCOUNT_ID: ID_TAG_ACCOUNT,
+    CHANNEL: ID_TAG_CHANNEL,
+    COMMITMENT: ID_TAG_COMMITMENT,
+    CONTRACT_ID: ID_TAG_CONTRACT,
+    NAME: ID_TAG_NAME,
+    ORACLE_ID: ID_TAG_ORACLE
+}
 
 # Object tags
 # see https://github.com/aeternity/protocol/blob/master/serializations.md#binary-serialization
@@ -132,13 +152,20 @@ VM_SOPHIA_IMPROVEMENTS = 3
 NO_ABI = 0
 ABI_SOPHIA = 1
 ABI_SOLIDITY = 2
+# Consensus Protocol
+PROTOCOL_ROMA = 1
+PROTOCOL_MINERVA = 2
+PROTOCOL_FORTUNA = 3
 # Contracts identifiers
 # For Roma
-CONTRACT_ROMA_VM = 0  # this is to maintain retrocompatibility
+CONTRACT_ROMA_VM = 0  # this is to maintain retro-compatibility
 CONTRACT_ROMA_ABI = 1
 # For Minerva: 196609  # that is int.from_bytes(int(3).to_bytes(2, "big") + int(1).to_bytes(2, "big"), "big")
 CONTRACT_MINERVA_VM = 3
 CONTRACT_MINERVA_ABI = 1
+# For Fortuna
+CONTRACT_FORTUNA_VM = 4
+CONTRACT_FORTUNA_ABI = 1
 # Oracles
 ORACLE_TTL_TYPE_DELTA = 'delta'
 ORACLE_TTL_TYPE_BLOCK = 'block'

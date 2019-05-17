@@ -1,5 +1,6 @@
 from aeternity import hashing
 import validators
+from decimal import Decimal
 
 
 def is_valid_hash(hash_str, prefix=None):
@@ -48,6 +49,28 @@ def is_valid_aens_name(domain_name):
     # TODO: validate according to the spec!
     # TODO: https://github.com/aeternity/protocol/blob/master/AENS.md#name
 
-    if domain_name is None or not validators.domain(domain_name) or not domain_name.endswith(('.test')):
+    if domain_name is None or not validators.domain(domain_name.lower()) or not domain_name.endswith(('.test')):
         return False
     return True
+
+
+def format_amount(value: int, precision: int = -18, unit_label: str = "AE") -> str:
+    """
+    Format a number as ERC20 token (1e18) and adding the unit
+
+    For example, if you want to format the amount 1000000 in microAE
+    you can use format_amount(1000000, -6, 'microAE')
+
+    If the value is None or <= 0 the function returns 0
+
+    :param value: the value to format
+    :param precision: the precision to use, default -18
+    :param unit_label: the label to use to format the value, default AE
+    :return: a string with the value formatted using precision and unit_label
+    """
+    if value is None or value <= 0:
+        return f"0{unit_label}"
+    value = Decimal(value).scaleb(precision)
+    # remove trailing 0
+    value = str(value).rstrip('0').rstrip('.')
+    return f"{value}{unit_label}"
