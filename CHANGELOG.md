@@ -62,6 +62,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [3.0.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/3.0.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/2.0.0...3.0.0))
+## [3.0.1](https://github.com/aeternity/aepp-sdk-python/releases/tag/3.0.1) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/3.0.0...3.0.1))
+
+### Bug Fixes
+- fix: openapi parser for node v2.4.0 (#157) ([63b46fa](https://github.com/aeternity/aepp-sdk-python/commit/63b46faede29e1fa3556a59e3657184a6a59a290)).
+
+
+## [3.0.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/3.0.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/2.0.0...3.0.0)) - 2019-04-16
 
 ### Bug Fixes
 - fix: honour value of transaction fee provided as parameter ([d525aba](https://github.com/aeternity/aepp-sdk-python/commit/d525aba38dab3e4c22b596d229a8975f01183c59)). Related issues/PRs: #128
@@ -72,22 +79,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Features
 - feat(cli): add payload to the account spend command ([7cdf2d9](https://github.com/aeternity/aepp-sdk-python/commit/7cdf2d917dd5b1e35e20ab04a2a9716d7c19e1a9)). Related issues/PRs: #104
-- feat(cli): use ae_mainnet as default network id ([c0630b0](https://github.com/aeternity/aepp-sdk-python/commit/c0630b032b10ec43967aea362d8cf7a69b538b31)). Related issues/PRs: #127
-- feat: add contract address as metadata of the signed contract create tx object ([34ecb66](https://github.com/aeternity/aepp-sdk-python/commit/34ecb660ef337bebbe9869daf17605ca54002f60)).
-- feat: add separate command group to interact with the compiler ([831878a](https://github.com/aeternity/aepp-sdk-python/commit/831878a5c1b6f0efc09315dc244ae63a436fd662)).
 - feat: add support for sofia and raw encoding of account address ([fb6fea6](https://github.com/aeternity/aepp-sdk-python/commit/fb6fea601609738b822d4549e3bcc6f4df99f04b)). Related issues/PRs: #134
 
 ### Misc
-- BREAKING CHANGES: temporary disable contract support ([f298e7f](https://github.com/aeternity/aepp-sdk-python/commit/f298e7f015db6467957401c44e7c3aaf6a1d976c)).
 - ci(node): set the docker node image version to 2.1.0 ([37696fa](https://github.com/aeternity/aepp-sdk-python/commit/37696fafbe816d3f057d2ecb9c99f3134098f0df)).
-- ci: add coverage file to gitignore ([eb94eeb](https://github.com/aeternity/aepp-sdk-python/commit/eb94eeb0344b68bc40ead30e3fd46b73938d5cea)).
-- doc: add æns example ([d00994f](https://github.com/aeternity/aepp-sdk-python/commit/d00994f2e75be92ff0143157b87bed717c083f9c)).
+- Feature/cli sp37 iteraction (#146) ([da645a5](https://github.com/aeternity/aepp-sdk-python/commit/da645a5500643f8ea3bae1f1c34836f67e4a59d9)).
 - Feature/new compiler (#145) ([8b4853a](https://github.com/aeternity/aepp-sdk-python/commit/8b4853a182f55a905a18f3029e0472df3ba1063e)).
 - Merge pull request #137 from aeternity/fix/cli_fee_param ([0ea6817](https://github.com/aeternity/aepp-sdk-python/commit/0ea6817969b2b2344af3628366150025f0d18096)).
 - Merge pull request #138 from aeternity/feature/cli_spend_payload ([cbee5e0](https://github.com/aeternity/aepp-sdk-python/commit/cbee5e072a757886ffde2d90962827d58a055623)).
 - Merge pull request #139 from aeternity/feature/contracts_address_format ([51597af](https://github.com/aeternity/aepp-sdk-python/commit/51597af28e2f12f81106f9757eeb51c4e4847c6f)).
+- Merge pull request #147 from aeternity/release/3.0.0 ([7dc3a2f](https://github.com/aeternity/aepp-sdk-python/commit/7dc3a2f6aae42e63c197341b7f37dd80345248be)).
 - style: fix lint errors ([519f66c](https://github.com/aeternity/aepp-sdk-python/commit/519f66c2e4e0a452474de22ca62b1d3fe70db4ff)).
-- test: add 2 sample contracts to the testdata ([bb59b85](https://github.com/aeternity/aepp-sdk-python/commit/bb59b8541c4958fc459b415106fb026008df2220)).
+- update version to 3.0.0 ([c7e59ac](https://github.com/aeternity/aepp-sdk-python/commit/c7e59acd1a027960cb2efd68d0ed2d43e891636c)).
 
 
 ## [2.0.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/2.0.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/1.1.2...2.0.0)) - 2019-03-05
