@@ -4,6 +4,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [3.1.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/3.1.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/3.0.1...3.1.0))
+
+### Features
+- feat(state-channels): generic messaging and option to add custom error handler ([02efd3b](https://github.com/aeternity/aepp-sdk-python/commit/02efd3b56e608687e28034ec2e0cc5540d37afc6))
+- feat: improve cli output in case of errors ([4636311](https://github.com/aeternity/aepp-sdk-python/commit/4636311b669cfff69a8f91a817fb45b562c01656))
+- feat(state-channels): add withdraw related states ([5f6fefa](https://github.com/aeternity/aepp-sdk-python/commit/5f6fefa6c035fbe657d1c2c14069967154723a3a))
+- feat(state-channels): sign offchain deposit tx ([0a0ed47](https://github.com/aeternity/aepp-sdk-python/commit/0a0ed47db8cc25c609dc2a921c59735e857aeb16))
+- feat: support aeternity node fortuna serie ([>= v2.3.0,  < 4.0.0] [2191eae](https://github.com/aeternity/aepp-sdk-python/commit/2191eae3d649412d95e39cb25328ff1b0bf8cfc4)
+)
+- feat: support call_info for transaction info endpoint ([2191eae](https://github.com/aeternity/aepp-sdk-python/commit/2191eae3d649412d95e39cb25328ff1b0bf8cfc4))
+- feat: improve logging for unsupported node api version ([2191eae](https://github.com/aeternity/aepp-sdk-python/commit/2191eae3d649412d95e39cb25328ff1b0bf8cfc4))
+- feat: add method to get the protocol version of the a node ([2191eae](https://github.com/aeternity/aepp-sdk-python/commit/2191eae3d649412d95e39cb25328ff1b0bf8cfc4))
+- feat: automatically select the correct vm/abi based on protocol number ([2191eae](https://github.com/aeternity/aepp-sdk-python/commit/2191eae3d649412d95e39cb25328ff1b0bf8cfc4))
+- feat: improve error message when a node is not reachable ([2191eae](https://github.com/aeternity/aepp-sdk-python/commit/2191eae3d649412d95e39cb25328ff1b0bf8cfc4))
+- feat(state-channels): websocket ping pong and dependency fix ([0117324](https://github.com/aeternity/aepp-sdk-python/commit/0117324015f889849ef829dd414f922896f43a36))
+- feat(cli): add ability to inspect an encoded transaction ([ec95446](https://github.com/aeternity/aepp-sdk-python/commit/ec9544632e375ac94ff1108a43e4e61bc4da4c9b))
+- feat(state-channels): added leave and shutdown calls ([2c1a90c](https://github.com/aeternity/aepp-sdk-python/commit/2c1a90c59e1670052d3947b4cadc7a4a384e4e82))
+- feat(state-channels): basic message queue and processing ([ff42d54](https://github.com/aeternity/aepp-sdk-python/commit/ff42d54e513c55ca0493ec5badc982bc7fac08bf))
+- feat(state-channels): get channel's current offchain state ([4dbc027](https://github.com/aeternity/aepp-sdk-python/commit/4dbc027d2394f4eae7250679db9eb5de328e6f17))
+- feat: Add ability to retrieve an account balance at height from the cli ([a13b516](https://github.com/aeternity/aepp-sdk-python/commit/a13b5161c09782ce8f49493244cc559297d0dda5))
+- feat: Add human readable formatting for amounts ([a13b516](https://github.com/aeternity/aepp-sdk-python/commit/a13b5161c09782ce8f49493244cc559297d0dda5))
+- feat: Pretty print amounts output from cli ([a13b516](https://github.com/aeternity/aepp-sdk-python/commit/a13b5161c09782ce8f49493244cc559297d0dda5))
+- feat: Add ability to transfer a percentage of funds to another account ([a13b516](https://github.com/aeternity/aepp-sdk-python/commit/a13b5161c09782ce8f49493244cc559297d0dda5))
+- feat(state-channels): added leave and shutdown calls ([db95c42](https://github.com/aeternity/aepp-sdk-python/commit/db95c42310e74f3bdb94570dd0774fafef650df0))
+- feat(state-channels): basic implementation for websocket connection, channel initialization and fetch account balance ([2544aa0](https://github.com/aeternity/aepp-sdk-python/commit/2544aa0f8e0d9335657f87d65c9e4b43d67d2a84))
+### Style
+- style: fix spell mistakes ([4636311](https://github.com/aeternity/aepp-sdk-python/commit/4636311b669cfff69a8f91a817fb45b562c01656))
+- style(state-channels): remove blank lines ([151d48a](https://github.com/aeternity/aepp-sdk-python/commit/151d48ad7ed919c18aae5cd5ced299975dbc5d5f))
+- style: fix linting issue ([2a696ba](https://github.com/aeternity/aepp-sdk-python/commit/2a696ba0ef54fe6a49ea4d8d72393201ae1704e4))
+
+### Code refactoring
+- refactor(state-channels): use single quotes wherever possible ([7910e21](https://github.com/aeternity/aepp-sdk-python/commit/7910e2117df66e8c0f85ccb6712716a6ec87b976))
+- refactor(state-channels): refactor get channel id ([a08fa47](https://github.com/aeternity/aepp-sdk-python/commit/a08fa4744f25fce1dc6a055b1581258061bbc747))
+- refactor: update websocket dependencies ([2191eae](https://github.com/aeternity/aepp-sdk-python/commit/2191eae3d649412d95e39cb25328ff1b0bf8cfc4))
+- refactor(state-channels): refactor for balances call ([3cde14d](https://github.com/aeternity/aepp-sdk-python/commit/3cde14d9cfc9087e608ae4c58f70202093b74a63))
+
+### Bug Fixes
+- fix(state-channels): add shutdown tx signing ([f2726d8](https://github.com/aeternity/aepp-sdk-python/commit/f2726d86a33dc0f7d84d33c7e64a62fcec56d4a3))
+- fix(state-channels): Fix channel shutdown. add shutdown tx signing ([3d82bd6](https://github.com/aeternity/aepp-sdk-python/commit/3d82bd6e65d5db2db303ea58da9f9ae7d3601bb7))
+- fix: validator check on aens with uppercase letters ([2191eae](https://github.com/aeternity/aepp-sdk-python/commit/2191eae3d649412d95e39cb25328ff1b0bf8cfc4))
+- fix(state-channels): run websocket connection as background task ([072cf55](https://github.com/aeternity/aepp-sdk-python/commit/072cf552b6e9a699fe2e5b362017b8d8988baf16))
+- fix(state-channels): updated to more stable websockets library ([2f98467](https://github.com/aeternity/aepp-sdk-python/commit/2f98467c780c2e9831436f5451adbf4988aa10ca))
+- fix(state-channels): fix websocket connection crash issue ([4dbba3a](https://github.com/aeternity/aepp-sdk-python/commit/4dbba3ac31228d6f79d5a63d32a06f10add9e783))
+
+### Build
+- build: switch from setup.py to pyproject.toml (and poetry) ([2191eae](https://github.com/aeternity/aepp-sdk-python/commit/2191eae3d649412d95e39cb25328ff1b0bf8cfc4))
+- build: add flake8 configuration to skip unnecessary folders ([2191eae](https://github.com/aeternity/aepp-sdk-python/commit/2191eae3d649412d95e39cb25328ff1b0bf8cfc4))
+
+### Chore
+- chore: Removed legacy submodule ([a13b516](https://github.com/aeternity/aepp-sdk-python/commit/a13b5161c09782ce8f49493244cc559297d0dda5))
+
+### Documentation
+- docs(state-channels): add comments to the state method ([371ff54](https://github.com/aeternity/aepp-sdk-python/commit/371ff5480367cec29b1cb053a0e030f16137ab4f))
+- doc: update readme ([4636311](https://github.com/aeternity/aepp-sdk-python/commit/4636311b669cfff69a8f91a817fb45b562c01656))
+- doc: add github badges to the readme ([2191eae](https://github.com/aeternity/aepp-sdk-python/commit/2191eae3d649412d95e39cb25328ff1b0bf8cfc4))
+
+
 ## [3.0.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/3.0.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/2.0.0...3.0.0))
 
 ### Bug Fixes
