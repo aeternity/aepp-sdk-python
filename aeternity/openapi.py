@@ -64,10 +64,10 @@ class OpenAPICli(object):
             if (not match_min or not match_max) and not force_compatibility:
                 raise UnsupportedNodeVersion(
                     f"unsupported node version {self.url}@{self.api_version}, supported version are {lower_bound} and {upper_bound}")
-        except requests.exceptions.ConnectionError as e:
-            raise ConfigException(f"Error connecting to the node at {self.url}, connection unavailable", e)
+        except requests.exceptions.ConnectionError:
+            raise ConfigException(f"Error connecting to the node at {self.url}, connection unavailable")
         except Exception as e:
-            raise UnsupportedNodeVersion(f"Unable to connect to the node at {url}: {e}")
+            raise e
 
         # enable printing debug messages
         self.debug = debug
