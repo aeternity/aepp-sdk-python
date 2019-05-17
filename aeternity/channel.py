@@ -122,8 +122,6 @@ class Channel(object):
                         self.__sign_channel_tx(f'channels.{self.params.role}_sign', tx)
                     else:
                         self.__sign_channel_tx(msg['method'].replace('sign.', ''), tx)
-                if msg['method'] == 'channels.update' and self.params.role == 'responder':
-                    self.send_message({'key': 'value'}, 'ak_UHssTe2mXhj6LrbH6MfGQNbvn6X8YAgwjwdgefEaEB1d2HdLX')
 
     def __channel_url(self, url, params, endpoint):
         """
