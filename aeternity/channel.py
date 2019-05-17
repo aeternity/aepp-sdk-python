@@ -103,7 +103,7 @@ class Channel(object):
             msg = namedtupled.map(json.loads(message))
             if msg.method == "channels.info":
                 self.status = ChannelState(msg.params.data.event)
-                if msg.params.channel_id is not None:
+                if self.status == ChannelState.OPEN:
                     self.id = msg.params.channel_id
             if msg.method == f"channels.sign.{self.params.role}_sign":
                 self.__sign_channel_tx(f'channels.{self.params.role}_sign', msg.params.data.tx)
@@ -230,6 +230,12 @@ class Channel(object):
                 'amount': amount
             }
         })
+
+    def get_id(self):
+        """
+        Get Channel id if set else None
+        """
+        return self.id
 
     def __process_queue(self):
         if not self.action_queue.empty() and not self.is_locked:
