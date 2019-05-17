@@ -129,7 +129,7 @@ class Oracle():
         Extend the ttl of an oracle
         """
         if self.id is None:
-            raise ValueError("Oracle id must be provided before exending")
+            raise ValueError("Oracle id must be provided before extending")
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl

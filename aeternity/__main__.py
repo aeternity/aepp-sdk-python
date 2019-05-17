@@ -369,12 +369,12 @@ def account_spend(keystore_name, recipient_id, amount, payload, fee, ttl, nonce,
         _print_error(e, exit_code=1)
 
 
-@account.command('transfer', help="Create a transaction to tranfer a percentage of funds to another account")
+@account.command('transfer', help="Create a transaction to transfer a percentage of funds to another account")
 @click.argument('keystore_name', required=True)
 @click.argument('recipient_id', required=True)
 @click.argument('transfer_amount', required=True, type=float)
 @click.option('--payload', default="", help="Spend transaction payload")
-@click.option('--include-fee', is_flag=True, default=True, help="Whatever to include the fee in the amount transfered")
+@click.option('--include-fee', is_flag=True, default=True, help="Whatever to include the fee in the amount transferred")
 @global_options
 @account_options
 @online_options
@@ -660,7 +660,7 @@ def contract_aci(contract_file, compiler_url, json_):
         _print_error(e, exit_code=1)
 
 
-@compiler.command('encode-calldata', help="Enocode the calldata to invoke a contract")
+@compiler.command('encode-calldata', help="Encode the calldata to invoke a contract")
 @click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
 @click.argument("contract_file")
 @click.argument("function_name")
