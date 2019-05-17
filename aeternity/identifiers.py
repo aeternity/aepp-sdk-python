@@ -45,7 +45,7 @@ IDENTIFIERS_B58 = set([
     TRANSACTION_HASH,
 ])
 
-# Indentifiers with base64
+# Identifiers with base64
 IDENTIFIERS_B64 = set([
     BYTECODE,
     ORACLE_RESPONSE,
@@ -158,7 +158,7 @@ PROTOCOL_MINERVA = 2
 PROTOCOL_FORTUNA = 3
 # Contracts identifiers
 # For Roma
-CONTRACT_ROMA_VM = 0  # this is to maintain retrocompatibility
+CONTRACT_ROMA_VM = 0  # this is to maintain retro-compatibility
 CONTRACT_ROMA_ABI = 1
 # For Minerva: 196609  # that is int.from_bytes(int(3).to_bytes(2, "big") + int(1).to_bytes(2, "big"), "big")
 CONTRACT_MINERVA_VM = 3

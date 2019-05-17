@@ -14,7 +14,7 @@ class CompilerError(exceptions.AException):
 
 class CompilerClient(object):
     """
-    ComilerClient is the rest client to interact with the aesophia_http compiler
+    CompilerClient is the rest client to interact with the aesophia_http compiler
     """
 
     def __init__(self, compiler_url='http://localhost:3080'):
@@ -129,7 +129,7 @@ class Contract:
         try:
             self.client.get_contract(pubkey=contract_id)
         except exceptions.OpenAPIClientException:
-            raise ContractError(f"Contratct {contract_id} not found")
+            raise ContractError(f"Contract {contract_id} not found")
 
         try:
             # retrieve the correct vm/abi version

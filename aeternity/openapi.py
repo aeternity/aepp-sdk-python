@@ -60,14 +60,14 @@ class OpenAPICli(object):
             # evaluate max version
             upper_bound = compatibility_version_range[1]
             match_max = True if upper_bound is None else semver.match(self.api_version, upper_bound)
-            # evalutate the version range
+            # evaluate the version range
             if (not match_min or not match_max) and not force_compatibility:
                 raise UnsupportedNodeVersion(
                     f"unsupported node version {self.url}@{self.api_version}, supported version are {lower_bound} and {upper_bound}")
-        except requests.exceptions.ConnectionError as e:
-            raise ConfigException(f"Error connecting to the node at {self.url}, connection unavailable", e)
+        except requests.exceptions.ConnectionError:
+            raise ConfigException(f"Error connecting to the node at {self.url}, connection unavailable")
         except Exception as e:
-            raise UnsupportedNodeVersion(f"Unable to connect to the node at {url}: {e}")
+            raise e
 
         # enable printing debug messages
         self.debug = debug

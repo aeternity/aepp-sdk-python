@@ -184,7 +184,7 @@ def _binary(val):
 
 def _binary_decode(data, data_type=None):
     """
-    Decodes a bite arrya to the selected datatype or to hex if no data_type is provided
+    Decodes a bite array to the selected datatype or to hex if no data_type is provided
     """
     if data_type == int:
         return _int_decode(data)
@@ -225,7 +225,7 @@ def name_id(name):
 def contract_id(owner_id, nonce):
     """
     Compute the contract id of a contract
-    :param owner_id: the account creating the conctract
+    :param owner_id: the account creating the contract
     :param nonce: the nonce of the contract creation transaction
     """
     return hash_encode(identifiers.CONTRACT_ID, decode(owner_id) + _int(nonce))
