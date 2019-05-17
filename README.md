@@ -10,7 +10,7 @@
 
 ## Installation
 
-The SDK required Python 3. For out of the box use, it is recommended to use
+The SDK required Python >= 3.6. For out of the box use, it is recommended to use
 `venv` and install dependencies into it.
 
 ```
@@ -20,6 +20,7 @@ pip install aepp-sdk
 ```
 
 Whenever you come back, don't forget to run `source venv/bin/activate`, again.
+
 
 ## CLI Usage
 
@@ -126,8 +127,8 @@ aecli inspect th_2CV4a7xxDYj5ysaDjXNoCSLxnkowGM5bbyAvtdoPvHZwTSYykX
     Signature #1 ____________________________________ sg_WtPeyKWN4zmcnZZXpAxCT8EvjF3qSjiUidc9cdxQooxe1JCLADTVbKDFm9S5bNwv3yq57PQKTG4XuUP4eTzD5jymPHpNu
   </signatures>
   <tx>
-    Amount __________________________________________ 5000000000000000000
-    Fee _____________________________________________ 20000
+    Amount __________________________________________ 5AE
+    Fee _____________________________________________ 0.00001686AE
     Nonce ___________________________________________ 146
     Payload _________________________________________ Faucet Tx
     Recipient id ____________________________________ ak_2ioQbdSViNKjknaLUWphdRjpbTNVpMHpXf9X5ZkoVrhrCZGuyW
@@ -162,11 +163,11 @@ Enter the account password []:
     Vsn _____________________________________________ 1
     Sender id _______________________________________ ak_BobY97QUVR4iDLg4k3RKmy6shZYx9FR75nLaN33GsVmSnhWxn
     Recipient id ____________________________________ ak_9j8akv2PE2Mnt5khFeDvS9BGc3TBBrJkfcgaJHgBXcLLagX8M
-    Amount __________________________________________ 1000000000000000000
-    Fee _____________________________________________ 16860000000000
+    Amount __________________________________________ 1AE
+    Fee _____________________________________________ 0.00001686AE
     Ttl _____________________________________________ 0
     Nonce ___________________________________________ 4
-    Payload _________________________________________ 
+    Payload _________________________________________
   </data>
   Metadata
   Tx ________________________________________________ tx_+KMLAfhCuEAKN05UwTV0fSgO5woziVNnAMBcDrh46XlNFTZTJQlI05fz/8pVSyrb1guCLcw8n7++O887k/JEu6/XHcCSHOMMuFv4WQwBoQEYh8aMDs7saMDBvys+lbKds3Omnzm4crYNbs9xGolBm6EBE9B4l/BeyxMO//3ANxwyT+ZHL52j9nAZosRe/YFuK4eIDeC2s6dkAACGD1WGT5gAAASAN24JGA==
@@ -180,7 +181,7 @@ Enter the account password []:
 ```
 aecli inspect ak_9j8akv2PE2Mnt5khFeDvS9BGc3TBBrJkfcgaJHgBXcLLagX8M
 <account>
-  Balance ___________________________________________ 1000000000000000000
+  Balance ___________________________________________ 1AE
   Id ________________________________________________ ak_9j8akv2PE2Mnt5khFeDvS9BGc3TBBrJkfcgaJHgBXcLLagX8M
   Nonce _____________________________________________ 0
 </account>
