@@ -59,7 +59,7 @@ def format_amount(value: int, precision: int = -18, unit_label: str = "AE") -> s
     Format a number as ERC20 token (1e18) and adding the unit
 
     For example, if you want to format the amount 1000000 in microAE
-    you can use fomat_amount(1000000, -6, 'microAE')
+    you can use format_amount(1000000, -6, 'microAE')
 
     If the value is None or <= 0 the function returns 0
 

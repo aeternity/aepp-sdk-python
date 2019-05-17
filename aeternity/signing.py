@@ -245,7 +245,7 @@ def is_signature_valid(account_id, signature, data: bytes) -> bool:
     """
     Verify the signature of a message
     :param account_id: the account id signing the message
-    :param signature: the signature of the messagfe
+    :param signature: the signature of the message
     :param data: the message that has been signed
     :return: true if the signature for the message is valid, false otherwise
     """

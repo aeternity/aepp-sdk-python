@@ -7,4 +7,4 @@ def _version():
     try:
         return pkg_resources.get_distribution('aepp-sdk').version
     except pkg_resources.DistributionNotFound:
-        return 'snapshopt'
+        return 'snapshot'

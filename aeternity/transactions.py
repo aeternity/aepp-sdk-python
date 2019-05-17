@@ -66,19 +66,19 @@ def _tx_native(op, **kwargs):
     def std_fee(tx_raw, fee_idx, base_gas_multiplier=1):
         # calculates the standard minimum transaction fee
         tx_copy = tx_raw  # create a copy of the input
-        tx_copy[fee_idx] = _int(0, 8)  # replace fee with a byte array of lenght 8
+        tx_copy[fee_idx] = _int(0, 8)  # replace fee with a byte array of length 8
         return (defaults.BASE_GAS * base_gas_multiplier + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) * defaults.GAS_PRICE
 
     def contract_fee(tx_raw, fee_idx, gas, base_gas_multiplier=1):
         # estimate the contract creation fee
         tx_copy = tx_raw  # create a copy of the input
-        tx_copy[fee_idx] = _int(0, 8)  # replace fee with a byte array of lenght 8
+        tx_copy[fee_idx] = _int(0, 8)  # replace fee with a byte array of length 8
         return (defaults.BASE_GAS * base_gas_multiplier + gas + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) * defaults.GAS_PRICE
 
     def oracle_fee(tx_raw, fee_idx, relative_ttl):
         # estimate oracle fees
         tx_copy = tx_raw  # create a copy of the input
-        tx_copy[fee_idx] = _int(0, 8)  # replace fee with a byte array of lenght 8
+        tx_copy[fee_idx] = _int(0, 8)  # replace fee with a byte array of length 8
         fee = (defaults.BASE_GAS + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE)
         fee += math.ceil(32000 * relative_ttl / math.floor(60 * 24 * 365 / defaults.KEY_BLOCK_INTERVAL))
         return fee * defaults.GAS_PRICE
@@ -214,7 +214,7 @@ def _tx_native(op, **kwargs):
     elif tag == idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION:
         tx_field_fee_index = 8
         if op == PACK_TX:  # pack transaction
-            # first asseble the pointers
+            # first assemble the pointers
             def pointer_tag(pointer):
                 return {
                     "account_pubkey": idf.ID_TAG_ACCOUNT,
@@ -331,7 +331,7 @@ def _tx_native(op, **kwargs):
                 _int(kwargs.get("gas_price")),
                 _binary(decode(kwargs.get("call_data"))),
             ]
-            # TODO: verify the fee caluclation for the contract
+            # TODO: verify the fee calculation for the contract
             min_fee = contract_fee(tx_native, tx_field_fee_index, kwargs.get("gas"),  base_gas_multiplier=5)
         elif op == UNPACK_TX:  # unpack transaction
             vml = len(tx_native[5])  # this is used to extract the abi and vm version from the 5th field
@@ -853,7 +853,7 @@ def _tx_native(op, **kwargs):
             raise Exception("Invalid operation")
         return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
     else:
-        raise UnsupportedTransactionType(f"Unusupported transaction tag {tag}")
+        raise UnsupportedTransactionType(f"Unsupported transaction tag {tag}")
 
 
 class TxBuilder:
@@ -920,14 +920,14 @@ class TxBuilder:
             nonce=nonce
         )
         return _tx_native(op=PACK_TX, **body)
-        # sreturn self.api.post_name_preclaim(body=body).tx
+        # return self.api.post_name_preclaim(body=body).tx
 
     def tx_name_claim(self, account_id, name, name_salt, fee, ttl, nonce) -> tuple:
         """
         create a preclaim transaction
         :param account_id: the account registering the name
         :param name: the actual name to claim
-        :param name_salt: the salt used to create the committment_id during preclaim
+        :param name_salt: the salt used to create the commitment_id during preclaim
         :param fee:  the fee for the transaction
         :param ttl:  the ttl for the transaction
         :param nonce: the nonce of the account for the transaction
@@ -1056,7 +1056,7 @@ class TxBuilder:
 
     def tx_contract_call(self, caller_id, contract_id, call_data, function, arg, amount, gas, gas_price, abi_version, fee, ttl, nonce) -> tuple:
         """
-        Create a Contract Call trnsaction
+        Create a Contract Call transaction
         :param caller_id: the account creating the contract
         :param contract_id: the contract to call
         :param call_data: the call data for the contract

@@ -33,7 +33,7 @@ class Channel(object):
             channel_options.role (str) - Participant role ("initiator" or "responder")
             channel_options.initiator_id (str) - Initiator's public key
             channel_options.responder_id (str) - Responder's public key
-            channel_options.push_amount (int) - Initial deposit in favour of the responder by the initiator
+            channel_options.push_amount (int) - Initial deposit in favor of the responder by the initiator
             channel_options.initiator_amount (int) - Amount of tokens the initiator has committed to the channel
             channel_options.responder_amount (int) - Amount of tokens the responder has committed to the channel
             channel_options.channel_reserve (int) - The minimum amount both peers need to maintain
@@ -58,7 +58,7 @@ class Channel(object):
                                                     This applies for all off-chain updates (default: 500000)
             [channel_options.timeout_accept] (int) - The time frame the other client has to react to an event.
                                                     This applies for all off-chain updates that are not meant to land on-chain,
-                                                    as well as some special cases: opening a noise connection, mutual closing acknowledgement and
+                                                    as well as some special cases: opening a noise connection, mutual closing acknowledgment and
                                                     reestablishing an existing channel (default: 120000)
             [channel_options.timeout_initialized] (int) - the time frame the responder has to accept an incoming noise session.
                                                         Applicable only for initiator (default: timeout_accept value)
@@ -102,7 +102,7 @@ class Channel(object):
 
     async def __message_handler(self):
         """
-        Message handler for incoming messagesl
+        Message handler for incoming messages
         """
         async for message in self.ws:
             logger.debug(f'Incoming: {message}')
@@ -306,3 +306,6 @@ class ChannelState(Enum):
     DEPOSIT_CREATED = 'deposit_created'
     OWN_DEPOSIT_LOCKED = 'own_deposit_locked'
     DEPOSIT_LOCKED = 'deposit_locked'
+    WITHDRAW_CREATED = 'withdraw_created'
+    OWN_WITHDRAW_LOCKED = 'own_withdraw_locked'
+    WITHDRAW_LOCKED = 'withdraw_locked'
