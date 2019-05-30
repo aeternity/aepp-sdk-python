@@ -66,22 +66,39 @@ def _tx_native(op, **kwargs):
     def std_fee(tx_raw, fee_idx, base_gas_multiplier=1):
         # calculates the standard minimum transaction fee
         tx_copy = tx_raw  # create a copy of the input
-        tx_copy[fee_idx] = _int(0, 8)  # replace fee with a byte array of length 8
-        return (defaults.BASE_GAS * base_gas_multiplier + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) * defaults.GAS_PRICE
+        actual_fee = 0
+        tx_copy[fee_idx] = _int(actual_fee)  # replace fee with a byte array of length 1
+        expected = (defaults.BASE_GAS * base_gas_multiplier + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) * defaults.GAS_PRICE
+        while expected != actual_fee:
+            actual_fee = expected
+            tx_copy[fee_idx] = _int(expected)
+            expected = (defaults.BASE_GAS * base_gas_multiplier + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) * defaults.GAS_PRICE
+        return actual_fee
 
     def contract_fee(tx_raw, fee_idx, gas, base_gas_multiplier=1):
         # estimate the contract creation fee
         tx_copy = tx_raw  # create a copy of the input
-        tx_copy[fee_idx] = _int(0, 8)  # replace fee with a byte array of length 8
-        return (defaults.BASE_GAS * base_gas_multiplier + gas + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) * defaults.GAS_PRICE
+        actual_fee = 0
+        tx_copy[fee_idx] = _int(actual_fee)  # replace fee with a byte array of length 1
+        expected = (defaults.BASE_GAS * base_gas_multiplier + gas + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) * defaults.GAS_PRICE
+        while expected != actual_fee:
+            actual_fee = expected
+            tx_copy[fee_idx] = _int(expected)
+            expected = (defaults.BASE_GAS * base_gas_multiplier + gas + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) * defaults.GAS_PRICE
+        return actual_fee
 
     def oracle_fee(tx_raw, fee_idx, relative_ttl):
         # estimate oracle fees
         tx_copy = tx_raw  # create a copy of the input
-        tx_copy[fee_idx] = _int(0, 8)  # replace fee with a byte array of length 8
-        fee = (defaults.BASE_GAS + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE)
-        fee += math.ceil(32000 * relative_ttl / math.floor(60 * 24 * 365 / defaults.KEY_BLOCK_INTERVAL))
-        return fee * defaults.GAS_PRICE
+        actual_fee = 0
+        tx_copy[fee_idx] = _int(actual_fee)  # replace fee with a byte array of length 1
+        ttl_cost = math.ceil(32000 * relative_ttl / math.floor(60 * 24 * 365 / defaults.KEY_BLOCK_INTERVAL))  # calculate the variable cost for ttl
+        expected = ((defaults.BASE_GAS + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) + ttl_cost) * defaults.GAS_PRICE
+        while expected != actual_fee:
+            actual_fee = expected
+            tx_copy[fee_idx] = _int(expected)
+            expected = ((defaults.BASE_GAS + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) + ttl_cost) * defaults.GAS_PRICE
+        return actual_fee
 
     def build_tx_object(tx_data, tx_raw, fee_idx, min_fee):
         # if fee is not set use the min fee
@@ -147,7 +164,7 @@ def _tx_native(op, **kwargs):
                 fee=_int_decode(tx_native[5]),
                 ttl=_int_decode(tx_native[6]),
                 nonce=_int_decode(tx_native[7]),
-                payload=_binary_decode(tx_native[8]),
+                payload=encode(idf.BYTE_ARRAY, tx_native[8]),
             )
             min_fee = tx_data.get("fee")
         else:

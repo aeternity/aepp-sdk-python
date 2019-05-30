@@ -310,17 +310,17 @@ def account_save(keystore_name, private_key, password, overwrite, json_):
 
 @account.command('address', help="Print the account address (public key)")
 @click.argument('keystore_name')
-@click.option('--private-key', is_flag=True, help="Print the private key instead of the account address")
+@click.option('--secret-key', '--private-key', is_flag=True, help="Print the secret key in addition to the account address")
 @global_options
 @account_options
-def account_address(password, keystore_name, private_key, json_):
+def account_address(password, keystore_name, secret_key, json_):
     try:
         set_global_options(json_)
         account, keystore_path = _account(keystore_name, password=password)
         o = {'Address': account.get_address()}
-        if private_key:
-            click.confirm(f'!Warning! this will print your private key on the screen, are you sure?', abort=True)
-            o["Signing key"] = account.get_private_key()
+        if secret_key:
+            click.confirm(f'!Warning! this will print your secret key on the screen, are you sure?', abort=True)
+            o["SecretKey"] = account.get_secret_key()
         _print_object(o, title='account')
     except Exception as e:
         _print_error(e, exit_code=1)

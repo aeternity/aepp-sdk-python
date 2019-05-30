@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [3.1.1](https://github.com/aeternity/aepp-sdk-python/releases/tag/3.1.1) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/3.1.0...3.1.1))
+
+### Bug Fixes
+- fix(tx): encode spend tx payload as base64 string prefixed by 'ba' (#204) ([488745b](https://github.com/aeternity/aepp-sdk-python/commit/488745bc93167b0a80e2dd1e90691110e0abaf24)). Related issues/PRs: #203
+
+### Code Refactoring
+- refactor(cli): add option --secret-key as alias to --private-key.([60bcf6d](https://github.com/aeternity/aepp-sdk-python/commit/60bcf6d4af5d423fcf7660bd3ee4f7ea1e299400)).
+
+⚠️ `--private-key` is deprecated and will be removed in a future release`
+
+### Features
+- feat(tx): improve precision for fee calculation (#193) ([04adcb4](https://github.com/aeternity/aepp-sdk-python/commit/04adcb47dd20dd754c3b402227ec251f0c5972e2)).
+
 ## [3.1.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/3.1.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/3.0.1...3.1.0))
 
 ### Features

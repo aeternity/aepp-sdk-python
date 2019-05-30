@@ -26,6 +26,7 @@ PROOF_OF_INCLUSION = "pi"  # base64	Proof of Inclusion
 STATE_TREES = "ss"  # base64	State trees
 STATE = "st"  # base64	State
 TRANSACTION = "tx"  # base64	Transaction
+BYTE_ARRAY = "ba"  # base64 byte array
 
 IDENTIFIERS_B58 = set([
     ACCOUNT_ID,
@@ -53,7 +54,8 @@ IDENTIFIERS_B64 = set([
     PROOF_OF_INCLUSION,
     STATE_TREES,
     STATE,
-    TRANSACTION
+    TRANSACTION,
+    BYTE_ARRAY
 ])
 
 # Account address encoding formats
