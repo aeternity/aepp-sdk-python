@@ -147,7 +147,7 @@ def _tx_native(op, **kwargs):
                 fee=_int_decode(tx_native[5]),
                 ttl=_int_decode(tx_native[6]),
                 nonce=_int_decode(tx_native[7]),
-                payload=_binary_decode(tx_native[8]),
+                payload=encode(idf.BYTE_ARRAY, tx_native[8]),
             )
             min_fee = tx_data.get("fee")
         else:
