@@ -271,6 +271,25 @@ class Channel(object):
         """
         return self.id
 
+    def update(self, from_addr, to_addr, amount):
+        """
+        Trigger a transfer update
+
+        The transfer update is moving tokens from one channel account to another.
+        The update is a change to be applied on top of the latest state.
+
+        Sender and receiver are the channel parties. Both the initiator and responder
+        can take those roles. Any public key outside of the channel is considered invalid.
+        """
+        self.__enqueue_action({
+            'method': 'channels.update.new',
+            'params': {
+                'amount': amount,
+                'from': from_addr,
+                'to': to_addr
+            }
+        })
+
     def __process_queue(self):
         if not self.action_queue.empty() and not self.is_locked:
             task = self.action_queue.get()
