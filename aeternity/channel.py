@@ -317,6 +317,30 @@ class Channel(object):
             }
         })
 
+    def contract_from_onchain(self, call_data, contract_id, deposit):
+        """
+        Trigger create contract from on-chain contract
+
+        The new_contract_from_onchain update is creating a contract inside the channel's internal state tree
+        using on-chain contract as a reference.
+        The update is a change to be applied on top of the latest state.
+
+        This creates a contract with the poster being the owner of it.
+        Poster commits initially a deposit amount of tokens to the new contract.
+
+        :param call_data: Api encoded compiled AEVM call data for the code
+        :param contract_id: Contract id of the on-chain contract
+        :param deposit: Initial amount the owner of the contract commits to it
+        """
+        self.__enqueue_action({
+            'method': 'channels.update.new_contract_from_onchain',
+            'params': {
+                'call_data': call_data,
+                'contract': contract_id,
+                'deposit': deposit
+            }
+        })
+
     def call_contract(self, amount, call_data, contract_id, abi_version):
         """
         Trigger call a contract update
