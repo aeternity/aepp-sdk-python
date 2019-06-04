@@ -145,8 +145,7 @@ class Channel(object):
         """
         Get balances
 
-        Args:
-            accounts: a list of addresses to fetch the balances of.
+        :param accounts: a list of addresses to fetch the balances of.
                     Those can be either account balances or a contract ones,
                     encoded as an account addresses.
                     If a certain account address had not being found in the state tree
@@ -166,6 +165,9 @@ class Channel(object):
 
         If there is ongoing update that has not yet been finished the message
         will be sent after that update is finalized.
+
+        :param message: Message to be sent
+        :param recipient: Address of the recipient
         """
         if type(message) is dict:
             message = json.dumps(message)
@@ -230,6 +232,8 @@ class Channel(object):
             - Channel is not being closed or in a solo closing state
             - The deposit amount must be equal to or greater than zero, and cannot exceed
               the available balance on the channel (minus the channel_reserve)
+
+        :param amount: Amount of tokens to deposit
         """
         self.__enqueue_action({
             'method': 'channels.deposit',
@@ -254,6 +258,8 @@ class Channel(object):
             - Channel is not being closed or in a solo closing state
             - The withdrawal amount must be equal to or greater than zero, and cannot exceed
               the available balance on the channel (minus the channel_reserve)
+
+        :param amount: Amount of tokens to withdraw
         """
         self.__enqueue_action({
             'method': 'channels.withdraw',
@@ -277,6 +283,10 @@ class Channel(object):
 
         Sender and receiver are the channel parties. Both the initiator and responder
         can take those roles. Any public key outside of the channel is considered invalid.
+
+        :param from_addr: Sender's public address
+        :param to_addr: Receiver's public address
+        :param amount: Transaction amount
         """
         self.__enqueue_action({
             'method': 'channels.update.new',
