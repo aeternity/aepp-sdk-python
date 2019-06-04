@@ -7,7 +7,7 @@ import namedtupled
 from aeternity.transactions import TxSigner
 from aeternity.signing import Account
 from aeternity.openapi import OpenAPIClientException
-from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers
+from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers, exceptions
 from aeternity.exceptions import TransactionWaitTimeoutExpired, TransactionHashMismatch
 from aeternity import __node_compatibility__
 
@@ -325,6 +325,19 @@ class NodeClient:
         """
         decoded = transactions._tx_native(transactions.UNPACK_TX, tx=encoded_tx)
         return decoded
+
+    def get_vm_abi_versions(self):
+        """
+        Check the version of the node and retrieve the correct values for abi and vm version
+        """
+        protocol_version = self.get_consensus_protocol_version()
+        if protocol_version == identifiers.PROTOCOL_ROMA:
+            return identifiers.CONTRACT_ROMA_VM, identifiers.CONTRACT_ROMA_ABI
+        if protocol_version == identifiers.PROTOCOL_MINERVA:
+            return identifiers.CONTRACT_MINERVA_VM, identifiers.CONTRACT_MINERVA_ABI
+        if protocol_version == identifiers.PROTOCOL_FORTUNA:
+            return identifiers.CONTRACT_FORTUNA_VM, identifiers.CONTRACT_FORTUNA_ABI
+        raise exceptions.UnsupportedNodeVersion(f"Version {self.api_version} is not supported")
 
     # support naming
     def AEName(self, domain):
