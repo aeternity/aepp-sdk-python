@@ -339,6 +339,58 @@ class NodeClient:
             return identifiers.CONTRACT_FORTUNA_VM, identifiers.CONTRACT_FORTUNA_ABI
         raise exceptions.UnsupportedNodeVersion(f"Version {self.api_version} is not supported")
 
+    def poa_to_ga(self, account: Account, ga_contract: str,
+                  init_calldata: str = defaults.CONTRACT_INIT_CALLDATA,
+                  auth_fun: str = defaults.GA_AUTH_FUNCTION,
+                  fee: int = defaults.FEE,
+                  tx_ttl: int = defaults.TX_TTL,
+                  gas: int = defaults.CONTRACT_GAS,
+                  gas_price: int = defaults.CONTRACT_GAS_PRICE):
+        """
+        Transform a POA (Plain Old Account) to a GA (Generalized Account)
+        :param account: the account to transform
+        :param contract: the compiled contract associated to the GA
+        :param auth_fun: the name of the contract function to use for authorization (default: authorize)
+        """
+        # check the auth_fun name
+        if auth_fun is None or len(auth_fun) == 0:
+            raise ValueError("The parameter auth_fun is required")
+        # decode the contract and search for the authorization function
+        auth_fun_hash = None
+        contract_data = contract.unpack(ga_contract)
+        for ti in contract_data.type_info:
+            print(ti.fun_name, " .. ", auth_fun)
+            if ti.fun_name == auth_fun:
+                auth_fun_hash = ti.fun_hash
+        # if the function is not found then raise an error
+        if auth_fun_hash is None:
+            raise ValueError(f"Authorization function not found: '{auth_fun}'")
+        # get the nonce
+        nonce = self.get_next_nonce(account.get_address())
+        # compute the ttl
+        ttl = self.compute_absolute_ttl(tx_ttl).absolute_ttl
+        # get abi and vm version
+        vm_version, abi_version = self.get_vm_abi_versions()
+        # build the transaction
+        tx = self.tx_builder.tx_ga_attach(
+            account.get_address(),
+            nonce,
+            ga_contract,
+            auth_fun_hash,
+            vm_version,
+            abi_version,
+            fee,
+            ttl,
+            gas,
+            gas_price,
+            init_calldata
+        )
+        # sign the transaction
+        tx = self.sign_transaction(account, tx.tx)
+        # broadcast the transaction
+        self.broadcast_transaction(tx.tx, tx_hash=tx.hash)
+        return tx
+
     # support naming
     def AEName(self, domain):
         return aens.AEName(domain, client=self)
