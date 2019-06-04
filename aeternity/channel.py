@@ -24,48 +24,46 @@ class Channel(object):
         """
         Initialize the Channel object
 
-            channel_options contains/can contain following keys:
-
-            :param url (str): Channel url (for example: "ws://localhost:3001")
-            :param role (str): Participant role ("initiator" or "responder")
-            :param initiator_id (str): Initiator's public key
-            :param responder_id (str): Responder's public key
-            :param push_amount (int): Initial deposit in favor of the responder by the initiator
-            :param initiator_amount (int): Amount of tokens the initiator has committed to the channel
-            :param responder_amount (int): Amount of tokens the responder has committed to the channel
-            :param channel_reserve (int): The minimum amount both peers need to maintain
-            :param ttl (int): Minimum block height to include the channel_create_tx
-            :param host (str): Host of the responder's node
-            :param port (int): The port of the responders node
-            :param lock_period (int): Amount of blocks for disputing a solo close
-            :param existing_channel_id (str): Existing channel id (required if reestablishing a channel)
-            :param offchain_tx (str): Offchain transaction (required if reestablishing a channel)
-            :param timeout_idle (int): The time waiting for a new event to be initiated (default: 600000)
-            :param timeout_funding_create (int): The time waiting for the initiator to produce
-            :param the create channel transaction after the noise session had been established (default: 120000)
-            :param timeout_funding_sign (int): The time frame the other client has to sign an off-chain update
-                                                            after our client had initiated and signed it. This applies only
-                                                            for double signed on-chain intended updates: channel create transaction,
-                                                            deposit, withdrawal and etc. (default: 120000)
-            :param timeout_funding_lock (int): The time frame the other client has to confirm an on-chain transaction
-                                                            reaching maturity (passing minimum depth) after the local node has detected this.
-                                                            This applies only for double signed on-chain intended updates:
-                                                            channel create transaction, deposit, withdrawal and etc. (default: 360000)
-            :param timeout_sign (int): The time frame the client has to return a signed off-chain update or to decline it.
-                                                    This applies for all off-chain updates (default: 500000)
-            :param timeout_accept (int): The time frame the other client has to react to an event.
-                                                    This applies for all off-chain updates that are not meant to land on-chain,
-                                                    as well as some special cases: opening a noise connection, mutual closing acknowledgment and
-                                                    reestablishing an existing channel (default: 120000)
-            :param timeout_initialized (int): the time frame the responder has to accept an incoming noise session.
-                                                        Applicable only for initiator (default: timeout_accept value)
-            :param timeout_awaiting_open (int): The time frame the initiator has to start an outgoing noise session to the responder's node.
-                                                            Applicable only for responder (default: timeout_idle's value)
-            :param sign (function): Function which verifies and signs transactions
-            :param offchain_message_handler (function): Callback method to receive off-chain messages.
-                                                                  If not provided, all the incoming messages will be ignored.
-            :param error_handler (function): Callback method to receive error messages.
-                                                        If not provided, all error messages will be ignored.
+        :param url (str): Channel url (for example: "ws://localhost:3001")
+        :param role (str): Participant role ("initiator" or "responder")
+        :param initiator_id (str): Initiator's public key
+        :param responder_id (str): Responder's public key
+        :param push_amount (int): Initial deposit in favor of the responder by the initiator
+        :param initiator_amount (int): Amount of tokens the initiator has committed to the channel
+        :param responder_amount (int): Amount of tokens the responder has committed to the channel
+        :param channel_reserve (int): The minimum amount both peers need to maintain
+        :param ttl (int): Minimum block height to include the channel_create_tx
+        :param host (str): Host of the responder's node
+        :param port (int): The port of the responders node
+        :param lock_period (int): Amount of blocks for disputing a solo close
+        :param existing_channel_id (str): Existing channel id (required if reestablishing a channel)
+        :param offchain_tx (str): Offchain transaction (required if reestablishing a channel)
+        :param timeout_idle (int): The time waiting for a new event to be initiated (default: 600000)
+        :param timeout_funding_create (int): The time waiting for the initiator to produce
+        :param the create channel transaction after the noise session had been established (default: 120000)
+        :param timeout_funding_sign (int): The time frame the other client has to sign an off-chain update
+                                                        after our client had initiated and signed it. This applies only
+                                                        for double signed on-chain intended updates: channel create transaction,
+                                                        deposit, withdrawal and etc. (default: 120000)
+        :param timeout_funding_lock (int): The time frame the other client has to confirm an on-chain transaction
+                                                        reaching maturity (passing minimum depth) after the local node has detected this.
+                                                        This applies only for double signed on-chain intended updates:
+                                                        channel create transaction, deposit, withdrawal and etc. (default: 360000)
+        :param timeout_sign (int): The time frame the client has to return a signed off-chain update or to decline it.
+                                                This applies for all off-chain updates (default: 500000)
+        :param timeout_accept (int): The time frame the other client has to react to an event.
+                                                This applies for all off-chain updates that are not meant to land on-chain,
+                                                as well as some special cases: opening a noise connection, mutual closing acknowledgment and
+                                                reestablishing an existing channel (default: 120000)
+        :param timeout_initialized (int): the time frame the responder has to accept an incoming noise session.
+                                                    Applicable only for initiator (default: timeout_accept value)
+        :param timeout_awaiting_open (int): The time frame the initiator has to start an outgoing noise session to the responder's node.
+                                                        Applicable only for responder (default: timeout_idle's value)
+        :param sign (function): Function which verifies and signs transactions
+        :param offchain_message_handler (function): Callback method to receive off-chain messages.
+                                                                If not provided, all the incoming messages will be ignored.
+        :param error_handler (function): Callback method to receive error messages.
+                                                    If not provided, all error messages will be ignored.
         """
         options_keys = {'sign', 'endpoint', 'url', 'offchain_message_handler', 'error_handler'}
         endpoint = kwargs.get('endpoint', defaults.CHANNEL_ENDPOINT)
