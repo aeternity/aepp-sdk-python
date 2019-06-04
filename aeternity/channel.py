@@ -474,3 +474,4 @@ class ChannelState(Enum):
     WITHDRAW_CREATED = 'withdraw_created'
     OWN_WITHDRAW_LOCKED = 'own_withdraw_locked'
     WITHDRAW_LOCKED = 'withdraw_locked'
+    UPDATE = 'update'
