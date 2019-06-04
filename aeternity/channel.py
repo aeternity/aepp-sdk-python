@@ -290,6 +290,149 @@ class Channel(object):
             }
         })
 
+    def create_contract(self, code, call_data, deposit, vm_version, abi_version):
+        """
+        Trigger create contract update
+
+        The create contract update is creating a contract inside the channel's internal state tree.
+        The update is a change to be applied on top of the latest state.
+
+        This creates a contract with the poster being the owner of it.
+        Poster commits initially a deposit amount of tokens to the new contract.
+
+        :param code: Api encoded compiled AEVM byte code
+        :param call_data: Api encoded compiled AEVM call data for the code
+        :param deposit: Initial amount the owner of the contract commits to it
+        :param vm_version: Version of the AEVM
+        :param abi_version: Version of the ABI
+        """
+        self.__enqueue_action({
+            'method': 'channels.update.new_contract',
+            'params': {
+                'code': code,
+                'call_data': call_data,
+                'deposit': deposit,
+                'vm_version': vm_version,
+                'abi_version': abi_version
+            }
+        })
+
+    def call_contract(self, amount, call_data, contract_id, abi_version):
+        """
+        Trigger call a contract update
+
+        The call contract update is calling a preexisting contract inside the channel's
+        internal state tree. The update is a change to be applied on top of the latest state.
+
+        That would call a contract with the poster being the caller of it. Poster commits
+        an amount of tokens to the contract.
+
+        The call would also create a call object inside the channel state tree. It contains
+        the result of the contract call.
+
+        It is worth mentioning that the gas is not consumed, because this is an off-chain
+        contract call. It would be consumed if it were a on-chain one. This could happen
+        if a call with a similar computation amount is to be forced on-chain.
+
+        :param amount: Amount the caller of the contract commits to it
+        :param call_data: Api encoded compiled AEVM call data
+        :param contract_id: Address of the contract to call
+        :param abi_version: Version of the ABI
+        """
+        self.__enqueue_action({
+            'method': 'channels.update.call_contract',
+            'params': {
+                'amount': amount,
+                'call_data': call_data,
+                'contract': contract_id,
+                'abi_version': abi_version
+            }
+        })
+
+    def call_contract_static(self, amount, call_data, contract_id, abi_version):
+        """
+        Call contract using dry-run
+
+        In order to get the result of a potential contract call, one might need to
+        dry-run a contract call. It takes the exact same arguments as a call would
+        and returns the call object.
+
+        The call is executed in the channel's state but it does not impact the state
+        whatsoever. It uses as an environment the latest channel's state and the current
+        top of the blockchain as seen by the node.
+
+        :param amount: Amount the caller of the contract commits to it
+        :param call_data: Api encoded compiled AEVM call data
+        :param contract_id: Address of the contract to call
+        :param abi_version: Version of the ABI
+        """
+        self.__enqueue_action({
+            'method': 'channels.dry_run.call_contract',
+            'params': {
+                'amount': amount,
+                'call_data': call_data,
+                'contract': contract_id,
+                'abi_version': abi_version
+            }
+        })
+
+    def get_contract_call(self, caller, contract_id, exec_round=None):
+        """
+        Get contract call result
+
+        The combination of a caller, contract and a round of execution determines the
+        contract call. Providing an incorrect set of those results in an error response.
+
+        :param caller: Address of contract caller
+        :param contract_id: Address of the contract to call
+        :param exec_round: Round when contract was called. Defaults to the latest round if not provided.
+        """
+        exec_round = exec_round if exec_round else self.round
+        self.__channel_call('channels.get.contract_call', {
+            'caller': caller,
+            'contract': contract_id,
+            'round': exec_round
+        })
+
+    def get_contract_state(self, contract_id):
+        """
+        Get contract latest state
+
+        :param contract_id: Address of the contract
+        """
+        self.__channel_call('channels.get.contract', {
+            'pubkey': contract_id
+        })
+
+    def clean_contract_calls(self):
+        """
+        Clean up all locally stored contract calls
+
+        Contract calls are kept locally in order for the participant to be able to look them up.
+        They consume memory and in order for the participant to free it - one can prune all messages.
+        This cleans up all locally stored contract calls and those will no longer be available for
+        fetching and inspection.
+        """
+        self.__enqueue_action({
+            'method': 'channels.clean_contract_calls',
+            'params': {}
+        })
+
+    def poi(self, accounts, contracts):
+        """
+         Get proof of inclusion
+
+        If a certain address of an account or a contract is not found
+        in the state tree - the response is an error.
+
+        :param accounts: List of account addresses to include in poi
+        :param contracts: List of contract addresses to include in poi
+        """
+        self.__channel_call('channels.get.poi', {
+            'accounts': accounts,
+            'contracts': contracts
+        })
+
     def __process_queue(self):
         if not self.action_queue.empty() and not self.is_locked:
             task = self.action_queue.get()
