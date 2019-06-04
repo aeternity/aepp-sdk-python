@@ -44,3 +44,5 @@ POLL_BLOCK_RETRIES_INTERVAL = 30  # in seconds
 # channels
 CHANNEL_ENDPOINT = 'channel'
 CHANNEL_URL = 'ws://127.0.0.1:3014'
+# Generalized accounts
+GA_AUTH_FUNCTION = "authorize"
