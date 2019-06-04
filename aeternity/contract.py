@@ -117,7 +117,7 @@ class Contract:
 
         try:
             # retrieve the correct vm/abi version
-            vm, abi = self._get_vm_abi_versions()
+            vm, abi = self.client._get_vm_abi_versions()
             vm_version = vm if vm_version is None else vm_version
             abi_version = abi if abi_version is None else abi_version
             # get the transaction builder
@@ -166,7 +166,7 @@ class Contract:
         """
         try:
             # retrieve the correct vm/abi version
-            vm, abi = self._get_vm_abi_versions()
+            vm, abi = self.client._get_vm_abi_versions()
             vm_version = vm if vm_version is None else vm_version
             abi_version = abi if abi_version is None else abi_version
             # get the transaction builder
@@ -177,7 +177,7 @@ class Contract:
             tx = txb.tx_contract_create(account.get_address(), bytecode, init_calldata,
                                         amount, deposit, gas, gas_price, vm_version, abi_version,
                                         fee, ttl, nonce)
-            # store the contract address in the instance variabl
+            # store the contract address in the instance variable
             self.address = hashing.contract_id(account.get_address(), nonce)
             # sign the transaction
             tx_signed = self.client.sign_transaction(account, tx, metadata={"contract_id": self.address})
@@ -186,16 +186,3 @@ class Contract:
             return tx_signed
         except openapi.OpenAPIClientException as e:
             raise ContractError(e)
-
-    def _get_vm_abi_versions(self):
-        """
-        Check the version of the node and retrieve the correct values for abi and vm version
-        """
-        protocol_version = self.client.get_consensus_protocol_version()
-        if protocol_version == identifiers.PROTOCOL_ROMA:
-            return identifiers.CONTRACT_ROMA_VM, identifiers.CONTRACT_ROMA_ABI
-        if protocol_version == identifiers.PROTOCOL_MINERVA:
-            return identifiers.CONTRACT_MINERVA_VM, identifiers.CONTRACT_MINERVA_ABI
-        if protocol_version == identifiers.PROTOCOL_FORTUNA:
-            return identifiers.CONTRACT_FORTUNA_VM, identifiers.CONTRACT_FORTUNA_ABI
-        raise exceptions.UnsupportedNodeVersion(f"Version {self.client.api_version} is not supported")
