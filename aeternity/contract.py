@@ -1,8 +1,6 @@
 from aeternity import exceptions, __compiler_compatibility__
 from aeternity import utils, defaults, hashing, openapi, identifiers
-import requests
 import namedtupled
-from requests import ConnectionError
 
 
 class CompilerError(exceptions.AException):
@@ -20,20 +18,6 @@ class CompilerClient(object):
     def __init__(self, compiler_url='http://localhost:3080'):
         self.compiler_url = compiler_url
         self.compiler_cli = openapi.OpenAPICli(compiler_url, compatibility_version_range=__compiler_compatibility__)
-
-    def _post(self, path, body, _response_object_name="CompilerReply"):
-        """
-        Execute the post request to the compiler
-        """
-        http_reply = None
-        try:
-            http_reply = requests.post(f'{self.compiler_url}{path}', json=body)
-            object_reply = namedtupled.map(http_reply.json(), _nt_name=_response_object_name)
-            if http_reply.status_code == 200:
-                return object_reply
-            raise CompilerError(f"Error: {http_reply.desc}", code=http_reply.status_code)
-        except ConnectionError as e:
-            raise Exception(f"Connection error to the compiler at {self.compiler_url}", e)
 
     def compile(self, source_code, compiler_options={}):
         body = dict(
