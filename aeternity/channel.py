@@ -75,7 +75,6 @@ class Channel(object):
         self.status = None
         self.id = None
         self.is_locked = False
-        self.round = 0
         self.action_queue = Queue()
         self.handlers = {}
 
@@ -406,7 +405,7 @@ class Channel(object):
             }
         })
 
-    def get_contract_call(self, caller, contract_id, exec_round=None):
+    def get_contract_call(self, caller, contract_id, exec_round):
         """
         Get contract call result
 
@@ -415,9 +414,8 @@ class Channel(object):
 
         :param caller: Address of contract caller
         :param contract_id: Address of the contract to call
-        :param exec_round: Round when contract was called. Defaults to the latest round if not provided.
+        :param exec_round: Round when contract was called.
         """
-        exec_round = exec_round if exec_round else self.round
         self.__channel_call('channels.get.contract_call', {
             'caller': caller,
             'contract': contract_id,
