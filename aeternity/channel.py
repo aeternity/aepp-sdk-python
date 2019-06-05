@@ -20,63 +20,58 @@ class Channel(object):
     PING_INTERVAL = 10
     PING_TIMEOUT = 5
 
-    def __init__(self, channel_options):
+    def __init__(self, **kwargs):
         """
         Initialize the Channel object
 
-        Args:
-            channel_options: dict containing channel options
-
-            channel_options contains/can contain following keys:
-
-            channel_options.url (str) - Channel url (for example: "ws://localhost:3001")
-            channel_options.role (str) - Participant role ("initiator" or "responder")
-            channel_options.initiator_id (str) - Initiator's public key
-            channel_options.responder_id (str) - Responder's public key
-            channel_options.push_amount (int) - Initial deposit in favor of the responder by the initiator
-            channel_options.initiator_amount (int) - Amount of tokens the initiator has committed to the channel
-            channel_options.responder_amount (int) - Amount of tokens the responder has committed to the channel
-            channel_options.channel_reserve (int) - The minimum amount both peers need to maintain
-            [channel_options.ttl] (int) - Minimum block height to include the channel_create_tx
-            channel_options.host (str) - Host of the responder's node
-            channel_options.port (int) - The port of the responders node
-            channel_options.lock_period (int) - Amount of blocks for disputing a solo close
-            [channel_options.existing_channel_id] (str) - Existing channel id (required if reestablishing a channel)
-            [channel_options.offchain_tx] (str) - Offchain transaction (required if reestablishing a channel)
-            [channel_options.timeout_idle] (int) - The time waiting for a new event to be initiated (default: 600000)
-            [channel_options.timeout_funding_create] (int) - The time waiting for the initiator to produce
-            the create channel transaction after the noise session had been established (default: 120000)
-            [channel_options.timeout_funding_sign] (int) - The time frame the other client has to sign an off-chain update
-                                                            after our client had initiated and signed it. This applies only
-                                                            for double signed on-chain intended updates: channel create transaction,
-                                                            deposit, withdrawal and etc. (default: 120000)
-            [channel_options.timeout_funding_lock] (int) - The time frame the other client has to confirm an on-chain transaction
-                                                            reaching maturity (passing minimum depth) after the local node has detected this.
-                                                            This applies only for double signed on-chain intended updates:
-                                                            channel create transaction, deposit, withdrawal and etc. (default: 360000)
-            [channel_options.timeout_sign] (int) - The time frame the client has to return a signed off-chain update or to decline it.
-                                                    This applies for all off-chain updates (default: 500000)
-            [channel_options.timeout_accept] (int) - The time frame the other client has to react to an event.
-                                                    This applies for all off-chain updates that are not meant to land on-chain,
-                                                    as well as some special cases: opening a noise connection, mutual closing acknowledgment and
-                                                    reestablishing an existing channel (default: 120000)
-            [channel_options.timeout_initialized] (int) - the time frame the responder has to accept an incoming noise session.
-                                                        Applicable only for initiator (default: timeout_accept value)
-            [channel_options.timeout_awaiting_open] (int) - The time frame the initiator has to start an outgoing noise session to the responder's node.
-                                                            Applicable only for responder (default: timeout_idle's value)
-            channel_options.sign (function) - Function which verifies and signs transactions
-            channel_options.offchain_message_handler (function) - Callback method to receive off-chain messages.
-                                                                  If not provided, all the incoming messages will be ignored.
-            channel_options.error_handler (function) - Callback method to receive error messages.
-                                                        If not provided, all error messages will be ignored.
+        :param url (str): Channel url (for example: "ws://localhost:3001")
+        :param role (str): Participant role ("initiator" or "responder")
+        :param initiator_id (str): Initiator's public key
+        :param responder_id (str): Responder's public key
+        :param push_amount (int): Initial deposit in favor of the responder by the initiator
+        :param initiator_amount (int): Amount of tokens the initiator has committed to the channel
+        :param responder_amount (int): Amount of tokens the responder has committed to the channel
+        :param channel_reserve (int): The minimum amount both peers need to maintain
+        :param ttl (int): Minimum block height to include the channel_create_tx
+        :param host (str): Host of the responder's node
+        :param port (int): The port of the responders node
+        :param lock_period (int): Amount of blocks for disputing a solo close
+        :param existing_channel_id (str): Existing channel id (required if reestablishing a channel)
+        :param offchain_tx (str): Offchain transaction (required if reestablishing a channel)
+        :param timeout_idle (int): The time waiting for a new event to be initiated (default: 600000)
+        :param timeout_funding_create (int): The time waiting for the initiator to produce
+        :param the create channel transaction after the noise session had been established (default: 120000)
+        :param timeout_funding_sign (int): The time frame the other client has to sign an off-chain update
+                                                        after our client had initiated and signed it. This applies only
+                                                        for double signed on-chain intended updates: channel create transaction,
+                                                        deposit, withdrawal and etc. (default: 120000)
+        :param timeout_funding_lock (int): The time frame the other client has to confirm an on-chain transaction
+                                                        reaching maturity (passing minimum depth) after the local node has detected this.
+                                                        This applies only for double signed on-chain intended updates:
+                                                        channel create transaction, deposit, withdrawal and etc. (default: 360000)
+        :param timeout_sign (int): The time frame the client has to return a signed off-chain update or to decline it.
+                                                This applies for all off-chain updates (default: 500000)
+        :param timeout_accept (int): The time frame the other client has to react to an event.
+                                                This applies for all off-chain updates that are not meant to land on-chain,
+                                                as well as some special cases: opening a noise connection, mutual closing acknowledgment and
+                                                reestablishing an existing channel (default: 120000)
+        :param timeout_initialized (int): the time frame the responder has to accept an incoming noise session.
+                                                    Applicable only for initiator (default: timeout_accept value)
+        :param timeout_awaiting_open (int): The time frame the initiator has to start an outgoing noise session to the responder's node.
+                                                        Applicable only for responder (default: timeout_idle's value)
+        :param sign (function): Function which verifies and signs transactions
+        :param offchain_message_handler (function): Callback method to receive off-chain messages.
+                                                                If not provided, all the incoming messages will be ignored.
+        :param error_handler (function): Callback method to receive error messages.
+                                                    If not provided, all error messages will be ignored.
         """
         options_keys = {'sign', 'endpoint', 'url', 'offchain_message_handler', 'error_handler'}
-        endpoint = channel_options.get('endpoint', defaults.CHANNEL_ENDPOINT)
-        wsUrl = channel_options.get('url', defaults.CHANNEL_URL)
-        self.sign = channel_options.get('sign', None)
-        self.offchain_message_handler = channel_options.get('offchain_message_handler', None)
-        self.error_handler = channel_options.get('error_handler', None)
-        self.params = {k: channel_options[k] for k in channel_options.keys() if k not in options_keys}
+        endpoint = kwargs.get('endpoint', defaults.CHANNEL_ENDPOINT)
+        wsUrl = kwargs.get('url', defaults.CHANNEL_URL)
+        self.sign = kwargs.get('sign', None)
+        self.offchain_message_handler = kwargs.get('offchain_message_handler', None)
+        self.error_handler = kwargs.get('error_handler', None)
+        self.params = {k: kwargs[k] for k in kwargs.keys() if k not in options_keys}
         self.url = self.__channel_url(wsUrl, self.params, endpoint)
         self.params = namedtupled.map(self.params)
         self.status = None
@@ -148,8 +143,7 @@ class Channel(object):
         """
         Get balances
 
-        Args:
-            accounts: a list of addresses to fetch the balances of.
+        :param accounts: a list of addresses to fetch the balances of.
                     Those can be either account balances or a contract ones,
                     encoded as an account addresses.
                     If a certain account address had not being found in the state tree
@@ -169,6 +163,9 @@ class Channel(object):
 
         If there is ongoing update that has not yet been finished the message
         will be sent after that update is finalized.
+
+        :param message: Message to be sent
+        :param recipient: Address of the recipient
         """
         if type(message) is dict:
             message = json.dumps(message)
@@ -233,6 +230,8 @@ class Channel(object):
             - Channel is not being closed or in a solo closing state
             - The deposit amount must be equal to or greater than zero, and cannot exceed
               the available balance on the channel (minus the channel_reserve)
+
+        :param amount: Amount of tokens to deposit
         """
         self.__enqueue_action({
             'method': 'channels.deposit',
@@ -257,6 +256,8 @@ class Channel(object):
             - Channel is not being closed or in a solo closing state
             - The withdrawal amount must be equal to or greater than zero, and cannot exceed
               the available balance on the channel (minus the channel_reserve)
+
+        :param amount: Amount of tokens to withdraw
         """
         self.__enqueue_action({
             'method': 'channels.withdraw',
@@ -280,6 +281,10 @@ class Channel(object):
 
         Sender and receiver are the channel parties. Both the initiator and responder
         can take those roles. Any public key outside of the channel is considered invalid.
+
+        :param from_addr: Sender's public address
+        :param to_addr: Receiver's public address
+        :param amount: Transaction amount
         """
         self.__enqueue_action({
             'method': 'channels.update.new',
