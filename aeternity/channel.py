@@ -65,20 +65,18 @@ class Channel(object):
         :param error_handler (function): Callback method to receive error messages.
                                                     If not provided, all error messages will be ignored.
         """
-        options_keys = {'sign', 'endpoint', 'url', 'offchain_message_handler', 'error_handler'}
+        options_keys = {'sign', 'endpoint', 'url'}
         endpoint = kwargs.get('endpoint', defaults.CHANNEL_ENDPOINT)
         wsUrl = kwargs.get('url', defaults.CHANNEL_URL)
         self.sign = kwargs.get('sign', None)
-        self.offchain_message_handler = kwargs.get('offchain_message_handler', None)
-        self.error_handler = kwargs.get('error_handler', None)
         self.params = {k: kwargs[k] for k in kwargs.keys() if k not in options_keys}
         self.url = self.__channel_url(wsUrl, self.params, endpoint)
         self.params = namedtupled.map(self.params)
         self.status = None
         self.id = None
         self.is_locked = False
-        self.round = 0
         self.action_queue = Queue()
+        self.handlers = {}
 
     def create(self):
         """
@@ -102,15 +100,17 @@ class Channel(object):
         async for message in self.ws:
             logger.debug(f'Incoming: {message}')
             msg = json.loads(message)
-            if 'error' in msg and self.error_handler is not None:
-                self.error_handler(msg)
+            if 'error' in msg and ChannelState.ERROR in self.handlers:
+                self.handlers[ChannelState.ERROR](msg)
             elif 'method' in msg:
                 if msg['method'] == 'channels.info':
                     self.status = ChannelState(msg['params']['data']['event'])
+                    if self.status in self.handlers:
+                        self.handlers[self.status](msg)
                     if self.status == ChannelState.OPEN:
                         self.id = msg['params']['channel_id']
-                if msg['method'] == 'channels.message' and self.offchain_message_handler is not None:
-                    self.offchain_message_handler(msg)
+                if msg['method'] == 'channels.message' and ChannelState.MESSAGE in self.handlers:
+                    self.handlers[ChannelState.MESSAGE](msg)
                 if msg['method'].startswith('channels.sign'):
                     tx = msg['params']['data']['tx']
                     if msg['method'] == f'channels.sign.{self.params.role}_sign':
@@ -405,7 +405,7 @@ class Channel(object):
             }
         })
 
-    def get_contract_call(self, caller, contract_id, exec_round=None):
+    def get_contract_call(self, caller, contract_id, exec_round):
         """
         Get contract call result
 
@@ -414,9 +414,8 @@ class Channel(object):
 
         :param caller: Address of contract caller
         :param contract_id: Address of the contract to call
-        :param exec_round: Round when contract was called. Defaults to the latest round if not provided.
+        :param exec_round: Round when contract was called.
         """
-        exec_round = exec_round if exec_round else self.round
         self.__channel_call('channels.get.contract_call', {
             'caller': caller,
             'contract': contract_id,
@@ -462,6 +461,26 @@ class Channel(object):
             'contracts': contracts
         })
 
+    def on(self, event, handler=None):
+        """
+        Register an event handler for state-channel events
+
+        :param event: The event name. It can be any event registered in ChannelState.
+                      Apart from events you can also add handlers for `message` and `error`.
+        :param handler: The function that should be invoked to handle the
+                        event. When this parameter is not given, the method
+                        acts as a decorator for the handler function.
+                        The handler should accept 1 positional param which will be the
+                        JSON-RPC 2.0 message corresponding to the event.
+        """
+        def set_handler(handler):
+            self.handlers[ChannelState(event)] = handler
+            return handler
+
+        if handler is None:
+            return set_handler
+        set_handler(handler)
+
     def __process_queue(self):
         if not self.action_queue.empty() and not self.is_locked:
             task = self.action_queue.get()
@@ -499,3 +518,7 @@ class ChannelState(Enum):
     OWN_WITHDRAW_LOCKED = 'own_withdraw_locked'
     WITHDRAW_LOCKED = 'withdraw_locked'
     UPDATE = 'update'
+
+    # For handling message and errors
+    MESSAGE = 'message'
+    ERROR = 'error'
