@@ -5,11 +5,10 @@ FROM python:3-slim
 
 USER root
 
-COPY poetry.lock /poetry.lock
-COPY pyproject.toml /pyproject.toml
+COPY requirements.txt /requirements.txt
 RUN apt-get update && apt-get -y install build-essential curl libltdl7 git make \
-	&& pip install poetry \
-  && poetry install
+		&& pip install -r /requirements.txt
+  
 
 WORKDIR /app
 
