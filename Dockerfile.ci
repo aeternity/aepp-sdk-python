@@ -5,6 +5,7 @@ FROM python:3-slim
 
 USER root
 
+COPY pyproject.toml /pyproject.toml
 RUN apt-get update && apt-get -y install build-essential curl libltdl7 git make \
 	&& pip install poetry \
   && poetry install
