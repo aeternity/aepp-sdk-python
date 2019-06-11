@@ -13,7 +13,7 @@ from aeternity import identifiers, utils
 
 def _base58_encode(data):
     """create a base58 encoded string with checksum"""
-    return base58.b58encode_check(data)
+    return base58.b58encode_check(data).decode("ascii")
 
 
 def _base58_decode(encoded_str):
