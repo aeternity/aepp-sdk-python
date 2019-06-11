@@ -75,18 +75,6 @@ def _tx_native(op, **kwargs):
             expected = (defaults.BASE_GAS * base_gas_multiplier + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) * defaults.GAS_PRICE
         return actual_fee
 
-    def contract_fee(tx_raw, fee_idx, gas, base_gas_multiplier=1):
-        # estimate the contract creation fee
-        tx_copy = tx_raw  # create a copy of the input
-        actual_fee = 0
-        tx_copy[fee_idx] = _int(actual_fee)  # replace fee with a byte array of length 1
-        expected = (defaults.BASE_GAS * base_gas_multiplier + gas + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) * defaults.GAS_PRICE
-        while expected != actual_fee:
-            actual_fee = expected
-            tx_copy[fee_idx] = _int(expected)
-            expected = (defaults.BASE_GAS * base_gas_multiplier + gas + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) * defaults.GAS_PRICE
-        return actual_fee
-
     def oracle_fee(tx_raw, fee_idx, relative_ttl):
         # estimate oracle fees
         tx_copy = tx_raw  # create a copy of the input
@@ -349,7 +337,7 @@ def _tx_native(op, **kwargs):
                 _binary(decode(kwargs.get("call_data"))),
             ]
             # TODO: verify the fee calculation for the contract
-            min_fee = contract_fee(tx_native, tx_field_fee_index, kwargs.get("gas"),  base_gas_multiplier=5)
+            min_fee = std_fee(tx_native, tx_field_fee_index,  base_gas_multiplier=5)
         elif op == UNPACK_TX:  # unpack transaction
             vml = len(tx_native[5])  # this is used to extract the abi and vm version from the 5th field
             tx_data = dict(
@@ -390,7 +378,7 @@ def _tx_native(op, **kwargs):
                 _int(kwargs.get("gas_price")),
                 _binary(decode(kwargs.get("call_data"))),
             ]
-            min_fee = contract_fee(tx_native, tx_field_fee_index, kwargs.get("gas"),  base_gas_multiplier=30)
+            min_fee = std_fee(tx_native, tx_field_fee_index, base_gas_multiplier=30)
         elif op == UNPACK_TX:  # unpack transaction
             vml = len(tx_native[5])  # this is used to extract the abi and vm version from the 5th field
             tx_data = dict(
