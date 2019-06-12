@@ -61,18 +61,6 @@ def _test_oracle_response(query, expected):
     assert r.response == hashing.encode("or", expected)
 
 
-@pytest.mark.skip('Debug transaction disabled')
-def test_oracle_lifecycle_debug(chain_fixture):
-    # registration
-    # TODO: create a debug impl and test
-    oracle = _test_oracle_registration(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
-    # query
-    query = _test_oracle_query(chain_fixture.NODE_CLI, oracle, chain_fixture.ACCOUNT_1, "{'city': 'Berlin'}")
-    # respond
-    _test_oracle_respond(oracle, query, chain_fixture.ACCOUNT,  "{'temp_c': 20}")
-    _test_oracle_response(query, "{'temp_c': 20}")
-
-
 def test_oracle_lifecycle_native(chain_fixture):
     # registration
     oracle = _test_oracle_registration(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT_1)

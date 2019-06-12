@@ -20,70 +20,63 @@ class Channel(object):
     PING_INTERVAL = 10
     PING_TIMEOUT = 5
 
-    def __init__(self, channel_options):
+    def __init__(self, **kwargs):
         """
         Initialize the Channel object
 
-        Args:
-            channel_options: dict containing channel options
-
-            channel_options contains/can contain following keys:
-
-            channel_options.url (str) - Channel url (for example: "ws://localhost:3001")
-            channel_options.role (str) - Participant role ("initiator" or "responder")
-            channel_options.initiator_id (str) - Initiator's public key
-            channel_options.responder_id (str) - Responder's public key
-            channel_options.push_amount (int) - Initial deposit in favor of the responder by the initiator
-            channel_options.initiator_amount (int) - Amount of tokens the initiator has committed to the channel
-            channel_options.responder_amount (int) - Amount of tokens the responder has committed to the channel
-            channel_options.channel_reserve (int) - The minimum amount both peers need to maintain
-            [channel_options.ttl] (int) - Minimum block height to include the channel_create_tx
-            channel_options.host (str) - Host of the responder's node
-            channel_options.port (int) - The port of the responders node
-            channel_options.lock_period (int) - Amount of blocks for disputing a solo close
-            [channel_options.existing_channel_id] (str) - Existing channel id (required if reestablishing a channel)
-            [channel_options.offchain_tx] (str) - Offchain transaction (required if reestablishing a channel)
-            [channel_options.timeout_idle] (int) - The time waiting for a new event to be initiated (default: 600000)
-            [channel_options.timeout_funding_create] (int) - The time waiting for the initiator to produce
-            the create channel transaction after the noise session had been established (default: 120000)
-            [channel_options.timeout_funding_sign] (int) - The time frame the other client has to sign an off-chain update
-                                                            after our client had initiated and signed it. This applies only
-                                                            for double signed on-chain intended updates: channel create transaction,
-                                                            deposit, withdrawal and etc. (default: 120000)
-            [channel_options.timeout_funding_lock] (int) - The time frame the other client has to confirm an on-chain transaction
-                                                            reaching maturity (passing minimum depth) after the local node has detected this.
-                                                            This applies only for double signed on-chain intended updates:
-                                                            channel create transaction, deposit, withdrawal and etc. (default: 360000)
-            [channel_options.timeout_sign] (int) - The time frame the client has to return a signed off-chain update or to decline it.
-                                                    This applies for all off-chain updates (default: 500000)
-            [channel_options.timeout_accept] (int) - The time frame the other client has to react to an event.
-                                                    This applies for all off-chain updates that are not meant to land on-chain,
-                                                    as well as some special cases: opening a noise connection, mutual closing acknowledgment and
-                                                    reestablishing an existing channel (default: 120000)
-            [channel_options.timeout_initialized] (int) - the time frame the responder has to accept an incoming noise session.
-                                                        Applicable only for initiator (default: timeout_accept value)
-            [channel_options.timeout_awaiting_open] (int) - The time frame the initiator has to start an outgoing noise session to the responder's node.
-                                                            Applicable only for responder (default: timeout_idle's value)
-            channel_options.sign (function) - Function which verifies and signs transactions
-            channel_options.offchain_message_handler (function) - Callback method to receive off-chain messages.
-                                                                  If not provided, all the incoming messages will be ignored.
-            channel_options.error_handler (function) - Callback method to receive error messages.
-                                                        If not provided, all error messages will be ignored.
+        :param url (str): Channel url (for example: "ws://localhost:3001")
+        :param role (str): Participant role ("initiator" or "responder")
+        :param initiator_id (str): Initiator's public key
+        :param responder_id (str): Responder's public key
+        :param push_amount (int): Initial deposit in favor of the responder by the initiator
+        :param initiator_amount (int): Amount of tokens the initiator has committed to the channel
+        :param responder_amount (int): Amount of tokens the responder has committed to the channel
+        :param channel_reserve (int): The minimum amount both peers need to maintain
+        :param ttl (int): Minimum block height to include the channel_create_tx
+        :param host (str): Host of the responder's node
+        :param port (int): The port of the responders node
+        :param lock_period (int): Amount of blocks for disputing a solo close
+        :param existing_channel_id (str): Existing channel id (required if reestablishing a channel)
+        :param offchain_tx (str): Offchain transaction (required if reestablishing a channel)
+        :param timeout_idle (int): The time waiting for a new event to be initiated (default: 600000)
+        :param timeout_funding_create (int): The time waiting for the initiator to produce
+        :param the create channel transaction after the noise session had been established (default: 120000)
+        :param timeout_funding_sign (int): The time frame the other client has to sign an off-chain update
+                                                        after our client had initiated and signed it. This applies only
+                                                        for double signed on-chain intended updates: channel create transaction,
+                                                        deposit, withdrawal and etc. (default: 120000)
+        :param timeout_funding_lock (int): The time frame the other client has to confirm an on-chain transaction
+                                                        reaching maturity (passing minimum depth) after the local node has detected this.
+                                                        This applies only for double signed on-chain intended updates:
+                                                        channel create transaction, deposit, withdrawal and etc. (default: 360000)
+        :param timeout_sign (int): The time frame the client has to return a signed off-chain update or to decline it.
+                                                This applies for all off-chain updates (default: 500000)
+        :param timeout_accept (int): The time frame the other client has to react to an event.
+                                                This applies for all off-chain updates that are not meant to land on-chain,
+                                                as well as some special cases: opening a noise connection, mutual closing acknowledgment and
+                                                reestablishing an existing channel (default: 120000)
+        :param timeout_initialized (int): the time frame the responder has to accept an incoming noise session.
+                                                    Applicable only for initiator (default: timeout_accept value)
+        :param timeout_awaiting_open (int): The time frame the initiator has to start an outgoing noise session to the responder's node.
+                                                        Applicable only for responder (default: timeout_idle's value)
+        :param sign (function): Function which verifies and signs transactions
+        :param offchain_message_handler (function): Callback method to receive off-chain messages.
+                                                                If not provided, all the incoming messages will be ignored.
+        :param error_handler (function): Callback method to receive error messages.
+                                                    If not provided, all error messages will be ignored.
         """
-        options_keys = {'sign', 'endpoint', 'url', 'offchain_message_handler', 'error_handler'}
-        endpoint = channel_options.get('endpoint', defaults.CHANNEL_ENDPOINT)
-        wsUrl = channel_options.get('url', defaults.CHANNEL_URL)
-        self.sign = channel_options.get('sign', None)
-        self.offchain_message_handler = channel_options.get('offchain_message_handler', None)
-        self.error_handler = channel_options.get('error_handler', None)
-        self.params = {k: channel_options[k] for k in channel_options.keys() if k not in options_keys}
+        options_keys = {'sign', 'endpoint', 'url'}
+        endpoint = kwargs.get('endpoint', defaults.CHANNEL_ENDPOINT)
+        wsUrl = kwargs.get('url', defaults.CHANNEL_URL)
+        self.sign = kwargs.get('sign', None)
+        self.params = {k: kwargs[k] for k in kwargs.keys() if k not in options_keys}
         self.url = self.__channel_url(wsUrl, self.params, endpoint)
         self.params = namedtupled.map(self.params)
         self.status = None
         self.id = None
         self.is_locked = False
-        self.round = 0
         self.action_queue = Queue()
+        self.handlers = {}
 
     def create(self):
         """
@@ -107,15 +100,17 @@ class Channel(object):
         async for message in self.ws:
             logger.debug(f'Incoming: {message}')
             msg = json.loads(message)
-            if 'error' in msg and self.error_handler is not None:
-                self.error_handler(msg)
+            if 'error' in msg and ChannelState.ERROR in self.handlers:
+                self.handlers[ChannelState.ERROR](msg)
             elif 'method' in msg:
                 if msg['method'] == 'channels.info':
                     self.status = ChannelState(msg['params']['data']['event'])
+                    if self.status in self.handlers:
+                        self.handlers[self.status](msg)
                     if self.status == ChannelState.OPEN:
                         self.id = msg['params']['channel_id']
-                if msg['method'] == 'channels.message' and self.offchain_message_handler is not None:
-                    self.offchain_message_handler(msg)
+                if msg['method'] == 'channels.message' and ChannelState.MESSAGE in self.handlers:
+                    self.handlers[ChannelState.MESSAGE](msg)
                 if msg['method'].startswith('channels.sign'):
                     tx = msg['params']['data']['tx']
                     if msg['method'] == f'channels.sign.{self.params.role}_sign':
@@ -148,8 +143,7 @@ class Channel(object):
         """
         Get balances
 
-        Args:
-            accounts: a list of addresses to fetch the balances of.
+        :param accounts: a list of addresses to fetch the balances of.
                     Those can be either account balances or a contract ones,
                     encoded as an account addresses.
                     If a certain account address had not being found in the state tree
@@ -169,6 +163,9 @@ class Channel(object):
 
         If there is ongoing update that has not yet been finished the message
         will be sent after that update is finalized.
+
+        :param message: Message to be sent
+        :param recipient: Address of the recipient
         """
         if type(message) is dict:
             message = json.dumps(message)
@@ -233,6 +230,8 @@ class Channel(object):
             - Channel is not being closed or in a solo closing state
             - The deposit amount must be equal to or greater than zero, and cannot exceed
               the available balance on the channel (minus the channel_reserve)
+
+        :param amount: Amount of tokens to deposit
         """
         self.__enqueue_action({
             'method': 'channels.deposit',
@@ -257,6 +256,8 @@ class Channel(object):
             - Channel is not being closed or in a solo closing state
             - The withdrawal amount must be equal to or greater than zero, and cannot exceed
               the available balance on the channel (minus the channel_reserve)
+
+        :param amount: Amount of tokens to withdraw
         """
         self.__enqueue_action({
             'method': 'channels.withdraw',
@@ -270,6 +271,215 @@ class Channel(object):
         Get Channel id if set else None
         """
         return self.id
+
+    def update(self, from_addr, to_addr, amount):
+        """
+        Trigger a transfer update
+
+        The transfer update is moving tokens from one channel account to another.
+        The update is a change to be applied on top of the latest state.
+
+        Sender and receiver are the channel parties. Both the initiator and responder
+        can take those roles. Any public key outside of the channel is considered invalid.
+
+        :param from_addr: Sender's public address
+        :param to_addr: Receiver's public address
+        :param amount: Transaction amount
+        """
+        self.__enqueue_action({
+            'method': 'channels.update.new',
+            'params': {
+                'amount': amount,
+                'from': from_addr,
+                'to': to_addr
+            }
+        })
+
+    def create_contract(self, code, call_data, deposit, vm_version, abi_version):
+        """
+        Trigger create contract update
+
+        The create contract update is creating a contract inside the channel's internal state tree.
+        The update is a change to be applied on top of the latest state.
+
+        This creates a contract with the poster being the owner of it.
+        Poster commits initially a deposit amount of tokens to the new contract.
+
+        :param code: Api encoded compiled AEVM byte code
+        :param call_data: Api encoded compiled AEVM call data for the code
+        :param deposit: Initial amount the owner of the contract commits to it
+        :param vm_version: Version of the AEVM
+        :param abi_version: Version of the ABI
+        """
+        self.__enqueue_action({
+            'method': 'channels.update.new_contract',
+            'params': {
+                'code': code,
+                'call_data': call_data,
+                'deposit': deposit,
+                'vm_version': vm_version,
+                'abi_version': abi_version
+            }
+        })
+
+    def contract_from_onchain(self, call_data, contract_id, deposit):
+        """
+        Trigger create contract from on-chain contract
+
+        The new_contract_from_onchain update is creating a contract inside the channel's internal state tree
+        using on-chain contract as a reference.
+        The update is a change to be applied on top of the latest state.
+
+        This creates a contract with the poster being the owner of it.
+        Poster commits initially a deposit amount of tokens to the new contract.
+
+        :param call_data: Api encoded compiled AEVM call data for the code
+        :param contract_id: Contract id of the on-chain contract
+        :param deposit: Initial amount the owner of the contract commits to it
+        """
+        self.__enqueue_action({
+            'method': 'channels.update.new_contract_from_onchain',
+            'params': {
+                'call_data': call_data,
+                'contract': contract_id,
+                'deposit': deposit
+            }
+        })
+
+    def call_contract(self, amount, call_data, contract_id, abi_version):
+        """
+        Trigger call a contract update
+
+        The call contract update is calling a preexisting contract inside the channel's
+        internal state tree. The update is a change to be applied on top of the latest state.
+
+        That would call a contract with the poster being the caller of it. Poster commits
+        an amount of tokens to the contract.
+
+        The call would also create a call object inside the channel state tree. It contains
+        the result of the contract call.
+
+        It is worth mentioning that the gas is not consumed, because this is an off-chain
+        contract call. It would be consumed if it were a on-chain one. This could happen
+        if a call with a similar computation amount is to be forced on-chain.
+
+        :param amount: Amount the caller of the contract commits to it
+        :param call_data: Api encoded compiled AEVM call data
+        :param contract_id: Address of the contract to call
+        :param abi_version: Version of the ABI
+        """
+        self.__enqueue_action({
+            'method': 'channels.update.call_contract',
+            'params': {
+                'amount': amount,
+                'call_data': call_data,
+                'contract': contract_id,
+                'abi_version': abi_version
+            }
+        })
+
+    def call_contract_static(self, amount, call_data, contract_id, abi_version):
+        """
+        Call contract using dry-run
+
+        In order to get the result of a potential contract call, one might need to
+        dry-run a contract call. It takes the exact same arguments as a call would
+        and returns the call object.
+
+        The call is executed in the channel's state but it does not impact the state
+        whatsoever. It uses as an environment the latest channel's state and the current
+        top of the blockchain as seen by the node.
+
+        :param amount: Amount the caller of the contract commits to it
+        :param call_data: Api encoded compiled AEVM call data
+        :param contract_id: Address of the contract to call
+        :param abi_version: Version of the ABI
+        """
+        self.__enqueue_action({
+            'method': 'channels.dry_run.call_contract',
+            'params': {
+                'amount': amount,
+                'call_data': call_data,
+                'contract': contract_id,
+                'abi_version': abi_version
+            }
+        })
+
+    def get_contract_call(self, caller, contract_id, exec_round):
+        """
+        Get contract call result
+
+        The combination of a caller, contract and a round of execution determines the
+        contract call. Providing an incorrect set of those results in an error response.
+
+        :param caller: Address of contract caller
+        :param contract_id: Address of the contract to call
+        :param exec_round: Round when contract was called.
+        """
+        self.__channel_call('channels.get.contract_call', {
+            'caller': caller,
+            'contract': contract_id,
+            'round': exec_round
+        })
+
+    def get_contract_state(self, contract_id):
+        """
+        Get contract latest state
+
+        :param contract_id: Address of the contract
+        """
+        self.__channel_call('channels.get.contract', {
+            'pubkey': contract_id
+        })
+
+    def clean_contract_calls(self):
+        """
+        Clean up all locally stored contract calls
+
+        Contract calls are kept locally in order for the participant to be able to look them up.
+        They consume memory and in order for the participant to free it - one can prune all messages.
+        This cleans up all locally stored contract calls and those will no longer be available for
+        fetching and inspection.
+        """
+        self.__enqueue_action({
+            'method': 'channels.clean_contract_calls',
+            'params': {}
+        })
+
+    def poi(self, accounts, contracts):
+        """
+         Get proof of inclusion
+
+        If a certain address of an account or a contract is not found
+        in the state tree - the response is an error.
+
+        :param accounts: List of account addresses to include in poi
+        :param contracts: List of contract addresses to include in poi
+        """
+        self.__channel_call('channels.get.poi', {
+            'accounts': accounts,
+            'contracts': contracts
+        })
+
+    def on(self, event, handler=None):
+        """
+        Register an event handler for state-channel events
+
+        :param event: The event name. It can be any event registered in ChannelState.
+                      Apart from events you can also add handlers for `message` and `error`.
+        :param handler: The function that should be invoked to handle the
+                        event. When this parameter is not given, the method
+                        acts as a decorator for the handler function.
+                        The handler should accept 1 positional param which will be the
+                        JSON-RPC 2.0 message corresponding to the event.
+        """
+        def set_handler(handler):
+            self.handlers[ChannelState(event)] = handler
+            return handler
+
+        if handler is None:
+            return set_handler
+        set_handler(handler)
 
     def __process_queue(self):
         if not self.action_queue.empty() and not self.is_locked:
@@ -307,3 +517,8 @@ class ChannelState(Enum):
     WITHDRAW_CREATED = 'withdraw_created'
     OWN_WITHDRAW_LOCKED = 'own_withdraw_locked'
     WITHDRAW_LOCKED = 'withdraw_locked'
+    UPDATE = 'update'
+
+    # For handling message and errors
+    MESSAGE = 'message'
+    ERROR = 'error'

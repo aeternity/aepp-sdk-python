@@ -4,6 +4,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [4.0.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/4.0.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/3.1.1...4.0.0))
+
+### BREAKING CHANGES
+
+- refactor(scm): update compatibility range for node 3.0.1 to 4.0.0 and compiler:3.1.0-4 (#214) ([1e957d3](https://github.com/aeternity/aepp-sdk-python/commit/1e957d3ef8e5037ca4ecaae40a7ecd96fe70d405)).
+- refactor(scm): update compatibility range for compiler from >=3.1.0 to < 4.0.0 (#214) ([1e957d3](https://github.com/aeternity/aepp-sdk-python/commit/1e957d3ef8e5037ca4ecaae40a7ecd96fe70d405)).
+- feat(fee): adjust the fee calculation for contract transactions (#212) ([60aecbf](https://github.com/aeternity/aepp-sdk-python/commit/60aecbf47dcf998f11ac3cd893017da94293787e)).
+- refactor: clean deprecated (#215) ([ea0e73e](https://github.com/aeternity/aepp-sdk-python/commit/ea0e73e667e1a867e5ae8a395a50a13db7dc5f88)).
+  - remove `--privte-key ` from cli for accounts (use `--secret-key`)
+  - renamed api for `Account` : `get_private_key()` to `get_secret_key()`
+  - removde `Account.from_private_public_key_strings`
+
+### Bug Fixes
+
+- fix(state-channels): remove execution round storage ([3875a66](https://github.com/aeternity/aepp-sdk-python/commit/3875a66c21c0cf160230c3a1a1e63b0352a7ab5f)).
+- fix(state-channels): use kwargs instead of a named dict ([cfb6853](https://github.com/aeternity/aepp-sdk-python/commit/cfb68538bf3cf8de0e9786c594556d24bec1d5de)).
+- fix(state-channels): use kwargs instead of a named dict ([311d119](https://github.com/aeternity/aepp-sdk-python/commit/311d119d82371c3711e8ed1de6508c20e5013311)).
+
+### Features
+- feat(state-channels): add update event to enum ([ad64584](https://github.com/aeternity/aepp-sdk-python/commit/ad64584c20efea0de34d24d481aed0be6f0eaf53)).
+- feat(state-channels): add update event to enum ([cb3d8d7](https://github.com/aeternity/aepp-sdk-python/commit/cb3d8d7b23f4233b81a943541a0215b1430dbf0c)).
+- feat(state-channels): added a method to trigger transfer update ([fcf5761](https://github.com/aeternity/aepp-sdk-python/commit/fcf5761f0e74a514ce17795e07b817489fdd59e6)).
+- feat(state-channels): added a method to trigger transfer update ([712ee82](https://github.com/aeternity/aepp-sdk-python/commit/712ee829547c127894e5967ae315e0dd8d6bae4e)). Related issues/PRs: #186
+- feat(state-channels): added contract related methods contract incl. poi ([244bfc8](https://github.com/aeternity/aepp-sdk-python/commit/244bfc87f264e5e8f7342ceb85bfe35a3e69bb8d)). Related issues/PRs: #153
+- feat(state-channels): added contract support incl. poi ([635ae9f](https://github.com/aeternity/aepp-sdk-python/commit/635ae9fea8858c327910aab7f3afbb1a6ff8a657)).
+- feat(state-channels): added method to create a contract from on-chain contract ([77724e6](https://github.com/aeternity/aepp-sdk-python/commit/77724e67c9871ad9761b6bd7c0feca7336ad5b74)).
+- feat(state-channels): added method to create contract from on-chain contract ([6499426](https://github.com/aeternity/aepp-sdk-python/commit/649942696ce9263ac1e51f5ca812856f2793e947)).
+- feat(state-channels): added method to create contract from on-chain contract ([b3b737e](https://github.com/aeternity/aepp-sdk-python/commit/b3b737e43c1191bbe3b56ef4dd87c7aaab13eabe)).
+- feat(state-channels): event handler for state-channel events incl. messages and error ([23004a2](https://github.com/aeternity/aepp-sdk-python/commit/23004a2f25c43859f1435e742a970cd27df7b723)).
+- feat(state-channels): event handler for state-channel events incl. messages and error ([db9daa7](https://github.com/aeternity/aepp-sdk-python/commit/db9daa7905b48b7032021dc72306315b8bf3a401)).
+
+### Misc
+-  build(dependencies): update dependencies (#213) ([2a9e7e7](https://github.com/aeternity/aepp-sdk-python/commit/2a9e7e708bb2cd11c71544debd8c995c18a0a224)).
+
+### Docs
+
+- docs(state-channels): define params in the docs ([f19b70a](https://github.com/aeternity/aepp-sdk-python/commit/f19b70ac350c2f8e72ee10a14b706e1b9e14565f)).
+- docs: remove deprecated api in docs ([62af9b1](https://github.com/aeternity/aepp-sdk-python/commit/62af9b12ab16d46c68a2a32c2bde709790ff1be2)).
+
+
 ## [3.1.1](https://github.com/aeternity/aepp-sdk-python/releases/tag/3.1.1) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/3.1.0...3.1.1))
 
 ### Bug Fixes

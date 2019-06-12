@@ -1,4 +1,4 @@
-from aeternity import exceptions
+from aeternity import exceptions, __compiler_compatibility__
 from aeternity import utils, defaults, hashing, openapi, identifiers
 import requests
 import namedtupled
@@ -19,7 +19,7 @@ class CompilerClient(object):
 
     def __init__(self, compiler_url='http://localhost:3080'):
         self.compiler_url = compiler_url
-        self.compiler_cli = openapi.OpenAPICli(compiler_url)
+        self.compiler_cli = openapi.OpenAPICli(compiler_url, compatibility_version_range=__compiler_compatibility__)
 
     def _post(self, path, body, _response_object_name="CompilerReply"):
         """

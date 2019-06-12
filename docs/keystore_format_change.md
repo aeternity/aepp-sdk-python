@@ -1,16 +1,16 @@
 # Keystore format change
 
 The release 0.25.0.1 of the Python SDK change the format of the keystore used to store
-a private key in an encrypted format.
+a secret key in an encrypted format.
 
-The previous format, suported till version 0.25.0.1b1 is not supported anymore and private keys
+The previous format, suported till version 0.25.0.1b1 is not supported anymore and secret keys
 encrypted with the legacy format will have to be updated manually.
 
 ## ⚠️ BEFORE YOU START
 
-The following procedure will print your private key unencrypted on the terminal.
+The following procedure will print your secret key unencrypted on the terminal.
 
-**Make sure you perform this procedure in a private setting.**
+**Make sure you perform this procedure in a secret setting.**
 
 ## Steps
 
@@ -29,12 +29,12 @@ $ aecli --version
 aecli, version 0.25.0.1b1
 ```
 
-2. Print your private key to the terminal
+2. Print your secret key to the terminal
 
 ```
-aecli account address --private-key my_account.json
+aecli account address --secret-key my_account.json
 Enter the account password []:
-!Warning! this will print your private key on the screen, are you sure? [y/N]: y
+!Warning! this will print your secret key on the screen, are you sure? [y/N]: y
 <account>
   Address ___________________________________________ ak_2UeaQn7Ei7HoMvDTiq2jyDuE8ymEQMPZExzC64qWTxpUnanYsE
   Signing key _______________________________________ 507f598f2fac1a4ab57edae53650cbf7ffae9eeeea1a297cc7c3b6172052e55ec27954c4ba901cf9b3760dc12b2c313d60fcc674ba2d04746ed813a91499a2ed
@@ -54,7 +54,7 @@ $ aecli --version
 aecli, version 0.25.0.1
 ```
 
-4. Save the private key to the new format
+4. Save the secret key to the new format
 
 ```
 aecli account save my_account_new.json 507f598f2fac1a4ab57edae53650cbf7ffae9eeeea1a297cc7c3b6172052e55ec27954c4ba901cf9b3760dc12b2c313d60fcc674ba2d04746ed813a91499a2ed
@@ -77,7 +77,7 @@ $ cat my_account_new.json
 6. Cleanup!
 
 Once the operation is completed, cleanup the terminaly history that contains
-your private key
+your secret key
 
 ```bash
 history -c
