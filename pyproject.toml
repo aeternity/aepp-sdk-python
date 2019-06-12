@@ -23,23 +23,33 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.6"
-base58 = "^0.2.5"
+base58 = "^1.0"
 click = "^7.0"
-rlp = "^0.6.0"
+rlp = "^1.1"
 PyNaCl = "^1.3"
 requests = "^2.20"
-validators = "^0.12.6"
+validators = "^0.13"
 semver = "^2.8"
 namedtupled = "^0.3.3"
 Deprecated = "^1.2"
 websockets = "^7.0"
 
 [tool.poetry.dev-dependencies]
-pytest = "^4.3"
+pytest = "^4.6"
 flake8 = "^3.7"
+dephell = "^0.7.3"
+pytest-cov = "^2.7"
+coverage = "^4.5"
+
+[tool.poetry.extras]
+test = ["coverage", "pytest"]
 
 [tool.poetry.scripts]
 aecli = "aeternity.__main__:run"
+
+[tool.dephell.main]
+from = {format = "poetry", path = "pyproject.toml"}
+to = {format = "pip", path = "requirements.txt"}
 
 [build-system]
 requires = ["poetry>=0.12"]

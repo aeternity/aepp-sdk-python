@@ -183,7 +183,7 @@ class Account:
         """
         kp = cls.from_private_key_string(private)
         if kp.get_address() != public:
-            raise ValueError("Public key and private account mismatch")
+            raise ValueError(f"Public key mismatch expected: {public} got {kp.get_address()}")
         return kp
 
 
