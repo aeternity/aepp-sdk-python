@@ -80,3 +80,7 @@ def chain_fixture(scope="module"):
 def compiler_fixture(scope="module"):
     compiler = CompilerClient(COMPILER_URL)
     return namedtupled.map({"COMPILER": compiler}, _nt_name="TestData")
+
+@pytest.fixture
+def testdata_fixture(scope="module"):
+    return os.path.join(os.path.dirname(os.path.realpath(__file__)), "testdata")
