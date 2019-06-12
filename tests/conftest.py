@@ -54,7 +54,7 @@ def chain_fixture(scope="module"):
     ACCOUNT = Account.generate()
     ACCOUNT_1 = Account.generate()  # used by for oracles
     # set the key folder as environment variables
-    genesis = Account.from_public_private_key_strings(PUBLIC_KEY, PRIVATE_KEY)
+    genesis = Account.from_private_key_string(PRIVATE_KEY)
 
     # Instantiate the node client for the tests
     NODE_CLI = NodeClient(Config(
