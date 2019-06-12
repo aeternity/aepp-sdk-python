@@ -45,6 +45,11 @@ publish-test:
 	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 	@echo done
 
+deps:
+	@echo generating requirements.txt
+	dephell deps convert
+	@echo done
+
 changelog:
 	@echo build changelog
 	gitolog -t keepachangelog -s angular . -o CHANGELOG.md 
