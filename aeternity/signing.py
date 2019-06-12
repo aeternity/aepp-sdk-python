@@ -12,11 +12,9 @@ from nacl import secret, utils as nacl_utils
 from aeternity.identifiers import ACCOUNT_ID, ACCOUNT_API_FORMAT, ACCOUNT_SOFIA_FORMAT, ACCOUNT_RAW_FORMAT
 from aeternity import hashing, utils
 
-from deprecated import deprecated
-
 
 class Account:
-    """Implement private/public key functionalities"""
+    """Implement secret/public key functionalities"""
 
     def __init__(self, signing_key, verifying_key):
         self.signing_key = signing_key
@@ -44,13 +42,6 @@ class Account:
         elif format == ACCOUNT_SOFIA_FORMAT:
             return f'0x{self.verifying_key.encode(encoder=HexEncoder).decode("utf-8")}'
         raise ValueError(f'Unrecognized format {format} for address encoding')
-
-    @deprecated(version='2.0.0', reason="Use get_secret_key instead")
-    def get_private_key(self):
-        """
-        Get the private key hex encoded
-        """
-        return self.get_secret_key()
 
     def get_secret_key(self) -> str:
         """
@@ -140,12 +131,19 @@ class Account:
 
     @classmethod
     def from_private_key_string(cls, key_string):
+        """
+        Deprecated version for Account.from_secret_key_string
+        """
+        return Account.from_secret_key_string(key_string)
+
+    @classmethod
+    def from_secret_key_string(cls, key_string):
         """create a keypair from a aet address and key_string key string
         :param key_string: the encoded key_string key (hex for private, prefixed base58 for public)
         :return: a keypair object or raise error if the public key doesnt match
         """
         k = cls._raw_key(key_string)
-        # the private key string is composed with [private_key+public_key]
+        # the secret key string is composed with [secret_key+public_key]
         # https://blog.mozilla.org/warner/2011/11/29/ed25519-keys/
         signing_key = SigningKey(seed=k[0:32], encoder=RawEncoder)
         kp = Account(signing_key, signing_key.verify_key)
@@ -172,22 +170,16 @@ class Account:
         except CryptoError as e:
             raise ValueError(e)
 
-    @classmethod
-    def from_public_private_key_strings(cls, public, private):
-        """
-        Create a keypair from a aet address and private key string
 
-        :param public:  the aet address, used to verify the private key
-        :param private: the hex encoded private key
-        :return:        a keypair object or raise error if the public key doesnt match
-        """
-        kp = cls.from_private_key_string(private)
-        if kp.get_address() != public:
-            raise ValueError(f"Public key mismatch expected: {public} got {kp.get_address()}")
-        return kp
+def keystore_seal(secret_key, password, address, name=""):
+    """
+    Seal a keystore
 
-
-def keystore_seal(private_key, password, address, name=""):
+    :param secret_key: the secret key to store in the keystore
+    :param password: the keystore password
+    :param address: the address
+    :param name: the optional name of the keystore
+    """
     # password
     salt = nacl_utils.random(argon2id.SALTBYTES)
     mem = argon2id.MEMLIMIT_MODERATE
@@ -196,7 +188,7 @@ def keystore_seal(private_key, password, address, name=""):
     # ciphertext
     box = secret.SecretBox(key)
     nonce = nacl_utils.random(secret.SecretBox.NONCE_SIZE)
-    sk = private_key.encode(encoder=RawEncoder) + private_key.verify_key.encode(encoder=RawEncoder)
+    sk = secret_key.encode(encoder=RawEncoder) + secret_key.verify_key.encode(encoder=RawEncoder)
     ciphertext = box.encrypt(sk, nonce=nonce).ciphertext
     # build the keystore
     k = {

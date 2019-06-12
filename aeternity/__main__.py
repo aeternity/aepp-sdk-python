@@ -285,16 +285,16 @@ def account_create(keystore_name, password, overwrite, json_):
         _print_error(e, exit_code=1)
 
 
-@account.command('save', help='Save a private keys string to a password protected file account')
+@account.command('save', help='Save a secret key string to a password protected file account')
 @click.argument('keystore_name', required=True)
-@click.argument('private_key', required=True)
-@click.option('--overwrite', default=False, is_flag=True, help="Overwrite existing keys without asking", show_default=True)
+@click.argument('secret_key', required=True)
+@click.option('--overwrite', default=False, is_flag=True, help="Overwrite existing key without asking", show_default=True)
 @global_options
 @account_options
-def account_save(keystore_name, private_key, password, overwrite, json_):
+def account_save(keystore_name, secret_key, password, overwrite, json_):
     try:
         set_global_options(json_)
-        account = signing.Account.from_private_key_string(private_key)
+        account = signing.Account.from_secret_key_string(secret_key)
         if not overwrite and os.path.exists(keystore_name):
             click.confirm(f'Keystore file {keystore_name} already exists, overwrite?', abort=True)
         if password is None:
@@ -310,7 +310,7 @@ def account_save(keystore_name, private_key, password, overwrite, json_):
 
 @account.command('address', help="Print the account address (public key)")
 @click.argument('keystore_name')
-@click.option('--secret-key', '--private-key', is_flag=True, help="Print the secret key in addition to the account address")
+@click.option('--secret-key', is_flag=True, help="Print the secret key in addition to the account address")
 @global_options
 @account_options
 def account_address(password, keystore_name, secret_key, json_):
