@@ -36,13 +36,6 @@ def call_aecli(*params):
         return output
 
 
-@pytest.mark.skip('Not required with the new packaging method')
-def test_cli_version():
-    v = call_aecli('--version')
-    print(v, aeternity.__version__)
-    assert v == f"aecli, version {aeternity.__version__}"
-
-
 def test_cli_balance(chain_fixture):
     j = call_aecli('inspect', chain_fixture.ACCOUNT.get_address())
     assert isinstance(j.get("balance"), int)
@@ -87,7 +80,6 @@ def test_cli_read_account_fail(tempdir):
         pass
 
 
-# @pytest.mark.skip('Fails with account not founds only on the master build server')
 def test_cli_spend(chain_fixture, tempdir):
     account_path = _account_path(tempdir, chain_fixture.ACCOUNT)
     # generate a new address
@@ -145,16 +137,6 @@ def test_cli_inspect_transaction_by_hash(chain_fixture):
     assert j.get("tx", {}).get("recipient_id") == na.get_address()
     assert j.get("tx", {}).get("sender_id") == chain_fixture.ACCOUNT.get_address()
     assert j.get("tx", {}).get("amount") == amount
-
-
-@pytest.mark.skip("Name claim is outdated")
-def test_cli_name_claim(account_path, chain_fixture, random_domain):
-    # create a random domain
-    domain = random_domain()
-    print(f"Domain is {domain}")
-    # call the cli
-    call_aecli('name', 'claim', account_path, domain, '--password', 'aeternity_bc', '--network-id', NETWORK_ID)
-    chain_fixture.NODE_CLI.AEName(domain).status == AEName.Status.CLAIMED
 
 
 def test_cli_phases_spend(chain_fixture, tempdir):
