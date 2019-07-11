@@ -357,7 +357,7 @@ class NodeClient:
             raise ValueError("The parameter auth_fun is required")
         # decode the contract and search for the authorization function
         auth_fun_hash = None
-        contract_data = contract.unpack(ga_contract)
+        contract_data = contract.CompilerClient.decode_bytecode(ga_contract)
         for ti in contract_data.type_info:
             print(ti.fun_name, " .. ", auth_fun)
             if ti.fun_name == auth_fun:

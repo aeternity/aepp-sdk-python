@@ -60,8 +60,9 @@ def _poa_to_ga(account, ae_cli, c_cli):
     tx = ae_cli.poa_to_ga(account, ga_contract, init_calldata=init_calldata, gas=500)
     return tx
 
+
 def test_node_ga_attach(chain_fixture, compiler_fixture):
-    
+
     ae_cli = chain_fixture.NODE_CLI
     account = chain_fixture.ACCOUNT
     c_cli = compiler_fixture.COMPILER
@@ -69,18 +70,19 @@ def test_node_ga_attach(chain_fixture, compiler_fixture):
     poa_account = ae_cli.get_account_by_pubkey(pubkey=account.get_address())
     assert poa_account.kind == "basic"
     # transform the account
-    tx = _poa_to_ga(Account, ae_cli, c_cli)
+    tx = _poa_to_ga(account, ae_cli, c_cli)
     # now check if it is a ga
     ga_account = ae_cli.get_account_by_pubkey(pubkey=account.get_address())
     assert ga_account.kind == "generalized"
 
+
 def test_node_ga_meta_spend(chain_fixture, compiler_fixture):
-    
+
     ae_cli = chain_fixture.NODE_CLI
     account = chain_fixture.ACCOUNT
     c_cli = compiler_fixture.COMPILER
     # make the account poa
-    tx = _poa_to_ga(Account, ae_cli, c_cli)
+    tx = _poa_to_ga(account, ae_cli, c_cli)
     # retrieve the account data
     ga_account = ae_cli.get_account_by_pubkey(pubkey=account.get_address())
     contract_id = ga_account.contract_id
@@ -99,7 +101,7 @@ def test_node_ga_meta_spend(chain_fixture, compiler_fixture):
     # encode the call data for the transaction
     calldata = c_cli.encode_calldata(src, "authorize", [account.get_address()]).calldata
     # now we can execute the transaction
-    tx = ae_cli.poa_to_ga(account, ga_contract, init_calldata=init_calldata, gas=500)
+    tx = ae_cli.ga_meta(account, ga_contract, init_calldata=init_calldata, gas=500)
     ga_account = ae_cli.get_account_by_pubkey(pubkey=account.get_address())
     assert ga_account.kind == "generalized"
     raise ValueError()

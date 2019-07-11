@@ -119,7 +119,6 @@ def _tx_native(op, **kwargs):
     # check the tags
     if tag == idf.OBJECT_TAG_SIGNED_TRANSACTION:
         if op == UNPACK_TX:
-            print(f"TX LENGTH {len(tx_native[3])}")
             tx_data = dict(
                 tag=tag,
                 vsn=_int_decode(tx_native[1]),
