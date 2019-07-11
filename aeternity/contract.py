@@ -67,6 +67,52 @@ class CompilerClient(object):
         }
         return self.compiler_cli.decode_calldata_source(body=body)
 
+    @staticmethod
+    def decode_bytecode(compiled):
+        """
+        Decode an encoded contract to it's components
+        :param compiled: the encoded bytecode to decode as got from the 'compile' function
+        :return: a named tuple with a decoded contract
+        """
+        if isinstance(compiled, str):
+            if not utils.prefix_match(identifiers.BYTECODE, compiled):
+                raise ValueError(f"Invalid input, expecting {identifiers.BYTECODE}_ prefix")
+            # unpack the transaction
+            raw_contract = hashing.decode_rlp(compiled)
+        elif isinstance(compiled, bytes):
+            # unpack the transaction
+            raw_contract = hashing.decode_rlp(compiled)
+        else:
+            raise ValueError(f"Invalid input type")
+
+        if not isinstance(raw_contract, list) or len(raw_contract) < 6:
+            raise ValueError(f"Invalid contract structure")
+
+        # print(raw_contract)
+        tag = hashing._int_decode(raw_contract[0])
+        vsn = hashing._int_decode(raw_contract[1])
+        if tag != identifiers.OBJECT_TAG_SOPHIA_BYTE_CODE:
+            raise ValueError(f"Invalid input, expecting object type {identifiers.OBJECT_TAG_SOPHIA_BYTE_CODE}, got {tag}")
+        # this is the hash
+        contract_data = dict(
+            raw=raw_contract,
+            tag=tag,
+            vsn=vsn,
+            src_hash=raw_contract[2],
+            type_info=[],
+            bytecode=raw_contract[4],
+            compiler_version=hashing._binary_decode(raw_contract[5], str),
+        )
+        # print(type_info)
+        for t in raw_contract[3]:
+            contract_data["type_info"].append(dict(
+                fun_hash=t[0],
+                fun_name=hashing._binary_decode(t[1], str),
+                arg_type=t[2],
+                out_type=t[3],
+            ))
+        return namedtupled.map(contract_data, _nt_name="ContractBin")
+
 
 class ContractError(Exception):
     pass
@@ -186,49 +232,3 @@ class Contract:
             return tx_signed
         except openapi.OpenAPIClientException as e:
             raise ContractError(e)
-
-
-def unpack(compiled):
-    """
-    Decode an encoded contract to it's components
-    :param compiled: the encoded bytecode to decode
-    :return: a named tuple with a decoded contract
-    """
-    if isinstance(compiled, str):
-        if not utils.prefix_match(identifiers.BYTECODE, compiled):
-            raise ValueError(f"Invalid input, expecting {identifiers.BYTECODE}_ prefix")
-        # unpack the transaction
-        raw_contract = hashing.decode_rlp(compiled)
-    elif isinstance(compiled, bytes):
-        # unpack the transaction
-        raw_contract = hashing.decode_rlp(compiled)
-    else:
-        raise ValueError(f"Invalid input type")
-
-    if not isinstance(raw_contract, list) or len(raw_contract) < 6:
-        raise ValueError(f"Invalid contract structure")
-
-    # print(raw_contract)
-    tag = hashing._int_decode(raw_contract[0])
-    vsn = hashing._int_decode(raw_contract[1])
-    if tag != identifiers.OBJECT_TAG_SOPHIA_BYTE_CODE:
-        raise ValueError(f"Invalid input, expecting object type {identifiers.OBJECT_TAG_SOPHIA_BYTE_CODE}, got {tag}")
-    # this is the hash
-    contract_data = dict(
-        raw=raw_contract,
-        tag=tag,
-        vsn=vsn,
-        src_hash=raw_contract[2],
-        type_info=[],
-        bytecode=raw_contract[4],
-        compiler_version=hashing._binary_decode(raw_contract[5], str),
-    )
-    # print(type_info)
-    for t in raw_contract[3]:
-        contract_data["type_info"].append(dict(
-            fun_hash=t[0],
-            fun_name=hashing._binary_decode(t[1], str),
-            arg_type=t[2],
-            out_type=t[3],
-        ))
-    return namedtupled.map(contract_data, _nt_name="ContractBin")
