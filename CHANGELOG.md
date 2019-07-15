@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Features
 
-- refactor(scm): update compatibility range for node:3.1.0 - 5.0.0 ([1ed1eb0](https://github.com/aeternity/aepp-sdk-python/commit/fbaefd0ac9ddf7f5363968550153d3da3d8ea75d)).
+- refactor(scm): update compatibility range for node:3.0.1 - 5.0.0 ([1ed1eb0](https://github.com/aeternity/aepp-sdk-python/commit/d9664c1cd5a75a2cbf458c895664b40cc23c085b)).
 - feature(compiler): Add compatibility with compiler 3.2.0 ([7931924](https://github.com/aeternity/aepp-sdk-python/commit/793192404cd257fe9a571ee23ff8578bbe76365f)).
 - feat(state-channels): added settle method support ([efd2ced](https://github.com/aeternity/aepp-sdk-python/commit/efd2cedd2e22036b399dd2427376a6fbd4d42308)).
 
