@@ -1,8 +1,21 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
+
+## [4.1.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/4.1.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/4.0.0...4.1.0))
+
+### Features
+
+- refactor(scm): update compatibility range for node:3.0.1 - 5.0.0 ([1ed1eb0](https://github.com/aeternity/aepp-sdk-python/commit/d9664c1cd5a75a2cbf458c895664b40cc23c085b)).
+- feature(compiler): Add compatibility with compiler 3.2.0 ([7931924](https://github.com/aeternity/aepp-sdk-python/commit/793192404cd257fe9a571ee23ff8578bbe76365f)).
+- feat(state-channels): added settle method support ([efd2ced](https://github.com/aeternity/aepp-sdk-python/commit/efd2cedd2e22036b399dd2427376a6fbd4d42308)).
+
+### Know Issues
+
+- State Channel API is incompatible with node version >= 4.0.0
 
 ## [4.0.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/4.0.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/3.1.1...4.0.0))
 
@@ -14,7 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - refactor: clean deprecated (#215) ([ea0e73e](https://github.com/aeternity/aepp-sdk-python/commit/ea0e73e667e1a867e5ae8a395a50a13db7dc5f88)).
   - remove `--privte-key ` from cli for accounts (use `--secret-key`)
   - renamed api for `Account` : `get_private_key()` to `get_secret_key()`
-  - removde `Account.from_private_public_key_strings`
+  - remove `Account.from_private_public_key_strings`
 
 ### Bug Fixes
 
@@ -64,7 +77,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - feat: improve cli output in case of errors ([4636311](https://github.com/aeternity/aepp-sdk-python/commit/4636311b669cfff69a8f91a817fb45b562c01656))
 - feat(state-channels): add withdraw related states ([5f6fefa](https://github.com/aeternity/aepp-sdk-python/commit/5f6fefa6c035fbe657d1c2c14069967154723a3a))
 - feat(state-channels): sign offchain deposit tx ([0a0ed47](https://github.com/aeternity/aepp-sdk-python/commit/0a0ed47db8cc25c609dc2a921c59735e857aeb16))
-- feat: support aeternity node fortuna serie ([>= v2.3.0,  < 4.0.0] [2191eae](https://github.com/aeternity/aepp-sdk-python/commit/2191eae3d649412d95e39cb25328ff1b0bf8cfc4)
+- feat: support aeternity node fortuna series ([>= v2.3.0,  < 4.0.0] [2191eae](https://github.com/aeternity/aepp-sdk-python/commit/2191eae3d649412d95e39cb25328ff1b0bf8cfc4)
 )
 - feat: support call_info for transaction info endpoint ([2191eae](https://github.com/aeternity/aepp-sdk-python/commit/2191eae3d649412d95e39cb25328ff1b0bf8cfc4))
 - feat: improve logging for unsupported node api version ([2191eae](https://github.com/aeternity/aepp-sdk-python/commit/2191eae3d649412d95e39cb25328ff1b0bf8cfc4))
@@ -541,5 +554,3 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Use single quotes, not double ([288562d](https://github.com/aeternity/aepp-sdk-python/commit/288562dea9ad45f720c0eb620c98425e5448b02d)).
 - use transaction signing for name revocation ([4e86ecf](https://github.com/aeternity/aepp-sdk-python/commit/4e86ecff0bf79f5dedc54eef8a7223049a50ea51)).
 - whoopsie ([c55fbe5](https://github.com/aeternity/aepp-sdk-python/commit/c55fbe5e5dcbe4244a0748eb1eb2b0e2f11ada6b)).
-
-
