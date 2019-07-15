@@ -208,6 +208,15 @@ class Channel(object):
             'params': {}
         })
 
+    def settle(self):
+        """
+        Settle Channel
+        """
+        self.__enqueue_action({
+            'method': 'channels.settle',
+            'params': {}
+        })
+
     def state(self):
         """
         Get current offchain state
