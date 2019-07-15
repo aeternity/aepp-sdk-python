@@ -1,4 +1,5 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
@@ -14,7 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Know Issues
 
-- State Channel API is incompatible with with node version >= 4.0.0
+- State Channel API is incompatible with node version >= 4.0.0
 
 ## [4.0.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/4.0.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/3.1.1...4.0.0))
 
