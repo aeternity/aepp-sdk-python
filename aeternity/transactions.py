@@ -65,6 +65,7 @@ class TxSigner:
         :param metadata: additional data to include in the output of the signed transaction object
         :return: encoded_signed_tx, encoded_signature, tx_hash
         """
+        # TODO: handle here GA transactions
         # decode the transaction if not in native mode
         transaction = _tx_native(op=UNPACK_TX, tx=tx.tx if hasattr(tx, "tx") else tx)
         # get the transaction as byte list
