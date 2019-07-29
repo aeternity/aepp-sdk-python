@@ -7,7 +7,7 @@ import namedtupled
 from aeternity.transactions import TxSigner
 from aeternity.signing import Account
 from aeternity.openapi import OpenAPIClientException
-from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers, exceptions
+from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers, exceptions, utils
 from aeternity.exceptions import TransactionWaitTimeoutExpired, TransactionHashMismatch
 from aeternity import __node_compatibility__
 
@@ -171,8 +171,28 @@ class NodeClient:
         :return: the transaction for the transaction
         """
         s = TxSigner(account, self.config.network_id)
+        if self.account.is_generalized():
+            from transactions import _tx_native, UNPACK_TX
+            t = _tx_native(UNPACK_TX, tx)
+            tx_data = t.data
+            # handle ga
+            # step 1 - reset the transaction nonce
+            tx_data.fee = 0
+            tx_data.nonce = 0
+            # 
+
         tx = s.sign_encode_transaction(tx, metadata)
+
         return tx
+
+    def get_account(self, address: str) -> Account:
+        """
+        Retrieve an account by it's public key
+        """
+        if not utils.is_valid_hash(address, identifiers.ACCOUNT_ID):
+            raise ValueError(f"Input {address} is not a valid aeternity address")
+        remote_account = self.get_account_by_pubkey(pubkey=address)
+        return Account.from_node_api(remote_account)
 
     def spend(self, account: Account,
               recipient_id: str,

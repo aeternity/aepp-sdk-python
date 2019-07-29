@@ -10,6 +10,32 @@ import namedtupled
 PACK_TX = 1
 UNPACK_TX = 0
 
+tx_fields_index = {
+    idf.OBJECT_TAG_SPEND_TRANSACTION: {
+        "sender_id": 2,
+        "recipient_id": 3,
+        "amount": 4,
+        "fee": 5,
+        "ttl": 6,
+        "nonce": 7,
+        "payload": 8,
+    }
+}
+
+
+def _field_idx(object_tag: int, field_name: str) -> int:
+    if field_name == "tag":
+        return 0
+    if field_name == "vsn":
+        return 1
+    o = tx_fields_index.get(object_tag)
+    if o is None:
+        raise ValueError(f"Unrecognized object tag {object_tag}")
+    idx = o.get(field_name)
+    if idx is None:
+        raise ValueError(f"Unrecognized field {field_name} for object tag {object_tag}")
+    return idx
+
 
 class TxSigner:
     """
@@ -39,7 +65,6 @@ class TxSigner:
         :param metadata: additional data to include in the output of the signed transaction object
         :return: encoded_signed_tx, encoded_signature, tx_hash
         """
-        # TODO: handle here GA transactions
         # decode the transaction if not in native mode
         transaction = _tx_native(op=UNPACK_TX, tx=tx.tx if hasattr(tx, "tx") else tx)
         # get the transaction as byte list
@@ -1298,6 +1323,38 @@ class TxBuilder:
             gas=gas,
             gas_price=gas_price,
             call_data=call_data,
+        )
+        return _tx_native(op=PACK_TX, **body)
+
+    def tx_ga_meta(self, ga_id,
+                   auth_data,
+                   abi_version,
+                   fee,
+                   gas,
+                   gas_price,
+                   ttl,
+                   tx):
+        """
+        :param ga_id: the account id
+        :param auth_data: the authorized data
+        :param abi_version: compiler abi version
+        :param fee: transaction fee
+        :param gas: gas limit for the authorization function
+        :param gas_price: the gas prize
+        :param ttl: time to live (in height) of the transaction
+        :param tx: the transaction to be authorized
+        """
+        body = dict(
+            tag=idf.OBJECT_TAG_GA_ATTACH_TRANSACTION,
+            vsn=idf.VSN,
+            ga_id=ga_id,
+            auth_data=auth_data,
+            abi_version=abi_version,
+            fee=fee,
+            gas=gas,
+            gas_price=gas_price,
+            ttl=ttl,
+            tx=tx,
         )
         return _tx_native(op=PACK_TX, **body)
 

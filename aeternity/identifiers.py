@@ -178,3 +178,7 @@ ORACLE_TTL_TYPE_BLOCK = 'block'
 # Network IDS
 NETWORK_ID_MAINNET = "ae_mainnet"
 NETWORK_ID_TESTNET = "ae_uat"
+
+# Accounts Kind
+ACCOUNT_KIND_BASIC = "basic"
+ACCOUNT_KIND_GENERALIZED = "generalized"

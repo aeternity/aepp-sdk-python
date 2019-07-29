@@ -3,15 +3,18 @@ import validators
 from decimal import Decimal
 
 
-def is_valid_hash(hash_str, prefix=None):
+def is_valid_hash(hash_str: str, prefix: str = None) -> bool:
     """
     Validate an aeternity hash, optionally restrict to a specific prefix.
     The validation will check if the hash parameter is of the form prefix_hash
     and that the hash is valid according to the decode function.
     :param hash_str: the hash to validate
     :param prefix: the prefix to restrict the validation to
+    :return: true if it is valid false otherwise
     """
     try:
+        if hash_str is None:
+            return False
         # decode the hash
         hashing.decode(hash_str)
         # if prefix is not set then is valid

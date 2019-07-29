@@ -32,20 +32,17 @@ def _poa_to_ga(account, ae_cli, c_cli):
     src = """contract BlindAuth =
       record state = { nonce : int, owner : address }
 
-      function init(owner' : address) = { nonce = 1, owner = owner' }
+      entrypoint init(owner' : address) = { nonce = 1, owner = owner' }
 
-      stateful function authorize(s : signature) : bool =
+      stateful entrypoint authorize(s : signature) : bool =
         switch(Auth.tx_hash)
           None          => abort("Not in Auth context")
           Some(tx_hash) => 
               put(state{ nonce = state.nonce + 1 })
               true
 
-      function to_sign(h : hash, n : int) : hash =
+      entrypoint to_sign(h : hash, n : int) : hash =
         Crypto.blake2b((h, n))
-
-      private function require(b : bool, err : string) =
-        if(!b) abort(err)
     """
     # compile the contract
     ga_contract = c_cli.compile(src).bytecode
@@ -84,9 +81,7 @@ def test_node_ga_meta_spend(chain_fixture, compiler_fixture):
     # make the account poa
     tx = _poa_to_ga(account, ae_cli, c_cli)
     # retrieve the account data
-    ga_account = ae_cli.get_account_by_pubkey(pubkey=account.get_address())
-    contract_id = ga_account.contract_id
-    auth_fun = ga_account.auth_fun
+    ga_account = ae_cli.get_account(account.get_address())
     # create a dummy account
     recipient_id = Account.generate().get_address()
     # generate the spend transactions
