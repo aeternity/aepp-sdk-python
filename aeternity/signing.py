@@ -18,16 +18,20 @@ class Account:
     """Implement secret/public key functionalities"""
 
     def __init__(self, signing_key, verifying_key, **kwargs):
-        self.signing_key = signing_key
-        self.verifying_key = verifying_key
-        pub_key = self.verifying_key.encode(encoder=RawEncoder)
-        self.address = hashing.encode(ACCOUNT_ID, pub_key)
-        self.nonce = 0
         # distinguish from poa / ga
         # TODO: handle the case that they are not set
+        self.nonce = kwargs.get("nonce", 0)
+        self.balance = kwargs.get("balance", 0)
         self.kind = kwargs.get("kind", ACCOUNT_KIND_BASIC)
         self.contract_id = kwargs.get("contract_id")
         self.auth_fun = kwargs.get("auth_fun")
+        self.address = kwargs.get("id")
+            
+        self.signing_key = signing_key
+        self.verifying_key = verifying_key
+        if verifying_key is not None:
+            pub_key = self.verifying_key.encode(encoder=RawEncoder)
+            self.address = hashing.encode(ACCOUNT_ID, pub_key)        
 
     def get_address(self, format=ACCOUNT_API_FORMAT):
         """
@@ -175,8 +179,9 @@ class Account:
         :param api_account: the account object obtained from the node api
         :param secret_key: optional secret key to allow signing
         """
-        # TODO: the account api is a bit convoluted, could be semplified
-        account = Account(None, cls._raw_key(api_account.account_id), api_account)
+        # TODO: the account api is a bit convoluted, could be simplified
+        # api_account is namedtuple of type Account returned by the node
+        account = Account(None, cls._raw_key(api_account.id), api_account._asdict())
         if secret_key is not None:
             account.signing_key = cls._raw_key(secret_key)
             # TODO: is this test relevant?

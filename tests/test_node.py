@@ -1,7 +1,24 @@
 from aeternity.signing import Account
-from aeternity import defaults
+from aeternity import defaults, identifiers
 import pytest
 # from aeternity.exceptions import TransactionNotFoundException
+
+
+blind_auth_contract = """contract BlindAuth =
+      record state = { nonce : int, owner : address }
+
+      entrypoint init(owner' : address) = { nonce = 1, owner = owner' }
+
+      stateful entrypoint authorize(s : signature) : bool =
+        switch(Auth.tx_hash)
+          None          => abort("Not in Auth context")
+          Some(tx_hash) => 
+              put(state{ nonce = state.nonce + 1 })
+              true
+
+      entrypoint to_sign(h : hash, n : int) : hash =
+        Crypto.blake2b((h, n))
+    """
 
 
 def _test_node_spend(node_cli, sender_account):
@@ -28,36 +45,6 @@ def test_node_get_protocol_version(chain_fixture, height, protocol_version):
     assert(chain_fixture.NODE_CLI.get_consensus_protocol_version(height)) == protocol_version
 
 
-def _poa_to_ga(account, ae_cli, c_cli):
-    src = """contract BlindAuth =
-      record state = { nonce : int, owner : address }
-
-      entrypoint init(owner' : address) = { nonce = 1, owner = owner' }
-
-      stateful entrypoint authorize(s : signature) : bool =
-        switch(Auth.tx_hash)
-          None          => abort("Not in Auth context")
-          Some(tx_hash) => 
-              put(state{ nonce = state.nonce + 1 })
-              true
-
-      entrypoint to_sign(h : hash, n : int) : hash =
-        Crypto.blake2b((h, n))
-    """
-    # compile the contract
-    ga_contract = c_cli.compile(src).bytecode
-    # this will return an object
-
-    # now encode the call data
-    init_calldata = c_cli.encode_calldata(src, "init", [account.get_address()]).calldata
-    # this will return an object
-    # init_calldata.calldata
-
-    # now we can execute the transaction
-    tx = ae_cli.poa_to_ga(account, ga_contract, init_calldata=init_calldata, gas=500)
-    return tx
-
-
 def test_node_ga_attach(chain_fixture, compiler_fixture):
 
     ae_cli = chain_fixture.NODE_CLI
@@ -65,12 +52,21 @@ def test_node_ga_attach(chain_fixture, compiler_fixture):
     c_cli = compiler_fixture.COMPILER
     # test that the account is not already generalized
     poa_account = ae_cli.get_account_by_pubkey(pubkey=account.get_address())
-    assert poa_account.kind == "basic"
+    assert poa_account.kind == identifiers.ACCOUNT_KIND_BASIC
+    
     # transform the account
-    tx = _poa_to_ga(account, ae_cli, c_cli)
+    # compile the contract
+    ga_contract = c_cli.compile(blind_auth_contract).bytecode
+    # now encode the call data
+    init_calldata = c_cli.encode_calldata(blind_auth_contract, "init", [account.get_address()]).calldata
+    # this will return an object
+    # init_calldata.calldata
+    # now we can execute the transaction
+    tx = ae_cli.poa_to_ga(account, ga_contract, init_calldata=init_calldata, gas=500)
+
     # now check if it is a ga
     ga_account = ae_cli.get_account_by_pubkey(pubkey=account.get_address())
-    assert ga_account.kind == "generalized"
+    assert ga_account.kind == identifiers.ACCOUNT_KIND_GENERALIZED
 
 
 def test_node_ga_meta_spend(chain_fixture, compiler_fixture):
@@ -79,24 +75,36 @@ def test_node_ga_meta_spend(chain_fixture, compiler_fixture):
     account = chain_fixture.ACCOUNT
     c_cli = compiler_fixture.COMPILER
     # make the account poa
-    tx = _poa_to_ga(account, ae_cli, c_cli)
+    
+    # transform the account
+    # compile the contract
+    ga_contract = c_cli.compile(blind_auth_contract).bytecode
+    # now encode the call data
+    init_calldata = c_cli.encode_calldata(blind_auth_contract, "init", [account.get_address()]).calldata
+    # this will return an object
+    # init_calldata.calldata
+    # now we can execute the transaction
+    tx = ae_cli.poa_to_ga(account, ga_contract, init_calldata=init_calldata, gas=500)
+
     # retrieve the account data
     ga_account = ae_cli.get_account(account.get_address())
+    print("ACCOUNT ", ga_account)
     # create a dummy account
     recipient_id = Account.generate().get_address()
+    
     # generate the spend transactions
     amount = 54321
     payload = "ga spend tx"
     fee = defaults.FEE
     ttl = defaults.TX_TTL
-    nonce = 0
+    nonce = 213321
     spend_tx = ae_cli.tx_builder.tx_spend(account.get_address(), recipient_id, amount, payload, fee, ttl, 0)
-    spend_tx = sign_transaction(account, spend_tx.tx)
-    print(spend_tx)
+    
     # encode the call data for the transaction
-    calldata = c_cli.encode_calldata(src, "authorize", [account.get_address()]).calldata
+    calldata = c_cli.encode_calldata(blind_auth_contract, account.auth_fun, [account.get_address()]).calldata
     # now we can execute the transaction
-    tx = ae_cli.ga_meta(account, ga_contract, init_calldata=init_calldata, gas=500)
-    ga_account = ae_cli.get_account_by_pubkey(pubkey=account.get_address())
-    assert ga_account.kind == "generalized"
+    spend_tx = ae_cli.sign_transaction(account, spend_tx.tx, calldata=calldata, gas=500)
+    #
+    tx_hash = ae_cli.broadcast_transaction(spend_tx)
+
     raise ValueError()

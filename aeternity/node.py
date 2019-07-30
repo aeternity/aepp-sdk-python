@@ -165,13 +165,13 @@ class NodeClient:
             self.wait_for_transaction(reply.tx_hash)
         return reply.tx_hash
 
-    def sign_transaction(self, account: Account, tx: str, metadata: dict = None) -> tuple:
+    def sign_transaction(self, account: Account, tx: str, metadata: dict = None, **kwargs) -> tuple:
         """
         Sign a transaction
         :return: the transaction for the transaction
         """
         s = TxSigner(account, self.config.network_id)
-        if self.account.is_generalized():
+        if account.is_generalized():
             from transactions import _tx_native, UNPACK_TX
             t = _tx_native(UNPACK_TX, tx)
             tx_data = t.data
@@ -180,6 +180,11 @@ class NodeClient:
             tx_data.fee = 0
             tx_data.nonce = 0
             # 
+            self.tx_builder.tx_ga_meta(
+                ga_id=account.get_address(),
+                auth_data=kwargs.get("auth_data"),
+                abi_version=kwargs.get("abi_version", self.get_vm_abi_versions())
+            )
 
         tx = s.sign_encode_transaction(tx, metadata)
 
