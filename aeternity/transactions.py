@@ -51,11 +51,11 @@ class TxSigner:
         tx_raw = decode(transaction.tx)
         # sign the transaction
         signature = self.account.sign(_binary(self.network_id) + tx_raw)
-        # encode the transaction
+        # pack and encode the transaction
         tx_body = dict(
             tag=idf.OBJECT_TAG_SIGNED_TRANSACTION,
-            signatures=[signature],
-            tx=transaction.data.tx
+            signatures=[encode(idf.SIGNATURE, signature)],
+            tx=transaction.tx
         )
         packed_tx = _tx_native(op=PACK_TX, **tx_body)
         # compute the hash
