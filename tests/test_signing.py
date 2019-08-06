@@ -18,7 +18,7 @@ def test_signing_create_transaction_signature(chain_fixture):
     chain_fixture.NODE_CLI.broadcast_transaction(tx_signed.tx)
     # make sure this works for very short block times
     spend_tx = chain_fixture.NODE_CLI.get_transaction_by_hash(hash=tx_signed.hash)
-    assert spend_tx.signatures[0] == tx_signed.signature
+    assert spend_tx.signatures[0] == tx_signed.signature[0]
 
 
 def test_signing_is_valid_hash():

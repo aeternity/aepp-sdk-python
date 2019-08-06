@@ -24,13 +24,19 @@ class TxSigner:
         self.account = account
         self.network_id = network_id
 
-    def encode_signed_transaction(self, transaction, signature):
-        """prepare a signed transaction message"""
-        tag = bytes([idf.OBJECT_TAG_SIGNED_TRANSACTION])
-        vsn = bytes([idf.VSN])
-        encoded_signed_tx = encode_rlp(idf.TRANSACTION, [tag, vsn, [signature], transaction])
-        encoded_signature = encode(idf.SIGNATURE, signature)
-        return encoded_signed_tx, encoded_signature
+    def cosign_encode_transaction(self, tx):
+        # decode the transaction if not in native mode
+        transaction = _tx_native(op=UNPACK_TX, tx=tx.tx if hasattr(tx, "tx") else tx)
+        # get the transaction as bytes
+        tx_raw = decode(transaction.data.tx)
+        # sign the transaction
+        signatures = transaction.data.signatures + [encode(idf.SIGNATURE, self.account.sign(_binary(self.network_id) + tx_raw))]
+        body = dict(
+            tag=idf.OBJECT_TAG_SIGNED_TRANSACTION,
+            signatures=signatures,
+            tx=transaction.data.tx
+        )
+        return _tx_native(op=PACK_TX, **body)
 
     def sign_encode_transaction(self, tx, metadata: dict = None):
         """
@@ -45,17 +51,22 @@ class TxSigner:
         tx_raw = decode(transaction.tx)
         # sign the transaction
         signature = self.account.sign(_binary(self.network_id) + tx_raw)
-        # encode the transaction
-        encoded_signed_tx, encoded_signature = self.encode_signed_transaction(tx_raw, signature)
+        # pack and encode the transaction
+        tx_body = dict(
+            tag=idf.OBJECT_TAG_SIGNED_TRANSACTION,
+            signatures=[encode(idf.SIGNATURE, signature)],
+            tx=transaction.tx
+        )
+        packed_tx = _tx_native(op=PACK_TX, **tx_body)
         # compute the hash
-        tx_hash = TxBuilder.compute_tx_hash(encoded_signed_tx)
+        tx_hash = TxBuilder.compute_tx_hash(packed_tx.tx)
         # return the object
         tx = dict(
             data=transaction.data,
             metadata=metadata,
-            tx=encoded_signed_tx,
+            tx=packed_tx.tx,
             hash=tx_hash,
-            signature=encoded_signature,
+            signature=packed_tx.data.signatures,
             network_id=self.network_id,
         )
         return namedtupled.map(tx, _nt_name="TxObject")
@@ -88,14 +99,17 @@ def _tx_native(op, **kwargs):
             expected = ((defaults.BASE_GAS + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) + ttl_cost) * defaults.GAS_PRICE
         return actual_fee
 
-    def build_tx_object(tx_data, tx_raw, fee_idx, min_fee):
-        # if fee is not set use the min fee
-        if tx_data.get("fee") <= 0:
-            tx_data["fee"] = min_fee
-        # if it is set check that is greater then the minimum fee
-        elif tx_data.get("fee") < min_fee:
-            raise TransactionFeeTooLow(f'Minimum transaction fee is {min_fee}, provided fee is {tx_data.get("fee")}')
-        tx_native[fee_idx] = _int(tx_data.get("fee"))
+    def build_tx_object(tx_data, tx_raw, fee_idx=None, min_fee=None):
+        # if there are fee involved verify the fee
+        if min_fee is not None and fee_idx is not None:
+            # if fee is not set use the min fee
+            if tx_data.get("fee") <= 0:
+                tx_data["fee"] = min_fee
+            # if it is set check that is greater then the minimum fee
+            elif tx_data.get("fee") < min_fee:
+                raise TransactionFeeTooLow(f'Minimum transaction fee is {min_fee}, provided fee is {tx_data.get("fee")}')
+            tx_native[fee_idx] = _int(tx_data.get("fee"))
+        # create the transaction object
         tx_encoded = encode_rlp(idf.TRANSACTION, tx_native)
         tx = dict(
             data=tx_data,
@@ -107,7 +121,7 @@ def _tx_native(op, **kwargs):
     # prepare tag and version
     if op == PACK_TX:
         tag = kwargs.get("tag", 0)
-        vsn = kwargs.get("vsn", 1)
+        vsn = kwargs.get("vsn", idf.VSN)
         tx_data = kwargs
     elif op == UNPACK_TX:
         tx_native = decode_rlp(kwargs.get("tx", []))
@@ -117,16 +131,24 @@ def _tx_native(op, **kwargs):
 
     # check the tags
     if tag == idf.OBJECT_TAG_SIGNED_TRANSACTION:
-        if op == UNPACK_TX:
-            print(f"TX LENGTH {len(tx_native[3])}")
+        # this is a bit of a special case since there is no fee
+        if op == PACK_TX:  # pack transaction
+            tx_native = [
+                _int(tag),
+                _int(vsn),
+                [decode(x) for x in kwargs.get("signatures", [])],
+                decode(kwargs.get("tx"))
+            ]
+        elif op == UNPACK_TX:
             tx_data = dict(
                 tag=tag,
                 vsn=_int_decode(tx_native[1]),
-                signature=[encode("sg", sg) for sg in tx_native[2]],
-                tx=_tx_native(op, tx=encode("tx", tx_native[3])).data,
+                signatures=[encode(idf.SIGNATURE, sg) for sg in tx_native[2]],
+                tx=encode(idf.TRANSACTION, tx_native[3]),
             )
-            return namedtupled.map(tx_data, _nt_name="TxObject")
-        return None
+        else:
+            raise Exception("Invalid operation")
+        return build_tx_object(tx_data, tx_native)
     elif tag == idf.OBJECT_TAG_SPEND_TRANSACTION:
         tx_field_fee_index = 5
         if op == PACK_TX:  # pack transaction
@@ -432,7 +454,7 @@ def _tx_native(op, **kwargs):
                 ttl=_int_decode(tx_native[8]),
                 fee=_int_decode(tx_native[9]),
                 delegate_ids=[_id_decode(d) for d in tx_native[10]],
-                state_hash=tx_native[11],
+                state_hash=encode(idf.STATE, tx_native[11]),
                 nonce=_int_decode(tx_native[12]),
             )
             min_fee = tx_data.get("fee")
