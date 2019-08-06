@@ -112,7 +112,7 @@ class Channel(object):
                 if msg['method'] == 'channels.message' and ChannelState.MESSAGE in self.handlers:
                     self.handlers[ChannelState.MESSAGE](msg)
                 if msg['method'].startswith('channels.sign'):
-                    tx = msg['params']['data']['tx']
+                    tx = msg['params']['data']['signed_tx']
                     if msg['method'] == f'channels.sign.{self.params.role}_sign':
                         self.__sign_channel_tx(f'channels.{self.params.role}_sign', tx)
                     else:
@@ -182,11 +182,11 @@ class Channel(object):
         """
         Sign the transactions received over channel by the provided sign method
         """
-        signedTx = self.sign(tx)
+        encoded_tx = self.sign.cosign_encode_transaction(tx).tx
         self.__enqueue_action({
             'method': method,
             'params': {
-                'tx': signedTx.tx
+                'signed_tx': encoded_tx
             }
         })
 
