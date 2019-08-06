@@ -31,7 +31,12 @@ class TxSigner:
         tx_raw = decode(transaction.data.tx)
         # sign the transaction
         signatures = transaction.data.signatures + [encode(idf.SIGNATURE, self.account.sign(_binary(self.network_id) + tx_raw))]
-        return _tx_native(op=PACK_TX, tag=idf.OBJECT_TAG_SIGNED_TRANSACTION, signatures=signatures, tx=transaction.data.tx)
+        body = dict(
+            tag=idf.OBJECT_TAG_SIGNED_TRANSACTION,
+            signatures=signatures,
+            tx=transaction.data.tx
+        )
+        return _tx_native(op=PACK_TX, **body)
 
     def sign_encode_transaction(self, tx, metadata: dict = None):
         """
@@ -111,7 +116,7 @@ def _tx_native(op, **kwargs):
     # prepare tag and version
     if op == PACK_TX:
         tag = kwargs.get("tag", 0)
-        vsn = kwargs.get("vsn", 1)
+        vsn = kwargs.get("vsn", idf.VSN)
         tx_data = kwargs
     elif op == UNPACK_TX:
         tx_native = decode_rlp(kwargs.get("tx", []))
@@ -889,19 +894,6 @@ class TxBuilder:
         """
         tx_raw = decode(encoded_tx)
         return hash_encode(idf.TRANSACTION_HASH, tx_raw)
-
-    def tx_signed(self, signatures, tx):
-        """
-        Create a signed transaction. This is a special type of transaction
-        as it wraps a normal transaction adding one or more signature
-        """
-        body = dict(
-            tag=idf.OBJECT_TAG_SIGNED_TRANSACTION,
-            vsn=idf.VSN,
-            signatures=signatures,
-            tx=tx
-        )
-        return _tx_native(op=PACK_TX, **body)
 
     def tx_spend(self, sender_id, recipient_id, amount, payload, fee, ttl, nonce) -> tuple:
         """
