@@ -52,16 +52,21 @@ class TxSigner:
         # sign the transaction
         signature = self.account.sign(_binary(self.network_id) + tx_raw)
         # encode the transaction
-        encoded_signed_tx, encoded_signature = self.encode_signed_transaction(tx_raw, signature)
+        tx_body = dict(
+            tag=idf.OBJECT_TAG_SIGNED_TRANSACTION,
+            signatures=[signature],
+            tx=transaction.data.tx
+        )
+        packed_tx = _tx_native(op=PACK_TX, **tx_body)
         # compute the hash
-        tx_hash = TxBuilder.compute_tx_hash(encoded_signed_tx)
+        tx_hash = TxBuilder.compute_tx_hash(packed_tx.tx)
         # return the object
         tx = dict(
             data=transaction.data,
             metadata=metadata,
-            tx=encoded_signed_tx,
+            tx=packed_tx.tx,
             hash=tx_hash,
-            signature=encoded_signature,
+            signature=packed_tx.data.signatures,
             network_id=self.network_id,
         )
         return namedtupled.map(tx, _nt_name="TxObject")
