@@ -59,7 +59,7 @@ class Channel(object):
                                                     Applicable only for initiator (default: timeout_accept value)
         :param timeout_awaiting_open (int): The time frame the initiator has to start an outgoing noise session to the responder's node.
                                                         Applicable only for responder (default: timeout_idle's value)
-        :param sign (function): Function which verifies and signs transactions
+        :param sign (TxSigner): Instance of TxSigner
         :param offchain_message_handler (function): Callback method to receive off-chain messages.
                                                                 If not provided, all the incoming messages will be ignored.
         :param error_handler (function): Callback method to receive error messages.
