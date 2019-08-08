@@ -171,24 +171,30 @@ class NodeClient:
         :return: the transaction for the transaction
         """
         s = TxSigner(account, self.config.network_id)
-        if account.is_generalized():
-            from transactions import _tx_native, UNPACK_TX
-            t = _tx_native(UNPACK_TX, tx)
-            tx_data = t.data
-            # handle ga
-            # step 1 - reset the transaction nonce
-            tx_data.fee = 0
-            tx_data.nonce = 0
-            # 
-            self.tx_builder.tx_ga_meta(
-                ga_id=account.get_address(),
-                auth_data=kwargs.get("auth_data"),
-                abi_version=kwargs.get("abi_version", self.get_vm_abi_versions())
-            )
+        if not account.is_generalized():
+            return s.sign_encode_transaction(tx, metadata)
 
-        tx = s.sign_encode_transaction(tx, metadata)
-
-        return tx
+        # 1. wrap the tx into dummy sigend tx
+        sg_tx = self.tx_builder.tx_signed([], tx)
+        # 2. then wrap the tx into the meta tx
+        # TODO: auth_data is the only required one
+        ttl = self.compute_absolute_ttl(kwargs.get("ttl", defaults.TX_TTL)).absolute_ttl
+        # get abi and vm version
+        vm_version, abi_version = self.get_vm_abi_versions()
+        ga_sg_tx = self.tx_builder.tx_ga_meta(
+            account.get_address(),
+            kwargs.get("auth_data"),
+            kwargs.get("vm_version", vm_version),
+            kwargs.get("abi_version", abi_version),
+            kwargs.get("fee", defaults.FEE),
+            kwargs.get("gas", defaults.CONTRACT_GAS),
+            kwargs.get("gas_price", defaults.CONTRACT_GAS_PRICE),
+            ttl,
+            sg_tx
+        )
+        # 3. wrap the the ga into a signed transaction
+        sg_ga_sg_tx = self.tx_builder.tx_signed([], ga_sg_tx.tx)
+        return sg_ga_sg_tx
 
     def get_account(self, address: str) -> Account:
         """
