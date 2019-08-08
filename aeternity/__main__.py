@@ -12,8 +12,7 @@ from aeternity.node import NodeClient, Config
 from aeternity.transactions import TxSigner, TxBuilder
 from aeternity.identifiers import NETWORK_ID_MAINNET
 from . import utils, signing, aens, defaults, exceptions
-from aeternity.contract import CompilerClient, unpack
-
+from aeternity.contract import CompilerClient
 from datetime import datetime, timezone
 
 
@@ -834,7 +833,7 @@ def inspect(obj, height, force, wait, json_):
             v = _node_cli().verify(obj)
             _print_object(v, title="tx")
         elif obj.startswith("cb_"):
-            v = unpack(obj)
+            v = CompilerClient.decode_bytecode(obj)
             _print_object(v, title="contract")
         elif obj.isdigit() and int(obj) >= 0:
             v = _node_cli().get_key_block_by_height(height=int(obj))
