@@ -163,7 +163,7 @@ class Contract:
 
         try:
             # retrieve the correct vm/abi version
-            vm, abi = self.client._get_vm_abi_versions()
+            vm, abi = self.client.get_vm_abi_versions()
             vm_version = vm if vm_version is None else vm_version
             abi_version = abi if abi_version is None else abi_version
             # get the transaction builder
@@ -212,7 +212,7 @@ class Contract:
         """
         try:
             # retrieve the correct vm/abi version
-            vm, abi = self.client._get_vm_abi_versions()
+            vm, abi = self.client.get_vm_abi_versions()
             vm_version = vm if vm_version is None else vm_version
             abi_version = abi if abi_version is None else abi_version
             # get the transaction builder

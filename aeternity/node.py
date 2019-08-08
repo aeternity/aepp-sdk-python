@@ -356,13 +356,10 @@ class NodeClient:
         Check the version of the node and retrieve the correct values for abi and vm version
         """
         protocol_version = self.get_consensus_protocol_version()
-        if protocol_version == identifiers.PROTOCOL_ROMA:
-            return identifiers.CONTRACT_ROMA_VM, identifiers.CONTRACT_ROMA_ABI
-        if protocol_version == identifiers.PROTOCOL_MINERVA:
-            return identifiers.CONTRACT_MINERVA_VM, identifiers.CONTRACT_MINERVA_ABI
-        if protocol_version == identifiers.PROTOCOL_FORTUNA:
-            return identifiers.CONTRACT_FORTUNA_VM, identifiers.CONTRACT_FORTUNA_ABI
-        raise exceptions.UnsupportedNodeVersion(f"Version {self.api_version} is not supported")
+        protocol_abi_vm = identifiers.PROTOCOL_ABI_VM.get(protocol_version)
+        if protocol_abi_vm is None:
+            raise exceptions.UnsupportedNodeVersion(f"Version {self.api_version} is not supported")
+        return (protocol_abi_vm.get("vm"), protocol_abi_vm.get("abi"))
 
     def poa_to_ga(self, account: Account, ga_contract: str,
                   init_calldata: str = defaults.CONTRACT_INIT_CALLDATA,

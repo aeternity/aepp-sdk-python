@@ -162,15 +162,27 @@ PROTOCOL_ROMA = 1
 PROTOCOL_MINERVA = 2
 PROTOCOL_FORTUNA = 3
 # Contracts identifiers
-# For Roma
-CONTRACT_ROMA_VM = 0  # this is to maintain retro-compatibility
-CONTRACT_ROMA_ABI = 1
-# For Minerva: 196609  # that is int.from_bytes(int(3).to_bytes(2, "big") + int(1).to_bytes(2, "big"), "big")
-CONTRACT_MINERVA_VM = 3
-CONTRACT_MINERVA_ABI = 1
-# For Fortuna
-CONTRACT_FORTUNA_VM = 4
-CONTRACT_FORTUNA_ABI = 1
+PROTOCOL_ABI_VM = {
+    PROTOCOL_ROMA: {
+        "vm": 0,  # this is to maintain retro-compatibility
+        "abi": 1
+    },
+    PROTOCOL_MINERVA: {
+        # For Minerva: 196609  # that is int.from_bytes(int(3).to_bytes(2, "big") + int(1).to_bytes(2, "big"), "big")
+        "vm": 3,
+        "abi": 1
+    },
+    PROTOCOL_FORTUNA: {
+        "vm": 4,
+        "abi": 1
+    },
+    PROTOCOL_LIMA: {
+        "vm": 5,
+        "abi": 1
+    }
+}
+
+
 # Oracles
 ORACLE_TTL_TYPE_DELTA = 'delta'
 ORACLE_TTL_TYPE_BLOCK = 'block'
