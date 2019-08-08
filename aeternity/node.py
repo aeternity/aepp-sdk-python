@@ -256,7 +256,8 @@ class NodeClient:
             except OpenAPIClientException as e:
                 # it may fail because it is not found that means that
                 # or it was invalid or the ttl has expired
-                raise TransactionWaitTimeoutExpired(tx_hash=tx_hash, reason=e.reason)
+                reason = e.reason if hasattr(e, "reason") else "Timeout expired"
+                raise TransactionWaitTimeoutExpired(tx_hash=tx_hash, reason=reason)
             # if the tx.block_height >= min_block_height we are ok
             if tx.block_height >= 0:
                 tx_height = tx.block_height

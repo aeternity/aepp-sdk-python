@@ -158,7 +158,7 @@ class Contract:
         # check if the contract exists
         try:
             self.client.get_contract(pubkey=contract_id)
-        except exceptions.OpenAPIClientException:
+        except openapi.OpenAPIClientException:
             raise ContractError(f"Contract {contract_id} not found")
 
         try:
@@ -179,7 +179,7 @@ class Contract:
             # post the transaction to the chain
             self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
             return tx_signed
-        except exceptions.OpenAPIClientException as e:
+        except openapi.OpenAPIClientException as e:
             raise ContractError(e)
 
     def get_call_object(self, tx_hash):
