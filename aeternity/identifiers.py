@@ -175,10 +175,6 @@ PROTOCOL_ABI_VM = {
     PROTOCOL_FORTUNA: {
         "vm": 4,
         "abi": 1
-    },
-    PROTOCOL_LIMA: {
-        "vm": 5,
-        "abi": 1
     }
 }
 

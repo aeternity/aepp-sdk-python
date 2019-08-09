@@ -1005,6 +1005,7 @@ class TxBuilder:
         Create a signed transaction. This is a special type of transaction
         as it wraps a normal transaction adding one or more signature
         """
+        tx = tx.tx if hasattr(tx, "tx") else tx
         body = dict(
             tag=idf.OBJECT_TAG_SIGNED_TRANSACTION,
             vsn=idf.VSN,
@@ -1380,6 +1381,7 @@ class TxBuilder:
         :param ttl: time to live (in height) of the transaction
         :param tx: the transaction to be authorized
         """
+        tx = tx.tx if hasattr(tx, "tx") else tx
         body = dict(
             tag=idf.OBJECT_TAG_GA_META_TRANSACTION,
             vsn=idf.VSN,
@@ -1390,7 +1392,7 @@ class TxBuilder:
             gas=gas,
             gas_price=gas_price,
             ttl=ttl,
-            tx=tx.tx,
+            tx=tx,
         )
         return _tx_native(op=PACK_TX, **body)
 

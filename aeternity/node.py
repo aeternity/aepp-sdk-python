@@ -157,6 +157,7 @@ class NodeClient:
         Post a transaction to the chain and verify that the hash match the local calculated hash
         It blocks for a period of time to wait for the transaction to be included if in blocking_mode
         """
+        tx = tx.tx if hasattr(tx, "tx") else tx
         reply = self.post_transaction(body={"tx": tx})
         if tx_hash is not None and reply.tx_hash != tx_hash:
             raise TransactionHashMismatch(f"Transaction hash doesn't match, expected {tx_hash} got {reply.tx_hash}")
@@ -165,7 +166,7 @@ class NodeClient:
             self.wait_for_transaction(reply.tx_hash)
         return reply.tx_hash
 
-    def sign_transaction(self, account: Account, tx: str, metadata: dict = None, **kwargs) -> tuple:
+    def sign_transaction(self, account: Account, tx: object, metadata: dict = None, **kwargs) -> tuple:
         """
         Sign a transaction
         :return: the transaction for the transaction
@@ -207,7 +208,7 @@ class NodeClient:
             sg_tx
         )
         # 3. wrap the the ga into a signed transaction
-        sg_ga_sg_tx = self.tx_builder.tx_signed([], ga_sg_tx.tx)
+        sg_ga_sg_tx = self.tx_builder.tx_signed([], ga_sg_tx)
         return sg_ga_sg_tx
 
     def get_account(self, address: str) -> Account:
@@ -382,7 +383,7 @@ class NodeClient:
             raise exceptions.UnsupportedNodeVersion(f"Version {self.api_version} is not supported")
         return (protocol_abi_vm.get("vm"), protocol_abi_vm.get("abi"))
 
-    def poa_to_ga(self, account: Account, ga_contract: str,
+    def account_basic_to_ga(self, account: Account, ga_contract: str,
                   init_calldata: str = defaults.CONTRACT_INIT_CALLDATA,
                   auth_fun: str = defaults.GA_AUTH_FUNCTION,
                   fee: int = defaults.FEE,
@@ -397,17 +398,16 @@ class NodeClient:
         """
         # check the auth_fun name
         if auth_fun is None or len(auth_fun) == 0:
-            raise ValueError("The parameter auth_fun is required")
+            raise TypeError("The parameter auth_fun is required")
         # decode the contract and search for the authorization function
         auth_fun_hash = None
         contract_data = contract.CompilerClient.decode_bytecode(ga_contract)
         for ti in contract_data.type_info:
-            print(ti.fun_name, " .. ", auth_fun)
             if ti.fun_name == auth_fun:
                 auth_fun_hash = ti.fun_hash
         # if the function is not found then raise an error
         if auth_fun_hash is None:
-            raise ValueError(f"Authorization function not found: '{auth_fun}'")
+            raise TypeError(f"Authorization function not found: '{auth_fun}'")
         # get the nonce
         nonce = self.get_next_nonce(account.get_address())
         # compute the ttl
@@ -429,9 +429,9 @@ class NodeClient:
             init_calldata
         )
         # sign the transaction
-        tx = self.sign_transaction(account, tx.tx)
+        tx = self.sign_transaction(account, tx)
         # broadcast the transaction
-        self.broadcast_transaction(tx.tx, tx_hash=tx.hash)
+        self.broadcast_transaction(tx, tx_hash=tx.hash)
         return tx
 
     # support naming

@@ -61,7 +61,7 @@ def test_node_ga_attach(chain_fixture, compiler_fixture):
     # this will return an object
     # init_calldata.calldata
     # now we can execute the transaction
-    tx = ae_cli.poa_to_ga(account, ga_contract, init_calldata=init_calldata, gas=500)
+    tx = ae_cli.account_basic_to_ga(account, ga_contract, init_calldata=init_calldata, gas=500)
 
     # now check if it is a ga
     ga_account = ae_cli.get_account_by_pubkey(pubkey=account.get_address())
@@ -83,7 +83,7 @@ def test_node_ga_meta_spend(chain_fixture, compiler_fixture):
     # this will return an object
     # init_calldata.calldata
     # now we can execute the transaction
-    tx = ae_cli.poa_to_ga(account, ga_contract, init_calldata=init_calldata, gas=500)
+    tx = ae_cli.account_basic_to_ga(account, ga_contract, init_calldata=init_calldata, gas=500)
 
     print("ACCOUNT is now GA", account.get_address())
 
