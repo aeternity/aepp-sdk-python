@@ -174,12 +174,12 @@ class NodeClient:
         # first retrieve the account from the node
         # so we can check if it is generalized or not
         on_chain_account = self.get_account(account.get_address())
-        
+
         # if the account is not generalized sign and return the transaction
         if not on_chain_account.is_generalized():
             s = TxSigner(account, self.config.network_id)
             return s.sign_encode_transaction(tx, metadata)
-        
+
         # if the account is generalized then prepare the ga_meta_tx
         # 1. wrap the tx into a sigend tx (without signatures)
         sg_tx = self.tx_builder.tx_signed([], tx)
@@ -196,7 +196,7 @@ class NodeClient:
         gas = kwargs.get("gas", defaults.GA_MAX_AUTH_FUN_GAS)
         if gas > defaults.GA_MAX_AUTH_FUN_GAS:
             raise TypeError(f"the maximum gas value for ga auth_fun is {defaults.GA_MAX_AUTH_FUN_GAS}, got {gas}")
-        # build the 
+        # build the
         ga_sg_tx = self.tx_builder.tx_ga_meta(
             account.get_address(),
             auth_data,
@@ -384,12 +384,12 @@ class NodeClient:
         return (protocol_abi_vm.get("vm"), protocol_abi_vm.get("abi"))
 
     def account_basic_to_ga(self, account: Account, ga_contract: str,
-                  init_calldata: str = defaults.CONTRACT_INIT_CALLDATA,
-                  auth_fun: str = defaults.GA_AUTH_FUNCTION,
-                  fee: int = defaults.FEE,
-                  tx_ttl: int = defaults.TX_TTL,
-                  gas: int = defaults.CONTRACT_GAS,
-                  gas_price: int = defaults.CONTRACT_GAS_PRICE):
+                            init_calldata: str = defaults.CONTRACT_INIT_CALLDATA,
+                            auth_fun: str = defaults.GA_AUTH_FUNCTION,
+                            fee: int = defaults.FEE,
+                            tx_ttl: int = defaults.TX_TTL,
+                            gas: int = defaults.CONTRACT_GAS,
+                            gas_price: int = defaults.CONTRACT_GAS_PRICE):
         """
         Transform a POA (Plain Old Account) to a GA (Generalized Account)
         :param account: the account to transform

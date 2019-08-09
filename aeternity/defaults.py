@@ -47,4 +47,4 @@ CHANNEL_URL = 'ws://127.0.0.1:3014'
 # Generalized accounts
 GA_AUTH_FUNCTION = "authorize"
 GA_MAX_AUTH_FUN_GAS = 50000
-GA_ACCOUNTS_NONCE = 0 # for tx in ga transactions the nonce must be 0
+GA_ACCOUNTS_NONCE = 0  # for tx in ga transactions the nonce must be 0
