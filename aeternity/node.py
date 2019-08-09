@@ -170,24 +170,38 @@ class NodeClient:
         Sign a transaction
         :return: the transaction for the transaction
         """
-        s = TxSigner(account, self.config.network_id)
-        if not account.is_generalized():
+        # first retrieve the account from the node
+        # so we can check if it is generalized or not
+        on_chain_account = self.get_account(account.get_address())
+        
+        # if the account is not generalized sign and return the transaction
+        if not on_chain_account.is_generalized():
+            s = TxSigner(account, self.config.network_id)
             return s.sign_encode_transaction(tx, metadata)
-
-        # 1. wrap the tx into dummy sigend tx
+        
+        # if the account is generalized then prepare the ga_meta_tx
+        # 1. wrap the tx into a sigend tx (without signatures)
         sg_tx = self.tx_builder.tx_signed([], tx)
-        # 2. then wrap the tx into the meta tx
-        # TODO: auth_data is the only required one
+        # 2. wrap the tx into a ga_meta_tx
+        # get the absolute ttl
         ttl = self.compute_absolute_ttl(kwargs.get("ttl", defaults.TX_TTL)).absolute_ttl
-        # get abi and vm version
-        vm_version, abi_version = self.get_vm_abi_versions()
+        # get abi version
+        _, abi = self.get_vm_abi_versions()
+        # check that the parameter auth_data is provided
+        auth_data = kwargs.get("auth_data")
+        if auth_data is None:
+            raise TypeError("the auth_data parameter is required for ga accounts")
+        # verify the gas amount TODO: add a tx verification
+        gas = kwargs.get("gas", defaults.GA_MAX_AUTH_FUN_GAS)
+        if gas > defaults.GA_MAX_AUTH_FUN_GAS:
+            raise TypeError(f"the maximum gas value for ga auth_fun is {defaults.GA_MAX_AUTH_FUN_GAS}, got {gas}")
+        # build the 
         ga_sg_tx = self.tx_builder.tx_ga_meta(
             account.get_address(),
-            kwargs.get("auth_data"),
-            kwargs.get("vm_version", vm_version),
-            kwargs.get("abi_version", abi_version),
+            auth_data,
+            kwargs.get("abi_version", abi),
             kwargs.get("fee", defaults.FEE),
-            kwargs.get("gas", defaults.CONTRACT_GAS),
+            gas,
             kwargs.get("gas_price", defaults.CONTRACT_GAS_PRICE),
             ttl,
             sg_tx
@@ -201,7 +215,7 @@ class NodeClient:
         Retrieve an account by it's public key
         """
         if not utils.is_valid_hash(address, identifiers.ACCOUNT_ID):
-            raise ValueError(f"Input {address} is not a valid aeternity address")
+            raise TypeError(f"Input {address} is not a valid aeternity address")
         remote_account = self.get_account_by_pubkey(pubkey=address)
         return Account.from_node_api(remote_account)
 

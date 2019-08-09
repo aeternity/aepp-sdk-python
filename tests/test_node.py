@@ -1,20 +1,19 @@
 from aeternity.signing import Account
-from aeternity import defaults, identifiers
+from aeternity import defaults, identifiers, hashing
 import pytest
 # from aeternity.exceptions import TransactionNotFoundException
 
 
 blind_auth_contract = """contract BlindAuth =
-      record state = { nonce : int, owner : address }
+      record state = { owner : address }
 
-      entrypoint init(owner' : address) = { nonce = 1, owner = owner' }
+      entrypoint init(owner' : address) = { owner = owner' }
 
-      stateful entrypoint authorize(s : signature) : bool =
+      stateful entrypoint authorize(r: int) : bool =
+        // r is a random number only used to make tx hashes unique 
         switch(Auth.tx_hash)
           None          => abort("Not in Auth context")
-          Some(tx_hash) => 
-              put(state{ nonce = state.nonce + 1 })
-              true
+          Some(tx_hash) => true
 
       entrypoint to_sign(h : hash, n : int) : hash =
         Crypto.blake2b((h, n))
@@ -86,9 +85,10 @@ def test_node_ga_meta_spend(chain_fixture, compiler_fixture):
     # now we can execute the transaction
     tx = ae_cli.poa_to_ga(account, ga_contract, init_calldata=init_calldata, gas=500)
 
+    print("ACCOUNT is now GA", account.get_address())
+
     # retrieve the account data
     ga_account = ae_cli.get_account(account.get_address())
-    print("ACCOUNT ", ga_account)
     # create a dummy account
     recipient_id = Account.generate().get_address()
     
@@ -97,14 +97,16 @@ def test_node_ga_meta_spend(chain_fixture, compiler_fixture):
     payload = "ga spend tx"
     fee = defaults.FEE
     ttl = defaults.TX_TTL
-    nonce = 213321
+    
     spend_tx = ae_cli.tx_builder.tx_spend(account.get_address(), recipient_id, amount, payload, fee, ttl, 0)
+
     
     # encode the call data for the transaction
-    calldata = c_cli.encode_calldata(blind_auth_contract, account.auth_fun, [account.get_address()]).calldata
-    # now we can execute the transaction
-    spend_tx = ae_cli.sign_transaction(account, spend_tx.tx, calldata=calldata, gas=500)
-    #
-    tx_hash = ae_cli.broadcast_transaction(spend_tx)
-
-    raise ValueError()
+    calldata = c_cli.encode_calldata(blind_auth_contract, ga_account.auth_fun, [hashing.randint()]).calldata
+    # now we can sign the transaction (it will use the auth for do that)
+    spend_tx = ae_cli.sign_transaction(ga_account, spend_tx.tx, auth_data=calldata)
+    # broadcast
+    tx_hash = ae_cli.broadcast_transaction(spend_tx.tx)
+    print(f"GA_META_TX {tx_hash}")
+    # check that the account received the tokens
+    assert ae_cli.get_account_by_pubkey(pubkey=recipient_id).balance == amount

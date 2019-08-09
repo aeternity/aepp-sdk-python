@@ -46,3 +46,4 @@ CHANNEL_ENDPOINT = 'channel'
 CHANNEL_URL = 'ws://127.0.0.1:3014'
 # Generalized accounts
 GA_AUTH_FUNCTION = "authorize"
+GA_MAX_AUTH_FUN_GAS = 50000

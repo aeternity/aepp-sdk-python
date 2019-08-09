@@ -425,7 +425,7 @@ def _tx_native(op, **kwargs):
                 _int(kwargs.get("amount")),
                 _int(kwargs.get("gas")),
                 _int(kwargs.get("gas_price")),
-                _binary(decode(kwargs.get("call_data"))),
+                decode(kwargs.get("call_data")),
             ]
             min_fee = std_fee(tx_native, tx_field_fee_index, base_gas_multiplier=30)
         elif op == UNPACK_TX:  # unpack transaction
@@ -953,28 +953,27 @@ def _tx_native(op, **kwargs):
                 _int(tag),
                 _int(vsn),
                 _id(kwargs.get("ga_id")),
-                _binary(kwargs.get("auth_data")),
+                decode(kwargs.get("auth_data")),  # it should be a string: cb_XYZ
                 _int(kwargs.get("abi_version")),
                 _int(kwargs.get("fee")),
                 _int(kwargs.get("gas")),
                 _int(kwargs.get("gas_price")),
                 _int(kwargs.get("ttl")),
-                _binary(kwargs.get("tx")),  # TODO: this can be handled as sign transaction
+                decode(kwargs.get("tx")),  # it should be a string: tx_XYZ
             ]
-            min_fee = std_fee(tx_native, tx_field_fee_index)
+            min_fee = std_fee(tx_native, tx_field_fee_index, base_gas_multiplier=5)
         elif op == UNPACK_TX:  # unpack transaction
-            vml = len(tx_native[6])  # this is used to extract the abi and vm version from the 5th field
             tx_data = dict(
                 tag=tag,
                 vsn=_int_decode(tx_native[1]),
                 ga_id=_id_decode(tx_native[2]),
-                auth_data=_binary_decode(tx_native[3]),
+                auth_data=encode(idf.BYTECODE, tx_native[3]),
                 abi_version=_int_decode(tx_native[4]),
                 fee=_int_decode(tx_native[5]),
                 gas=_int_decode(tx_native[6]),
                 gas_price=_int_decode(tx_native[7]),
                 ttl=_int_decode(tx_native[8]),
-                tx=_binary_decode(tx_native[9]),
+                tx=encode(idf.TRANSACTION, tx_native[9]),
             )
             min_fee = tx_data.get("fee")
         else:
@@ -1000,6 +999,19 @@ class TxBuilder:
         """
         tx_raw = decode(encoded_tx)
         return hash_encode(idf.TRANSACTION_HASH, tx_raw)
+
+    def tx_signed(self, signatures, tx):
+        """
+        Create a signed transaction. This is a special type of transaction
+        as it wraps a normal transaction adding one or more signature
+        """
+        body = dict(
+            tag=idf.OBJECT_TAG_SIGNED_TRANSACTION,
+            vsn=idf.VSN,
+            signatures=signatures,
+            tx=tx
+        )
+        return _tx_native(op=PACK_TX, **body)
 
     def tx_spend(self, sender_id, recipient_id, amount, payload, fee, ttl, nonce) -> tuple:
         """
@@ -1369,7 +1381,7 @@ class TxBuilder:
         :param tx: the transaction to be authorized
         """
         body = dict(
-            tag=idf.OBJECT_TAG_GA_ATTACH_TRANSACTION,
+            tag=idf.OBJECT_TAG_GA_META_TRANSACTION,
             vsn=idf.VSN,
             ga_id=ga_id,
             auth_data=auth_data,
@@ -1378,7 +1390,7 @@ class TxBuilder:
             gas=gas,
             gas_price=gas_price,
             ttl=ttl,
-            tx=tx,
+            tx=tx.tx,
         )
         return _tx_native(op=PACK_TX, **body)
 

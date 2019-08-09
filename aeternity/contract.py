@@ -148,7 +148,6 @@ class Contract:
              gas=defaults.CONTRACT_GAS,
              gas_price=defaults.CONTRACT_GAS_PRICE,
              fee=defaults.FEE,
-             vm_version=None,
              abi_version=None,
              tx_ttl=defaults.TX_TTL):
         """Call a sophia contract"""
@@ -163,8 +162,7 @@ class Contract:
 
         try:
             # retrieve the correct vm/abi version
-            vm, abi = self.client.get_vm_abi_versions()
-            vm_version = vm if vm_version is None else vm_version
+            _, abi = self.client.get_vm_abi_versions()
             abi_version = abi if abi_version is None else abi_version
             # get the transaction builder
             txb = self.client.tx_builder
