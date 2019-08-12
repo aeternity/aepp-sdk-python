@@ -7,7 +7,7 @@ import namedtupled
 from aeternity.transactions import TxSigner
 from aeternity.signing import Account
 from aeternity.openapi import OpenAPIClientException
-from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers
+from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers, exceptions, utils
 from aeternity.exceptions import TransactionWaitTimeoutExpired, TransactionHashMismatch
 from aeternity import __node_compatibility__
 
@@ -157,6 +157,7 @@ class NodeClient:
         Post a transaction to the chain and verify that the hash match the local calculated hash
         It blocks for a period of time to wait for the transaction to be included if in blocking_mode
         """
+        tx = tx.tx if hasattr(tx, "tx") else tx
         reply = self.post_transaction(body={"tx": tx})
         if tx_hash is not None and reply.tx_hash != tx_hash:
             raise TransactionHashMismatch(f"Transaction hash doesn't match, expected {tx_hash} got {reply.tx_hash}")
@@ -165,14 +166,59 @@ class NodeClient:
             self.wait_for_transaction(reply.tx_hash)
         return reply.tx_hash
 
-    def sign_transaction(self, account: Account, tx: str, metadata: dict = None) -> tuple:
+    def sign_transaction(self, account: Account, tx: object, metadata: dict = None, **kwargs) -> tuple:
         """
         Sign a transaction
         :return: the transaction for the transaction
         """
-        s = TxSigner(account, self.config.network_id)
-        tx = s.sign_encode_transaction(tx, metadata)
-        return tx
+        # first retrieve the account from the node
+        # so we can check if it is generalized or not
+        on_chain_account = self.get_account(account.get_address())
+
+        # if the account is not generalized sign and return the transaction
+        if not on_chain_account.is_generalized():
+            s = TxSigner(account, self.config.network_id)
+            return s.sign_encode_transaction(tx, metadata)
+
+        # if the account is generalized then prepare the ga_meta_tx
+        # 1. wrap the tx into a sigend tx (without signatures)
+        sg_tx = self.tx_builder.tx_signed([], tx)
+        # 2. wrap the tx into a ga_meta_tx
+        # get the absolute ttl
+        ttl = self.compute_absolute_ttl(kwargs.get("ttl", defaults.TX_TTL)).absolute_ttl
+        # get abi version
+        _, abi = self.get_vm_abi_versions()
+        # check that the parameter auth_data is provided
+        auth_data = kwargs.get("auth_data")
+        if auth_data is None:
+            raise TypeError("the auth_data parameter is required for ga accounts")
+        # verify the gas amount TODO: add a tx verification
+        gas = kwargs.get("gas", defaults.GA_MAX_AUTH_FUN_GAS)
+        if gas > defaults.GA_MAX_AUTH_FUN_GAS:
+            raise TypeError(f"the maximum gas value for ga auth_fun is {defaults.GA_MAX_AUTH_FUN_GAS}, got {gas}")
+        # build the
+        ga_sg_tx = self.tx_builder.tx_ga_meta(
+            account.get_address(),
+            auth_data,
+            kwargs.get("abi_version", abi),
+            kwargs.get("fee", defaults.FEE),
+            gas,
+            kwargs.get("gas_price", defaults.CONTRACT_GAS_PRICE),
+            ttl,
+            sg_tx
+        )
+        # 3. wrap the the ga into a signed transaction
+        sg_ga_sg_tx = self.tx_builder.tx_signed([], ga_sg_tx)
+        return sg_ga_sg_tx
+
+    def get_account(self, address: str) -> Account:
+        """
+        Retrieve an account by it's public key
+        """
+        if not utils.is_valid_hash(address, identifiers.ACCOUNT_ID):
+            raise TypeError(f"Input {address} is not a valid aeternity address")
+        remote_account = self.get_account_by_pubkey(pubkey=address)
+        return Account.from_node_api(remote_account)
 
     def spend(self, account: Account,
               recipient_id: str,
@@ -225,7 +271,8 @@ class NodeClient:
             except OpenAPIClientException as e:
                 # it may fail because it is not found that means that
                 # or it was invalid or the ttl has expired
-                raise TransactionWaitTimeoutExpired(tx_hash=tx_hash, reason=e.reason)
+                reason = e.reason if hasattr(e, "reason") else "Timeout expired"
+                raise TransactionWaitTimeoutExpired(tx_hash=tx_hash, reason=reason)
             # if the tx.block_height >= min_block_height we are ok
             if tx.block_height >= 0:
                 tx_height = tx.block_height
@@ -325,6 +372,67 @@ class NodeClient:
         """
         decoded = transactions._tx_native(transactions.UNPACK_TX, tx=encoded_tx)
         return decoded
+
+    def get_vm_abi_versions(self):
+        """
+        Check the version of the node and retrieve the correct values for abi and vm version
+        """
+        protocol_version = self.get_consensus_protocol_version()
+        protocol_abi_vm = identifiers.PROTOCOL_ABI_VM.get(protocol_version)
+        if protocol_abi_vm is None:
+            raise exceptions.UnsupportedNodeVersion(f"Version {self.api_version} is not supported")
+        return (protocol_abi_vm.get("vm"), protocol_abi_vm.get("abi"))
+
+    def account_basic_to_ga(self, account: Account, ga_contract: str,
+                            init_calldata: str = defaults.CONTRACT_INIT_CALLDATA,
+                            auth_fun: str = defaults.GA_AUTH_FUNCTION,
+                            fee: int = defaults.FEE,
+                            tx_ttl: int = defaults.TX_TTL,
+                            gas: int = defaults.CONTRACT_GAS,
+                            gas_price: int = defaults.CONTRACT_GAS_PRICE):
+        """
+        Transform a POA (Plain Old Account) to a GA (Generalized Account)
+        :param account: the account to transform
+        :param contract: the compiled contract associated to the GA
+        :param auth_fun: the name of the contract function to use for authorization (default: authorize)
+        """
+        # check the auth_fun name
+        if auth_fun is None or len(auth_fun) == 0:
+            raise TypeError("The parameter auth_fun is required")
+        # decode the contract and search for the authorization function
+        auth_fun_hash = None
+        contract_data = contract.CompilerClient.decode_bytecode(ga_contract)
+        for ti in contract_data.type_info:
+            if ti.fun_name == auth_fun:
+                auth_fun_hash = ti.fun_hash
+        # if the function is not found then raise an error
+        if auth_fun_hash is None:
+            raise TypeError(f"Authorization function not found: '{auth_fun}'")
+        # get the nonce
+        nonce = self.get_next_nonce(account.get_address())
+        # compute the ttl
+        ttl = self.compute_absolute_ttl(tx_ttl).absolute_ttl
+        # get abi and vm version
+        vm_version, abi_version = self.get_vm_abi_versions()
+        # build the transaction
+        tx = self.tx_builder.tx_ga_attach(
+            account.get_address(),
+            nonce,
+            ga_contract,
+            auth_fun_hash,
+            vm_version,
+            abi_version,
+            fee,
+            ttl,
+            gas,
+            gas_price,
+            init_calldata
+        )
+        # sign the transaction
+        tx = self.sign_transaction(account, tx)
+        # broadcast the transaction
+        self.broadcast_transaction(tx, tx_hash=tx.hash)
+        return tx
 
     # support naming
     def AEName(self, domain):

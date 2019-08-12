@@ -10,18 +10,27 @@ from nacl.exceptions import CryptoError
 from nacl.pwhash import argon2id
 from nacl import secret, utils as nacl_utils
 from aeternity.identifiers import ACCOUNT_ID, ACCOUNT_API_FORMAT, ACCOUNT_SOFIA_FORMAT, ACCOUNT_RAW_FORMAT
+from aeternity.identifiers import ACCOUNT_KIND_BASIC
 from aeternity import hashing, utils
 
 
 class Account:
     """Implement secret/public key functionalities"""
 
-    def __init__(self, signing_key, verifying_key):
+    def __init__(self, signing_key, verifying_key, **kwargs):
+        # distinguish from poa / ga
+        # TODO: handle the case that they are not set
+        self.nonce = kwargs.get("nonce", 0)
+        self.balance = kwargs.get("balance", 0)
+        self.kind = kwargs.get("kind", ACCOUNT_KIND_BASIC)
+        self.contract_id = kwargs.get("contract_id")
+        self.auth_fun = kwargs.get("auth_fun")
+        self.address = kwargs.get("id")
         self.signing_key = signing_key
         self.verifying_key = verifying_key
-        pub_key = self.verifying_key.encode(encoder=RawEncoder)
-        self.address = hashing.encode(ACCOUNT_ID, pub_key)
-        self.nonce = 0
+        if verifying_key is not None:
+            pub_key = self.verifying_key.encode(encoder=RawEncoder)
+            self.address = hashing.encode(ACCOUNT_ID, pub_key)
 
     def get_address(self, format=ACCOUNT_API_FORMAT):
         """
@@ -66,6 +75,16 @@ class Account:
         :param signature: the signature to verify
         """
         self.verifying_key.verify(signature, data)
+
+    def is_generalized(self):
+        """
+        Tells wherever the account is a generalized.
+        An account is generalized if it has the kind = generalized
+        :return: true if it is generalized, false if it is basic
+        """
+        if self.kind == ACCOUNT_KIND_BASIC:
+            return False
+        return True
 
     def save_to_keystore_file(self, path, password):
         """
@@ -148,6 +167,27 @@ class Account:
         signing_key = SigningKey(seed=k[0:32], encoder=RawEncoder)
         kp = Account(signing_key, signing_key.verify_key)
         return kp
+
+    @classmethod
+    def from_node_api(cls, api_account, secret_key=None):
+        """
+        Load an account from the object returned by the node API
+        endpoint get_accounts_from_pubkey (/accounts/{pubkey}),
+        and optionally passing a secret key for signing.
+        The secret key must match the account address (pubkey)
+        :param api_account: the account object obtained from the node api
+        :param secret_key: optional secret key to allow signing
+        """
+        # TODO: the account api is a bit convoluted, could be simplified
+        # api_account is namedtuple of type Account returned by the node
+
+        account = Account(None, None, **api_account._asdict())
+        if secret_key is not None:
+            account.signing_key = cls._raw_key(secret_key)
+            # TODO: is this test relevant?
+            if account.get_address() != api_account.account_id:
+                raise ValueError(f"Public key mismatch, expected {api_account.account_id} got {account.get_address()}")
+        return account
 
     @classmethod
     def from_keystore(cls, path, password):
