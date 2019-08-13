@@ -6,17 +6,18 @@ ACCOUNT_ID = "ak"  # base58	Account pubkey
 BLOCK_PROOF_OF_FRAUD_HASH = "bf"  # base58	Block Proof of Fraud hash
 BLOCK_STATE_HASH = "bs"  # base58	Block State hash
 BLOCK_TRANSACTION_HASH = "bx"  # base58	Block transaction hash
-CHANNEL = "ch"  # base58	Channel
-COMMITMENT = "cm"  # base58	Commitment
+CHANNEL_ID = "ch"  # base58	Channel
+COMMITMENT_ID = "cm"  # base58	Commitment
 CONTRACT_ID = "ct"  # base58	Contract pubkey
 KEY_BLOCK_HASH = "kh"  # base58	Key block hash
 MICRO_BLOCK_HASH = "mh"  # base58	Micro block hash
-NAME = "nm"  # base58	Name
+NAME_ID = "nm"  # base58	Name
 ORACLE_ID = "ok"  # base58	Oracle pubkey
 ORACLE_QUERY_ID = "oq"  # base58	Oracle query id
 PEER_ID = "pp"  # base58	Peer pubkey
 SIGNATURE = "sg"  # base58	Signature
 TRANSACTION_HASH = "th"  # base58	Transaction hash
+STATE_HASH = "sh"  # base58 fsm state hash
 
 # Base 64
 BYTECODE = "cb"  # base64	Contract byte array
@@ -38,7 +39,7 @@ IDENTIFIERS_B58 = set([
     CONTRACT_ID,
     KEY_BLOCK_HASH,
     MICRO_BLOCK_HASH,
-    NAME,
+    NAME_ID,
     ORACLE_ID,
     ORACLE_QUERY_ID,
     PEER_ID,
@@ -82,20 +83,20 @@ ID_TAG_CHANNEL = 6
 # Maps numeric tags to string prefixes
 ID_TAG_TO_PREFIX = {
     ID_TAG_ACCOUNT: ACCOUNT_ID,
-    ID_TAG_CHANNEL: CHANNEL,
-    ID_TAG_COMMITMENT: COMMITMENT,
+    ID_TAG_CHANNEL: CHANNEL_ID,
+    ID_TAG_COMMITMENT: COMMITMENT_ID,
     ID_TAG_CONTRACT: CONTRACT_ID,
-    ID_TAG_NAME: NAME,
+    ID_TAG_NAME: NAME_ID,
     ID_TAG_ORACLE: ORACLE_ID
 }
 
 # Maps string prefixes to numeric tags
 ID_PREFIX_TO_TAG = {
     ACCOUNT_ID: ID_TAG_ACCOUNT,
-    CHANNEL: ID_TAG_CHANNEL,
-    COMMITMENT: ID_TAG_COMMITMENT,
+    CHANNEL_ID: ID_TAG_CHANNEL,
+    COMMITMENT_ID: ID_TAG_COMMITMENT,
     CONTRACT_ID: ID_TAG_CONTRACT,
-    NAME: ID_TAG_NAME,
+    NAME_ID: ID_TAG_NAME,
     ORACLE_ID: ID_TAG_ORACLE
 }
 
