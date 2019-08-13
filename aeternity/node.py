@@ -4,7 +4,6 @@ import random
 from datetime import datetime, timedelta
 import namedtupled
 
-from aeternity.transactions import TxSigner
 from aeternity.signing import Account
 from aeternity.openapi import OpenAPIClientException
 from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers, exceptions, utils
@@ -81,7 +80,12 @@ class NodeClient:
                                       force_compatibility=config.force_compatibility,
                                       compatibility_version_range=__node_compatibility__)
         # instantiate the transaction builder object
-        self.tx_builder = transactions.TxBuilder()
+        self.tx_builder = transactions.TxBuilder(
+            base_gas=config.tx_base_gas,
+            gas_per_byte=config.tx_gas_per_byte,
+            gas_price=config.tx_gas_price,
+            key_block_interval=config.key_block_interval
+        )
         # network id
         if self.config.network_id is None:
             self.config.network_id = self.api.get_status().network_id
@@ -177,8 +181,9 @@ class NodeClient:
 
         # if the account is not generalized sign and return the transaction
         if not on_chain_account.is_generalized():
-            s = TxSigner(account, self.config.network_id)
-            return s.sign_encode_transaction(tx, metadata)
+            s = transactions.TxSigner(account, self.config.network_id)
+            signature = s.sign_transaction(tx, metadata)
+            return self.tx_builder.tx_signed([signature], tx)
 
         # if the account is generalized then prepare the ga_meta_tx
         # 1. wrap the tx into a sigend tx (without signatures)

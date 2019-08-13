@@ -10,31 +10,369 @@ import namedtupled
 PACK_TX = 1
 UNPACK_TX = 0
 
-tx_fields_index = {
+_INT = 0  # int type
+_ID = 1  # id type (account, contract_id, etc)
+_TX = 2  # transaction type
+_SG = 3  # signatures
+_PTR = 6  # name pointer
+_POI = 7  # proof of inclusion
+_OTTL = 8  # oracle ttl
+_BIN = 9  # binary format
+_TR = 10  # tree
+_VM_ABI = 11  # vm + abi field
+_ENC = 12  # encoded object
+_IDS = 101  # list of id
+_PTRS = 106  # list of pointers
+
+
+class Fn:
+    def _init(self, index, field_type=_INT, **kwargs):
+        self.index = index
+        self.field_type = field_type
+        self.encoding_prefix = kwargs.get("prefix")
+
+
+SIZE_BASED = 0  # used for most of transactions
+TTL_BASED = 1  # used for oracle
+GA_META = 2  # used for meta tx
+
+
+class Fee:
+    def __init__(self, fee_type, base_gas_multiplier=1, ttl_field=None, tx_field=None):
+        self.fee_type = fee_type
+        self.base_gas_multiplier = base_gas_multiplier
+        self.ttl_field = ttl_field
+        self.tx_field = tx_field
+
+
+txf = {
+    idf.OBJECT_TAG_SIGNED_TRANSACTION: {
+        "fee": None,
+        "schema": {
+            "version": Fn(1),
+            "signatures": Fn(2, _SG, prefix=idf.SIGNATURE),  # list
+            "tx": Fn(3, _TX, prefix=idf.TRANSACTION),
+        }
+    },
     idf.OBJECT_TAG_SPEND_TRANSACTION: {
-        "sender_id": 2,
-        "recipient_id": 3,
-        "amount": 4,
-        "fee": 5,
-        "ttl": 6,
-        "nonce": 7,
-        "payload": 8,
-    }
+        "fee": Fee(SIZE_BASED),
+        "schema": {
+            "version": Fn(1),
+            "sender_id": Fn(2, _ID),
+            "recipient_id": Fn(3, _ID),
+            "amount": Fn(4),
+            "fee": Fn(5),
+            "ttl": Fn(6),
+            "nonce": Fn(7),
+            "payload": Fn(8, _ENC, prefix=idf.BYTE_ARRAY),
+        }
+    },
+    idf.OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION: {
+        "fee": Fee(SIZE_BASED),
+        "schema": {
+            "version": Fn(1),
+            "account_id": Fn(2, _ID),
+            "nonce": Fn(3),
+            "commitment_id": Fn(4, _ID),
+            "fee": Fn(5),
+            "ttl": Fn(6),
+        }},
+    idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION: {
+        "fee": Fee(SIZE_BASED),
+        "schema": {
+            "version": Fn(1),
+            "account_id": Fn(2, _ID),
+            "nonce": Fn(3),
+            "name": Fn(4, _BIN),
+            "name_salt": Fn(5), # TODO: this has to be verified
+            "fee": Fn(6),
+            "ttl": Fn(7),
+        }},
+    idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION: {
+        "fee": Fee(SIZE_BASED),
+        "schema": {
+            "version": Fn(1),
+            "account_id": Fn(2, _ID),
+            "nonce": Fn(3),
+            "name": Fn(4, _ID),
+            "name_ttl": Fn(5),
+            "pointers": Fn(6, _PTR),
+            "client_ttl": Fn(7),
+            "fee": Fn(8),
+            "ttl": Fn(9),
+        }},
+    idf.OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION: {
+        "fee": Fee(SIZE_BASED),
+        "schema": {
+            "version": Fn(1),
+            "account_id": Fn(2, _ID),
+            "nonce": Fn(3),
+            "name_id": Fn(4, _ID),
+            "recipient_id": Fn(5, _ID),
+            "fee": Fn(6),
+            "ttl": Fn(7),
+        }},
+    idf.OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION: {
+        "fee": Fee(SIZE_BASED),
+        "schema": {
+            "version": Fn(1),
+            "account_id": Fn(2, _ID),
+            "nonce": Fn(3),
+            "name_id": Fn(4, _ID),
+            "fee": Fn(5),
+            "ttl": Fn(6),
+        }},
+    idf.OBJECT_TAG_CONTRACT_CREATE_TRANSACTION: {
+        "fee": Fee(SIZE_BASED, base_gas_multiplier=5),
+        "schema": {
+            "version": Fn(1),
+            "owner_id": Fn(2, _ID),
+            "nonce": Fn(3),
+            "code": Fn(4, _ENC, prefix=idf.BYTECODE),
+            # "vm_version": Fn(5),
+            "abi_version": Fn(5, _VM_ABI),
+            "fee": Fn(6),
+            "ttl": Fn(7),
+            "deposit": Fn(8),
+            "amount": Fn(9),
+            "gas": Fn(10),
+            "gas_price": Fn(11),
+            "call_data": Fn(12, _ENC, prefix=idf.BYTECODE),
+        }},
+    idf.OBJECT_TAG_CONTRACT_CALL_TRANSACTION: {
+        "fee": Fee(SIZE_BASED, base_gas_multiplier=30),
+        "schema": {
+            "version": Fn(1),
+            "caller_id": Fn(2, _ID),
+            "nonce": Fn(3),
+            "contract_id": Fn(4, _ID),
+            "abi_version": Fn(5),
+            "fee": Fn(6),
+            "ttl": Fn(7),
+            "amount": Fn(8),
+            "gas": Fn(9),
+            "gas_price": Fn(10),
+            "call_data": Fn(11, _ENC, prefix=idf.BYTECODE),
+        }},
+    idf.OBJECT_TAG_CHANNEL_CREATE_TRANSACTION: {
+        "fee": Fee(SIZE_BASED),
+        "schema": {
+            "version": Fn(1),
+            "initiator": Fn(2, _ID),
+            "initiator_amount": Fn(3),
+            "responder": Fn(4, _ID),
+            "responder_amount": Fn(5),
+            "channel_reserve": Fn(6),
+            "lock_period": Fn(7),
+            "ttl": Fn(8),
+            "fee": Fn(9),
+            "delegate_ids": Fn(10, _IDS),  # [d(d) for d in tx_native[10]], TODO: are u sure
+            "state_hash": Fn(11, _ENC, prefix=idf.STATE_HASH),
+            "nonce": Fn(12),
+        }},
+    idf.OBJECT_TAG_CHANNEL_DEPOSIT_TRANSACTION: {
+        "fee": Fee(SIZE_BASED),
+        "schema": {
+            "version": Fn(1),
+            "channel_id": Fn(2, _ID),
+            "from_id": Fn(3, _ID),
+            "amount": Fn(4),
+            "ttl": Fn(5),
+            "fee": Fn(6),
+            "state_hash": Fn(7, _ENC, prefix=idf.STATE_HASH),  # _binary_decode(tx_native[7]),
+            "round": Fn(8),
+            "nonce": Fn(9),
+        }},
+    idf.OBJECT_TAG_CHANNEL_WITHDRAW_TRANSACTION: {
+        "fee": Fee(SIZE_BASED),
+        "schema": {
+            "version": Fn(1),
+            "channel_id": Fn(2, _ID),
+            "to_id": Fn(3, _ID),
+            "amount": Fn(4),
+            "ttl": Fn(5),
+            "fee": Fn(6),
+            "state_hash": Fn(7, _ENC, prefix=idf.STATE_HASH),  # _binary_decode(tx_native[7]),
+            "round": Fn(8),
+            "nonce": Fn(9),
+        }},
+    idf.OBJECT_TAG_CHANNEL_CLOSE_MUTUAL_TRANSACTION: {
+        "fee": Fee(SIZE_BASED),
+        "schema": {
+            "version": Fn(1),
+            "channel_id": Fn(2, _ID),
+            "from_id": Fn(3, _ID),
+            "initiator_amount_final": Fn(4),
+            "responder_amount_final": Fn(5),
+            "ttl": Fn(6),
+            "fee": Fn(7),
+            "nonce": Fn(8),
+        }},
+    idf.OBJECT_TAG_CHANNEL_CLOSE_SOLO_TRANSACTION: {
+        "fee": Fee(SIZE_BASED),
+        "schema": {
+            "version": Fn(1),
+            "channel_id": Fn(2, _ID),
+            "from_id": Fn(3, _ID),
+            "payload": Fn(4, _ENC, prefix=idf.BYTE_ARRAY),
+            "poi": Fn(5, _POI),
+            "ttl": Fn(6),
+            "fee": Fn(7),
+            "nonce": Fn(8),
+        }},
+    idf.OBJECT_TAG_CHANNEL_SLASH_TRANSACTION: {
+        "fee": Fee(SIZE_BASED),
+        "schema": {
+            "version": Fn(1),
+            "channel_id": Fn(2, _ID),
+            "from_id": Fn(3, _ID),
+            "payload": Fn(4, _ENC, prefix=idf.BYTE_ARRAY),
+            "poi": Fn(5, _POI),
+            "ttl": Fn(6),
+            "fee": Fn(7),
+            "nonce": Fn(8),
+        }},
+    idf.OBJECT_TAG_CHANNEL_SETTLE_TRANSACTION: {
+        "fee": Fee(SIZE_BASED),
+        "schema": {
+            "version": Fn(1),
+            "channel_id": Fn(2, _ID),
+            "from_id": Fn(3, _ID),
+            "initiator_amount_final": Fn(4),
+            "responder_amount_final": Fn(5),
+            "ttl": Fn(6),
+            "fee": Fn(7),
+            "nonce": Fn(8),
+        }},
+    idf.OBJECT_TAG_CHANNEL_SNAPSHOT_TRANSACTION: {
+        "fee": Fee(SIZE_BASED),
+        "schema": {
+            "version": Fn(1),
+            "channel_id": Fn(2, _ID),
+            "from_id": Fn(3, _ID),
+            "payload": Fn(4, _ENC, prefix=idf.BYTE_ARRAY),
+            "ttl": Fn(5),
+            "fee": Fn(6),
+            "nonce": Fn(7),
+        }},
+    idf.OBJECT_TAG_CHANNEL_FORCE_PROGRESS_TRANSACTION: {
+        "fee": Fee(SIZE_BASED),
+        "schema": {
+            "version": Fn(1),
+            "channel_id": Fn(2, _ID),
+            "from_id": Fn(3, _ID),
+            "payload": Fn(4, _ENC, prefix=idf.BYTE_ARRAY),
+            "round": Fn(5),
+            "update": Fn(6),  # _binary_decode(tx_native[2]),
+            "state_hash": Fn(7, _ENC, prefix=idf.STATE_HASH),  # _binary_decode(tx_native[2]),
+            "offchain_trees": Fn(8, _TR),  # TODO: implement support for _trees
+            "ttl": Fn(2),
+            "fee": Fn(2),
+            "nonce": Fn(2),
+        }},
+    idf.OBJECT_TAG_ORACLE_REGISTER_TRANSACTION: {
+        "fee": Fee(SIZE_BASED, ttl_field="oracle_ttl.value"),
+        "schema": {
+            "version": Fn(1),
+            "account_id": Fn(2, _ID),
+            "nonce": Fn(3),
+            "query_format": Fn(4, _BIN),  # _binary_decode(tx_native[4]), TODO: verify the type
+            "response_format": Fn(5, _BIN),  # _binary_decode(tx_native[5]),
+            "query_fee": Fn(6),
+            "oracle_ttl.type": Fn(7),  # idf.ORACLE_TTL_TYPE_DELTA
+            "oracle_ttl.value": Fn(8),
+            "fee": Fn(9),
+            "ttl": Fn(10),
+            "vm_version": Fn(11),
+        }},
+    idf.OBJECT_TAG_ORACLE_QUERY_TRANSACTION: {
+        "fee": Fee(TTL_BASED, ttl_field="query_ttl.value"),
+        "schema": {
+            "version": Fn(1),
+            "sender_id": Fn(2, _ID),
+            "nonce": Fn(3),
+            "oracle_id": Fn(4, _ID),
+            "query": Fn(5),  # _binary_decode(tx_native[5]),
+            "query_fee": Fn(6),
+            "query_ttl.type": Fn(7),  # idf.ORACLE_TTL_TYPE_DELTA
+            "query_ttl.value": Fn(8),
+            "response_ttl.type": Fn(9),  # idf.ORACLE_TTL_TYPE_DELTA
+            "response_ttl.value": Fn(10),
+            "fee": Fn(11),
+            "ttl": Fn(12),
+        }},
+    idf.OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION: {
+        "fee": Fee(TTL_BASED, ttl_field="response_ttl.value"),
+        "schema": {
+            "version": Fn(1),
+            "oracle_id": Fn(2, _ID),
+            "nonce": Fn(3),
+            "query_id": Fn(4),  # encode(idf.ORACLE_QUERY_ID, tx_native[4]),
+            "response": Fn(5),  # _binary(tx_native[5]),
+            "response_ttl.type": Fn(6),  # idf.ORACLE_TTL_TYPE_DELTA
+            "response_ttl.value": Fn(7),
+            "fee": Fn(8),
+            "ttl": Fn(9),
+        }},
+    idf.OBJECT_TAG_ORACLE_EXTEND_TRANSACTION: {
+        "fee": Fee(TTL_BASED, ttl_field="oracle_ttl.value"),
+        "schema": {
+            "version": Fn(1),
+            "oracle_id": Fn(2, _ID),
+            "nonce": Fn(3),
+            "oracle_ttl.type": Fn(4),  # idf.ORACLE_TTL_TYPE_DELTA
+            "oracle_ttl.value": Fn(5),
+            "fee": Fn(6),
+            "ttl": Fn(7),
+        }},
+    idf.OBJECT_TAG_GA_ATTACH_TRANSACTION: {
+        "fee": Fee(SIZE_BASED, base_gas_multiplier=5),
+        "schema": {
+            "version": Fn(1),
+            "owner_id": Fn(2, _ID),
+            "nonce": Fn(3),
+            "code": Fn(4),  # _binary_decode(tx_native[4]),
+            "auth_fun": Fn(5),  # _binary_decode(tx_native[5]),
+            # "vm_version": Fn(6), # This field is retrieved via abi_version
+            "abi_version": Fn(6, _VM_ABI),
+            "fee": Fn(7),
+            "ttl": Fn(8),
+            "gas": Fn(9),
+            "gas_price": Fn(10),
+            "call_data": Fn(11),  # _binary_decode(tx_native[11]),
+        }},
+    idf.OBJECT_TAG_GA_META_TRANSACTION: {
+        "fee": Fee(SIZE_BASED, base_gas_multiplier=5),
+        "schema": {
+            "version": Fn(1),
+            "ga_id": Fn(2, _ID),
+            "auth_data": Fn(3),  # encode(idf.BYTECODE, tx_native[3]),
+            "abi_version": Fn(4),
+            "fee": Fn(5),
+            "gas": Fn(6),
+            "gas_price": Fn(7),
+            "ttl": Fn(8),
+            "tx": Fn(9),  # encode(idf.TRANSACTION, tx_native[9]),
+        }
+    },
 }
 
 
-def _field_idx(object_tag: int, field_name: str) -> int:
-    if field_name == "tag":
-        return 0
-    if field_name == "vsn":
-        return 1
-    o = tx_fields_index.get(object_tag)
-    if o is None:
-        raise ValueError(f"Unrecognized object tag {object_tag}")
-    idx = o.get(field_name)
-    if idx is None:
-        raise ValueError(f"Unrecognized field {field_name} for object tag {object_tag}")
-    return idx
+class TxObject:
+    """
+    This is a TxObject that is used throughout the SDK for transactions
+    It contains all the info associated to a transaction like transaction data,transaction hash, etx
+
+    """
+
+    def __init__(self, **kwargs):
+        self.data = kwargs.get("data", None)
+        self.tx = kwargs.get("tx", None)
+        self.hash = kwargs.get("hash", None)
+        self.metadata = kwargs.get("metadata", None)
+        self.network_id = kwargs.get("network_id", None)
+        self.signatures = kwargs.get("signatures", [])
+        pass
 
 
 class TxSigner:
@@ -50,9 +388,9 @@ class TxSigner:
         self.account = account
         self.network_id = network_id
 
-    def cosign_encode_transaction(self, tx):
+    def cosign_encode_transaction(self, tx): # TODO: remove this function
         # decode the transaction if not in native mode
-        transaction = _tx_native(op=UNPACK_TX, tx=tx.tx if hasattr(tx, "tx") else tx)
+        transaction = None  #_tx_native(op=UNPACK_TX, tx=tx.tx if hasattr(tx, "tx") else tx)
         # get the transaction as bytes
         tx_raw = decode(transaction.data.tx)
         # sign the transaction
@@ -62,925 +400,21 @@ class TxSigner:
             signatures=signatures,
             tx=transaction.data.tx
         )
-        return _tx_native(op=PACK_TX, **body)
+        return None
 
-    def sign_encode_transaction(self, tx, metadata: dict = None):
+    def sign_transaction(self, transaction: TxObject, metadata: dict = None):
         """
         Sign, encode and compute the hash of a transaction
         :param tx: the TxObject to be signed
         :param metadata: additional data to include in the output of the signed transaction object
         :return: encoded_signed_tx, encoded_signature, tx_hash
         """
-        # TODO: handle here GA transactions
-        # decode the transaction if not in native mode
-        transaction = _tx_native(op=UNPACK_TX, tx=tx.tx if hasattr(tx, "tx") else tx)
         # get the transaction as byte list
         tx_raw = decode(transaction.tx)
         # sign the transaction
         signature = self.account.sign(_binary(self.network_id) + tx_raw)
         # pack and encode the transaction
-        tx_body = dict(
-            tag=idf.OBJECT_TAG_SIGNED_TRANSACTION,
-            signatures=[encode(idf.SIGNATURE, signature)],
-            tx=transaction.tx
-        )
-        packed_tx = _tx_native(op=PACK_TX, **tx_body)
-        # compute the hash
-        tx_hash = TxBuilder.compute_tx_hash(packed_tx.tx)
-        # return the object
-        tx = dict(
-            data=transaction.data,
-            metadata=metadata,
-            tx=packed_tx.tx,
-            hash=tx_hash,
-            signature=packed_tx.data.signatures,
-            network_id=self.network_id,
-        )
-        return namedtupled.map(tx, _nt_name="TxObject")
-
-
-def _tx_native(op, **kwargs):
-
-    def std_fee(tx_raw, fee_idx, base_gas_multiplier=1):
-        # calculates the standard minimum transaction fee
-        tx_copy = tx_raw  # create a copy of the input
-        actual_fee = 0
-        tx_copy[fee_idx] = _int(actual_fee)  # replace fee with a byte array of length 1
-        expected = (defaults.BASE_GAS * base_gas_multiplier + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) * defaults.GAS_PRICE
-        while expected != actual_fee:
-            actual_fee = expected
-            tx_copy[fee_idx] = _int(expected)
-            expected = (defaults.BASE_GAS * base_gas_multiplier + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) * defaults.GAS_PRICE
-        return actual_fee
-
-    def oracle_fee(tx_raw, fee_idx, relative_ttl):
-        # estimate oracle fees
-        tx_copy = tx_raw  # create a copy of the input
-        actual_fee = 0
-        tx_copy[fee_idx] = _int(actual_fee)  # replace fee with a byte array of length 1
-        ttl_cost = math.ceil(32000 * relative_ttl / math.floor(60 * 24 * 365 / defaults.KEY_BLOCK_INTERVAL))  # calculate the variable cost for ttl
-        expected = ((defaults.BASE_GAS + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) + ttl_cost) * defaults.GAS_PRICE
-        while expected != actual_fee:
-            actual_fee = expected
-            tx_copy[fee_idx] = _int(expected)
-            expected = ((defaults.BASE_GAS + len(rlp.encode(tx_copy)) * defaults.GAS_PER_BYTE) + ttl_cost) * defaults.GAS_PRICE
-        return actual_fee
-
-    def build_tx_object(tx_data, tx_raw, fee_idx=None, min_fee=None):
-        # if there are fee involved verify the fee
-        if min_fee is not None and fee_idx is not None:
-            # if fee is not set use the min fee
-            if tx_data.get("fee") <= 0:
-                tx_data["fee"] = min_fee
-            # if it is set check that is greater then the minimum fee
-            elif tx_data.get("fee") < min_fee:
-                raise TransactionFeeTooLow(f'Minimum transaction fee is {min_fee}, provided fee is {tx_data.get("fee")}')
-            tx_native[fee_idx] = _int(tx_data.get("fee"))
-        # create the transaction object
-        tx_encoded = encode_rlp(idf.TRANSACTION, tx_native)
-        tx = dict(
-            data=tx_data,
-            tx=tx_encoded,
-            hash=TxBuilder.compute_tx_hash(tx_encoded),
-        )
-        return namedtupled.map(tx, _nt_name="TxObject")
-
-    # prepare tag and version
-    if op == PACK_TX:
-        tag = kwargs.get("tag", 0)
-        vsn = kwargs.get("vsn", idf.VSN)
-        tx_data = kwargs
-    elif op == UNPACK_TX:
-        tx_native = decode_rlp(kwargs.get("tx", []))
-        tag = _int_decode(tx_native[0])
-    else:
-        raise Exception("Invalid operation")
-
-    # check the tags
-    if tag == idf.OBJECT_TAG_SIGNED_TRANSACTION:
-        # this is a bit of a special case since there is no fee
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                [decode(x) for x in kwargs.get("signatures", [])],
-                decode(kwargs.get("tx"))
-            ]
-        elif op == UNPACK_TX:
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                signatures=[encode(idf.SIGNATURE, sg) for sg in tx_native[2]],
-                tx=encode(idf.TRANSACTION, tx_native[3]),
-            )
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native)
-    elif tag == idf.OBJECT_TAG_SPEND_TRANSACTION:
-        tx_field_fee_index = 5
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("sender_id")),
-                _id(kwargs.get("recipient_id")),
-                _int(kwargs.get("amount")),
-                _int(kwargs.get("fee")),  # index 5
-                _int(kwargs.get("ttl")),
-                _int(kwargs.get("nonce")),
-                _binary(kwargs.get("payload"))
-            ]
-            min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif op == UNPACK_TX:  # unpack transaction
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                sender_id=_id_decode(tx_native[2]),
-                recipient_id=_id_decode(tx_native[3]),
-                amount=_int_decode(tx_native[4]),
-                fee=_int_decode(tx_native[5]),
-                ttl=_int_decode(tx_native[6]),
-                nonce=_int_decode(tx_native[7]),
-                payload=encode(idf.BYTE_ARRAY, tx_native[8]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-    elif tag == idf.OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION:
-        tx_field_fee_index = 5
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("account_id")),
-                _int(kwargs.get("nonce")),
-                _id(kwargs.get("commitment_id")),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("ttl"))
-            ]
-            min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif op == UNPACK_TX:  # unpack transaction
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                account_id=_id_decode(tx_native[2]),
-                nonce=_int_decode(tx_native[3]),
-                commitment_id=_id_decode(tx_native[4]),
-                fee=_int_decode(tx_native[5]),
-                ttl=_int_decode(tx_native[6]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-
-    elif tag == idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION:
-        tx_field_fee_index = 6
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("account_id")),
-                _int(kwargs.get("nonce")),
-                _binary(kwargs.get("name")),
-                _binary(kwargs.get("name_salt")),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("ttl"))
-            ]
-            min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif op == UNPACK_TX:  # unpack transaction
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                account_id=_id_decode(tx_native[2]),
-                nonce=_int_decode(tx_native[3]),
-                name=_binary_decode(tx_native[4], str),
-                name_salt=_binary_decode(tx_native[5], int),
-                fee=_int_decode(tx_native[6]),
-                ttl=_int_decode(tx_native[7]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-
-    elif tag == idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION:
-        tx_field_fee_index = 8
-        if op == PACK_TX:  # pack transaction
-            # first assemble the pointers
-            def pointer_tag(pointer):
-                return {
-                    "account_pubkey": idf.ID_TAG_ACCOUNT,
-                    "oracle_pubkey": idf.ID_TAG_ORACLE,
-                    "contract_pubkey": idf.ID_TAG_CONTRACT,
-                    "channel_pubkey": idf.ID_TAG_CHANNEL
-                }.get(pointer.get("key"))
-            ptrs = [[_binary(p.get("key")), _id(p.get("id"))] for p in kwargs.get("pointers", [])]
-            # then build the transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("account_id")),
-                _int(kwargs.get("nonce")),
-                _id(kwargs.get("name_id")),
-                _int(kwargs.get("name_ttl")),
-                ptrs,
-                _int(kwargs.get("client_ttl")),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("ttl"))
-            ]
-            min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif op == UNPACK_TX:  # unpack transaction
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                account_id=_id_decode(tx_native[2]),
-                nonce=_int_decode(tx_native[3]),
-                name=_id_decode(tx_native[4]),
-                name_ttl=_int_decode(tx_native[5]),
-                pointers=[],  # TODO: decode pointers
-                client_ttl=_int_decode(tx_native[7]),
-                fee=_int_decode(tx_native[8]),
-                ttl=_int_decode(tx_native[9]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-
-    elif tag == idf.OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION:
-        tx_field_fee_index = 6
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("account_id")),
-                _int(kwargs.get("nonce")),
-                _id(kwargs.get("name_id")),
-                _id(kwargs.get("recipient_id")),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("ttl")),
-            ]
-            min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif op == UNPACK_TX:  # unpack transaction
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                account_id=_id_decode(tx_native[2]),
-                nonce=_int_decode(tx_native[3]),
-                name=_id_decode(tx_native[4]),
-                recipient_id=_id_decode(tx_native[5]),
-                fee=_int_decode(tx_native[6]),
-                ttl=_int_decode(tx_native[7]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-
-    elif tag == idf.OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION:
-        tx_field_fee_index = 5
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("account_id")),
-                _int(kwargs.get("nonce")),
-                _id(kwargs.get("name_id")),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("ttl")),
-            ]
-            min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif op == UNPACK_TX:  # unpack transaction
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                account_id=_id_decode(tx_native[2]),
-                nonce=_int_decode(tx_native[3]),
-                name=_id_decode(tx_native[4]),
-                fee=_int_decode(tx_native[5]),
-                ttl=_int_decode(tx_native[6]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-
-    elif tag == idf.OBJECT_TAG_CONTRACT_CREATE_TRANSACTION:
-        tx_field_fee_index = 6
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("owner_id")),
-                _int(kwargs.get("nonce")),
-                _binary(decode(kwargs.get("code"))),
-                _int(kwargs.get("vm_version")) + _int(kwargs.get("abi_version"), 2),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("ttl")),
-                _int(kwargs.get("deposit")),
-                _int(kwargs.get("amount")),
-                _int(kwargs.get("gas")),
-                _int(kwargs.get("gas_price")),
-                _binary(decode(kwargs.get("call_data"))),
-            ]
-            # TODO: verify the fee calculation for the contract
-            min_fee = std_fee(tx_native, tx_field_fee_index,  base_gas_multiplier=5)
-        elif op == UNPACK_TX:  # unpack transaction
-            vml = len(tx_native[5])  # this is used to extract the abi and vm version from the 5th field
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                owner_id=_id_decode(tx_native[2]),
-                nonce=_int_decode(tx_native[3]),
-                code=encode(idf.BYTECODE, tx_native[4]),
-                vm_version=_int_decode(tx_native[5][0:vml - 2]),
-                abi_version=_int_decode(tx_native[5][vml - 2:]),
-                fee=_int_decode(tx_native[6]),
-                ttl=_int_decode(tx_native[7]),
-                deposit=_int_decode(tx_native[8]),
-                amount=_int_decode(tx_native[9]),
-                gas=_int_decode(tx_native[10]),
-                gas_price=_int_decode(tx_native[11]),
-                call_data=encode(idf.BYTECODE, tx_native[12]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-
-    elif tag == idf.OBJECT_TAG_CONTRACT_CALL_TRANSACTION:
-        tx_field_fee_index = 6
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("caller_id")),
-                _int(kwargs.get("nonce")),
-                _id(kwargs.get("contract_id")),
-                _int(kwargs.get("abi_version")),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("ttl")),
-                _int(kwargs.get("amount")),
-                _int(kwargs.get("gas")),
-                _int(kwargs.get("gas_price")),
-                decode(kwargs.get("call_data")),
-            ]
-            min_fee = std_fee(tx_native, tx_field_fee_index, base_gas_multiplier=30)
-        elif op == UNPACK_TX:  # unpack transaction
-            vml = len(tx_native[5])  # this is used to extract the abi and vm version from the 5th field
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                caller_id=_id_decode(tx_native[2]),
-                nonce=_int_decode(tx_native[3]),
-                contract_id=_id_decode(tx_native[4]),
-                abi_version=_int_decode(tx_native[5]),
-                fee=_int_decode(tx_native[6]),
-                ttl=_int_decode(tx_native[7]),
-                amount=_int_decode(tx_native[8]),
-                gas=_int_decode(tx_native[9]),
-                gas_price=_int_decode(tx_native[10]),
-                call_data=encode(idf.BYTECODE, tx_native[11]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-
-    elif tag == idf.OBJECT_TAG_CHANNEL_CREATE_TRANSACTION:
-        tx_field_fee_index = 9
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("initiator")),
-                _int(kwargs.get("initiator_amount")),
-                _id(kwargs.get("responder")),
-                _int(kwargs.get("responder_amount")),
-                _int(kwargs.get("channel_reserve")),
-                _int(kwargs.get("lock_period")),
-                _int(kwargs.get("ttl")),
-                _int(kwargs.get("fee")),
-                [_id(d) for d in kwargs.get("delegate_ids", [])],
-                _binary(kwargs.get("state_hash")),
-                _int(kwargs.get("nonce")),
-            ]
-            min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif op == UNPACK_TX:  # unpack transaction
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                initiator=_id_decode(tx_native[2]),
-                initiator_amount=_int_decode(tx_native[3]),
-                responder=_id_decode(tx_native[4]),
-                responder_amount=_int_decode(tx_native[5]),
-                channel_reserve=_int_decode(tx_native[6]),
-                lock_period=_int_decode(tx_native[7]),
-                ttl=_int_decode(tx_native[8]),
-                fee=_int_decode(tx_native[9]),
-                delegate_ids=[_id_decode(d) for d in tx_native[10]],
-                state_hash=encode(idf.STATE, tx_native[11]),
-                nonce=_int_decode(tx_native[12]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-    elif tag == idf.OBJECT_TAG_CHANNEL_DEPOSIT_TRANSACTION:
-        tx_field_fee_index = 6
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("channel_id")),
-                _id(kwargs.get("from_id")),
-                _int(kwargs.get("amount")),
-                _int(kwargs.get("ttl")),
-                _int(kwargs.get("fee")),
-                _binary(kwargs.get("state_hash")),
-                _int(kwargs.get("round")),
-                _int(kwargs.get("nonce")),
-            ]
-            min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif op == UNPACK_TX:  # unpack transaction
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                channel_id=_id_decode(tx_native[2]),
-                from_id=_id_decode(tx_native[3]),
-                amount=_int_decode(tx_native[4]),
-                ttl=_int_decode(tx_native[5]),
-                fee=_int_decode(tx_native[6]),
-                state_hash=_binary_decode(tx_native[7]),
-                round=_int_decode(tx_native[8]),
-                nonce=_int_decode(tx_native[9]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-    elif tag == idf.OBJECT_TAG_CHANNEL_WITHDRAW_TRANSACTION:
-        tx_field_fee_index = 6
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("channel_id")),
-                _id(kwargs.get("to_id")),
-                _int(kwargs.get("amount")),
-                _int(kwargs.get("ttl")),
-                _int(kwargs.get("fee")),
-                _binary(kwargs.get("state_hash")),
-                _int(kwargs.get("round")),
-                _int(kwargs.get("nonce")),
-            ]
-            min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif op == UNPACK_TX:  # unpack transaction
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                channel_id=_id_decode(tx_native[2]),
-                to_id=_id_decode(tx_native[3]),
-                amount=_int_decode(tx_native[4]),
-                ttl=_int_decode(tx_native[5]),
-                fee=_int_decode(tx_native[6]),
-                state_hash=_binary_decode(tx_native[7]),
-                round=_int_decode(tx_native[8]),
-                nonce=_int_decode(tx_native[9]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-    elif tag == idf.OBJECT_TAG_CHANNEL_CLOSE_MUTUAL_TRANSACTION:
-        tx_field_fee_index = 7
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("channel_id")),
-                _id(kwargs.get("from_id")),
-                _int(kwargs.get("initiator_amount_final")),
-                _int(kwargs.get("responder_amount_final")),
-                _int(kwargs.get("ttl")),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("nonce")),
-            ]
-            min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif op == UNPACK_TX:  # unpack transaction
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                channel_id=_id_decode(tx_native[2]),
-                from_id=_id_decode(tx_native[3]),
-                initiator_amount_final=_int_decode(tx_native[4]),
-                responder_amount_final=_int_decode(tx_native[5]),
-                ttl=_int_decode(tx_native[6]),
-                fee=_int_decode(tx_native[7]),
-                nonce=_int_decode(tx_native[8]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-    elif tag == idf.OBJECT_TAG_CHANNEL_CLOSE_SOLO_TRANSACTION:
-        tx_field_fee_index = 7
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("channel_id")),
-                _id(kwargs.get("from_id")),
-                _binary(kwargs.get("payload")),
-                # _poi(kwargs.get("poi")), TODO: implement support for _poi
-                _int(kwargs.get("ttl")),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("nonce")),
-            ]
-            min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif op == UNPACK_TX:  # unpack transaction
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                channel_id=_id_decode(tx_native[2]),
-                from_id=_id_decode(tx_native[3]),
-                payload=_binary_decode(tx_native[4]),
-                poi=_binary_decode(tx_native[5]),
-                ttl=_int_decode(tx_native[6]),
-                fee=_int_decode(tx_native[7]),
-                nonce=_int_decode(tx_native[8]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-    elif tag == idf.OBJECT_TAG_CHANNEL_SLASH_TRANSACTION:
-        tx_field_fee_index = 7
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("channel_id")),
-                _id(kwargs.get("from_id")),
-                _binary(kwargs.get("payload")),
-                # _poi(kwargs.get("poi")), TODO: implement support for _poi
-                _int(kwargs.get("ttl")),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("nonce")),
-            ]
-            min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif op == UNPACK_TX:  # unpack transaction
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                channel_id=_id_decode(tx_native[2]),
-                from_id=_id_decode(tx_native[3]),
-                payload=_binary_decode(tx_native[4]),
-                poi=_binary_decode(tx_native[5]),
-                ttl=_int_decode(tx_native[6]),
-                fee=_int_decode(tx_native[7]),
-                nonce=_int_decode(tx_native[8]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-    elif tag == idf.OBJECT_TAG_CHANNEL_SETTLE_TRANSACTION:
-        tx_field_fee_index = 7
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("channel_id")),
-                _id(kwargs.get("from_id")),
-                _int(kwargs.get("initiator_amount_final")),
-                _int(kwargs.get("responder_amount_final")),
-                _int(kwargs.get("ttl")),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("nonce")),
-            ]
-            min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif op == UNPACK_TX:  # unpack transaction
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                channel_id=_id_decode(tx_native[2]),
-                from_id=_id_decode(tx_native[3]),
-                initiator_amount_final=_int_decode(tx_native[4]),
-                responder_amount_final=_int_decode(tx_native[5]),
-                ttl=_int_decode(tx_native[6]),
-                fee=_int_decode(tx_native[7]),
-                nonce=_int_decode(tx_native[8]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-
-    elif tag == idf.OBJECT_TAG_CHANNEL_SNAPSHOT_TRANSACTION:
-        tx_field_fee_index = 6
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("channel_id")),
-                _id(kwargs.get("from_id")),
-                _binary(kwargs.get("payload")),
-                _int(kwargs.get("ttl")),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("nonce")),
-            ]
-            min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif op == UNPACK_TX:  # unpack transaction
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                channel_id=_id_decode(tx_native[2]),
-                from_id=_id_decode(tx_native[3]),
-                payload=_binary_decode(tx_native[4]),
-                ttl=_int_decode(tx_native[5]),
-                fee=_int_decode(tx_native[6]),
-                nonce=_int_decode(tx_native[7]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-    elif tag == idf.OBJECT_TAG_CHANNEL_FORCE_PROGRESS_TRANSACTION:
-        raise Exception("Not Implemented")
-        tx_field_fee_index = 9
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("channel_id")),
-                _id(kwargs.get("from_id")),
-                _binary(kwargs.get("payload")),
-                _int(kwargs.get("round")),
-                _binary(kwargs.get("update")),
-                _binary(kwargs.get("state_hash")),
-                # _trees(kwargs.get("offchain_trees")), TODO: implement support for _trees
-                _int(kwargs.get("ttl")),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("nonce")),
-            ]
-            min_fee = std_fee(tx_native, tx_field_fee_index)
-        elif op == UNPACK_TX:  # unpack transaction
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                channel_id=_id_decode(tx_native[2]),
-                from_id=_id_decode(tx_native[2]),
-                payload=_binary_decode(tx_native[2]),
-                round=_int_decode(tx_native[2]),
-                update=_binary_decode(tx_native[2]),
-                state_hash=_binary_decode(tx_native[2]),
-                # offchain_trees=_trees_decode(tx_native[2]), TODO: implement support for _trees
-                ttl=_int_decode(tx_native[2]),
-                fee=_int_decode(tx_native[2]),
-                nonce=_int_decode(tx_native[2]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-    elif tag == idf.OBJECT_TAG_ORACLE_REGISTER_TRANSACTION:
-        tx_field_fee_index = 9
-        if op == PACK_TX:  # pack transaction
-            oracle_ttl = kwargs.get("oracle_ttl", {})
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("account_id")),
-                _int(kwargs.get("nonce")),
-                _binary(kwargs.get("query_format")),
-                _binary(kwargs.get("response_format")),
-                _int(kwargs.get("query_fee")),
-                _int(0 if oracle_ttl.get("type") == idf.ORACLE_TTL_TYPE_DELTA else 1),
-                _int(oracle_ttl.get("value")),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("ttl")),
-                _int(kwargs.get("vm_version")),
-            ]
-            min_fee = oracle_fee(tx_native, tx_field_fee_index, oracle_ttl.get("value"))
-        elif op == UNPACK_TX:  # unpack transaction
-            vml = len(tx_native[5])  # this is used to extract the abi and vm version from the 5th field
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                account_id=_id_decode(tx_native[2]),
-                nonce=_int_decode(tx_native[3]),
-                query_format=_binary_decode(tx_native[4]),
-                response_format=_binary_decode(tx_native[5]),
-                query_fee=_int_decode(tx_native[6]),
-                oracle_ttl=dict(
-                    type=idf.ORACLE_TTL_TYPE_DELTA if _int_decode(tx_native[7]) else idf.ORACLE_TTL_TYPE_BLOCK,
-                    value=_int_decode(tx_native[8]),
-                ),
-                fee=_int_decode(tx_native[9]),
-                ttl=_int_decode(tx_native[10]),
-                vm_version=_int_decode(tx_native[11]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-
-    elif tag == idf.OBJECT_TAG_ORACLE_QUERY_TRANSACTION:
-        tx_field_fee_index = 11
-        if op == PACK_TX:  # pack transaction
-            query_ttl = kwargs.get("query_ttl", {})
-            response_ttl = kwargs.get("response_ttl", {})
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("sender_id")),
-                _int(kwargs.get("nonce")),
-                _id(kwargs.get("oracle_id")),
-                _binary(kwargs.get("query")),
-                _int(kwargs.get("query_fee")),
-                _int(0 if query_ttl.get("type") == idf.ORACLE_TTL_TYPE_DELTA else 1),
-                _int(query_ttl.get("value")),
-                _int(0 if response_ttl.get("type") == idf.ORACLE_TTL_TYPE_DELTA else 1),
-                _int(response_ttl.get("value")),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("ttl")),
-            ]
-            min_fee = oracle_fee(tx_native, tx_field_fee_index, query_ttl.get("value"))
-        elif op == UNPACK_TX:  # unpack transaction
-            vml = len(tx_native[5])  # this is used to extract the abi and vm version from the 5th field
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                sender_id=_id_decode(tx_native[2]),
-                nonce=_int_decode(tx_native[3]),
-                oracle_id=_id_decode(tx_native[4]),
-                query=_binary_decode(tx_native[5]),
-                query_fee=_int_decode(tx_native[6]),
-                query_ttl=dict(
-                    type=idf.ORACLE_TTL_TYPE_DELTA if _int_decode(tx_native[7]) else idf.ORACLE_TTL_TYPE_BLOCK,
-                    value=_int_decode(tx_native[8]),
-                ),
-                response_ttl=dict(
-                    type=idf.ORACLE_TTL_TYPE_DELTA if _int_decode(tx_native[9]) else idf.ORACLE_TTL_TYPE_BLOCK,
-                    value=_int_decode(tx_native[10]),
-                ),
-                fee=_int_decode(tx_native[11]),
-                ttl=_int_decode(tx_native[12]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-
-    elif tag == idf.OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION:
-        tx_field_fee_index = 8
-        if op == PACK_TX:  # pack transaction
-            response_ttl = kwargs.get("response_ttl", {})
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("oracle_id")),
-                _int(kwargs.get("nonce")),
-                decode(kwargs.get("query_id")),
-                _binary(kwargs.get("response")),
-                _int(0 if response_ttl.get("type") == idf.ORACLE_TTL_TYPE_DELTA else 1),
-                _int(response_ttl.get("value")),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("ttl")),
-            ]
-            min_fee = oracle_fee(tx_native, tx_field_fee_index, response_ttl.get("value"))
-        elif op == UNPACK_TX:  # unpack transaction
-            vml = len(tx_native[5])  # this is used to extract the abi and vm version from the 5th field
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                oracle_id=_id_decode(tx_native[2]),
-                nonce=_int_decode(tx_native[3]),
-                query_id=encode(idf.ORACLE_QUERY_ID, tx_native[4]),
-                response=_binary(tx_native[5]),
-                response_ttl=dict(
-                    type=idf.ORACLE_TTL_TYPE_DELTA if _int_decode(tx_native[6]) else idf.ORACLE_TTL_TYPE_BLOCK,
-                    value=_int_decode(tx_native[7]),
-                ),
-                fee=_int_decode(tx_native[8]),
-                ttl=_int_decode(tx_native[9]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-
-    elif tag == idf.OBJECT_TAG_ORACLE_EXTEND_TRANSACTION:
-        tx_field_fee_index = 6
-        if op == PACK_TX:  # pack transaction
-            oracle_ttl = kwargs.get("oracle_ttl", {})
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("oracle_id")),
-                _int(kwargs.get("nonce")),
-                _int(0 if oracle_ttl.get("type", {}) == idf.ORACLE_TTL_TYPE_DELTA else 1),
-                _int(oracle_ttl.get("value")),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("ttl")),
-            ]
-            min_fee = oracle_fee(tx_native, tx_field_fee_index, oracle_ttl.get("value"))
-        elif op == UNPACK_TX:  # unpack transaction
-            vml = len(tx_native[5])  # this is used to extract the abi and vm version from the 5th field
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                oracle_id=_id_decode(tx_native[2]),
-                nonce=_int_decode(tx_native[3]),
-                oracle_ttl=dict(
-                    type=idf.ORACLE_TTL_TYPE_DELTA if _int_decode(tx_native[4]) else idf.ORACLE_TTL_TYPE_BLOCK,
-                    value=_int_decode(tx_native[5]),
-                ),
-                fee=_int_decode(tx_native[6]),
-                ttl=_int_decode(tx_native[7]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-    elif tag == idf.OBJECT_TAG_GA_ATTACH_TRANSACTION:
-        tx_field_fee_index = 7
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("owner_id")),
-                _int(kwargs.get("nonce")),
-                _binary(decode(kwargs.get("code"))),
-                _binary(kwargs.get("auth_fun")),
-                _int(kwargs.get("vm_version")) + _int(kwargs.get("abi_version"), 2),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("ttl")),
-                _int(kwargs.get("gas")),
-                _int(kwargs.get("gas_price")),
-                _binary(decode(kwargs.get("call_data"))),
-            ]
-            # min_fee = contract_fee(tx_native, tx_field_fee_index, kwargs.get("gas"), base_gas_multiplier=5)
-            min_fee = std_fee(tx_native, tx_field_fee_index, base_gas_multiplier=5)
-        elif op == UNPACK_TX:  # unpack transaction
-            vml = len(tx_native[6])  # this is used to extract the abi and vm version from the 5th field
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                owner_id=_id_decode(tx_native[2]),
-                nonce=_int_decode(tx_native[3]),
-                code=_binary_decode(tx_native[4]),
-                auth_fun=_binary_decode(tx_native[5]),
-                vm_version=_int_decode(tx_native[6][0:vml - 2]),
-                abi_version=_int_decode(tx_native[6][vml - 2:]),
-                fee=_int_decode(tx_native[7]),
-                ttl=_int_decode(tx_native[8]),
-                gas=_int_decode(tx_native[9]),
-                gas_price=_int_decode(tx_native[10]),
-                call_data=_binary_decode(tx_native[11]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-    elif tag == idf.OBJECT_TAG_GA_META_TRANSACTION:
-        tx_field_fee_index = 5
-        if op == PACK_TX:  # pack transaction
-            tx_native = [
-                _int(tag),
-                _int(vsn),
-                _id(kwargs.get("ga_id")),
-                decode(kwargs.get("auth_data")),  # it should be a string: cb_XYZ
-                _int(kwargs.get("abi_version")),
-                _int(kwargs.get("fee")),
-                _int(kwargs.get("gas")),
-                _int(kwargs.get("gas_price")),
-                _int(kwargs.get("ttl")),
-                decode(kwargs.get("tx")),  # it should be a string: tx_XYZ
-            ]
-            min_fee = std_fee(tx_native, tx_field_fee_index, base_gas_multiplier=5)
-        elif op == UNPACK_TX:  # unpack transaction
-            tx_data = dict(
-                tag=tag,
-                vsn=_int_decode(tx_native[1]),
-                ga_id=_id_decode(tx_native[2]),
-                auth_data=encode(idf.BYTECODE, tx_native[3]),
-                abi_version=_int_decode(tx_native[4]),
-                fee=_int_decode(tx_native[5]),
-                gas=_int_decode(tx_native[6]),
-                gas_price=_int_decode(tx_native[7]),
-                ttl=_int_decode(tx_native[8]),
-                tx=encode(idf.TRANSACTION, tx_native[9]),
-            )
-            min_fee = tx_data.get("fee")
-        else:
-            raise Exception("Invalid operation")
-        return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
-    else:  # unsupported tx
-        raise UnsupportedTransactionType(f"Unsupported transaction tag {tag}")
+        return encode(idf.SIGNATURE, signature)
 
 
 class TxBuilder:
@@ -988,7 +422,15 @@ class TxBuilder:
     TxBuilder is used to build and post transactions to the chain.
     """
 
-    def __init__(self):
+    def __init__(self,
+                 base_gas=defaults.BASE_GAS,
+                 gas_per_byte=defaults.GAS_PER_BYTE,
+                 gas_price=defaults.GAS_PRICE,
+                 key_block_interval=defaults.KEY_BLOCK_INTERVAL):
+        self.base_gas = base_gas
+        self.gas_per_byte = gas_per_byte
+        self.gas_price = gas_price
+        self.key_block_interval = key_block_interval
         pass
 
     @staticmethod
@@ -1000,19 +442,113 @@ class TxBuilder:
         tx_raw = decode(encoded_tx)
         return hash_encode(idf.TRANSACTION_HASH, tx_raw)
 
+    def compute_min_fee(self, tx_data: dict, tx_descriptor: dict, tx_raw: list):
+        # extract the parameters from the descriptor
+        fee_field_index = tx_descriptor.get("schema").get("fee").index
+        base_gas_multiplier = tx_descriptor.get("fee").base_gas_multiplier
+        fee_type = tx_descriptor.get("fee").fee_type
+        # if the fee is ttl based compute the ttl component
+        ttl_component = 0
+        if fee_type == TTL_BASED:
+            ttl = tx_data.get(tx_descriptor.get("fee").ttl_field)
+            ttl_component += (math.ceil(32000 * ttl / math.floor(60 * 24 * 365 / self.key_block_interval)))
+        # if the fee is for a ga meta compute the enclosed tx size based fee
+        ga_surplus = 0
+        if fee_type == GA_META:
+            tx_size = len(tx_raw[tx_descriptor.get("tx").index])
+            ga_surplus = (self.base_gas * base_gas_multiplier + tx_size * self.gas_per_byte)
+        # begin calculation
+        current_fee, min_fee = -1, defaults.FEE
+        # reset the fee value to the minimum fee (0)
+        tx_raw[fee_field_index] = _int(min_fee)
+        while current_fee != min_fee:
+            # save the min fee into current fee
+            current_fee = min_fee
+            # first calculate the size part
+            tx_size = len(rlp.encode(tx_raw))
+            min_fee = self.base_gas * base_gas_multiplier + tx_size * self.gas_per_byte
+            # add the ttl_component
+            min_fee += ttl_component
+            # remove the ga_surplus
+            min_fee -= ga_surplus
+        # finally multiply the fee for the gas price
+        return min_fee * self.gas_price
+
+    def _params_to_api(self, data: dict, schema: dict) -> TxObject:
+        # initialize the right data size
+        raw_data = [0]*len(data)
+        # parse fields and encode them
+        for label, fn in schema.items():
+            if fn.field_type == _INT:
+                raw_data[fn.index] = _int(data.get(label))
+            elif fn.field_type == _ID:
+                raw_data[fn.index] = _id(data.get(label))
+            elif fn.field_type == _ENC:
+                raw_data[fn.index] = decode(data.get(label))
+            elif fn.field_type == _SG:
+                # signatures are always a list
+                raw_data[fn.index] = [decode(sg) for sg in data.get(label, [])]
+            elif fn.filed_type == _VM_ABI:
+                # vm/abi are encoded in the same 32bit length block
+                raw_data[fn.index] = _int(data.get("vm_version")) + _int(data.get("abi_version"), 2)
+            elif fn.field_type == _BIN:
+                # this are binary string #TODO: may be byte array
+                raw_data[fn.index] = _binary(data.get(label))
+            elif fn.field_type == _PTR:
+                # this are name pointers
+                raw_data[fn.index] = [[_binary(p.get("key")), _id(p.get("id"))] for p in data.get(label, [])]
+            elif fn.field_type == _TX:
+                # this can be raw or tx object
+                raw_data[fn.index] = decode(data.get(label))
+        return raw_data
+
+    def _build_tx_object(self, tx_data):
+        # determine the type of tx_data
+        if isinstance(tx_data, str):
+            # it is an encoded tx, rare case TODO: add decode
+            pass
+        # if it comes from an api request it will not have the tag but the type
+        tag = tx_data.get("tag")
+        if tag is None:
+            # see if the there is a type in the transaction that matches
+            # the tx types from the API
+            tag = idf.TRANSACTION_TYPE_TO_TAG.get(tx_data.get("type", "Unknown"), -1)
+        # check if we have something
+        tx_descriptor = txf.get(tag)
+        if tx_descriptor is None:
+            # the transaction is not defined
+            raise TypeError(f"Unknown transaction tag {tag}")
+        # this will return an object that can be encoded in rlp
+        raw = self._params_to_api(tx_data, tx_descriptor.get("schema"))
+        # now we can compute the minimum fee
+        metadata = {
+            "min_fee": self.compute_min_fee(tx_data, tx_descriptor, raw)
+        }
+        # TODO: if fee was 0 we want to substitute it with the min_fee
+        # encode the tx in rlp + base64
+        rlp_b64_tx = encode_rlp(idf.TRANSACTION, raw)
+        # compute the tx hash
+        tx_hash = hash_encode(idf.TRANSACTION_HASH, raw)
+        # now build the tx object
+        return TxObject(
+            metadata=namedtupled.map(metadata, _nt_name="TxMeta"),
+            data=namedtupled.map(tx_data, _nt_name="TxData"),
+            tx=rlp_b64_tx,
+            hash=tx_hash
+        )
+
     def tx_signed(self, signatures, tx):
         """
         Create a signed transaction. This is a special type of transaction
         as it wraps a normal transaction adding one or more signature
         """
-        tx = tx.tx if hasattr(tx, "tx") else tx
         body = dict(
             tag=idf.OBJECT_TAG_SIGNED_TRANSACTION,
-            vsn=idf.VSN,
+            version=idf.VSN,
             signatures=signatures,
             tx=tx
         )
-        return _tx_native(op=PACK_TX, **body)
+        return self._build_tx_object(body)
 
     def tx_spend(self, sender_id, recipient_id, amount, payload, fee, ttl, nonce) -> tuple:
         """
@@ -1028,7 +564,7 @@ class TxBuilder:
         # use internal endpoints transaction
         body = dict(
             tag=idf.OBJECT_TAG_SPEND_TRANSACTION,
-            vsn=idf.VSN,
+            version=idf.VSN,
             recipient_id=recipient_id,
             amount=amount,
             fee=fee,
@@ -1037,7 +573,7 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce,
         )
-        return _tx_native(op=PACK_TX, **body)
+        return self._build_tx_object(body)
         # return self.api.post_spend(body=body).tx
 
     # NAMING #
@@ -1053,14 +589,14 @@ class TxBuilder:
         """
         body = dict(
             tag=idf.OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION,
-            vsn=idf.VSN,
+            version=idf.VSN,
             commitment_id=commitment_id,
             fee=fee,
             account_id=account_id,
             ttl=ttl,
             nonce=nonce
         )
-        return _tx_native(op=PACK_TX, **body)
+        return self._build_tx_object(body)
         # return self.api.post_name_preclaim(body=body).tx
 
     def tx_name_claim(self, account_id, name, name_salt, fee, ttl, nonce) -> tuple:
@@ -1075,7 +611,7 @@ class TxBuilder:
         """
         body = dict(
             tag=idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION,
-            vsn=idf.VSN,
+            version=idf.VSN,
             account_id=account_id,
             name=name,
             name_salt=name_salt,
@@ -1083,7 +619,7 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce
         )
-        return _tx_native(op=PACK_TX, **body)
+        return self._build_tx_object(body)
         # return self.api.post_name_claim(body=body).tx
 
     def tx_name_update(self, account_id, name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce) -> tuple:
@@ -1100,7 +636,7 @@ class TxBuilder:
         """
         body = dict(
             tag=idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION,
-            vsn=idf.VSN,
+            version=idf.VSN,
             account_id=account_id,
             name_id=name_id,
             client_ttl=client_ttl,
@@ -1110,7 +646,7 @@ class TxBuilder:
             fee=fee,
             nonce=nonce
         )
-        return _tx_native(op=PACK_TX, **body)
+        return self._build_tx_object(body)
         # return self.api.post_name_update(body=body).tx
 
     def tx_name_transfer(self, account_id, name_id, recipient_id, fee, ttl, nonce) -> tuple:
@@ -1125,7 +661,7 @@ class TxBuilder:
         """
         body = dict(
             tag=idf.OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION,
-            vsn=idf.VSN,
+            version=idf.VSN,
             account_id=account_id,
             name_id=name_id,
             recipient_id=recipient_id,
@@ -1133,7 +669,7 @@ class TxBuilder:
             fee=fee,
             nonce=nonce
         )
-        return _tx_native(op=PACK_TX, **body)
+        return self._build_tx_object(body)
         # return self.api.post_name_transfer(body=body).tx
 
     def tx_name_revoke(self, account_id, name_id, fee, ttl, nonce) -> tuple:
@@ -1148,14 +684,14 @@ class TxBuilder:
 
         body = dict(
             tag=idf.OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION,
-            vsn=idf.VSN,
+            version=idf.VSN,
             account_id=account_id,
             name_id=name_id,
             ttl=ttl,
             fee=fee,
             nonce=nonce
         )
-        return _tx_native(op=PACK_TX, **body)
+        return self._build_tx_object(body)
         # return self.api.post_name_revoke(body=body).tx
 
     # CONTRACTS
@@ -1178,7 +714,7 @@ class TxBuilder:
         """
         body = dict(
             tag=idf.OBJECT_TAG_CONTRACT_CREATE_TRANSACTION,
-            vsn=idf.VSN,
+            version=idf.VSN,
             owner_id=owner_id,
             amount=amount,
             deposit=deposit,
@@ -1192,7 +728,7 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce
         )
-        return _tx_native(op=PACK_TX, **body)
+        return self._build_tx_object(body)
         # return tx.tx, tx.contract_id
 
     def tx_contract_call(self, caller_id, contract_id, call_data, function, arg, amount, gas, gas_price, abi_version, fee, ttl, nonce) -> tuple:
@@ -1214,7 +750,7 @@ class TxBuilder:
 
         body = dict(
             tag=idf.OBJECT_TAG_CONTRACT_CALL_TRANSACTION,
-            vsn=idf.VSN,
+            version=idf.VSN,
             call_data=call_data,
             caller_id=caller_id,
             contract_id=contract_id,
@@ -1226,7 +762,7 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce
         )
-        return _tx_native(op=PACK_TX, **body)
+        return self._build_tx_object(body)
         # return self.api.post_contract_call(body=body).tx
 
     # ORACLES
@@ -1240,7 +776,7 @@ class TxBuilder:
         """
         body = dict(
             tag=idf.OBJECT_TAG_ORACLE_REGISTER_TRANSACTION,
-            vsn=idf.VSN,
+            version=idf.VSN,
             account_id=account_id,
             query_format=query_format,
             response_format=response_format,
@@ -1253,7 +789,7 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce
         )
-        return _tx_native(op=PACK_TX, **body)
+        return self._build_tx_object(body)
         # return tx.tx
 
     def tx_oracle_query(self, oracle_id, sender_id, query,
@@ -1266,7 +802,7 @@ class TxBuilder:
 
         body = dict(
             tag=idf.OBJECT_TAG_ORACLE_QUERY_TRANSACTION,
-            vsn=idf.VSN,
+            version=idf.VSN,
             sender_id=sender_id,
             oracle_id=oracle_id,
             response_ttl=dict(
@@ -1283,7 +819,7 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce,
         )
-        return _tx_native(op=PACK_TX, **body)
+        return self._build_tx_object(body)
         # tx = self.api.post_oracle_query(body=body)
         # return tx.tx
 
@@ -1295,7 +831,7 @@ class TxBuilder:
         """
         body = dict(
             tag=idf.OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION,
-            vsn=idf.VSN,
+            version=idf.VSN,
             response_ttl=dict(
                 type=response_ttl_type,
                 value=response_ttl_value
@@ -1307,7 +843,7 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce,
         )
-        return _tx_native(op=PACK_TX, **body)
+        return self._build_tx_object(body)
         # tx = self.api.post_oracle_respond(body=body)
         # return tx.tx
 
@@ -1319,7 +855,7 @@ class TxBuilder:
         """
         body = dict(
             tag=idf.OBJECT_TAG_ORACLE_EXTEND_TRANSACTION,
-            vsn=idf.VSN,
+            version=idf.VSN,
             oracle_id=oracle_id,
             oracle_ttl=dict(
                 type=ttl_type,
@@ -1329,7 +865,7 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce,
         )
-        return _tx_native(op=PACK_TX, **body)
+        return self._build_tx_object(body)
         # tx = self.api.post_oracle_extend(body=body)
         # return tx.tx
 
@@ -1348,7 +884,7 @@ class TxBuilder:
         """
         body = dict(
             tag=idf.OBJECT_TAG_GA_ATTACH_TRANSACTION,
-            vsn=idf.VSN,
+            version=idf.VSN,
             owner_id=owner_id,
             nonce=nonce,
             code=code,
@@ -1361,7 +897,7 @@ class TxBuilder:
             gas_price=gas_price,
             call_data=call_data,
         )
-        return _tx_native(op=PACK_TX, **body)
+        return self._build_tx_object(body)
 
     def tx_ga_meta(self, ga_id,
                    auth_data,
@@ -1381,10 +917,9 @@ class TxBuilder:
         :param ttl: time to live (in height) of the transaction
         :param tx: the transaction to be authorized
         """
-        tx = tx.tx if hasattr(tx, "tx") else tx
         body = dict(
             tag=idf.OBJECT_TAG_GA_META_TRANSACTION,
-            vsn=idf.VSN,
+            version=idf.VSN,
             ga_id=ga_id,
             auth_data=auth_data,
             abi_version=abi_version,
@@ -1394,7 +929,7 @@ class TxBuilder:
             ttl=ttl,
             tx=tx,
         )
-        return _tx_native(op=PACK_TX, **body)
+        return self._build_tx_object(body)
 
 
 class TxBuilderDebug:
