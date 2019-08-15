@@ -33,9 +33,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - docs: add documentation for ga in the docs folder
 
 
-
-
-
 ## [4.1.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/4.1.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/4.0.0...4.1.0))
 
 ### Features
