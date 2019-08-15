@@ -2,7 +2,6 @@ venv
 .idea
 **/*.pyc
 .pytest_cache
-/epoch/
 .vscode
 aepp_sdk.egg-info
 dist
@@ -11,3 +10,6 @@ coverage.xml
 docker-compose.override.yml
 test-results.xml
 .coverage
+private
+.DS_Store
+.envrc

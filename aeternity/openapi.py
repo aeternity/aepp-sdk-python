@@ -8,6 +8,8 @@ import logging
 from aeternity.exceptions import UnsupportedNodeVersion, ConfigException
 import semver
 
+import simplejson
+
 
 class OpenAPIArgsException(Exception):
     """Raised when there is an error in method arguments"""
@@ -50,7 +52,8 @@ class OpenAPICli(object):
         try:
             self.url, self.url_internal = url, url_internal
             # load the openapi json file from the node
-            self.api_def = requests.get(f"{url}/api").json()
+            api_reply = requests.get(f"{url}/api")
+            self.api_def = api_reply.json()
             if self.api_def.get('api') is not None:  # TODO: workaround for different swagger styles
                 self.api_def = self.api_def.get('api', {})
             self.api_version = self.api_def.get("info", {}).get("version", "unknown")
@@ -66,6 +69,8 @@ class OpenAPICli(object):
                     f"unsupported node version {self.url}@{self.api_version}, supported version are {lower_bound} and {upper_bound}")
         except requests.exceptions.ConnectionError:
             raise ConfigException(f"Error connecting to the node at {self.url}, connection unavailable")
+        except simplejson.errors.JSONDecodeError:
+            raise ConfigException(f"Error interpreting response from node at {self.url}, is there a aeternity node listening?")
         except Exception as e:
             raise e
 

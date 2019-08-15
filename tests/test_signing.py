@@ -18,7 +18,7 @@ def test_signing_create_transaction_signature(chain_fixture):
     chain_fixture.NODE_CLI.broadcast_transaction(tx_signed.tx)
     # make sure this works for very short block times
     spend_tx = chain_fixture.NODE_CLI.get_transaction_by_hash(hash=tx_signed.hash)
-    assert spend_tx.signatures[0] == tx_signed.signature
+    assert spend_tx.signatures[0] == tx_signed.signature[0]
 
 
 def test_signing_is_valid_hash():
@@ -29,7 +29,8 @@ def test_signing_is_valid_hash():
         ('ak_me6L5SSXL4NLWv5EkQ7a16xaA145Br7oV4sz9JphZgsTsYwGC', 'bh', False),
         ('ak_me6L5SSXL4NLWv5EkQ7a16xaA145Br7oV4sz9JphZgsTsYwYC', None, False),
         ('ak_me6L5SSXL4NLWv5EkQ7a18xaA145Br7oV4sz9JphZgsTsYwGC', None, False),
-        ('bh_vzUC2jVuAfpBC3tMAHhxwxJnTFymckNYeQ5TWZua1pydabqNu', None, True),
+        ('bh_vzUC2jVuAfpBC3tMAHhxwxJnTFymckNYeQ5TWZua1pydabqNu', None, False), # bh does not exists
+        ('kh_vzUC2jVuAfpBC3tMAHhxwxJnTFymckNYeQ5TWZua1pydabqNu', None, True),
         ('th_YqPSTzs73PiKFhFcALYWWu41uNLc6yp63ZC35jzzuJYA9PMui', None, True),
     ]
 

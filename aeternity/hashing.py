@@ -8,7 +8,7 @@ import math
 from nacl.hash import blake2b
 from nacl.encoding import RawEncoder
 
-from aeternity import identifiers, utils
+from aeternity import identifiers
 
 
 def _base58_encode(data):
@@ -70,16 +70,18 @@ def encode(prefix: str, data) -> str:
 
 def decode(data):
     """
-    Decode data using the default encoding/decoding algorithm
+    Decode data using the default encoding/decoding algorithm.
+    It will raise ValueError if the input data is not recognized and cannot be decoded
     :param data: a encoded and prefixed string (ex tx_..., sg_..., ak_....)
     :return: the raw bytes
     """
-
-    if data is None or len(data.strip()) < 3 or data[2] != '_':
+    if data is None or len(data.strip()) <= 3 or data[2] != '_':
         raise ValueError('Invalid hash')
     if data[0:2] in identifiers.IDENTIFIERS_B64:
         return _base64_decode(data[3:])
-    return _base58_decode(data[3:])
+    if data[0:2] in identifiers.IDENTIFIERS_B58:
+        return _base58_decode(data[3:])
+    raise ValueError(f"Unrecognized prefix {data[0:2]}")
 
 
 def encode_rlp(prefix, data):
@@ -176,7 +178,10 @@ def _binary(val):
         s = int(math.ceil(val.bit_length() / 8))
         return val.to_bytes(s, 'big')
     if isinstance(val, str):
-        return val.encode("utf-8")
+        try:
+            return decode(val)
+        except ValueError:
+            return val.encode("utf-8")
     if isinstance(val, bytes):
         return val
     raise ValueError("Byte serialization not supported")
@@ -194,9 +199,11 @@ def _binary_decode(data, data_type=None):
 
 
 def _id(id_str):
-    """Utility function to create and _id type"""
-    if not utils.is_valid_hash(id_str):
-        raise ValueError(f"Unrecognized entity {id_str}")
+    """
+    Utility function to create an _id type
+    """
+    # if not utils.is_valid_hash(id_str):
+    #     raise ValueError(f"Unrecognized entity {id_str}")
     id_tag = identifiers.ID_PREFIX_TO_TAG.get(id_str[0:2])
     if id_tag is None:
         raise ValueError(f"Unrecognized prefix {id_str[0:2]}")

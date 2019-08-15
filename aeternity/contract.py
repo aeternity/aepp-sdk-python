@@ -1,8 +1,6 @@
 from aeternity import exceptions, __compiler_compatibility__
 from aeternity import utils, defaults, hashing, openapi, identifiers
-import requests
 import namedtupled
-from requests import ConnectionError
 
 
 class CompilerError(exceptions.AException):
@@ -20,20 +18,6 @@ class CompilerClient(object):
     def __init__(self, compiler_url='http://localhost:3080'):
         self.compiler_url = compiler_url
         self.compiler_cli = openapi.OpenAPICli(compiler_url, compatibility_version_range=__compiler_compatibility__)
-
-    def _post(self, path, body, _response_object_name="CompilerReply"):
-        """
-        Execute the post request to the compiler
-        """
-        http_reply = None
-        try:
-            http_reply = requests.post(f'{self.compiler_url}{path}', json=body)
-            object_reply = namedtupled.map(http_reply.json(), _nt_name=_response_object_name)
-            if http_reply.status_code == 200:
-                return object_reply
-            raise CompilerError(f"Error: {http_reply.desc}", code=http_reply.status_code)
-        except ConnectionError as e:
-            raise Exception(f"Connection error to the compiler at {self.compiler_url}", e)
 
     def compile(self, source_code, compiler_options={}):
         body = dict(
@@ -83,6 +67,52 @@ class CompilerClient(object):
         }
         return self.compiler_cli.decode_calldata_source(body=body)
 
+    @staticmethod
+    def decode_bytecode(compiled):
+        """
+        Decode an encoded contract to it's components
+        :param compiled: the encoded bytecode to decode as got from the 'compile' function
+        :return: a named tuple with a decoded contract
+        """
+        if isinstance(compiled, str):
+            if not utils.prefix_match(identifiers.BYTECODE, compiled):
+                raise ValueError(f"Invalid input, expecting {identifiers.BYTECODE}_ prefix")
+            # unpack the transaction
+            raw_contract = hashing.decode_rlp(compiled)
+        elif isinstance(compiled, bytes):
+            # unpack the transaction
+            raw_contract = hashing.decode_rlp(compiled)
+        else:
+            raise ValueError(f"Invalid input type")
+
+        if not isinstance(raw_contract, list) or len(raw_contract) < 6:
+            raise ValueError(f"Invalid contract structure")
+
+        # print(raw_contract)
+        tag = hashing._int_decode(raw_contract[0])
+        vsn = hashing._int_decode(raw_contract[1])
+        if tag != identifiers.OBJECT_TAG_SOPHIA_BYTE_CODE:
+            raise ValueError(f"Invalid input, expecting object type {identifiers.OBJECT_TAG_SOPHIA_BYTE_CODE}, got {tag}")
+        # this is the hash
+        contract_data = dict(
+            raw=raw_contract,
+            tag=tag,
+            vsn=vsn,
+            src_hash=raw_contract[2],
+            type_info=[],
+            bytecode=raw_contract[4],
+            compiler_version=hashing._binary_decode(raw_contract[5], str),
+        )
+        # print(type_info)
+        for t in raw_contract[3]:
+            contract_data["type_info"].append(dict(
+                fun_hash=t[0],
+                fun_name=hashing._binary_decode(t[1], str),
+                arg_type=t[2],
+                out_type=t[3],
+            ))
+        return namedtupled.map(contract_data, _nt_name="ContractBin")
+
 
 class ContractError(Exception):
     pass
@@ -118,7 +148,6 @@ class Contract:
              gas=defaults.CONTRACT_GAS,
              gas_price=defaults.CONTRACT_GAS_PRICE,
              fee=defaults.FEE,
-             vm_version=None,
              abi_version=None,
              tx_ttl=defaults.TX_TTL):
         """Call a sophia contract"""
@@ -128,13 +157,12 @@ class Contract:
         # check if the contract exists
         try:
             self.client.get_contract(pubkey=contract_id)
-        except exceptions.OpenAPIClientException:
+        except openapi.OpenAPIClientException:
             raise ContractError(f"Contract {contract_id} not found")
 
         try:
             # retrieve the correct vm/abi version
-            vm, abi = self._get_vm_abi_versions()
-            vm_version = vm if vm_version is None else vm_version
+            _, abi = self.client.get_vm_abi_versions()
             abi_version = abi if abi_version is None else abi_version
             # get the transaction builder
             txb = self.client.tx_builder
@@ -149,7 +177,7 @@ class Contract:
             # post the transaction to the chain
             self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
             return tx_signed
-        except exceptions.OpenAPIClientException as e:
+        except openapi.OpenAPIClientException as e:
             raise ContractError(e)
 
     def get_call_object(self, tx_hash):
@@ -182,7 +210,7 @@ class Contract:
         """
         try:
             # retrieve the correct vm/abi version
-            vm, abi = self._get_vm_abi_versions()
+            vm, abi = self.client.get_vm_abi_versions()
             vm_version = vm if vm_version is None else vm_version
             abi_version = abi if abi_version is None else abi_version
             # get the transaction builder
@@ -193,7 +221,7 @@ class Contract:
             tx = txb.tx_contract_create(account.get_address(), bytecode, init_calldata,
                                         amount, deposit, gas, gas_price, vm_version, abi_version,
                                         fee, ttl, nonce)
-            # store the contract address in the instance variabl
+            # store the contract address in the instance variable
             self.address = hashing.contract_id(account.get_address(), nonce)
             # sign the transaction
             tx_signed = self.client.sign_transaction(account, tx, metadata={"contract_id": self.address})
@@ -202,16 +230,3 @@ class Contract:
             return tx_signed
         except openapi.OpenAPIClientException as e:
             raise ContractError(e)
-
-    def _get_vm_abi_versions(self):
-        """
-        Check the version of the node and retrieve the correct values for abi and vm version
-        """
-        protocol_version = self.client.get_consensus_protocol_version()
-        if protocol_version == identifiers.PROTOCOL_ROMA:
-            return identifiers.CONTRACT_ROMA_VM, identifiers.CONTRACT_ROMA_ABI
-        if protocol_version == identifiers.PROTOCOL_MINERVA:
-            return identifiers.CONTRACT_MINERVA_VM, identifiers.CONTRACT_MINERVA_ABI
-        if protocol_version == identifiers.PROTOCOL_FORTUNA:
-            return identifiers.CONTRACT_FORTUNA_VM, identifiers.CONTRACT_FORTUNA_ABI
-        raise exceptions.UnsupportedNodeVersion(f"Version {self.client.api_version} is not supported")

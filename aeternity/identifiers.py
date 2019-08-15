@@ -122,6 +122,7 @@ OBJECT_TAG_CONTRACT = 40
 OBJECT_TAG_CONTRACT_CALL = 41
 OBJECT_TAG_CONTRACT_CREATE_TRANSACTION = 42
 OBJECT_TAG_CONTRACT_CALL_TRANSACTION = 43
+OBJECT_TAG_SOPHIA_BYTE_CODE = 70
 OBJECT_TAG_CHANNEL_CREATE_TRANSACTION = 50
 OBJECT_TAG_CHANNEL_DEPOSIT_TRANSACTION = 51
 OBJECT_TAG_CHANNEL_WITHDRAW_TRANSACTION = 52
@@ -141,6 +142,8 @@ OBJECT_TAG_CHANNEL_SNAPSHOT_TRANSACTION = 59
 OBJECT_TAG_POI = 60
 OBJECT_TAG_MICRO_BODY = 101
 OBJECT_TAG_LIGHT_MICRO_BLOCK = 102
+OBJECT_TAG_GA_ATTACH_TRANSACTION = 80
+OBJECT_TAG_GA_META_TRANSACTION = 81
 
 
 # VM Identifiers
@@ -159,15 +162,23 @@ PROTOCOL_ROMA = 1
 PROTOCOL_MINERVA = 2
 PROTOCOL_FORTUNA = 3
 # Contracts identifiers
-# For Roma
-CONTRACT_ROMA_VM = 0  # this is to maintain retro-compatibility
-CONTRACT_ROMA_ABI = 1
-# For Minerva: 196609  # that is int.from_bytes(int(3).to_bytes(2, "big") + int(1).to_bytes(2, "big"), "big")
-CONTRACT_MINERVA_VM = 3
-CONTRACT_MINERVA_ABI = 1
-# For Fortuna
-CONTRACT_FORTUNA_VM = 4
-CONTRACT_FORTUNA_ABI = 1
+PROTOCOL_ABI_VM = {
+    PROTOCOL_ROMA: {
+        "vm": 0,  # this is to maintain retro-compatibility
+        "abi": 1
+    },
+    PROTOCOL_MINERVA: {
+        # For Minerva: 196609  # that is int.from_bytes(int(3).to_bytes(2, "big") + int(1).to_bytes(2, "big"), "big")
+        "vm": 3,
+        "abi": 1
+    },
+    PROTOCOL_FORTUNA: {
+        "vm": 4,
+        "abi": 1
+    }
+}
+
+
 # Oracles
 ORACLE_TTL_TYPE_DELTA = 'delta'
 ORACLE_TTL_TYPE_BLOCK = 'block'
@@ -175,3 +186,7 @@ ORACLE_TTL_TYPE_BLOCK = 'block'
 # Network IDS
 NETWORK_ID_MAINNET = "ae_mainnet"
 NETWORK_ID_TESTNET = "ae_uat"
+
+# Accounts Kind
+ACCOUNT_KIND_BASIC = "basic"
+ACCOUNT_KIND_GENERALIZED = "generalized"

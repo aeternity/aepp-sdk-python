@@ -4,7 +4,7 @@
 [![Build Status](https://ci.aepps.com/buildStatus/icon?job=aepp-sdk-python/develop)](https://ci.aepps.com/job/aepp-sdk-python/job/develop/)
 [![PyPI version](https://badge.fury.io/py/aepp-sdk.svg)](https://badge.fury.io/py/aepp-sdk)
 
-## Introduction
+## Introduction 
 
 [This repo](https://github.com/aeternity/aepp-sdk-python) is for developing apps for the æternity blockchain in Python. Please see the [main dev site](https://dev.aepps.com) for instructions on accessing the testnet, and for running a local æternity node.
 

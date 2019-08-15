@@ -12,8 +12,7 @@ build: build-dist
 
 build-dist:
 	@echo build 
-	python setup.py sdist
-	python setup.py bdist_wheel
+	poetry build
 	@echo done
 
 test: test-all

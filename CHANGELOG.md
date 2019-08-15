@@ -1,8 +1,37 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
+
+
+## [4.2.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/4.2.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/4.0.0...4.2.0)) - 2019-08-15
+
+### Bug Fixes
+- fix: improve error handling ([3e96065](https://github.com/aeternity/aepp-sdk-python/commit/3e960652380571284e9a0ca5a1810719f0069573)).
+- fix: contract bytecode decoding function call in main ([0fa8fd3](https://github.com/aeternity/aepp-sdk-python/commit/0fa8fd385d65cc29206ad9aeaa6712b03210c8ce)).
+
+### Code Refactoring
+- refactor: Imporove vm/abi detection ([bb3fcf1](https://github.com/aeternity/aepp-sdk-python/commit/bb3fcf14318ac930b0ff46f96ede7579bcd6661c)).
+- refactor: improve consistency of api calls ([62472f5](https://github.com/aeternity/aepp-sdk-python/commit/62472f57a4aebcb18d9cfc3dbb6a1f0bb791000b)).
+- refactor: improve reliability of the hashing submodule ([777f0a7](https://github.com/aeternity/aepp-sdk-python/commit/777f0a7c80090baf09357a84ae44cc5796e41c06)).
+- refactor: move vm and abi retrieval to the node subm ([9b2488b](https://github.com/aeternity/aepp-sdk-python/commit/9b2488b09667055e57699fecc7166e849edc8198)).
+- refactor: remove legacy unused code ([872cc02](https://github.com/aeternity/aepp-sdk-python/commit/872cc02e875539bdfc28c59160f074c0cc428530)).
+
+### Features
+- feat(contract): add ability to unpack a compiled contract ([39d9f44](https://github.com/aeternity/aepp-sdk-python/commit/39d9f4414d844eb4d9ba32bf93bfe2256a98c761)).
+- feat(ga): add support to generalized accounts ([9e8c02c](https://github.com/aeternity/aepp-sdk-python/commit/9e8c02c8e96aaa326ebf01fb861cab61ede7c527)).
+- feat(ga): detect ga account when signing from a node client ([ae542b2](https://github.com/aeternity/aepp-sdk-python/commit/ae542b2285f4888e10b55601291bf0a7398114b5)).
+- feat(state-channels): added settle method support ([efd2ced](https://github.com/aeternity/aepp-sdk-python/commit/efd2cedd2e22036b399dd2427376a6fbd4d42308)).
+- feat(state-channels): state channels ga awareness ([42c233f](https://github.com/aeternity/aepp-sdk-python/commit/42c233fa84b73509ed1854a49716361d382d7436)).
+- feat: add function to decode a compiled/encoded contract object ([59afdaf](https://github.com/aeternity/aepp-sdk-python/commit/59afdafa526333092a3c3f3739a619cd72d14a94)).
+- feat: add compiler v3.2.0 support ([65759dc](https://github.com/aeternity/aepp-sdk-python/commit/65759dca1538045c44540b975adff38fb1c94c7f)).
+
+### Docs
+
+- docs: add documentation for ga in the docs folder
+
 
 ## [4.1.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/4.1.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/4.0.0...4.1.0))
 
