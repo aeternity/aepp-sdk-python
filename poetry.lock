@@ -21,6 +21,9 @@ version = ">=1.0"
 python = "<3.7"
 version = ">=3.6.5"
 
+[package.extras]
+speedups = ["aiodns", "brotlipy", "cchardet"]
+
 [[package]]
 category = "dev"
 description = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
@@ -52,6 +55,11 @@ name = "attrs"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "19.1.0"
+
+[package.extras]
+dev = ["coverage", "hypothesis", "pympler", "pytest", "six", "zope.interface", "sphinx", "pre-commit"]
+docs = ["sphinx", "zope.interface"]
+tests = ["coverage", "hypothesis", "pympler", "pytest", "six", "zope.interface"]
 
 [[package]]
 category = "main"
@@ -173,6 +181,12 @@ setuptools = "*"
 tomlkit = "*"
 yaspin = "*"
 
+[package.extras]
+dev = ["pygments-github-lexers", "pytest", "recommonmark", "sphinx", "sphinx-rtd-theme"]
+docs = ["pygments-github-lexers", "recommonmark", "sphinx", "sphinx-rtd-theme"]
+full = ["aiofiles", "autopep8", "colorama", "graphviz", "yapf"]
+tests = ["pytest"]
+
 [[package]]
 category = "dev"
 description = "pathlib for archives"
@@ -291,6 +305,9 @@ version = "1.2.5"
 [package.dependencies]
 wrapt = ">=1,<2"
 
+[package.extras]
+dev = ["tox", "bumpversion (<1)", "sphinx (<2)", "PyTest (<5)", "PyTest-Cov (<2.6)", "pytest", "pytest-cov"]
+
 [[package]]
 category = "dev"
 description = "Docutils -- Python Documentation Utilities"
@@ -315,6 +332,14 @@ optional = false
 python-versions = ">=3.5, <4"
 version = "0.2.0"
 
+[package.extras]
+dev = ["bumpversion (>=0.5.3,<1)", "pytest-xdist", "pytest-watch (>=4.1.0,<5)", "wheel", "ipython", "pytest (3.3.2)", "tox (>=2.9.1,<3)", "flake8 (3.4.1)", "isort (>=4.2.15,<5)", "Sphinx (>=1.6.5,<2)", "sphinx-rtd-theme (>=0.1.9)"]
+doc = ["Sphinx (>=1.6.5,<2)", "sphinx-rtd-theme (>=0.1.9)"]
+lint = ["flake8 (3.4.1)", "isort (>=4.2.15,<5)"]
+pycryptodome = ["pycryptodome (>=3.6.6,<4)"]
+pysha3 = ["pysha3 (>=1.0.0,<2.0.0)"]
+test = ["pytest (3.3.2)", "tox (>=2.9.1,<3)"]
+
 [[package]]
 category = "main"
 description = "eth-typing: Common type annotations for ethereum python packages"
@@ -322,6 +347,12 @@ name = "eth-typing"
 optional = false
 python-versions = ">=3.5, <4"
 version = "2.1.0"
+
+[package.extras]
+dev = ["bumpversion (>=0.5.3,<1)", "pytest-watch (>=4.1.0,<5)", "wheel", "twine", "ipython", "pytest (>=3.6,<3.7)", "pytest-xdist", "tox (>=2.9.1,<3)", "flake8 (3.4.1)", "isort (>=4.2.15,<5)", "Sphinx (>=1.6.5,<2)", "sphinx-rtd-theme (>=0.1.9)"]
+doc = ["Sphinx (>=1.6.5,<2)", "sphinx-rtd-theme (>=0.1.9)"]
+lint = ["flake8 (3.4.1)", "isort (>=4.2.15,<5)"]
+test = ["pytest (>=3.6,<3.7)", "pytest-xdist", "tox (>=2.9.1,<3)"]
 
 [[package]]
 category = "main"
@@ -336,6 +367,13 @@ cytoolz = ">=0.8.2,<1.0.0"
 eth-hash = ">=0.1.0,<1.0.0"
 eth-typing = ">=1.0.0,<3.0.0"
 toolz = ">0.8.2,<1"
+
+[package.extras]
+deploy = ["bumpversion (>=0.5.3,<1.0.0)", "tox (>=2.9.1,<3.0.0)", "wheel (>=0.30.0,<1.0.0)"]
+dev = ["Sphinx (>=1.5.5,<2)", "black (>=18.6b4,<19)", "bumpversion (>=0.5.3,<1.0.0)", "flake8 (>=3.7.0,<4.0.0)", "hypothesis (>=3.4.2,<4.0.0)", "mypy (0.701)", "pytest-pythonpath (>=0.3,<1.0)", "pytest (>=3.4.1,<4.0.0)", "sphinx-rtd-theme (>=0.1.9,<2)", "tox (>=2.9.1,<3.0.0)", "twine", "wheel (>=0.30.0,<1.0.0)"]
+doc = ["Sphinx (>=1.5.5,<2)", "sphinx-rtd-theme (>=0.1.9,<2)"]
+lint = ["black (>=18.6b4,<19)", "flake8 (>=3.7.0,<4.0.0)", "mypy (0.701)", "pytest (>=3.4.1,<4.0.0)"]
+test = ["hypothesis (>=3.4.2,<4.0.0)", "pytest-pythonpath (>=0.3,<1.0)", "pytest (>=3.4.1,<4.0.0)"]
 
 [[package]]
 category = "dev"
@@ -390,6 +428,9 @@ version = "0.18"
 [package.dependencies]
 zipp = ">=0.5"
 
+[package.extras]
+docs = ["sphinx", "docutils (0.12)", "rst.linker"]
+
 [[package]]
 category = "dev"
 description = "A small but fast and easy to use stand-alone template engine written in pure python."
@@ -400,6 +441,9 @@ version = "2.10.1"
 
 [package.dependencies]
 MarkupSafe = ">=0.23"
+
+[package.extras]
+i18n = ["Babel (>=0.8)"]
 
 [[package]]
 category = "dev"
@@ -500,6 +544,9 @@ version = "0.12.0"
 [package.dependencies]
 importlib-metadata = ">=0.12"
 
+[package.extras]
+dev = ["pre-commit", "tox"]
+
 [[package]]
 category = "dev"
 description = "Run a subprocess in a pseudo terminal"
@@ -552,6 +599,10 @@ version = "1.3.0"
 cffi = ">=1.4.1"
 six = "*"
 
+[package.extras]
+docs = ["sphinx (>=1.6.5)", "sphinx-rtd-theme"]
+tests = ["pytest (>=3.2.1,<3.3.0 || >3.3.0)", "hypothesis (>=3.27.0)"]
+
 [[package]]
 category = "dev"
 description = "Python parsing module"
@@ -583,6 +634,9 @@ wcwidth = "*"
 python = ">=2.8"
 version = ">=4.0.0"
 
+[package.extras]
+testing = ["argcomplete", "hypothesis (>=3.56)", "nose", "requests", "mock"]
+
 [[package]]
 category = "dev"
 description = "Pytest plugin for measuring coverage."
@@ -594,6 +648,9 @@ version = "2.7.1"
 [package.dependencies]
 coverage = ">=4.4"
 pytest = ">=3.6"
+
+[package.extras]
+testing = ["fields", "hunter", "process-tests (2.0.2)", "six", "virtualenv"]
 
 [[package]]
 category = "main"
@@ -617,6 +674,10 @@ chardet = ">=3.0.2,<3.1.0"
 idna = ">=2.5,<2.9"
 urllib3 = ">=1.21.1,<1.25.0 || >1.25.0,<1.25.1 || >1.25.1,<1.26"
 
+[package.extras]
+security = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)", "idna (>=2.0.0)"]
+socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7)", "win-inet-pton"]
+
 [[package]]
 category = "main"
 description = "A package for Recursive Length Prefix encoding and decoding"
@@ -627,6 +688,12 @@ version = "1.1.0"
 
 [package.dependencies]
 eth-utils = ">=1.0.2,<2"
+
+[package.extras]
+dev = ["bumpversion (>=0.5.3,<1)", "pytest-xdist", "pytest-watch (>=4.1.0,<5)", "wheel", "ipython", "twine", "pytest (3.3.2)", "tox (>=2.9.1,<3)", "hypothesis (3.56.5)", "flake8 (3.4.1)", "Sphinx (>=1.6.5,<2)", "sphinx-rtd-theme (>=0.1.9)"]
+doc = ["Sphinx (>=1.6.5,<2)", "sphinx-rtd-theme (>=0.1.9)"]
+lint = ["flake8 (3.4.1)"]
+test = ["pytest (3.3.2)", "tox (>=2.9.1,<3)", "hypothesis (3.56.5)"]
 
 [[package]]
 category = "main"
@@ -643,6 +710,14 @@ name = "shellingham"
 optional = false
 python-versions = ">=2.6,!=3.0,!=3.1,!=3.2,!=3.3"
 version = "1.3.1"
+
+[[package]]
+category = "main"
+description = "Simple, fast, extensible JSON encoder/decoder for Python"
+name = "simplejson"
+optional = false
+python-versions = ">=2.5, !=3.0.*, !=3.1.*, !=3.2.*"
+version = "3.16.0"
 
 [[package]]
 category = "main"
@@ -698,6 +773,11 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4"
 version = "1.25.3"
 
+[package.extras]
+brotli = ["brotlipy (>=0.6.0)"]
+secure = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "certifi", "ipaddress"]
+socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7,<2.0)"]
+
 [[package]]
 category = "main"
 description = "Python Data Validation for Humans™."
@@ -709,6 +789,9 @@ version = "0.13.0"
 [package.dependencies]
 decorator = ">=3.4.0"
 six = ">=1.4.0"
+
+[package.extras]
+test = ["pytest (>=2.2.3)", "flake8 (>=2.4.0)", "isort (>=4.2.2)"]
 
 [[package]]
 category = "dev"
@@ -762,11 +845,15 @@ optional = false
 python-versions = ">=2.7"
 version = "0.5.1"
 
+[package.extras]
+docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
+testing = ["pathlib2", "contextlib2", "unittest2"]
+
 [extras]
 test = []
 
 [metadata]
-content-hash = "e5dd5d6fa23d150decee6f47a841e355c02d6f8360e59088f697de8348207811"
+content-hash = "79da6355827c1c152e1c375a19c45d00114d6cc2e2fda09bba055d40e647d63f"
 python-versions = "^3.6"
 
 [metadata.hashes]
@@ -831,6 +918,7 @@ requests = ["11e007a8a2aa0323f5a921e9e6a2d7e4e67d9877e85773fba9ba6419025cbeb4", 
 rlp = ["0505fd53278cb4a3ea6baf1b658357ac209bdcdd1b316ac90050c40f669ceacc", "ebe80a03c50e3d6aac47f44ddd45048bb99e411203cd764f5da1330e6d83821c"]
 semver = ["41c9aa26c67dc16c54be13074c352ab666bce1fa219c7110e8f03374cd4206b0", "5b09010a66d9a3837211bb7ae5a20d10ba88f8cb49e92cb139a69ef90d5060d8"]
 shellingham = ["77d37a4fd287c1e663006f7ecf1b9deca9ad492d0082587bd813c44eb49e4e62", "985b23bbd1feae47ca6a6365eacd314d93d95a8a16f8f346945074c28fe6f3e0"]
+simplejson = ["067a7177ddfa32e1483ba5169ebea1bc2ea27f224853211ca669325648ca5642", "2b8cb601d9ba0381499db719ccc9dfbb2fbd16013f5ff096b1a68a4775576a04", "2c139daf167b96f21542248f8e0a06596c9b9a7a41c162cc5c9ee9f3833c93cd", "2fc546e6af49fb45b93bbe878dea4c48edc34083729c0abd09981fe55bdf7f91", "354fa32b02885e6dae925f1b5bbf842c333c1e11ea5453ddd67309dc31fdb40a", "37e685986cf6f8144607f90340cff72d36acf654f3653a6c47b84c5c38d00df7", "3af610ee72efbe644e19d5eaad575c73fb83026192114e5f6719f4901097fce2", "3b919fc9cf508f13b929a9b274c40786036b31ad28657819b3b9ba44ba651f50", "3dd289368bbd064974d9a5961101f080e939cbe051e6689a193c99fb6e9ac89b", "491de7acc423e871a814500eb2dcea8aa66c4a4b1b4825d18f756cdf58e370cb", "495511fe5f10ccf4e3ed4fc0c48318f533654db6c47ecbc970b4ed215c791968", "65b41a5cda006cfa7c66eabbcf96aa704a6be2a5856095b9e2fd8c293bad2b46", "6c3258ffff58712818a233b9737fe4be943d306c40cf63d14ddc82ba563f483a", "75e3f0b12c28945c08f54350d91e624f8dd580ab74fd4f1bbea54bc6b0165610", "79b129fe65fdf3765440f7a73edaffc89ae9e7885d4e2adafe6aa37913a00fbb", "b1f329139ba647a9548aa05fb95d046b4a677643070dc2afc05fa2e975d09ca5", "c206f47cbf9f32b573c9885f0ec813d2622976cf5effcf7e472344bc2e020ac1", "d8e238f20bcf70063ee8691d4a72162bcec1f4c38f83c93e6851e72ad545dabb", "ee9625fc8ee164902dfbb0ff932b26df112da9f871c32f0f9c1bcf20c350fe2a", "fb2530b53c28f0d4d84990e945c2ebb470edb469d63e389bf02ff409012fe7c5", "feadb95170e45f439455354904768608e356c5b174ca30b3d11b0e3f24b5c0df"]
 six = ["3350809f0555b11f552448330d0b52d5f24c91a322ea4a15ef22629740f3761c", "d16a0141ec1a18405cd4ce8b4613101da75da0e9a7aec5bdd4fa804d0e0eba73"]
 tomlkit = ["d6506342615d051bc961f70bfcfa3d29b6616cc08a3ddfd4bc24196f16fd4ec2", "f077456d35303e7908cc233b340f71e0bec96f63429997f38ca9272b7d64029e"]
 toolz = ["929f0a7ea7f61c178bd951bdae93920515d3fbdbafc8e6caf82d752b9b3b31c9"]

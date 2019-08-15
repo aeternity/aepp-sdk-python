@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aepp-sdk"
-version = "4.1.0"
+version = "4.2.0"
 description = "Python SDK to interact with the Æternity blockchain"
 authors = [
   "Andrea Giacobino <no.andrea@gmail.com>", 
@@ -33,6 +33,7 @@ semver = "^2.8"
 namedtupled = "^0.3.3"
 Deprecated = "^1.2"
 websockets = "^7.0"
+simplejson = "^3.16.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.6"
