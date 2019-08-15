@@ -2,7 +2,7 @@ from aeternity.exceptions import NameNotAvailable, MissingPreclaim, NameUpdateEr
 from aeternity.openapi import OpenAPIClientException
 from aeternity import defaults
 from aeternity import hashing, utils, oracles
-from aeternity.identifiers import ACCOUNT_ID, NAME
+from aeternity.identifiers import ACCOUNT_ID, NAME_ID
 
 
 class NameStatus:
@@ -195,7 +195,7 @@ class AEName:
                 raise ValueError('You must register the oracle before using it as target')
             target = target.oracle_id
         # get the name_id and pointers
-        name_id = hashing.namehash_encode(NAME, self.domain)
+        name_id = hashing.namehash_encode(NAME_ID, self.domain)
         pointers = self._get_pointers(target)
         # get the transaction builder
         txb = self.client.tx_builder
@@ -215,7 +215,7 @@ class AEName:
         :return: the transaction
         """
         # get the name_id and pointers
-        name_id = hashing.namehash_encode(NAME, self.domain)
+        name_id = hashing.namehash_encode(NAME_ID, self.domain)
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl
@@ -236,7 +236,7 @@ class AEName:
         :return: the transaction
         """
         # get the name_id and pointers
-        name_id = hashing.namehash_encode(NAME, self.domain)
+        name_id = hashing.namehash_encode(NAME_ID, self.domain)
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl
