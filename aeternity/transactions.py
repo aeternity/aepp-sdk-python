@@ -5,6 +5,7 @@ from aeternity import defaults
 from aeternity.exceptions import UnsupportedTransactionType, TransactionFeeTooLow
 import rlp
 import math
+import pprint
 import namedtupled
 
 PACK_TX = 1
@@ -24,9 +25,8 @@ _ENC = 12  # encoded object
 _IDS = 101  # list of id
 _PTRS = 106  # list of pointers
 
-
 class Fn:
-    def _init(self, index, field_type=_INT, **kwargs):
+    def __init__(self, index, field_type=_INT, **kwargs):
         self.index = index
         self.field_type = field_type
         self.encoding_prefix = kwargs.get("prefix")
@@ -331,28 +331,28 @@ txf = {
             "version": Fn(1),
             "owner_id": Fn(2, _ID),
             "nonce": Fn(3),
-            "code": Fn(4),  # _binary_decode(tx_native[4]),
-            "auth_fun": Fn(5),  # _binary_decode(tx_native[5]),
+            "code": Fn(4, _ENC, prefix=idf.BYTECODE),
+            "auth_fun": Fn(5, _BIN),
             # "vm_version": Fn(6), # This field is retrieved via abi_version
             "abi_version": Fn(6, _VM_ABI),
             "fee": Fn(7),
             "ttl": Fn(8),
             "gas": Fn(9),
             "gas_price": Fn(10),
-            "call_data": Fn(11),  # _binary_decode(tx_native[11]),
+            "call_data": Fn(11, _ENC, prefix=idf.BYTECODE),  # _binary_decode(tx_native[11]),
         }},
     idf.OBJECT_TAG_GA_META_TRANSACTION: {
         "fee": Fee(SIZE_BASED, base_gas_multiplier=5),
         "schema": {
             "version": Fn(1),
             "ga_id": Fn(2, _ID),
-            "auth_data": Fn(3),  # encode(idf.BYTECODE, tx_native[3]),
+            "auth_data": Fn(3, _ENC, prefix=idf.BYTECODE),
             "abi_version": Fn(4),
             "fee": Fn(5),
             "gas": Fn(6),
             "gas_price": Fn(7),
             "ttl": Fn(8),
-            "tx": Fn(9),  # encode(idf.TRANSACTION, tx_native[9]),
+            "tx": Fn(9, _TX),
         }
     },
 }
@@ -372,7 +372,12 @@ class TxObject:
         self.metadata = kwargs.get("metadata", None)
         self.network_id = kwargs.get("network_id", None)
         self.signatures = kwargs.get("signatures", [])
-        pass
+    
+    def __repr__(self):
+        return self.__str__()
+    
+    def __str__(self):
+        return pprint.pformat(self.data)
 
 
 class TxSigner:
@@ -443,6 +448,9 @@ class TxBuilder:
         return hash_encode(idf.TRANSACTION_HASH, tx_raw)
 
     def compute_min_fee(self, tx_data: dict, tx_descriptor: dict, tx_raw: list):
+        # if the fee is none means it is not necessary to compute the fee
+        if tx_descriptor.get("fee") is None:
+            return 0
         # extract the parameters from the descriptor
         fee_field_index = tx_descriptor.get("schema").get("fee").index
         base_gas_multiplier = tx_descriptor.get("fee").base_gas_multiplier
@@ -459,11 +467,11 @@ class TxBuilder:
             ga_surplus = (self.base_gas * base_gas_multiplier + tx_size * self.gas_per_byte)
         # begin calculation
         current_fee, min_fee = -1, defaults.FEE
-        # reset the fee value to the minimum fee (0)
-        tx_raw[fee_field_index] = _int(min_fee)
         while current_fee != min_fee:
             # save the min fee into current fee
             current_fee = min_fee
+            # update the fee value
+            tx_raw[fee_field_index] = _int(current_fee)
             # first calculate the size part
             tx_size = len(rlp.encode(tx_raw))
             min_fee = self.base_gas * base_gas_multiplier + tx_size * self.gas_per_byte
@@ -471,12 +479,16 @@ class TxBuilder:
             min_fee += ttl_component
             # remove the ga_surplus
             min_fee -= ga_surplus
-        # finally multiply the fee for the gas price
-        return min_fee * self.gas_price
+            # finally multiply for gas the gas price
+            min_fee *= self.gas_price
+        
+        return min_fee
 
     def _params_to_api(self, data: dict, schema: dict) -> TxObject:
         # initialize the right data size
         raw_data = [0]*len(data)
+        # set the tx tag first
+        raw_data[0] = _int(data.get("tag"))
         # parse fields and encode them
         for label, fn in schema.items():
             if fn.field_type == _INT:
@@ -488,7 +500,7 @@ class TxBuilder:
             elif fn.field_type == _SG:
                 # signatures are always a list
                 raw_data[fn.index] = [decode(sg) for sg in data.get(label, [])]
-            elif fn.filed_type == _VM_ABI:
+            elif fn.field_type == _VM_ABI:
                 # vm/abi are encoded in the same 32bit length block
                 raw_data[fn.index] = _int(data.get("vm_version")) + _int(data.get("abi_version"), 2)
             elif fn.field_type == _BIN:
@@ -499,11 +511,11 @@ class TxBuilder:
                 raw_data[fn.index] = [[_binary(p.get("key")), _id(p.get("id"))] for p in data.get(label, [])]
             elif fn.field_type == _TX:
                 # this can be raw or tx object
-                raw_data[fn.index] = decode(data.get(label))
+                tx = data.get(label).tx if hasattr(data.get(label), "tx") else data.get(label)
+                raw_data[fn.index] = decode(tx)
         return raw_data
 
     def _build_tx_object(self, tx_data):
-        # determine the type of tx_data
         if isinstance(tx_data, str):
             # it is an encoded tx, rare case TODO: add decode
             pass
@@ -524,11 +536,15 @@ class TxBuilder:
         metadata = {
             "min_fee": self.compute_min_fee(tx_data, tx_descriptor, raw)
         }
-        # TODO: if fee was 0 we want to substitute it with the min_fee
-        # encode the tx in rlp + base64
-        rlp_b64_tx = encode_rlp(idf.TRANSACTION, raw)
+        # if the fee was set to 0 then we set the min_fee as fee
+        if tx_data.get("fee", -1) == 0:
+            raw[tx_descriptor.get("schema").get("fee").index] = _int(metadata.get("min_fee"))
+        # encode th tx in rlp
+        rlp_tx = rlp.encode(raw)
+        # encode the tx in base64
+        rlp_b64_tx = encode(idf.TRANSACTION, rlp_tx)
         # compute the tx hash
-        tx_hash = hash_encode(idf.TRANSACTION_HASH, raw)
+        tx_hash = hash_encode(idf.TRANSACTION_HASH, rlp_tx)
         # now build the tx object
         return TxObject(
             metadata=namedtupled.map(metadata, _nt_name="TxMeta"),
@@ -537,7 +553,7 @@ class TxBuilder:
             hash=tx_hash
         )
 
-    def tx_signed(self, signatures, tx):
+    def tx_signed(self, signatures:list, tx:TxObject):
         """
         Create a signed transaction. This is a special type of transaction
         as it wraps a normal transaction adding one or more signature
@@ -569,7 +585,7 @@ class TxBuilder:
             amount=amount,
             fee=fee,
             sender_id=sender_id,
-            payload=payload,
+            payload=encode(idf.BYTE_ARRAY, payload),
             ttl=ttl,
             nonce=nonce,
         )

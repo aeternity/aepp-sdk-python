@@ -182,7 +182,7 @@ class Channel(object):
         """
         Sign the transactions received over channel by the provided sign method
         """
-        encoded_tx = self.sign.cosign_encode_transaction(tx).tx
+        encoded_tx = self.sign.cosign_encode_transaction(tx).tx # TODO: this has to be change to sign correctly
         self.__enqueue_action({
             'method': method,
             'params': {

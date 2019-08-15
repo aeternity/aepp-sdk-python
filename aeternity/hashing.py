@@ -41,7 +41,7 @@ def _base64_decode(encoded_str: str) -> bytes:
     # decode bytes
     raw = base64.b64decode(encoded_str)
     # check size
-    if len(raw) < 5:
+    if len(raw) < 4:
         raise ValueError("Invalid input for base64 decode check")
     # test checksum
     data, check = raw[:-4], raw[-4:]

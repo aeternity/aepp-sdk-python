@@ -156,21 +156,20 @@ class NodeClient:
             block = self.api.get_micro_block_header_by_hash(hash=hash)
         return block
 
-    def broadcast_transaction(self, tx, tx_hash=None):
+    def broadcast_transaction(self, tx: transactions.TxObject):
         """
         Post a transaction to the chain and verify that the hash match the local calculated hash
         It blocks for a period of time to wait for the transaction to be included if in blocking_mode
         """
-        tx = tx.tx if hasattr(tx, "tx") else tx
-        reply = self.post_transaction(body={"tx": tx})
-        if tx_hash is not None and reply.tx_hash != tx_hash:
-            raise TransactionHashMismatch(f"Transaction hash doesn't match, expected {tx_hash} got {reply.tx_hash}")
+        reply = self.post_transaction(body={"tx": tx.tx})
+        if reply.tx_hash != tx.hash:
+            raise TransactionHashMismatch(f"Transaction hash doesn't match, expected {tx.hash} got {reply.tx_hash}")
 
         if self.config.blocking_mode:
             self.wait_for_transaction(reply.tx_hash)
         return reply.tx_hash
 
-    def sign_transaction(self, account: Account, tx: object, metadata: dict = None, **kwargs) -> tuple:
+    def sign_transaction(self, account: Account, tx: transactions.TxObject, metadata: dict = None, **kwargs) -> tuple:
         """
         Sign a transaction
         :return: the transaction for the transaction
@@ -225,6 +224,12 @@ class NodeClient:
         remote_account = self.get_account_by_pubkey(pubkey=address)
         return Account.from_node_api(remote_account)
 
+    def get_transaction(self, transaction_hash): # TODO: continue
+        if not utils.is_valid_hash(transaction_hash, identifiers.TRANSACTION_HASH):
+            raise TypeError(f"Input {transaction_hash} is not a valid aeternity address")
+        tx = self.get_transaction_by_hash(hash=transaction_hash)
+        return self.tx_builder._build_tx_object(tx)
+
     def spend(self, account: Account,
               recipient_id: str,
               amount: int,
@@ -240,10 +245,10 @@ class NodeClient:
         tx_ttl = self.compute_absolute_ttl(tx_ttl)
         # build the transaction
         tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, amount, payload, fee, tx_ttl.absolute_ttl, account.nonce)
-        # execute the transaction
-        tx = self.sign_transaction(account, tx.tx)
-        # post the transaction
-        self.broadcast_transaction(tx.tx, tx_hash=tx.hash)
+        # get the signature
+        tx = self.sign_transaction(account, tx)
+        # post the signed transaction transaction
+        self.broadcast_transaction(tx)
         return tx
 
     def wait_for_transaction(self, tx_hash, max_retries=None, polling_interval=None, confirm_transaction=False):
@@ -256,7 +261,7 @@ class NodeClient:
         - the ttl of the transaction or the one passed as parameter has been reached
         :return: the block height of the transaction if it has been found
 
-        Raises TransactionWaitTimeoutExpired if the transaction hasnt been found
+        Raises TransactionWaitTimeoutExpired if the transaction hasn't been found
         """
 
         retries = max_retries if max_retries is not None else self.config.poll_tx_max_retries
@@ -327,6 +332,7 @@ class NodeClient:
                        percentage: float,
                        payload: str = "",
                        tx_ttl: int = defaults.TX_TTL,
+                       fee: int = defaults.FEE,
                        include_fee=True):
         """
         Create and execute a spend transaction
@@ -340,17 +346,17 @@ class NodeClient:
         # retrieve ttl
         tx_ttl = self.compute_absolute_ttl(tx_ttl)
         # build the transaction
-        tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, request_transfer_amount, payload, defaults.FEE, tx_ttl.absolute_ttl, account.nonce)
+        tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, request_transfer_amount, payload, fee, tx_ttl.absolute_ttl, account.nonce)
         # if the request_transfer_amount should include the fee keep calculating the fee
         if include_fee:
             amount = request_transfer_amount
             while (amount + tx.data.fee) > request_transfer_amount:
                 amount = request_transfer_amount - tx.data.fee
-                tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, amount, payload, defaults.FEE, tx_ttl.absolute_ttl, account.nonce)
+                tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, amount, payload, fee, tx_ttl.absolute_ttl, account.nonce)
         # execute the transaction
-        tx = self.sign_transaction(account, tx.tx)
+        tx = self.sign_transaction(account, tx)
         # post the transaction
-        self.broadcast_transaction(tx.tx, tx_hash=tx.hash)
+        self.broadcast_transaction(tx)
         return tx
 
     def get_consensus_protocol_version(self, height: int = None) -> int:
@@ -371,11 +377,11 @@ class NodeClient:
                 version, effective_at_height = p.version, p.effective_at_height
         return version
 
-    def verify(self, encoded_tx):
+    def verify(self, encoded_tx: str) -> transactions.TxObject:
         """
         Unpack and verify an encoded transaction
         """
-        decoded = transactions._tx_native(transactions.UNPACK_TX, tx=encoded_tx)
+        decoded = self.tx_builder._build_tx_object(encoded_tx)
         return decoded
 
     def get_vm_abi_versions(self):
@@ -436,7 +442,7 @@ class NodeClient:
         # sign the transaction
         tx = self.sign_transaction(account, tx)
         # broadcast the transaction
-        self.broadcast_transaction(tx, tx_hash=tx.hash)
+        self.broadcast_transaction(tx)
         return tx
 
     # support naming
