@@ -161,6 +161,7 @@ ABI_SOLIDITY = 2
 PROTOCOL_ROMA = 1
 PROTOCOL_MINERVA = 2
 PROTOCOL_FORTUNA = 3
+PROTOCOL_LIMA = 4
 # Contracts identifiers
 PROTOCOL_ABI_VM = {
     PROTOCOL_ROMA: {
@@ -174,6 +175,10 @@ PROTOCOL_ABI_VM = {
     },
     PROTOCOL_FORTUNA: {
         "vm": 4,
+        "abi": 1
+    },
+    PROTOCOL_LIMA: {
+        "vm": 5,
         "abi": 1
     }
 }
