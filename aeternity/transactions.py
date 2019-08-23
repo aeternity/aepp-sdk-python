@@ -307,7 +307,7 @@ txf = {
             "version": Fn(1),
             "oracle_id": Fn(2, _ID),
             "nonce": Fn(3),
-            "query_id": Fn(4),  # encode(idf.ORACLE_QUERY_ID, tx_native[4]),
+            "query_id": Fn(4, _ENC, prefix=idf.ORACLE_QUERY_ID),
             "response": Fn(5),  # _binary(tx_native[5]),
             "response_ttl.type": Fn(6),  # idf.ORACLE_TTL_TYPE_DELTA
             "response_ttl.value": Fn(7),
@@ -372,10 +372,10 @@ class TxObject:
         self.metadata = kwargs.get("metadata", None)
         self.network_id = kwargs.get("network_id", None)
         self.signatures = kwargs.get("signatures", [])
-    
+
     def __repr__(self):
         return self.__str__()
-    
+
     def __str__(self):
         return pprint.pformat(self.data)
 
@@ -481,7 +481,7 @@ class TxBuilder:
             min_fee -= ga_surplus
             # finally multiply for gas the gas price
             min_fee *= self.gas_price
-        
+
         return min_fee
 
     def _params_to_api(self, data: dict, schema: dict) -> TxObject:
@@ -516,6 +516,10 @@ class TxBuilder:
         return raw_data
 
     def _build_tx_object(self, tx_data):
+        # tree cases here
+        # 1. (namedtuple) from api queries so everything is wrapped around a json object that is a  generic signed transaction
+        # 2. (string) from and b64c enocoded rlp tx
+        # 3. (dict) from functions of this class
         if isinstance(tx_data, str):
             # it is an encoded tx, rare case TODO: add decode
             pass
@@ -552,6 +556,12 @@ class TxBuilder:
             tx=rlp_b64_tx,
             hash=tx_hash
         )
+
+    def parse_api_tx(self, api_object):
+        # this is a GenericSignedTx
+        tx_data = namedtupled.reduce(api_object)
+
+
 
     def tx_signed(self, signatures:list, tx:TxObject):
         """
