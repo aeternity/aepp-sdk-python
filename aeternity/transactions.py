@@ -25,6 +25,7 @@ _ENC = 12  # encoded object
 _IDS = 101  # list of id
 _PTRS = 106  # list of pointers
 
+
 class Fn:
     def __init__(self, index, field_type=_INT, **kwargs):
         self.index = index
@@ -84,7 +85,7 @@ txf = {
             "account_id": Fn(2, _ID),
             "nonce": Fn(3),
             "name": Fn(4, _BIN),
-            "name_salt": Fn(5), # TODO: this has to be verified
+            "name_salt": Fn(5),  # TODO: this has to be verified
             "fee": Fn(6),
             "ttl": Fn(7),
         }},
@@ -515,14 +516,58 @@ class TxBuilder:
                 raw_data[fn.index] = decode(tx)
         return raw_data
 
+    def _api_to_params(self, raw):
+        # takes in an unserialized rlp object
+        tag = _int_decode(raw[0])
+        schema = txf.get(tag)
+        tx_data = {"tag": tag}
+        for label, fn in schema.items():
+            if fn.field_type == _INT:
+                tx_data[label] = _int_decode(raw[fn.index])
+            if fn.field_type == _ID:
+                tx_data[label] = _id_decode(raw[fn.index])
+            elif fn.field_type == _ENC:
+                tx_data[label] = encode(fn.encoding_prefix, raw[fn.index])
+            elif fn.field_type == _SG:
+                # signatures are always a list
+                tx_data[label] = [encode(idf.SIGNATURE, sg) for sg in raw[fn.index]]
+            elif fn.field_type == _VM_ABI:
+                vml = len(raw[fn.index])
+                # vm/abi are encoded in the same 32bit length block
+                tx_data["vm_version"] = _int_decode(raw[fn.index][0:vml - 2])
+                tx_data["abi_version"] = _int_decode(raw[fn.index][vml - 2:])
+            elif fn.field_type == _BIN:
+                # this are byte arrays, TODO: should add type
+                tx_data[label] = _binary_decode(raw[fn.index])
+            elif fn.field_type == _PTR:
+                # this are name pointers
+                tx_data[label] = [{"key": _binary_decode(p[0], data_type=str), "id": _id_decode(p[1])} for p in raw[fn.index]]
+            elif fn.field_type == _TX:
+                # this can be raw or tx object
+                tx_data[label] = self._api_to_params(raw[fn.index])
+        # encode th tx in rlp
+        rlp_tx = rlp.encode(raw)
+        # encode the tx in base64
+        rlp_b64_tx = encode(idf.TRANSACTION, rlp_tx)
+        # compute the tx hash
+        tx_hash = hash_encode(idf.TRANSACTION_HASH, rlp_tx)
+        # now build the tx object
+        return TxObject(
+            metadata=namedtupled.map({}, _nt_name="TxMeta"),
+            data=namedtupled.map(tx_data, _nt_name="TxData"),
+            tx=rlp_b64_tx,
+            hash=tx_hash
+        )
+
     def _build_tx_object(self, tx_data):
         # tree cases here
         # 1. (namedtuple) from api queries so everything is wrapped around a json object that is a  generic signed transaction
         # 2. (string) from and b64c enocoded rlp tx
         # 3. (dict) from functions of this class
         if isinstance(tx_data, str):
-            # it is an encoded tx, rare case TODO: add decode
-            pass
+            # it is an encoded tx, happens when there is a tx to decode
+            raw = decode_rlp(tx_data)
+            return self._api_to_params(raw)
         # if it comes from an api request it will not have the tag but the type
         tag = tx_data.get("tag")
         if tag is None:
@@ -557,13 +602,7 @@ class TxBuilder:
             hash=tx_hash
         )
 
-    def parse_api_tx(self, api_object):
-        # this is a GenericSignedTx
-        tx_data = namedtupled.reduce(api_object)
-
-
-
-    def tx_signed(self, signatures:list, tx:TxObject):
+    def tx_signed(self, signatures: list, tx: TxObject):
         """
         Create a signed transaction. This is a special type of transaction
         as it wraps a normal transaction adding one or more signature
