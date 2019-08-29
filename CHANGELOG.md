@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 
+## [4.3.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/4.3.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/4.2.0...4.3.0)) - 2019-08-29
+
+### Features
+- feat: add preliminary support for lima (#227) ([a96bb98](https://github.com/aeternity/aepp-sdk-python/commit/a96bb98a4c3c4e5b4789d9fe08d6ee07ac5bdb9f)).
+
+
 ## [4.2.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/4.2.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/4.0.0...4.2.0)) - 2019-08-15
 
 ### Bug Fixes
