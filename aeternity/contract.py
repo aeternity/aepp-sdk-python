@@ -15,11 +15,13 @@ class CompilerClient(object):
     CompilerClient is the rest client to interact with the aesophia_http compiler
     """
 
-    def __init__(self, compiler_url='http://localhost:3080'):
+    def __init__(self, compiler_url='http://localhost:3080', compiler_options={"backend": "aevm"}):
         self.compiler_url = compiler_url
         self.compiler_cli = openapi.OpenAPICli(compiler_url, compatibility_version_range=__compiler_compatibility__)
+        self.compiler_options = compiler_options
 
     def compile(self, source_code, compiler_options={}):
+        compiler_options = compiler_options if len(compiler_options) > 0 else self.compiler_options
         body = dict(
             code=source_code,
             options=compiler_options
@@ -27,6 +29,7 @@ class CompilerClient(object):
         return self.compiler_cli.compile_contract(body=body)
 
     def aci(self, source_code, compiler_options={}):
+        compiler_options = compiler_options if len(compiler_options) > 0 else self.compiler_options
         body = dict(
             code=source_code,
             options=compiler_options
@@ -52,18 +55,29 @@ class CompilerClient(object):
         }
         return self.compiler_cli.decode_data(body=body)
 
-    def decode_calldata_with_bytecode(self, bytecode, encoded_calldata):
+    def decode_call_result(self, sophia_type, encoded_data):
+        body = {
+            "data": encoded_data,
+            "sophia-type": sophia_type
+        }
+        return self.compiler_cli.decode_data(body=body)
+
+    def decode_calldata_with_bytecode(self, bytecode, encoded_calldata, compiler_options={}):
+        compiler_options = compiler_options if len(compiler_options) > 0 else self.compiler_options
         body = {
             "calldata": encoded_calldata,
-            "bytecode": bytecode
+            "bytecode": bytecode,
+            "backend": compiler_options.get("backend", "aevm")
         }
         return self.compiler_cli.decode_calldata_bytecode(body=body)
 
-    def decode_calldata_with_sourcecode(self, sourcecode, function, encoded_calldata):
+    def decode_calldata_with_sourcecode(self, sourcecode, function, encoded_calldata, compiler_options={}):
+        compiler_options = compiler_options if len(compiler_options) > 0 else self.compiler_options
         body = {
             "source": sourcecode,
             "function": function,
-            "calldata": encoded_calldata
+            "calldata": encoded_calldata,
+            "options": compiler_options
         }
         return self.compiler_cli.decode_calldata_source(body=body)
 
