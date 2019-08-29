@@ -485,8 +485,34 @@ class TxBuilder:
 
         return min_fee
 
+    def _apiget_to_tobject(self, api_data):
+        # TODO: compute also the min_fee
+        tx_data = namedtupled.reduce(api_data)
+        if "signatures" in tx_data:
+            tx_data["tag"] = idf.OBJECT_TAG_SIGNED_TRANSACTION
+            # signed tx, extract the inner tx
+            # TODO: this should be a tobject in the data
+            tx_data["tx"] = encode(idf.TRANSACTION, self._apiget_to_tobject(api_data.tx))
+        tx_data["tag"] = idf.TRANSACTION_TYPE_TO_TAG.get(api_data.type)
+        # encode th tx in rlp
+        raw = self._params_to_api(tx_data, txf.get(tx_data.get("tag", {})).get("schema"))
+        rlp_tx = rlp.encode(raw)
+        # encode the tx in base64
+        rlp_b64_tx = encode(idf.TRANSACTION, rlp_tx)
+        # compute the tx hash
+        tx_hash = hash_encode(idf.TRANSACTION_HASH, rlp_tx)
+        # now build the tx object
+        return TxObject(
+            metadata=namedtupled.map({}, _nt_name="TxMeta"),
+            data=namedtupled.map(tx_data, _nt_name="TxData"),
+            tx=rlp_b64_tx,
+            hash=tx_hash
+        )
+        return
+
     def _params_to_api(self, data: dict, schema: dict) -> TxObject:
         # initialize the right data size
+        # this is PYTHON to POSTBODY
         raw_data = [0]*len(data)
         # set the tx tag first
         raw_data[0] = _int(data.get("tag"))
@@ -517,6 +543,7 @@ class TxBuilder:
         return raw_data
 
     def _api_to_params(self, raw):
+        # this is POSTBODY to TObject
         # takes in an unserialized rlp object
         tag = _int_decode(raw[0])
         schema = txf.get(tag)
@@ -568,6 +595,10 @@ class TxBuilder:
             # it is an encoded tx, happens when there is a tx to decode
             raw = decode_rlp(tx_data)
             return self._api_to_params(raw)
+        if hasattr(tx_data, "block_height"):
+            # her is the case of a api get, that is a GenericSingedTx
+            # decode the object o a dictionary
+            return self._apiget_to_tobject(tx_data)
         # if it comes from an api request it will not have the tag but the type
         tag = tx_data.get("tag")
         if tag is None:
@@ -586,6 +617,7 @@ class TxBuilder:
             "min_fee": self.compute_min_fee(tx_data, tx_descriptor, raw)
         }
         # if the fee was set to 0 then we set the min_fee as fee
+        # we use -1 as default since for the signed tx there is no field fee
         if tx_data.get("fee", -1) == 0:
             raw[tx_descriptor.get("schema").get("fee").index] = _int(metadata.get("min_fee"))
         # encode th tx in rlp

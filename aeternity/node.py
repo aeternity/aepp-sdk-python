@@ -224,7 +224,7 @@ class NodeClient:
         remote_account = self.get_account_by_pubkey(pubkey=address)
         return Account.from_node_api(remote_account)
 
-    def get_transaction(self, transaction_hash): # TODO: continue
+    def get_transaction(self, transaction_hash):  # TODO: continue
         if not utils.is_valid_hash(transaction_hash, identifiers.TRANSACTION_HASH):
             raise TypeError(f"Input {transaction_hash} is not a valid aeternity address")
         tx = self.get_transaction_by_hash(hash=transaction_hash)
