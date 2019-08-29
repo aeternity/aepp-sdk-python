@@ -236,6 +236,9 @@ PROTOCOL_ABI_VM = {
         "abi": 1
     }
 }
+# Compiler backend
+COMPILER_OPTIONS_BACKEND_AEVM = "aevm"
+COMPILER_OPTIONS_BACKEND_FATE = "fate"
 
 
 # Oracles
