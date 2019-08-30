@@ -138,9 +138,9 @@ class AEName:
         # create spend_tx
         tx = txb.tx_name_preclaim(account.get_address(), commitment_id, fee, ttl, nonce)
         # sign the transaction
-        tx_signed = self.client.sign_transaction(account, tx.tx, metadata={"salt": self.preclaim_salt})
+        tx_signed = self.client.sign_transaction(account, tx, metadata={"salt": self.preclaim_salt})
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
+        self.client.broadcast_transaction(tx_signed)
         # update local status
         self.status = AEName.Status.PRECLAIMED
         self.preclaim_tx_hash = tx_signed.hash
@@ -174,9 +174,9 @@ class AEName:
         # create transaction
         tx = txb.tx_name_claim(account.get_address(), self.domain, self.preclaim_salt, fee, ttl, nonce)
         # sign the transaction
-        tx_signed = self.client.sign_transaction(account, tx.tx)
+        tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
+        self.client.broadcast_transaction(tx_signed)
         # update status
         self.status = AEName.Status.CLAIMED
         return tx_signed
@@ -204,9 +204,9 @@ class AEName:
         # create transaction
         tx = txb.tx_name_update(account.get_address(), name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce)
         # sign the transaction
-        tx_signed = self.client.sign_transaction(account, tx.tx)
+        tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
+        self.client.broadcast_transaction(tx_signed)
         return tx_signed
 
     def transfer_ownership(self, account, recipient_pubkey, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
@@ -223,9 +223,9 @@ class AEName:
         # create transaction
         tx = txb.tx_name_transfer(account.get_address(), name_id, recipient_pubkey, fee, ttl, nonce)
         # sign the transaction
-        tx_signed = self.client.sign_transaction(account, tx.tx)
+        tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
+        self.client.broadcast_transaction(tx_signed)
         # update the status
         self.status = NameStatus.TRANSFERRED
         return tx_signed
@@ -244,9 +244,9 @@ class AEName:
         # create transaction
         tx = txb.tx_name_revoke(account.get_address(), name_id, fee, ttl, nonce)
         # sign the transaction
-        tx_signed = self.client.sign_transaction(account, tx.tx)
+        tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
+        self.client.broadcast_transaction(tx_signed)
         # update the status
         self.status = NameStatus.REVOKED
         return tx_signed

@@ -1,8 +1,8 @@
-from aeternity.hashing import _int, _int_decode, _binary, _binary_decode, _id, _id_decode, encode, decode, encode_rlp, decode_rlp, hash_encode
+from aeternity.hashing import _int, _int_decode, _binary, _binary_decode, _id, _id_decode, encode, decode, decode_rlp, hash_encode
 from aeternity.openapi import OpenAPICli
 from aeternity import identifiers as idf
 from aeternity import defaults
-from aeternity.exceptions import UnsupportedTransactionType, TransactionFeeTooLow
+# from aeternity.exceptions import UnsupportedTransactionType, TransactionFeeTooLow
 import rlp
 import math
 import pprint
@@ -95,7 +95,7 @@ txf = {
             "version": Fn(1),
             "account_id": Fn(2, _ID),
             "nonce": Fn(3),
-            "name": Fn(4, _ID),
+            "name_id": Fn(4, _ID),
             "name_ttl": Fn(5),
             "pointers": Fn(6, _PTR),
             "client_ttl": Fn(7),
@@ -408,7 +408,7 @@ class TxSigner:
         )
         return None
 
-    def sign_transaction(self, transaction: TxObject, metadata: dict = None):
+    def sign_transaction(self, transaction: TxObject, metadata: dict = None) -> str:
         """
         Sign, encode and compute the hash of a transaction
         :param tx: the TxObject to be signed
@@ -586,7 +586,7 @@ class TxBuilder:
             hash=tx_hash
         )
 
-    def _build_tx_object(self, tx_data):
+    def _build_tx_object(self, tx_data, metadata={}):
         # tree cases here
         # 1. (namedtuple) from api queries so everything is wrapped around a json object that is a  generic signed transaction
         # 2. (string) from and b64c enocoded rlp tx
@@ -613,9 +613,8 @@ class TxBuilder:
         # this will return an object that can be encoded in rlp
         raw = self._params_to_api(tx_data, tx_descriptor.get("schema"))
         # now we can compute the minimum fee
-        metadata = {
-            "min_fee": self.compute_min_fee(tx_data, tx_descriptor, raw)
-        }
+        metadata = metadata if metadata is not None else {}
+        metadata["min_fee"] = self.compute_min_fee(tx_data, tx_descriptor, raw)
         # if the fee was set to 0 then we set the min_fee as fee
         # we use -1 as default since for the signed tx there is no field fee
         if tx_data.get("fee", -1) == 0:
@@ -634,7 +633,7 @@ class TxBuilder:
             hash=tx_hash
         )
 
-    def tx_signed(self, signatures: list, tx: TxObject):
+    def tx_signed(self, signatures: list, tx: TxObject, metadata={}):
         """
         Create a signed transaction. This is a special type of transaction
         as it wraps a normal transaction adding one or more signature
@@ -645,7 +644,7 @@ class TxBuilder:
             signatures=signatures,
             tx=tx
         )
-        return self._build_tx_object(body)
+        return self._build_tx_object(body, metadata=metadata)
 
     def tx_spend(self, sender_id, recipient_id, amount, payload, fee, ttl, nonce) -> tuple:
         """

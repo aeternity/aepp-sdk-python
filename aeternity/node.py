@@ -169,7 +169,7 @@ class NodeClient:
             self.wait_for_transaction(reply.tx_hash)
         return reply.tx_hash
 
-    def sign_transaction(self, account: Account, tx: transactions.TxObject, metadata: dict = None, **kwargs) -> tuple:
+    def sign_transaction(self, account: Account, tx: transactions.TxObject, metadata: dict = {}, **kwargs) -> tuple:
         """
         Sign a transaction
         :return: the transaction for the transaction
@@ -182,7 +182,7 @@ class NodeClient:
         if not on_chain_account.is_generalized():
             s = transactions.TxSigner(account, self.config.network_id)
             signature = s.sign_transaction(tx, metadata)
-            return self.tx_builder.tx_signed([signature], tx)
+            return self.tx_builder.tx_signed([signature], tx, metadata=metadata)
 
         # if the account is generalized then prepare the ga_meta_tx
         # 1. wrap the tx into a sigend tx (without signatures)
@@ -212,7 +212,7 @@ class NodeClient:
             sg_tx
         )
         # 3. wrap the the ga into a signed transaction
-        sg_ga_sg_tx = self.tx_builder.tx_signed([], ga_sg_tx)
+        sg_ga_sg_tx = self.tx_builder.tx_signed([], ga_sg_tx, metadata=metadata)
         return sg_ga_sg_tx
 
     def get_account(self, address: str) -> Account:
