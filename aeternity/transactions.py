@@ -752,12 +752,13 @@ class TxBuilder:
         return self._build_txobject(body)
         # return self.api.post_name_preclaim(body=body).tx
 
-    def tx_name_claim(self, account_id, name, name_salt, fee, ttl, nonce) -> tuple:
+    def tx_name_claim(self, account_id, name, name_salt, name_fee, fee, ttl, nonce) -> tuple:
         """
         create a preclaim transaction
         :param account_id: the account registering the name
         :param name: the actual name to claim
         :param name_salt: the salt used to create the commitment_id during preclaim
+        :param name_fee: the fee bidded to claim the name
         :param fee:  the fee for the transaction
         :param ttl:  the ttl for the transaction
         :param nonce: the nonce of the account for the transaction
@@ -768,6 +769,7 @@ class TxBuilder:
             account_id=account_id,
             name=name,
             name_salt=name_salt,
+            name_fee=name_fee,
             fee=fee,
             ttl=ttl,
             nonce=nonce

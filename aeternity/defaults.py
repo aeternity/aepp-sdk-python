@@ -11,6 +11,7 @@ NAME_MAX_TLL = 36000
 NAME_MAX_CLIENT_TTL = 84600
 NAME_CLIENT_TTL = NAME_MAX_CLIENT_TTL
 NAME_TTL = 500
+NAME_FEE = 100000000000000000 # 1AE TODO: this should be regulated by governance
 # default relative ttl in number of blocks  for executing transaction on the chain
 MAX_TX_TTL = 256
 TX_TTL = 0
