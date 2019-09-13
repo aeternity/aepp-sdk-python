@@ -125,7 +125,12 @@ class OpenAPICli(object):
                 )
                 # collect the parameters
                 for p in func.get('parameters', []):
-
+                    # check if it is a reference, and resolve it if it is
+                    if "$ref" in p:
+                        # the ref format is something like: #/parameters/HeightIn
+                        # we can use it to build the path parameters.HeightIn
+                        path = p.get("$ref")[2:].split("/")
+                        p = self.api_def.get(path[0], {}).get(path[1])
                     param_name = p.get("name")
                     param_pos = p.get("in")
                     # check if the param name is a reserved keyword
