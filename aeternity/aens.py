@@ -146,7 +146,7 @@ class AEName:
         self.preclaim_tx_hash = tx_signed.hash
         return tx_signed
 
-    def claim(self, account, name_salt, preclaim_tx_hash, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
+    def claim(self, preclaim_tx_hash, account, name_salt, name_fee=defaults.NAME_FEE, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
         self.preclaim_salt = name_salt
         # get the preclaim height
         try:
@@ -172,7 +172,7 @@ class AEName:
         # get the account nonce and ttl
         nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
         # create transaction
-        tx = txb.tx_name_claim(account.get_address(), self.domain, self.preclaim_salt, fee, ttl, nonce)
+        tx = txb.tx_name_claim(account.get_address(), self.domain, self.preclaim_salt, name_fee, fee, ttl, nonce)
         # sign the transaction
         tx_signed = self.client.sign_transaction(account, tx.tx)
         # post the transaction to the chain

@@ -31,7 +31,7 @@ def tempdir(scope="module"):
 @pytest.fixture
 def random_domain(length=10):
     rand_str = ''.join(random.choice(string.ascii_letters) for _ in range(length))
-    return f"{rand_str}.test"
+    return f"{rand_str}.aet"
 
 
 @pytest.fixture

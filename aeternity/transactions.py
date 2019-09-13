@@ -236,7 +236,7 @@ def _tx_native(op, **kwargs):
         return build_tx_object(tx_data, tx_native, tx_field_fee_index, min_fee)
 
     elif tag == idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION:
-        tx_field_fee_index = 6
+        tx_field_fee_index = 7
         if op == PACK_TX:  # pack transaction
             tx_native = [
                 _int(tag),
@@ -245,6 +245,7 @@ def _tx_native(op, **kwargs):
                 _int(kwargs.get("nonce")),
                 _binary(kwargs.get("name")),
                 _binary(kwargs.get("name_salt")),
+                _int(kwargs.get("name_fee")),
                 _int(kwargs.get("fee")),
                 _int(kwargs.get("ttl"))
             ]
@@ -257,8 +258,9 @@ def _tx_native(op, **kwargs):
                 nonce=_int_decode(tx_native[3]),
                 name=_binary_decode(tx_native[4], str),
                 name_salt=_binary_decode(tx_native[5], int),
-                fee=_int_decode(tx_native[6]),
-                ttl=_int_decode(tx_native[7]),
+                name_fee=_int_decode(tx_native[6]),
+                fee=_int_decode(tx_native[7]),
+                ttl=_int_decode(tx_native[8]),
             )
             min_fee = tx_data.get("fee")
         else:
@@ -1063,12 +1065,13 @@ class TxBuilder:
         return _tx_native(op=PACK_TX, **body)
         # return self.api.post_name_preclaim(body=body).tx
 
-    def tx_name_claim(self, account_id, name, name_salt, fee, ttl, nonce) -> tuple:
+    def tx_name_claim(self, account_id, name, name_salt, name_fee, fee, ttl, nonce) -> tuple:
         """
         create a preclaim transaction
         :param account_id: the account registering the name
         :param name: the actual name to claim
         :param name_salt: the salt used to create the commitment_id during preclaim
+        :param name_fee: the fee bidded to claim the name
         :param fee:  the fee for the transaction
         :param ttl:  the ttl for the transaction
         :param nonce: the nonce of the account for the transaction
@@ -1079,6 +1082,7 @@ class TxBuilder:
             account_id=account_id,
             name=name,
             name_salt=name_salt,
+            name_fee=name_fee,
             fee=fee,
             ttl=ttl,
             nonce=nonce

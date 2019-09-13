@@ -35,7 +35,7 @@ def test_name_claim_lifecycle(chain_fixture, random_domain):
         preclaim = name.preclaim(chain_fixture.ACCOUNT)
         assert name.status == AEName.Status.PRECLAIMED
         node_cli.wait_for_confirmation(preclaim.hash)
-        name.claim(chain_fixture.ACCOUNT, preclaim.metadata.salt, preclaim.hash)
+        name.claim(preclaim.hash, chain_fixture.ACCOUNT, preclaim.metadata.salt)
         assert name.status == AEName.Status.CLAIMED
     except Exception as e:
         print(e)

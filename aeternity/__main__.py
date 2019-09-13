@@ -125,7 +125,7 @@ def _po(label, value, offset=0, label_prefix=None):
                                "channel_reserve", "deposit", "fee", "gas_price",
                                "gas", "initiator_amount_final", "initiator_amount",
                                "push_amount", "query_fee", "responder_amount_final",
-                               "responder_amount", "round", "solo_round"]:
+                               "responder_amount", "round", "solo_round", "name_fee"]:
             value = utils.format_amount(value)
 
         _pl(label, offset, value=value)
@@ -803,7 +803,7 @@ def contract_call_info(tx_hash, force, wait, json_):
 def inspect(obj, height, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
-        if obj.endswith(".test"):
+        if obj.endswith(".test") or obj.endswith(".aet"):
             data = _node_cli().get_name_entry_by_name(name=obj)
             _print_object(data, title="name")
         elif obj.startswith("kh_") or obj.startswith("mh_"):
