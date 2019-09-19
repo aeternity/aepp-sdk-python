@@ -17,7 +17,7 @@ _TX = 2  # transaction type
 _SG = 3  # signatures
 _PTR = 6  # name pointer
 _POI = 7  # proof of inclusion
-_OTTL = 8  # oracle ttl
+_OTTL_TYPE = 8  # oracle ttl
 _BIN = 9  # binary format
 _TR = 10  # tree
 _VM_ABI = 11  # vm + abi field
@@ -32,6 +32,12 @@ class Fn:
         self.field_type = field_type
         self.encoding_prefix = kwargs.get("prefix")
 
+    def __str__(self):
+        return f"{self.index}:{self.field_type}"
+
+    def __repr__(self):
+        return self.__str__()
+
 
 SIZE_BASED = 0  # used for most of transactions
 TTL_BASED = 1  # used for oracle
@@ -44,6 +50,12 @@ class Fee:
         self.base_gas_multiplier = base_gas_multiplier
         self.ttl_field = ttl_field
         self.tx_field = tx_field
+
+    def __str__(self):
+        return f"ttl_type:{self.fee_type},mult:{self.base_gas_multiplier}"
+
+    def __repr__(self):
+        return self.__str__()
 
 
 txf = {
@@ -272,7 +284,7 @@ txf = {
             "nonce": Fn(2),
         }},
     idf.OBJECT_TAG_ORACLE_REGISTER_TRANSACTION: {
-        "fee": Fee(SIZE_BASED, ttl_field="oracle_ttl.value"),
+        "fee": Fee(TTL_BASED, ttl_field="oracle_ttl_value"),
         "schema": {
             "version": Fn(1),
             "account_id": Fn(2, _ID),
@@ -280,49 +292,49 @@ txf = {
             "query_format": Fn(4, _BIN),  # _binary_decode(tx_native[4]), TODO: verify the type
             "response_format": Fn(5, _BIN),  # _binary_decode(tx_native[5]),
             "query_fee": Fn(6),
-            "oracle_ttl.type": Fn(7),  # idf.ORACLE_TTL_TYPE_DELTA
-            "oracle_ttl.value": Fn(8),
+            "oracle_ttl_type": Fn(7, _OTTL_TYPE),
+            "oracle_ttl_value": Fn(8),
             "fee": Fn(9),
             "ttl": Fn(10),
             "vm_version": Fn(11),
         }},
     idf.OBJECT_TAG_ORACLE_QUERY_TRANSACTION: {
-        "fee": Fee(TTL_BASED, ttl_field="query_ttl.value"),
+        "fee": Fee(TTL_BASED, ttl_field="query_ttl_value"),
         "schema": {
             "version": Fn(1),
             "sender_id": Fn(2, _ID),
             "nonce": Fn(3),
             "oracle_id": Fn(4, _ID),
-            "query": Fn(5),  # _binary_decode(tx_native[5]),
+            "query": Fn(5, _BIN),
             "query_fee": Fn(6),
-            "query_ttl.type": Fn(7),  # idf.ORACLE_TTL_TYPE_DELTA
-            "query_ttl.value": Fn(8),
-            "response_ttl.type": Fn(9),  # idf.ORACLE_TTL_TYPE_DELTA
-            "response_ttl.value": Fn(10),
+            "query_ttl_type": Fn(7, _OTTL_TYPE),
+            "query_ttl_value": Fn(8),
+            "response_ttl_type": Fn(9, _OTTL_TYPE),
+            "response_ttl_value": Fn(10),
             "fee": Fn(11),
             "ttl": Fn(12),
         }},
     idf.OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION: {
-        "fee": Fee(TTL_BASED, ttl_field="response_ttl.value"),
+        "fee": Fee(TTL_BASED, ttl_field="response_ttl_value"),
         "schema": {
             "version": Fn(1),
             "oracle_id": Fn(2, _ID),
             "nonce": Fn(3),
             "query_id": Fn(4, _ENC, prefix=idf.ORACLE_QUERY_ID),
-            "response": Fn(5),  # _binary(tx_native[5]),
-            "response_ttl.type": Fn(6),  # idf.ORACLE_TTL_TYPE_DELTA
-            "response_ttl.value": Fn(7),
+            "response": Fn(5, _BIN),
+            "response_ttl_type": Fn(6, _OTTL_TYPE),
+            "response_ttl_value": Fn(7),
             "fee": Fn(8),
             "ttl": Fn(9),
         }},
     idf.OBJECT_TAG_ORACLE_EXTEND_TRANSACTION: {
-        "fee": Fee(TTL_BASED, ttl_field="oracle_ttl.value"),
+        "fee": Fee(TTL_BASED, ttl_field="oracle_ttl_value"),
         "schema": {
             "version": Fn(1),
             "oracle_id": Fn(2, _ID),
             "nonce": Fn(3),
-            "oracle_ttl.type": Fn(4),  # idf.ORACLE_TTL_TYPE_DELTA
-            "oracle_ttl.value": Fn(5),
+            "oracle_ttl_type": Fn(4, _OTTL_TYPE),
+            "oracle_ttl_value": Fn(5),
             "fee": Fn(6),
             "ttl": Fn(7),
         }},
@@ -458,7 +470,7 @@ class TxBuilder:
         fee_type = tx_descriptor.get("fee").fee_type
         # if the fee is ttl based compute the ttl component
         ttl_component = 0
-        if fee_type == TTL_BASED:
+        if fee_type is TTL_BASED:
             ttl = tx_data.get(tx_descriptor.get("fee").ttl_field)
             ttl_component += (math.ceil(32000 * ttl / math.floor(60 * 24 * 365 / self.key_block_interval)))
         # if the fee is for a ga meta compute the enclosed tx size based fee
@@ -513,7 +525,7 @@ class TxBuilder:
     def _params_to_api(self, data: dict, schema: dict) -> TxObject:
         # initialize the right data size
         # this is PYTHON to POSTBODY
-        raw_data = [0]*len(data)
+        raw_data = [0] * (len(schema) + 1)  # the +1 is for the tag
         # set the tx tag first
         raw_data[0] = _int(data.get("tag"))
         # parse fields and encode them
@@ -524,6 +536,8 @@ class TxBuilder:
                 raw_data[fn.index] = _id(data.get(label))
             elif fn.field_type == _ENC:
                 raw_data[fn.index] = decode(data.get(label))
+            elif fn.field_type == _OTTL_TYPE:
+                raw_data[fn.index] = _int(idf.ORACLE_TTL_TYPES.get(data.get(label)))
             elif fn.field_type == _SG:
                 # signatures are always a list
                 raw_data[fn.index] = [decode(sg) for sg in data.get(label, [])]
@@ -546,7 +560,8 @@ class TxBuilder:
         # this is POSTBODY to TObject
         # takes in an unserialized rlp object
         tag = _int_decode(raw[0])
-        schema = txf.get(tag)
+        # TODO: verify that the schema is there
+        schema = txf.get(tag, {}).get("schema")
         tx_data = {"tag": tag}
         for label, fn in schema.items():
             if fn.field_type == _INT:
@@ -555,6 +570,9 @@ class TxBuilder:
                 tx_data[label] = _id_decode(raw[fn.index])
             elif fn.field_type == _ENC:
                 tx_data[label] = encode(fn.encoding_prefix, raw[fn.index])
+            elif fn.field_type == _OTTL_TYPE:
+                ttl_type = _int_decode(raw[fn.index])
+                tx_data[fn.index] = idf.ORACLE_TTL_TYPES_REV.get(ttl_type)
             elif fn.field_type == _SG:
                 # signatures are always a list
                 tx_data[label] = [encode(idf.SIGNATURE, sg) for sg in raw[fn.index]]
@@ -877,9 +895,8 @@ class TxBuilder:
             query_format=query_format,
             response_format=response_format,
             query_fee=query_fee,
-            oracle_ttl=dict(
-                type=ttl_type,
-                value=ttl_value),
+            oracle_ttl_type=ttl_type,
+            oracle_ttl_value=ttl_value,
             vm_version=vm_version,
             fee=fee,
             ttl=ttl,
@@ -901,15 +918,11 @@ class TxBuilder:
             version=idf.VSN,
             sender_id=sender_id,
             oracle_id=oracle_id,
-            response_ttl=dict(
-                type=response_ttl_type,
-                value=response_ttl_value
-            ),
+            response_ttl_type=response_ttl_type,
+            response_ttl_value=response_ttl_value,
             query=query,
-            query_ttl=dict(
-                type=query_ttl_type,
-                value=query_ttl_value
-            ),
+            query_ttl_type=query_ttl_type,
+            query_ttl_value=query_ttl_value,
             fee=fee,
             query_fee=query_fee,
             ttl=ttl,
@@ -928,10 +941,8 @@ class TxBuilder:
         body = dict(
             tag=idf.OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION,
             version=idf.VSN,
-            response_ttl=dict(
-                type=response_ttl_type,
-                value=response_ttl_value
-            ),
+            response_ttl_type=response_ttl_type,
+            response_ttl_value=response_ttl_value,
             oracle_id=oracle_id,
             query_id=query_id,
             response=response,
@@ -953,10 +964,8 @@ class TxBuilder:
             tag=idf.OBJECT_TAG_ORACLE_EXTEND_TRANSACTION,
             version=idf.VSN,
             oracle_id=oracle_id,
-            oracle_ttl=dict(
-                type=ttl_type,
-                value=ttl_value
-            ),
+            oracle_ttl_type=ttl_type,
+            oracle_ttl_value=ttl_value,
             fee=fee,
             ttl=ttl,
             nonce=nonce,
