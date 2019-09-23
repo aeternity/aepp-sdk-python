@@ -386,6 +386,35 @@ class TxObject:
         self.network_id = kwargs.get("network_id", None)
         self.signatures = kwargs.get("signatures", [])
 
+    def asdict(self):
+        t = dict(
+            data=namedtupled.reduce(self.data),
+            metadata=self.metadata,
+            tx=self.tx,
+            hash=self.hash
+        )
+        if "tx" in t.get("data", {}):
+            t["data"]["tx"] = t["data"]["tx"].asdict()
+
+        return t
+
+    def get_signatures(self):
+        """
+        retrieves the list of signatures for a signed transaction, otherwhise returns a empty list
+        """
+        if self.data.tag == idf.OBJECT_TAG_SIGNED_TRANSACTION:
+            return self.data.signatures
+        return []
+
+    def get_signature(self, index):
+        """
+        get the signature at the requested index, or raise type error if there is no such index
+        """
+        sgs = self.get_signatures()
+        if index < 0 or index >= len(sgs):
+            raise TypeError(f"there is no signaure at index {index}")
+        return sgs[index]
+
     def __repr__(self):
         return self.__str__()
 
@@ -562,7 +591,7 @@ class TxBuilder:
         tag = _int_decode(raw[0])
         # TODO: verify that the schema is there
         schema = txf.get(tag, {}).get("schema")
-        tx_data = {"tag": tag}
+        tx_data = {"tag": tag, "type": idf.TRANSACTION_TAG_TO_TYPE.get(tag)}
         for label, fn in schema.items():
             if fn.field_type == _INT:
                 tx_data[label] = _int_decode(raw[fn.index])
@@ -589,7 +618,7 @@ class TxBuilder:
                 tx_data[label] = [{"key": _binary_decode(p[0], data_type=str), "id": _id_decode(p[1])} for p in raw[fn.index]]
             elif fn.field_type == _TX:
                 # this can be raw or tx object
-                tx_data[label] = self._api_to_params(raw[fn.index])
+                tx_data[label] = self._api_to_params(rlp.decode(raw[fn.index]))
         # encode th tx in rlp
         rlp_tx = rlp.encode(raw)
         # encode the tx in base64

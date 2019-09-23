@@ -105,9 +105,9 @@ def test_node_ga_meta_spend(chain_fixture, compiler_fixture):
     # encode the call data for the transaction
     calldata = c_cli.encode_calldata(blind_auth_contract, ga_account.auth_fun, [hashing.randint()]).calldata
     # now we can sign the transaction (it will use the auth for do that)
-    spend_tx = ae_cli.sign_transaction(ga_account, spend_tx.tx, auth_data=calldata)
+    spend_tx = ae_cli.sign_transaction(ga_account, spend_tx, auth_data=calldata)
     # broadcast
-    tx_hash = ae_cli.broadcast_transaction(spend_tx.tx)
+    tx_hash = ae_cli.broadcast_transaction(spend_tx)
     print(f"GA_META_TX {tx_hash}")
     # check that the account received the tokens
     assert ae_cli.get_account_by_pubkey(pubkey=recipient_id).balance == amount

@@ -119,6 +119,8 @@ def _po(label, value, offset=0, label_prefix=None):
     elif isinstance(value, datetime):
         val = value.strftime("%Y-%m-%d %H:%M")
         _pl(label, offset, value=val)
+    elif isinstance(value, TxObject):
+        _po(label, value.asdict())
     else:
         if label.lower() == "time":
             value = datetime.fromtimestamp(value / 1000, timezone.utc).isoformat('T')
@@ -140,7 +142,7 @@ def _print_object(data, title):
             print(json.dumps(namedtupled.reduce(data), indent=2))
             return
         if isinstance(data, TxObject):
-            print(jsonpickle.encode(data))
+            print(json.dumps(data.asdict(), indent=2))
             return
         if isinstance(data, str):
             print(data)
@@ -409,8 +411,13 @@ def account_sign(keystore_name, password, network_id, unsigned_transaction, json
         if not utils.is_valid_hash(unsigned_transaction, prefix="tx"):
             raise ValueError("Invalid transaction format")
         # force offline mode for the node_client
-        tx = TxSigner(account, network_id).sign_transaction(unsigned_transaction)
-        _print_object(tx, title='signed transaction')
+        txb = TxBuilder()
+        txu = txb._build_tx_object(unsigned_transaction)
+        signature = TxSigner(account, network_id).sign_transaction(txu)
+        # TODO: better handling of metadata
+        txs = txb.tx_signed([signature], txu, metadata={"network_id": network_id})
+        # _print_object(txu, title='unsigned transaction')
+        _print_object(txs, title='signed transaction')
     except Exception as e:
         _print_error(e, exit_code=1)
 
@@ -442,6 +449,7 @@ def tx_broadcast(signed_transaction, force, wait, json_):
         if not utils.is_valid_hash(signed_transaction, prefix="tx"):
             raise ValueError("Invalid transaction format")
         cli = _node_cli()
+        signed_transaction = TxBuilder()._build_tx_object(signed_transaction)
         tx_hash = cli.broadcast_transaction(signed_transaction)
         _print_object({
             "Transaction hash": tx_hash,
