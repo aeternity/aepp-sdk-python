@@ -7,6 +7,7 @@ import rlp
 import math
 import pprint
 import namedtupled
+import copy
 
 PACK_TX = 1
 UNPACK_TX = 0
@@ -435,20 +436,6 @@ class TxSigner:
         self.account = account
         self.network_id = network_id
 
-    def cosign_encode_transaction(self, tx): # TODO: remove this function
-        # decode the transaction if not in native mode
-        transaction = None  #_tx_native(op=UNPACK_TX, tx=tx.tx if hasattr(tx, "tx") else tx)
-        # get the transaction as bytes
-        tx_raw = decode(transaction.data.tx)
-        # sign the transaction
-        signatures = transaction.data.signatures + [encode(idf.SIGNATURE, self.account.sign(_binary(self.network_id) + tx_raw))]
-        body = dict(
-            tag=idf.OBJECT_TAG_SIGNED_TRANSACTION,
-            signatures=signatures,
-            tx=transaction.data.tx
-        )
-        return None
-
     def sign_transaction(self, transaction: TxObject, metadata: dict = None) -> str:
         """
         Sign, encode and compute the hash of a transaction
@@ -526,34 +513,27 @@ class TxBuilder:
 
         return min_fee
 
-    def _apiget_to_tobject(self, api_data):
-        # TODO: compute also the min_fee
+    def _jsontx_to_txobject(self, api_data):
+        """
+        transform a dictionary built from a json reply  from the node to a transaction object.
+        a the input api_data must be obtained from a /transactions/tx_xyz endpoint
+        """
+        # transform the data to a dict since the openapi module maps them to a named tuple
         tx_data = namedtupled.reduce(api_data)
         if "signatures" in tx_data:
             tx_data["tag"] = idf.OBJECT_TAG_SIGNED_TRANSACTION
             # signed tx, extract the inner tx
             # TODO: this should be a tobject in the data
-            tx_data["tx"] = encode(idf.TRANSACTION, self._apiget_to_tobject(api_data.tx))
+            tx_data["tx"] = encode(idf.TRANSACTION, self._jsontx_to_txobject(api_data.tx))
         tx_data["tag"] = idf.TRANSACTION_TYPE_TO_TAG.get(api_data.type)
         # encode th tx in rlp
-        raw = self._params_to_api(tx_data, txf.get(tx_data.get("tag", {})).get("schema"))
-        rlp_tx = rlp.encode(raw)
-        # encode the tx in base64
-        rlp_b64_tx = encode(idf.TRANSACTION, rlp_tx)
-        # compute the tx hash
-        tx_hash = hash_encode(idf.TRANSACTION_HASH, rlp_tx)
-        # now build the tx object
-        return TxObject(
-            metadata=namedtupled.map({}, _nt_name="TxMeta"),
-            data=namedtupled.map(tx_data, _nt_name="TxData"),
-            tx=rlp_b64_tx,
-            hash=tx_hash
-        )
-        return
+        descriptor = txf.get(tx_data.get("tag", {}))
+        return self._txdata_to_txobject(tx_data, descriptor)
 
-    def _params_to_api(self, data: dict, schema: dict) -> TxObject:
+    def _txdata_to_txobject(self, data: dict, descriptor: dict, metadata: dict = {}) -> TxObject:
         # initialize the right data size
         # this is PYTHON to POSTBODY
+        schema = descriptor.get("schema", [])
         raw_data = [0] * (len(schema) + 1)  # the +1 is for the tag
         # set the tx tag first
         raw_data[0] = _int(data.get("tag"))
@@ -583,14 +563,36 @@ class TxBuilder:
                 # this can be raw or tx object
                 tx = data.get(label).tx if hasattr(data.get(label), "tx") else data.get(label)
                 raw_data[fn.index] = decode(tx)
-        return raw_data
+        # compute the minimum fee
+        metadata = metadata if metadata is not None else {}
+        metadata["min_fee"] = self.compute_min_fee(data, descriptor, raw_data)
+        # encode the transaction in rlp
+        rlp_tx = rlp.encode(raw_data)
+        # encode the tx in base64
+        rlp_b64_tx = encode(idf.TRANSACTION, rlp_tx)
+        # compute the tx hash
+        tx_hash = hash_encode(idf.TRANSACTION_HASH, rlp_tx)
+        # copy the data before modifing
+        tx_meta = copy.deepcopy(metadata)
+        tx_data = copy.deepcopy(data)
+        # build the tx object
+        return TxObject(
+            metadata=namedtupled.map(tx_meta, _nt_name="TxMeta"),
+            data=namedtupled.map(tx_data, _nt_name="TxData"),
+            tx=rlp_b64_tx,
+            hash=tx_hash
+        )
 
-    def _api_to_params(self, raw):
-        # this is POSTBODY to TObject
-        # takes in an unserialized rlp object
+    def _rlptx_to_txobject(self, rlp_data: bytes) -> TxObject:
+        """
+        transform an rlp encode byte array transaction to a transaction object
+        """
+        # decode the rlp
+        raw = rlp.decode(rlp_data)
         tag = _int_decode(raw[0])
         # TODO: verify that the schema is there
-        schema = txf.get(tag, {}).get("schema")
+        descriptor = txf.get(tag, {})
+        schema = descriptor.get("schema")
         tx_data = {"tag": tag, "type": idf.TRANSACTION_TAG_TO_TYPE.get(tag)}
         for label, fn in schema.items():
             if fn.field_type == _INT:
@@ -618,67 +620,48 @@ class TxBuilder:
                 tx_data[label] = [{"key": _binary_decode(p[0], data_type=str), "id": _id_decode(p[1])} for p in raw[fn.index]]
             elif fn.field_type == _TX:
                 # this can be raw or tx object
-                tx_data[label] = self._api_to_params(rlp.decode(raw[fn.index]))
-        # encode th tx in rlp
-        rlp_tx = rlp.encode(raw)
-        # encode the tx in base64
-        rlp_b64_tx = encode(idf.TRANSACTION, rlp_tx)
-        # compute the tx hash
-        tx_hash = hash_encode(idf.TRANSACTION_HASH, rlp_tx)
-        # now build the tx object
-        return TxObject(
-            metadata=namedtupled.map({}, _nt_name="TxMeta"),
-            data=namedtupled.map(tx_data, _nt_name="TxData"),
-            tx=rlp_b64_tx,
-            hash=tx_hash
-        )
+                tx_data[label] = self._rlptx_to_txobject(raw[fn.index])
+        # re-encode the decode object
+        return self._txdata_to_txobject(tx_data, descriptor)
 
     def _build_tx_object(self, tx_data, metadata={}):
-        # tree cases here
+        """
+        function used internally to the TxBuilder to build the transaction
+        and set the defaults when required
+        """
         # 1. (namedtuple) from api queries so everything is wrapped around a json object that is a  generic signed transaction
         # 2. (string) from and b64c enocoded rlp tx
         # 3. (dict) from functions of this class
-        if isinstance(tx_data, str):
-            # it is an encoded tx, happens when there is a tx to decode
-            raw = decode_rlp(tx_data)
-            return self._api_to_params(raw)
-        if hasattr(tx_data, "block_height"):
-            # her is the case of a api get, that is a GenericSingedTx
-            # decode the object o a dictionary
-            return self._apiget_to_tobject(tx_data)
-        # if it comes from an api request it will not have the tag but the type
         tag = tx_data.get("tag")
-        if tag is None:
-            # see if the there is a type in the transaction that matches
-            # the tx types from the API
-            tag = idf.TRANSACTION_TYPE_TO_TAG.get(tx_data.get("type", "Unknown"), -1)
         # check if we have something
-        tx_descriptor = txf.get(tag)
-        if tx_descriptor is None:
+        descriptor = txf.get(tag)
+        if descriptor is None:
             # the transaction is not defined
             raise TypeError(f"Unknown transaction tag {tag}")
-        # this will return an object that can be encoded in rlp
-        raw = self._params_to_api(tx_data, tx_descriptor.get("schema"))
-        # now we can compute the minimum fee
-        metadata = metadata if metadata is not None else {}
-        metadata["min_fee"] = self.compute_min_fee(tx_data, tx_descriptor, raw)
-        # if the fee was set to 0 then we set the min_fee as fee
+        # build the tx object
+        txo = self._txdata_to_txobject(tx_data, descriptor, metadata)
+        # check whenever we need to automatically assign the fee
         # we use -1 as default since for the signed tx there is no field fee
         if tx_data.get("fee", -1) == 0:
-            raw[tx_descriptor.get("schema").get("fee").index] = _int(metadata.get("min_fee"))
-        # encode th tx in rlp
-        rlp_tx = rlp.encode(raw)
-        # encode the tx in base64
-        rlp_b64_tx = encode(idf.TRANSACTION, rlp_tx)
-        # compute the tx hash
-        tx_hash = hash_encode(idf.TRANSACTION_HASH, rlp_tx)
-        # now build the tx object
-        return TxObject(
-            metadata=namedtupled.map(metadata, _nt_name="TxMeta"),
-            data=namedtupled.map(tx_data, _nt_name="TxData"),
-            tx=rlp_b64_tx,
-            hash=tx_hash
-        )
+            tx_data["fee"] = txo.metadata.min_fee
+            txo = self._txdata_to_txobject(tx_data, descriptor, metadata)
+        return txo
+
+    def parse_node_reply(self, tx_data) -> TxObject:
+        """
+        Parse a node rest api reply to a transaction object
+        """
+        # here is the case of a api get, that is a GenericSingedTx
+        # decode the object o a dictionary
+        return self._jsontx_to_txobject(tx_data)
+
+    def parse_tx_string(self, tx_string) -> TxObject:
+        """
+        Parse a transaction string to a transaction object
+        """
+        # it is an encoded tx, happens when there is a tx to decode
+        rlp_data = decode(tx_string)
+        return self._rlptx_to_txobject(rlp_data)
 
     def tx_signed(self, signatures: list, tx: TxObject, metadata={}):
         """

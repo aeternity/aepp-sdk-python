@@ -412,7 +412,7 @@ def account_sign(keystore_name, password, network_id, unsigned_transaction, json
             raise ValueError("Invalid transaction format")
         # force offline mode for the node_client
         txb = TxBuilder()
-        txu = txb._build_tx_object(unsigned_transaction)
+        txu = txb.parse_tx_string(unsigned_transaction)
         signature = TxSigner(account, network_id).sign_transaction(txu)
         # TODO: better handling of metadata
         txs = txb.tx_signed([signature], txu, metadata={"network_id": network_id})
@@ -449,7 +449,7 @@ def tx_broadcast(signed_transaction, force, wait, json_):
         if not utils.is_valid_hash(signed_transaction, prefix="tx"):
             raise ValueError("Invalid transaction format")
         cli = _node_cli()
-        signed_transaction = TxBuilder()._build_tx_object(signed_transaction)
+        signed_transaction = TxBuilder().parse_tx_string(signed_transaction)
         tx_hash = cli.broadcast_transaction(signed_transaction)
         _print_object({
             "Transaction hash": tx_hash,
