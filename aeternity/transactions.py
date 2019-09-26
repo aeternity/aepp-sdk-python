@@ -32,7 +32,7 @@ GA_META = 2  # used for meta tx
 
 class Fd:
     """
-    Fd, shorthand for FieldDefinition, is a support class to 
+    Fd, shorthand for FieldDefinition, is a support class to
     """
     def __init__(self, index, field_type=_INT, **kwargs):
         self.index = index

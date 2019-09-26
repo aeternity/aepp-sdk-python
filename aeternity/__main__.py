@@ -5,7 +5,6 @@ import json
 import sys
 import getpass
 import namedtupled
-import jsonpickle
 
 from aeternity import _version
 
