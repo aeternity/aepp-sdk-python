@@ -9,7 +9,7 @@ import namedtupled
 from aeternity import _version
 
 from aeternity.node import NodeClient, Config
-from aeternity.transactions import TxSigner, TxBuilder
+from aeternity.transactions import TxSigner, TxBuilder, TxObject
 from aeternity.identifiers import NETWORK_ID_MAINNET
 from . import utils, signing, aens, defaults, exceptions
 from aeternity.contract import CompilerClient
@@ -118,6 +118,8 @@ def _po(label, value, offset=0, label_prefix=None):
     elif isinstance(value, datetime):
         val = value.strftime("%Y-%m-%d %H:%M")
         _pl(label, offset, value=val)
+    elif isinstance(value, TxObject):
+        _po(label, value.asdict())
     else:
         if label.lower() == "time":
             value = datetime.fromtimestamp(value / 1000, timezone.utc).isoformat('T')
@@ -125,7 +127,7 @@ def _po(label, value, offset=0, label_prefix=None):
                                "channel_reserve", "deposit", "fee", "gas_price",
                                "gas", "initiator_amount_final", "initiator_amount",
                                "push_amount", "query_fee", "responder_amount_final",
-                               "responder_amount", "round", "solo_round"]:
+                               "responder_amount", "round", "solo_round", "min_fee"]:
             value = utils.format_amount(value)
 
         _pl(label, offset, value=value)
@@ -137,6 +139,9 @@ def _print_object(data, title):
     if ctx.obj.get(CTX_OUTPUT_JSON, False):
         if isinstance(data, tuple):
             print(json.dumps(namedtupled.reduce(data), indent=2))
+            return
+        if isinstance(data, TxObject):
+            print(json.dumps(data.asdict(), indent=2))
             return
         if isinstance(data, str):
             print(data)
@@ -315,7 +320,7 @@ def account_save(keystore_name, secret_key, password, overwrite, json_):
 def account_address(password, keystore_name, secret_key, json_):
     try:
         set_global_options(json_)
-        account, keystore_path = _account(keystore_name, password=password)
+        account, _ = _account(keystore_name, password=password)
         o = {'Address': account.get_address()}
         if secret_key:
             click.confirm(f'!Warning! this will print your secret key on the screen, are you sure?', abort=True)
@@ -358,7 +363,7 @@ def account_balance(keystore_name, password, height, force, wait, json_):
 def account_spend(keystore_name, recipient_id, amount, payload, fee, ttl, nonce, password, network_id, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
-        account, keystore_path = _account(keystore_name, password=password)
+        account, _ = _account(keystore_name, password=password)
         account.nonce = nonce
         if not utils.is_valid_hash(recipient_id, prefix="ak"):
             raise ValueError("Invalid recipient address")
@@ -382,7 +387,7 @@ def account_spend(keystore_name, recipient_id, amount, payload, fee, ttl, nonce,
 def account_transfer_amount(keystore_name, recipient_id, transfer_amount, include_fee, payload, fee, ttl, nonce, password, network_id, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
-        account, keystore_path = _account(keystore_name, password=password)
+        account, _ = _account(keystore_name, password=password)
         account.nonce = nonce
         if not utils.is_valid_hash(recipient_id, prefix="ak"):
             raise ValueError("Invalid recipient address")
@@ -401,12 +406,17 @@ def account_transfer_amount(keystore_name, recipient_id, transfer_amount, includ
 def account_sign(keystore_name, password, network_id, unsigned_transaction, json_):
     try:
         set_global_options(json_)
-        account, keystore_path = _account(keystore_name, password=password)
+        account, _ = _account(keystore_name, password=password)
         if not utils.is_valid_hash(unsigned_transaction, prefix="tx"):
             raise ValueError("Invalid transaction format")
         # force offline mode for the node_client
-        tx = TxSigner(account, network_id).sign_encode_transaction(unsigned_transaction)
-        _print_object(tx, title='signed transaction')
+        txb = TxBuilder()
+        txu = txb.parse_tx_string(unsigned_transaction)
+        signature = TxSigner(account, network_id).sign_transaction(txu)
+        # TODO: better handling of metadata
+        txs = txb.tx_signed([signature], txu, metadata={"network_id": network_id})
+        # _print_object(txu, title='unsigned transaction')
+        _print_object(txs, title='signed transaction')
     except Exception as e:
         _print_error(e, exit_code=1)
 
@@ -438,6 +448,7 @@ def tx_broadcast(signed_transaction, force, wait, json_):
         if not utils.is_valid_hash(signed_transaction, prefix="tx"):
             raise ValueError("Invalid transaction format")
         cli = _node_cli()
+        signed_transaction = TxBuilder().parse_tx_string(signed_transaction)
         tx_hash = cli.broadcast_transaction(signed_transaction)
         _print_object({
             "Transaction hash": tx_hash,
@@ -810,7 +821,8 @@ def inspect(obj, height, force, wait, json_):
             v = _node_cli().get_block_by_hash(obj)
             _print_object(v, title="block")
         elif obj.startswith("th_"):
-            v = _node_cli().get_transaction_by_hash(hash=obj)
+            # v = _node_cli().get_transaction_by_hash(hash=obj)
+            v = _node_cli().get_transaction(obj)
             _print_object(v, title="transaction")
         elif obj.startswith("ak_"):
             if height is not None and height > 0:

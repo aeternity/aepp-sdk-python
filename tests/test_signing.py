@@ -13,12 +13,12 @@ def test_signing_create_transaction_signature(chain_fixture):
     # create a spend transaction
     nonce, ttl = chain_fixture.NODE_CLI._get_nonce_ttl(chain_fixture.ACCOUNT.get_address(), TEST_TTL)
     tx = chain_fixture.NODE_CLI.tx_builder.tx_spend(chain_fixture.ACCOUNT.get_address(), receiver_address, 321, "test test ", 0, ttl, nonce)
-    tx_signed = chain_fixture.NODE_CLI.sign_transaction(chain_fixture.ACCOUNT, tx.tx)
+    tx_signed = chain_fixture.NODE_CLI.sign_transaction(chain_fixture.ACCOUNT, tx)
     # this call will fail if the hashes of the transaction do not match
-    chain_fixture.NODE_CLI.broadcast_transaction(tx_signed.tx)
+    chain_fixture.NODE_CLI.broadcast_transaction(tx_signed)
     # make sure this works for very short block times
     spend_tx = chain_fixture.NODE_CLI.get_transaction_by_hash(hash=tx_signed.hash)
-    assert spend_tx.signatures[0] == tx_signed.signature[0]
+    assert spend_tx.signatures[0] == tx_signed.get_signature(0)
 
 
 def test_signing_is_valid_hash():

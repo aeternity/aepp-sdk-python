@@ -41,7 +41,7 @@ def _base64_decode(encoded_str: str) -> bytes:
     # decode bytes
     raw = base64.b64decode(encoded_str)
     # check size
-    if len(raw) < 5:
+    if len(raw) < 4:
         raise ValueError("Invalid input for base64 decode check")
     # test checksum
     data, check = raw[:-4], raw[-4:]
@@ -140,7 +140,7 @@ def commitment_id(domain: str, salt: int = None) -> tuple:
     :return: the generated salt and the commitment_id
     """
     name_salt = randint() if salt is None else salt
-    commitment_id = hash_encode(identifiers.COMMITMENT, namehash(domain) + _int(name_salt, 32))
+    commitment_id = hash_encode(identifiers.COMMITMENT_ID, namehash(domain) + _int(name_salt, 32))
     return commitment_id, name_salt
 
 
