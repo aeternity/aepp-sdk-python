@@ -38,6 +38,7 @@ class Fd:
         self.index = index
         self.field_type = field_type
         self.encoding_prefix = kwargs.get("prefix")
+        self.data_type = kwargs.get("data_type", bytes)
 
     def __str__(self):
         return f"{self.index}:{self.field_type}"
@@ -98,10 +99,22 @@ tx_descriptors = {
             "version": Fd(1),
             "account_id": Fd(2, _ID),
             "nonce": Fd(3),
-            "name": Fd(4, _BIN),
-            "name_salt": Fd(5),  # TODO: this has to be verified
+            "name": Fd(4, _BIN, data_type=str),
+            "name_salt": Fd(5),
             "fee": Fd(6),
             "ttl": Fd(7),
+        }},
+    (idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION, 2): {
+        "fee": Fee(SIZE_BASED),
+        "schema": {
+            "version": Fd(1),
+            "account_id": Fd(2, _ID),
+            "nonce": Fd(3),
+            "name": Fd(4, _BIN, data_type=str),
+            "name_salt": Fd(5),
+            "name_fee": Fd(6),
+            "fee": Fd(7),
+            "ttl": Fd(8),
         }},
     (idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
@@ -638,8 +651,8 @@ class TxBuilder:
                 tx_data["vm_version"] = _int_decode(raw[fn.index][0:vml - 2])
                 tx_data["abi_version"] = _int_decode(raw[fn.index][vml - 2:])
             elif fn.field_type == _BIN:
-                # this are byte arrays, TODO: should add type
-                tx_data[label] = _binary_decode(raw[fn.index])
+                # this are byte arrays
+                tx_data[label] = _binary_decode(raw[fn.index], data_type=fn.data_type)
             elif fn.field_type == _PTR:
                 # this are name pointers
                 tx_data[label] = [{"key": _binary_decode(p[0], data_type=str), "id": _id_decode(p[1])} for p in raw[fn.index]]
@@ -752,7 +765,29 @@ class TxBuilder:
         return self._build_txobject(body)
         # return self.api.post_name_preclaim(body=body).tx
 
-    def tx_name_claim(self, account_id, name, name_salt, name_fee, fee, ttl, nonce) -> tuple:
+    def tx_name_claim(self, account_id, name, name_salt, fee, ttl, nonce) -> tuple:
+        """
+        create a preclaim transaction
+        :param account_id: the account registering the name
+        :param name: the actual name to claim
+        :param name_salt: the salt used to create the commitment_id during preclaim
+        :param fee:  the fee for the transaction
+        :param ttl:  the ttl for the transaction
+        :param nonce: the nonce of the account for the transaction
+        """
+        body = dict(
+            tag=idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION,
+            version=idf.VSN,
+            account_id=account_id,
+            name=name,
+            name_salt=name_salt,
+            fee=fee,
+            ttl=ttl,
+            nonce=nonce
+        )
+        return self._build_txobject(body)
+
+    def tx_name_claim_v2(self, account_id, name, name_salt, name_fee, fee, ttl, nonce) -> tuple:
         """
         create a preclaim transaction
         :param account_id: the account registering the name
@@ -765,7 +800,7 @@ class TxBuilder:
         """
         body = dict(
             tag=idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION,
-            version=idf.VSN,
+            version=2,
             account_id=account_id,
             name=name,
             name_salt=name_salt,
@@ -775,7 +810,6 @@ class TxBuilder:
             nonce=nonce
         )
         return self._build_txobject(body)
-        # return self.api.post_name_claim(body=body).tx
 
     def tx_name_update(self, account_id, name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce) -> tuple:
         """

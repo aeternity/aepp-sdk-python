@@ -2,7 +2,7 @@ from aeternity.exceptions import NameNotAvailable, MissingPreclaim, NameUpdateEr
 from aeternity.openapi import OpenAPIClientException
 from aeternity import defaults
 from aeternity import hashing, utils, oracles
-from aeternity.identifiers import ACCOUNT_ID, NAME_ID
+from aeternity.identifiers import ACCOUNT_ID, NAME_ID, PROTOCOL_LIMA
 
 
 class NameStatus:
@@ -129,8 +129,11 @@ class AEName:
         """
         # check which block we used to create the preclaim
         self.preclaimed_block_height = self.client.get_current_key_block_height()
-        # calculate the commitment hash
-        commitment_id, self.preclaim_salt = hashing.commitment_id(self.domain)
+        # first get the protocol version
+        protocol = self.client.get_consensus_protocol_version()
+        commitment_id_version = 1 if protocol < PROTOCOL_LIMA else 2
+        # calculate the commitment id
+        commitment_id, self.preclaim_salt = hashing.commitment_id(self.domain, version=commitment_id_version)
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl
@@ -154,9 +157,12 @@ class AEName:
             self.preclaimed_block_height = pre_claim_tx.block_height
         except OpenAPIClientException:
             raise MissingPreclaim(f"Preclaim transaction {preclaim_tx_hash} not found")
+        # first get the protocol version
+        protocol = self.client.get_consensus_protocol_version()
         # if the commitment_id mismatch
         pre_claim_commitment_id = pre_claim_tx.tx.commitment_id
-        commitment_id, _ = hashing.commitment_id(self.domain, salt=name_salt)
+        commitment_id_version = 1 if protocol < PROTOCOL_LIMA else 2
+        commitment_id, _ = hashing.commitment_id(self.domain, salt=name_salt, version=commitment_id_version)
         if pre_claim_commitment_id != commitment_id:
             raise NameCommitmentIdMismatch(f"Commitment id mismatch, wanted {pre_claim_commitment_id} got {commitment_id}")
         # if the transaction has not been mined
@@ -172,7 +178,11 @@ class AEName:
         # get the account nonce and ttl
         nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
         # create transaction
-        tx = txb.tx_name_claim(account.get_address(), self.domain, self.preclaim_salt, name_fee, fee, ttl, nonce)
+        # check the protocol version
+        if protocol < PROTOCOL_LIMA:
+            tx = txb.tx_name_claim(account.get_address(), self.domain, self.preclaim_salt, fee, ttl, nonce)
+        else:
+            tx = txb.tx_name_claim_v2(account.get_address(), self.domain, self.preclaim_salt, name_fee, fee, ttl, nonce)
         # sign the transaction
         tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain

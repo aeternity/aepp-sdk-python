@@ -6,10 +6,12 @@ from pytest import raises
 def test_name_validation_fails(chain_fixture):
     with raises(ValueError):
         chain_fixture.NODE_CLI.AEName('test.lol')
+    with raises(ValueError):
+        chain_fixture.NODE_CLI.AEName('test.test')
 
 
 def test_name_validation_succeeds(chain_fixture):
-    chain_fixture.NODE_CLI.AEName('test.test')
+    chain_fixture.NODE_CLI.AEName('test.aet')
 
 
 def test_name_is_available(chain_fixture, random_domain):
