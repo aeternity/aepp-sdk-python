@@ -60,7 +60,7 @@ class Fee:
 
 
 txf = {
-    idf.OBJECT_TAG_SIGNED_TRANSACTION: {
+    (idf.OBJECT_TAG_SIGNED_TRANSACTION, 1): {
         "fee": None,
         "schema": {
             "version": Fn(1),
@@ -68,7 +68,7 @@ txf = {
             "tx": Fn(3, _TX, prefix=idf.TRANSACTION),
         }
     },
-    idf.OBJECT_TAG_SPEND_TRANSACTION: {
+    (idf.OBJECT_TAG_SPEND_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
             "version": Fn(1),
@@ -81,7 +81,7 @@ txf = {
             "payload": Fn(8, _ENC, prefix=idf.BYTE_ARRAY),
         }
     },
-    idf.OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION: {
+    (idf.OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
             "version": Fn(1),
@@ -91,7 +91,7 @@ txf = {
             "fee": Fn(5),
             "ttl": Fn(6),
         }},
-    idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION: {
+    (idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
             "version": Fn(1),
@@ -102,7 +102,7 @@ txf = {
             "fee": Fn(6),
             "ttl": Fn(7),
         }},
-    idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION: {
+    (idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
             "version": Fn(1),
@@ -115,7 +115,7 @@ txf = {
             "fee": Fn(8),
             "ttl": Fn(9),
         }},
-    idf.OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION: {
+    (idf.OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
             "version": Fn(1),
@@ -126,7 +126,7 @@ txf = {
             "fee": Fn(6),
             "ttl": Fn(7),
         }},
-    idf.OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION: {
+    (idf.OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
             "version": Fn(1),
@@ -136,7 +136,7 @@ txf = {
             "fee": Fn(5),
             "ttl": Fn(6),
         }},
-    idf.OBJECT_TAG_CONTRACT_CREATE_TRANSACTION: {
+    (idf.OBJECT_TAG_CONTRACT_CREATE_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED, base_gas_multiplier=5),
         "schema": {
             "version": Fn(1),
@@ -153,7 +153,7 @@ txf = {
             "gas_price": Fn(11),
             "call_data": Fn(12, _ENC, prefix=idf.BYTECODE),
         }},
-    idf.OBJECT_TAG_CONTRACT_CALL_TRANSACTION: {
+    (idf.OBJECT_TAG_CONTRACT_CALL_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED, base_gas_multiplier=30),
         "schema": {
             "version": Fn(1),
@@ -168,7 +168,7 @@ txf = {
             "gas_price": Fn(10),
             "call_data": Fn(11, _ENC, prefix=idf.BYTECODE),
         }},
-    idf.OBJECT_TAG_CHANNEL_CREATE_TRANSACTION: {
+    (idf.OBJECT_TAG_CHANNEL_CREATE_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
             "version": Fn(1),
@@ -184,7 +184,7 @@ txf = {
             "state_hash": Fn(11, _ENC, prefix=idf.STATE_HASH),
             "nonce": Fn(12),
         }},
-    idf.OBJECT_TAG_CHANNEL_DEPOSIT_TRANSACTION: {
+    (idf.OBJECT_TAG_CHANNEL_DEPOSIT_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
             "version": Fn(1),
@@ -197,7 +197,7 @@ txf = {
             "round": Fn(8),
             "nonce": Fn(9),
         }},
-    idf.OBJECT_TAG_CHANNEL_WITHDRAW_TRANSACTION: {
+    (idf.OBJECT_TAG_CHANNEL_WITHDRAW_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
             "version": Fn(1),
@@ -210,7 +210,7 @@ txf = {
             "round": Fn(8),
             "nonce": Fn(9),
         }},
-    idf.OBJECT_TAG_CHANNEL_CLOSE_MUTUAL_TRANSACTION: {
+    (idf.OBJECT_TAG_CHANNEL_CLOSE_MUTUAL_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
             "version": Fn(1),
@@ -222,7 +222,7 @@ txf = {
             "fee": Fn(7),
             "nonce": Fn(8),
         }},
-    idf.OBJECT_TAG_CHANNEL_CLOSE_SOLO_TRANSACTION: {
+    (idf.OBJECT_TAG_CHANNEL_CLOSE_SOLO_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
             "version": Fn(1),
@@ -234,7 +234,7 @@ txf = {
             "fee": Fn(7),
             "nonce": Fn(8),
         }},
-    idf.OBJECT_TAG_CHANNEL_SLASH_TRANSACTION: {
+    (idf.OBJECT_TAG_CHANNEL_SLASH_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
             "version": Fn(1),
@@ -246,7 +246,7 @@ txf = {
             "fee": Fn(7),
             "nonce": Fn(8),
         }},
-    idf.OBJECT_TAG_CHANNEL_SETTLE_TRANSACTION: {
+    (idf.OBJECT_TAG_CHANNEL_SETTLE_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
             "version": Fn(1),
@@ -258,7 +258,7 @@ txf = {
             "fee": Fn(7),
             "nonce": Fn(8),
         }},
-    idf.OBJECT_TAG_CHANNEL_SNAPSHOT_TRANSACTION: {
+    (idf.OBJECT_TAG_CHANNEL_SNAPSHOT_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
             "version": Fn(1),
@@ -269,7 +269,7 @@ txf = {
             "fee": Fn(6),
             "nonce": Fn(7),
         }},
-    idf.OBJECT_TAG_CHANNEL_FORCE_PROGRESS_TRANSACTION: {
+    (idf.OBJECT_TAG_CHANNEL_FORCE_PROGRESS_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
             "version": Fn(1),
@@ -284,7 +284,7 @@ txf = {
             "fee": Fn(2),
             "nonce": Fn(2),
         }},
-    idf.OBJECT_TAG_ORACLE_REGISTER_TRANSACTION: {
+    (idf.OBJECT_TAG_ORACLE_REGISTER_TRANSACTION, 1): {
         "fee": Fee(TTL_BASED, ttl_field="oracle_ttl_value"),
         "schema": {
             "version": Fn(1),
@@ -299,7 +299,7 @@ txf = {
             "ttl": Fn(10),
             "vm_version": Fn(11),
         }},
-    idf.OBJECT_TAG_ORACLE_QUERY_TRANSACTION: {
+    (idf.OBJECT_TAG_ORACLE_QUERY_TRANSACTION, 1): {
         "fee": Fee(TTL_BASED, ttl_field="query_ttl_value"),
         "schema": {
             "version": Fn(1),
@@ -315,7 +315,7 @@ txf = {
             "fee": Fn(11),
             "ttl": Fn(12),
         }},
-    idf.OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION: {
+    (idf.OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION, 1): {
         "fee": Fee(TTL_BASED, ttl_field="response_ttl_value"),
         "schema": {
             "version": Fn(1),
@@ -328,7 +328,7 @@ txf = {
             "fee": Fn(8),
             "ttl": Fn(9),
         }},
-    idf.OBJECT_TAG_ORACLE_EXTEND_TRANSACTION: {
+    (idf.OBJECT_TAG_ORACLE_EXTEND_TRANSACTION, 1): {
         "fee": Fee(TTL_BASED, ttl_field="oracle_ttl_value"),
         "schema": {
             "version": Fn(1),
@@ -339,7 +339,7 @@ txf = {
             "fee": Fn(6),
             "ttl": Fn(7),
         }},
-    idf.OBJECT_TAG_GA_ATTACH_TRANSACTION: {
+    (idf.OBJECT_TAG_GA_ATTACH_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED, base_gas_multiplier=5),
         "schema": {
             "version": Fn(1),
@@ -355,7 +355,7 @@ txf = {
             "gas_price": Fn(10),
             "call_data": Fn(11, _ENC, prefix=idf.BYTECODE),  # _binary_decode(tx_native[11]),
         }},
-    idf.OBJECT_TAG_GA_META_TRANSACTION: {
+    (idf.OBJECT_TAG_GA_META_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED, base_gas_multiplier=5),
         "schema": {
             "version": Fn(1),
@@ -527,7 +527,13 @@ class TxBuilder:
             tx_data["tx"] = encode(idf.TRANSACTION, self._jsontx_to_txobject(api_data.tx))
         tx_data["tag"] = idf.TRANSACTION_TYPE_TO_TAG.get(api_data.type)
         # encode th tx in rlp
-        descriptor = txf.get(tx_data.get("tag", {}))
+        tag = tx_data.get("tag")
+        vsn = tx_data.get("version")
+        # check if we have something
+        descriptor = txf.get((tag, vsn))
+        if descriptor is None:
+            # the transaction is not defined
+            raise TypeError(f"Unknown transaction tag/version: {tag}/{vsn}")
         return self._txdata_to_txobject(tx_data, descriptor)
 
     def _txdata_to_txobject(self, data: dict, descriptor: dict, metadata: dict = {}) -> TxObject:
@@ -590,8 +596,12 @@ class TxBuilder:
         # decode the rlp
         raw = rlp.decode(rlp_data)
         tag = _int_decode(raw[0])
+        vsn = _int_decode(raw[1])
         # TODO: verify that the schema is there
-        descriptor = txf.get(tag, {})
+        descriptor = txf.get((tag, vsn))
+        if descriptor is None:
+            # the transaction is not defined
+            raise TypeError(f"Unknown transaction tag/version: {tag}/{vsn}")
         schema = descriptor.get("schema")
         tx_data = {"tag": tag, "type": idf.TRANSACTION_TAG_TO_TYPE.get(tag)}
         for label, fn in schema.items():
@@ -633,11 +643,12 @@ class TxBuilder:
         # 2. (string) from and b64c enocoded rlp tx
         # 3. (dict) from functions of this class
         tag = tx_data.get("tag")
+        vsn = tx_data.get("version")
         # check if we have something
-        descriptor = txf.get(tag)
+        descriptor = txf.get((tag, vsn))
         if descriptor is None:
             # the transaction is not defined
-            raise TypeError(f"Unknown transaction tag {tag}")
+            raise TypeError(f"Unknown transaction tag/version: {tag}/{vsn}")
         # build the tx object
         txo = self._txdata_to_txobject(tx_data, descriptor, metadata)
         # check whenever we need to automatically assign the fee
