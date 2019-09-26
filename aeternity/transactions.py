@@ -2,7 +2,7 @@ from aeternity.hashing import _int, _int_decode, _binary, _binary_decode, _id, _
 from aeternity.openapi import OpenAPICli
 from aeternity import identifiers as idf
 from aeternity import defaults
-# from aeternity.exceptions import UnsupportedTransactionType, TransactionFeeTooLow
+
 import rlp
 import math
 import pprint
@@ -534,7 +534,6 @@ class TxBuilder:
             tx_data["type"] = idf.TRANSACTION_TAG_TO_TYPE.get(idf.OBJECT_TAG_SIGNED_TRANSACTION)
             tx_data["version"] = 1
             # signed tx, extract the inner tx
-            # TODO: this should be a tobject in the data
             tx_data["tx"] = self._jsontx_to_txobject(api_data.tx)
         tx_data["tag"] = idf.TRANSACTION_TYPE_TO_TAG.get(tx_data.get("type"))
         # encode th tx in rlp
@@ -546,7 +545,8 @@ class TxBuilder:
             # the transaction is not defined
             raise TypeError(f"Unknown transaction tag/version: {tag}/{vsn}")
         # do not compute the fee for a signed transaction
-        return self._txdata_to_txobject(tx_data, descriptor, compute_hash=False)
+        compute_hash = True if tag == idf.OBJECT_TAG_SIGNED_TRANSACTION else False
+        return self._txdata_to_txobject(tx_data, descriptor, compute_hash=compute_hash)
 
     def _txdata_to_txobject(self, data: dict, descriptor: dict, metadata: dict = {}, compute_hash=True) -> TxObject:
         # initialize the right data size

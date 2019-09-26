@@ -133,10 +133,10 @@ def test_cli_inspect_transaction_by_hash(chain_fixture):
     # now inspect the transaction
     j = call_aecli('inspect', tx.hash)
     assert j.get("hash") == tx.hash
-    assert j.get("block_height") > 0
-    assert j.get("tx", {}).get("recipient_id") == na.get_address()
-    assert j.get("tx", {}).get("sender_id") == chain_fixture.ACCOUNT.get_address()
-    assert j.get("tx", {}).get("amount") == amount
+    assert j.get("data", {}).get("block_height") > 0
+    assert j.get("data", {}).get("tx", {}).get("data", {}).get("recipient_id") == na.get_address()
+    assert j.get("data", {}).get("tx", {}).get("data", {}).get("sender_id") == chain_fixture.ACCOUNT.get_address()
+    assert j.get("data", {}).get("tx", {}).get("data", {}).get("amount") == amount
 
 
 def test_cli_phases_spend(chain_fixture, tempdir):
