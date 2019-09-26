@@ -228,7 +228,7 @@ class NodeClient:
         if not utils.is_valid_hash(transaction_hash, identifiers.TRANSACTION_HASH):
             raise TypeError(f"Input {transaction_hash} is not a valid aeternity address")
         tx = self.get_transaction_by_hash(hash=transaction_hash)
-        return self.tx_builder._build_tx_object(tx)
+        return self.tx_builder.parse_node_reply(tx)
 
     def spend(self, account: Account,
               recipient_id: str,
@@ -381,7 +381,7 @@ class NodeClient:
         """
         Unpack and verify an encoded transaction
         """
-        decoded = self.tx_builder._build_tx_object(encoded_tx)
+        decoded = self.tx_builder.parse_tx_string(encoded_tx)
         return decoded
 
     def get_vm_abi_versions(self):

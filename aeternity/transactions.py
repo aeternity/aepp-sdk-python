@@ -1,4 +1,4 @@
-from aeternity.hashing import _int, _int_decode, _binary, _binary_decode, _id, _id_decode, encode, decode, decode_rlp, hash_encode
+from aeternity.hashing import _int, _int_decode, _binary, _binary_decode, _id, _id_decode, encode, decode, hash_encode
 from aeternity.openapi import OpenAPICli
 from aeternity import identifiers as idf
 from aeternity import defaults
@@ -9,8 +9,6 @@ import pprint
 import namedtupled
 import copy
 
-PACK_TX = 1
-UNPACK_TX = 0
 
 _INT = 0  # int type
 _ID = 1  # id type (account, contract_id, etc)
@@ -27,7 +25,15 @@ _IDS = 101  # list of id
 _PTRS = 106  # list of pointers
 
 
-class Fn:
+SIZE_BASED = 0  # used for most of transactions
+TTL_BASED = 1  # used for oracle
+GA_META = 2  # used for meta tx
+
+
+class Fd:
+    """
+    Fd, shorthand for FieldDefinition, is a support class to 
+    """
     def __init__(self, index, field_type=_INT, **kwargs):
         self.index = index
         self.field_type = field_type
@@ -38,11 +44,6 @@ class Fn:
 
     def __repr__(self):
         return self.__str__()
-
-
-SIZE_BASED = 0  # used for most of transactions
-TTL_BASED = 1  # used for oracle
-GA_META = 2  # used for meta tx
 
 
 class Fee:
@@ -59,314 +60,314 @@ class Fee:
         return self.__str__()
 
 
-txf = {
+tx_descriptors = {
     (idf.OBJECT_TAG_SIGNED_TRANSACTION, 1): {
-        "fee": None,
+        "fee": None,  # signed transactions do not have fees
         "schema": {
-            "version": Fn(1),
-            "signatures": Fn(2, _SG, prefix=idf.SIGNATURE),  # list
-            "tx": Fn(3, _TX, prefix=idf.TRANSACTION),
+            "version": Fd(1),
+            "signatures": Fd(2, _SG, prefix=idf.SIGNATURE),  # list
+            "tx": Fd(3, _TX, prefix=idf.TRANSACTION),
         }
     },
     (idf.OBJECT_TAG_SPEND_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
-            "version": Fn(1),
-            "sender_id": Fn(2, _ID),
-            "recipient_id": Fn(3, _ID),
-            "amount": Fn(4),
-            "fee": Fn(5),
-            "ttl": Fn(6),
-            "nonce": Fn(7),
-            "payload": Fn(8, _ENC, prefix=idf.BYTE_ARRAY),
+            "version": Fd(1),
+            "sender_id": Fd(2, _ID),
+            "recipient_id": Fd(3, _ID),
+            "amount": Fd(4),
+            "fee": Fd(5),
+            "ttl": Fd(6),
+            "nonce": Fd(7),
+            "payload": Fd(8, _ENC, prefix=idf.BYTE_ARRAY),
         }
     },
     (idf.OBJECT_TAG_NAME_SERVICE_PRECLAIM_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
-            "version": Fn(1),
-            "account_id": Fn(2, _ID),
-            "nonce": Fn(3),
-            "commitment_id": Fn(4, _ID),
-            "fee": Fn(5),
-            "ttl": Fn(6),
+            "version": Fd(1),
+            "account_id": Fd(2, _ID),
+            "nonce": Fd(3),
+            "commitment_id": Fd(4, _ID),
+            "fee": Fd(5),
+            "ttl": Fd(6),
         }},
     (idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
-            "version": Fn(1),
-            "account_id": Fn(2, _ID),
-            "nonce": Fn(3),
-            "name": Fn(4, _BIN),
-            "name_salt": Fn(5),  # TODO: this has to be verified
-            "fee": Fn(6),
-            "ttl": Fn(7),
+            "version": Fd(1),
+            "account_id": Fd(2, _ID),
+            "nonce": Fd(3),
+            "name": Fd(4, _BIN),
+            "name_salt": Fd(5),  # TODO: this has to be verified
+            "fee": Fd(6),
+            "ttl": Fd(7),
         }},
     (idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
-            "version": Fn(1),
-            "account_id": Fn(2, _ID),
-            "nonce": Fn(3),
-            "name_id": Fn(4, _ID),
-            "name_ttl": Fn(5),
-            "pointers": Fn(6, _PTR),
-            "client_ttl": Fn(7),
-            "fee": Fn(8),
-            "ttl": Fn(9),
+            "version": Fd(1),
+            "account_id": Fd(2, _ID),
+            "nonce": Fd(3),
+            "name_id": Fd(4, _ID),
+            "name_ttl": Fd(5),
+            "pointers": Fd(6, _PTR),
+            "client_ttl": Fd(7),
+            "fee": Fd(8),
+            "ttl": Fd(9),
         }},
     (idf.OBJECT_TAG_NAME_SERVICE_TRANSFER_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
-            "version": Fn(1),
-            "account_id": Fn(2, _ID),
-            "nonce": Fn(3),
-            "name_id": Fn(4, _ID),
-            "recipient_id": Fn(5, _ID),
-            "fee": Fn(6),
-            "ttl": Fn(7),
+            "version": Fd(1),
+            "account_id": Fd(2, _ID),
+            "nonce": Fd(3),
+            "name_id": Fd(4, _ID),
+            "recipient_id": Fd(5, _ID),
+            "fee": Fd(6),
+            "ttl": Fd(7),
         }},
     (idf.OBJECT_TAG_NAME_SERVICE_REVOKE_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
-            "version": Fn(1),
-            "account_id": Fn(2, _ID),
-            "nonce": Fn(3),
-            "name_id": Fn(4, _ID),
-            "fee": Fn(5),
-            "ttl": Fn(6),
+            "version": Fd(1),
+            "account_id": Fd(2, _ID),
+            "nonce": Fd(3),
+            "name_id": Fd(4, _ID),
+            "fee": Fd(5),
+            "ttl": Fd(6),
         }},
     (idf.OBJECT_TAG_CONTRACT_CREATE_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED, base_gas_multiplier=5),
         "schema": {
-            "version": Fn(1),
-            "owner_id": Fn(2, _ID),
-            "nonce": Fn(3),
-            "code": Fn(4, _ENC, prefix=idf.BYTECODE),
-            # "vm_version": Fn(5),
-            "abi_version": Fn(5, _VM_ABI),
-            "fee": Fn(6),
-            "ttl": Fn(7),
-            "deposit": Fn(8),
-            "amount": Fn(9),
-            "gas": Fn(10),
-            "gas_price": Fn(11),
-            "call_data": Fn(12, _ENC, prefix=idf.BYTECODE),
+            "version": Fd(1),
+            "owner_id": Fd(2, _ID),
+            "nonce": Fd(3),
+            "code": Fd(4, _ENC, prefix=idf.BYTECODE),
+            # "vm_version": Fd(5),
+            "abi_version": Fd(5, _VM_ABI),
+            "fee": Fd(6),
+            "ttl": Fd(7),
+            "deposit": Fd(8),
+            "amount": Fd(9),
+            "gas": Fd(10),
+            "gas_price": Fd(11),
+            "call_data": Fd(12, _ENC, prefix=idf.BYTECODE),
         }},
     (idf.OBJECT_TAG_CONTRACT_CALL_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED, base_gas_multiplier=30),
         "schema": {
-            "version": Fn(1),
-            "caller_id": Fn(2, _ID),
-            "nonce": Fn(3),
-            "contract_id": Fn(4, _ID),
-            "abi_version": Fn(5),
-            "fee": Fn(6),
-            "ttl": Fn(7),
-            "amount": Fn(8),
-            "gas": Fn(9),
-            "gas_price": Fn(10),
-            "call_data": Fn(11, _ENC, prefix=idf.BYTECODE),
+            "version": Fd(1),
+            "caller_id": Fd(2, _ID),
+            "nonce": Fd(3),
+            "contract_id": Fd(4, _ID),
+            "abi_version": Fd(5),
+            "fee": Fd(6),
+            "ttl": Fd(7),
+            "amount": Fd(8),
+            "gas": Fd(9),
+            "gas_price": Fd(10),
+            "call_data": Fd(11, _ENC, prefix=idf.BYTECODE),
         }},
     (idf.OBJECT_TAG_CHANNEL_CREATE_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
-            "version": Fn(1),
-            "initiator": Fn(2, _ID),
-            "initiator_amount": Fn(3),
-            "responder": Fn(4, _ID),
-            "responder_amount": Fn(5),
-            "channel_reserve": Fn(6),
-            "lock_period": Fn(7),
-            "ttl": Fn(8),
-            "fee": Fn(9),
-            "delegate_ids": Fn(10, _IDS),  # [d(d) for d in tx_native[10]], TODO: are u sure
-            "state_hash": Fn(11, _ENC, prefix=idf.STATE_HASH),
-            "nonce": Fn(12),
+            "version": Fd(1),
+            "initiator": Fd(2, _ID),
+            "initiator_amount": Fd(3),
+            "responder": Fd(4, _ID),
+            "responder_amount": Fd(5),
+            "channel_reserve": Fd(6),
+            "lock_period": Fd(7),
+            "ttl": Fd(8),
+            "fee": Fd(9),
+            "delegate_ids": Fd(10, _IDS),  # [d(d) for d in tx_native[10]], TODO: are u sure
+            "state_hash": Fd(11, _ENC, prefix=idf.STATE_HASH),
+            "nonce": Fd(12),
         }},
     (idf.OBJECT_TAG_CHANNEL_DEPOSIT_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
-            "version": Fn(1),
-            "channel_id": Fn(2, _ID),
-            "from_id": Fn(3, _ID),
-            "amount": Fn(4),
-            "ttl": Fn(5),
-            "fee": Fn(6),
-            "state_hash": Fn(7, _ENC, prefix=idf.STATE_HASH),  # _binary_decode(tx_native[7]),
-            "round": Fn(8),
-            "nonce": Fn(9),
+            "version": Fd(1),
+            "channel_id": Fd(2, _ID),
+            "from_id": Fd(3, _ID),
+            "amount": Fd(4),
+            "ttl": Fd(5),
+            "fee": Fd(6),
+            "state_hash": Fd(7, _ENC, prefix=idf.STATE_HASH),  # _binary_decode(tx_native[7]),
+            "round": Fd(8),
+            "nonce": Fd(9),
         }},
     (idf.OBJECT_TAG_CHANNEL_WITHDRAW_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
-            "version": Fn(1),
-            "channel_id": Fn(2, _ID),
-            "to_id": Fn(3, _ID),
-            "amount": Fn(4),
-            "ttl": Fn(5),
-            "fee": Fn(6),
-            "state_hash": Fn(7, _ENC, prefix=idf.STATE_HASH),  # _binary_decode(tx_native[7]),
-            "round": Fn(8),
-            "nonce": Fn(9),
+            "version": Fd(1),
+            "channel_id": Fd(2, _ID),
+            "to_id": Fd(3, _ID),
+            "amount": Fd(4),
+            "ttl": Fd(5),
+            "fee": Fd(6),
+            "state_hash": Fd(7, _ENC, prefix=idf.STATE_HASH),  # _binary_decode(tx_native[7]),
+            "round": Fd(8),
+            "nonce": Fd(9),
         }},
     (idf.OBJECT_TAG_CHANNEL_CLOSE_MUTUAL_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
-            "version": Fn(1),
-            "channel_id": Fn(2, _ID),
-            "from_id": Fn(3, _ID),
-            "initiator_amount_final": Fn(4),
-            "responder_amount_final": Fn(5),
-            "ttl": Fn(6),
-            "fee": Fn(7),
-            "nonce": Fn(8),
+            "version": Fd(1),
+            "channel_id": Fd(2, _ID),
+            "from_id": Fd(3, _ID),
+            "initiator_amount_final": Fd(4),
+            "responder_amount_final": Fd(5),
+            "ttl": Fd(6),
+            "fee": Fd(7),
+            "nonce": Fd(8),
         }},
     (idf.OBJECT_TAG_CHANNEL_CLOSE_SOLO_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
-            "version": Fn(1),
-            "channel_id": Fn(2, _ID),
-            "from_id": Fn(3, _ID),
-            "payload": Fn(4, _ENC, prefix=idf.BYTE_ARRAY),
-            "poi": Fn(5, _POI),
-            "ttl": Fn(6),
-            "fee": Fn(7),
-            "nonce": Fn(8),
+            "version": Fd(1),
+            "channel_id": Fd(2, _ID),
+            "from_id": Fd(3, _ID),
+            "payload": Fd(4, _ENC, prefix=idf.BYTE_ARRAY),
+            "poi": Fd(5, _POI),
+            "ttl": Fd(6),
+            "fee": Fd(7),
+            "nonce": Fd(8),
         }},
     (idf.OBJECT_TAG_CHANNEL_SLASH_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
-            "version": Fn(1),
-            "channel_id": Fn(2, _ID),
-            "from_id": Fn(3, _ID),
-            "payload": Fn(4, _ENC, prefix=idf.BYTE_ARRAY),
-            "poi": Fn(5, _POI),
-            "ttl": Fn(6),
-            "fee": Fn(7),
-            "nonce": Fn(8),
+            "version": Fd(1),
+            "channel_id": Fd(2, _ID),
+            "from_id": Fd(3, _ID),
+            "payload": Fd(4, _ENC, prefix=idf.BYTE_ARRAY),
+            "poi": Fd(5, _POI),
+            "ttl": Fd(6),
+            "fee": Fd(7),
+            "nonce": Fd(8),
         }},
     (idf.OBJECT_TAG_CHANNEL_SETTLE_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
-            "version": Fn(1),
-            "channel_id": Fn(2, _ID),
-            "from_id": Fn(3, _ID),
-            "initiator_amount_final": Fn(4),
-            "responder_amount_final": Fn(5),
-            "ttl": Fn(6),
-            "fee": Fn(7),
-            "nonce": Fn(8),
+            "version": Fd(1),
+            "channel_id": Fd(2, _ID),
+            "from_id": Fd(3, _ID),
+            "initiator_amount_final": Fd(4),
+            "responder_amount_final": Fd(5),
+            "ttl": Fd(6),
+            "fee": Fd(7),
+            "nonce": Fd(8),
         }},
     (idf.OBJECT_TAG_CHANNEL_SNAPSHOT_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
-            "version": Fn(1),
-            "channel_id": Fn(2, _ID),
-            "from_id": Fn(3, _ID),
-            "payload": Fn(4, _ENC, prefix=idf.BYTE_ARRAY),
-            "ttl": Fn(5),
-            "fee": Fn(6),
-            "nonce": Fn(7),
+            "version": Fd(1),
+            "channel_id": Fd(2, _ID),
+            "from_id": Fd(3, _ID),
+            "payload": Fd(4, _ENC, prefix=idf.BYTE_ARRAY),
+            "ttl": Fd(5),
+            "fee": Fd(6),
+            "nonce": Fd(7),
         }},
     (idf.OBJECT_TAG_CHANNEL_FORCE_PROGRESS_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
         "schema": {
-            "version": Fn(1),
-            "channel_id": Fn(2, _ID),
-            "from_id": Fn(3, _ID),
-            "payload": Fn(4, _ENC, prefix=idf.BYTE_ARRAY),
-            "round": Fn(5),
-            "update": Fn(6),  # _binary_decode(tx_native[2]),
-            "state_hash": Fn(7, _ENC, prefix=idf.STATE_HASH),  # _binary_decode(tx_native[2]),
-            "offchain_trees": Fn(8, _TR),  # TODO: implement support for _trees
-            "ttl": Fn(2),
-            "fee": Fn(2),
-            "nonce": Fn(2),
+            "version": Fd(1),
+            "channel_id": Fd(2, _ID),
+            "from_id": Fd(3, _ID),
+            "payload": Fd(4, _ENC, prefix=idf.BYTE_ARRAY),
+            "round": Fd(5),
+            "update": Fd(6),  # _binary_decode(tx_native[2]),
+            "state_hash": Fd(7, _ENC, prefix=idf.STATE_HASH),  # _binary_decode(tx_native[2]),
+            "offchain_trees": Fd(8, _TR),  # TODO: implement support for _trees
+            "ttl": Fd(2),
+            "fee": Fd(2),
+            "nonce": Fd(2),
         }},
     (idf.OBJECT_TAG_ORACLE_REGISTER_TRANSACTION, 1): {
         "fee": Fee(TTL_BASED, ttl_field="oracle_ttl_value"),
         "schema": {
-            "version": Fn(1),
-            "account_id": Fn(2, _ID),
-            "nonce": Fn(3),
-            "query_format": Fn(4, _BIN),  # _binary_decode(tx_native[4]), TODO: verify the type
-            "response_format": Fn(5, _BIN),  # _binary_decode(tx_native[5]),
-            "query_fee": Fn(6),
-            "oracle_ttl_type": Fn(7, _OTTL_TYPE),
-            "oracle_ttl_value": Fn(8),
-            "fee": Fn(9),
-            "ttl": Fn(10),
-            "vm_version": Fn(11),
+            "version": Fd(1),
+            "account_id": Fd(2, _ID),
+            "nonce": Fd(3),
+            "query_format": Fd(4, _BIN),  # _binary_decode(tx_native[4]), TODO: verify the type
+            "response_format": Fd(5, _BIN),  # _binary_decode(tx_native[5]),
+            "query_fee": Fd(6),
+            "oracle_ttl_type": Fd(7, _OTTL_TYPE),
+            "oracle_ttl_value": Fd(8),
+            "fee": Fd(9),
+            "ttl": Fd(10),
+            "vm_version": Fd(11),
         }},
     (idf.OBJECT_TAG_ORACLE_QUERY_TRANSACTION, 1): {
         "fee": Fee(TTL_BASED, ttl_field="query_ttl_value"),
         "schema": {
-            "version": Fn(1),
-            "sender_id": Fn(2, _ID),
-            "nonce": Fn(3),
-            "oracle_id": Fn(4, _ID),
-            "query": Fn(5, _BIN),
-            "query_fee": Fn(6),
-            "query_ttl_type": Fn(7, _OTTL_TYPE),
-            "query_ttl_value": Fn(8),
-            "response_ttl_type": Fn(9, _OTTL_TYPE),
-            "response_ttl_value": Fn(10),
-            "fee": Fn(11),
-            "ttl": Fn(12),
+            "version": Fd(1),
+            "sender_id": Fd(2, _ID),
+            "nonce": Fd(3),
+            "oracle_id": Fd(4, _ID),
+            "query": Fd(5, _BIN),
+            "query_fee": Fd(6),
+            "query_ttl_type": Fd(7, _OTTL_TYPE),
+            "query_ttl_value": Fd(8),
+            "response_ttl_type": Fd(9, _OTTL_TYPE),
+            "response_ttl_value": Fd(10),
+            "fee": Fd(11),
+            "ttl": Fd(12),
         }},
     (idf.OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION, 1): {
         "fee": Fee(TTL_BASED, ttl_field="response_ttl_value"),
         "schema": {
-            "version": Fn(1),
-            "oracle_id": Fn(2, _ID),
-            "nonce": Fn(3),
-            "query_id": Fn(4, _ENC, prefix=idf.ORACLE_QUERY_ID),
-            "response": Fn(5, _BIN),
-            "response_ttl_type": Fn(6, _OTTL_TYPE),
-            "response_ttl_value": Fn(7),
-            "fee": Fn(8),
-            "ttl": Fn(9),
+            "version": Fd(1),
+            "oracle_id": Fd(2, _ID),
+            "nonce": Fd(3),
+            "query_id": Fd(4, _ENC, prefix=idf.ORACLE_QUERY_ID),
+            "response": Fd(5, _BIN),
+            "response_ttl_type": Fd(6, _OTTL_TYPE),
+            "response_ttl_value": Fd(7),
+            "fee": Fd(8),
+            "ttl": Fd(9),
         }},
     (idf.OBJECT_TAG_ORACLE_EXTEND_TRANSACTION, 1): {
         "fee": Fee(TTL_BASED, ttl_field="oracle_ttl_value"),
         "schema": {
-            "version": Fn(1),
-            "oracle_id": Fn(2, _ID),
-            "nonce": Fn(3),
-            "oracle_ttl_type": Fn(4, _OTTL_TYPE),
-            "oracle_ttl_value": Fn(5),
-            "fee": Fn(6),
-            "ttl": Fn(7),
+            "version": Fd(1),
+            "oracle_id": Fd(2, _ID),
+            "nonce": Fd(3),
+            "oracle_ttl_type": Fd(4, _OTTL_TYPE),
+            "oracle_ttl_value": Fd(5),
+            "fee": Fd(6),
+            "ttl": Fd(7),
         }},
     (idf.OBJECT_TAG_GA_ATTACH_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED, base_gas_multiplier=5),
         "schema": {
-            "version": Fn(1),
-            "owner_id": Fn(2, _ID),
-            "nonce": Fn(3),
-            "code": Fn(4, _ENC, prefix=idf.BYTECODE),
-            "auth_fun": Fn(5, _BIN),
-            # "vm_version": Fn(6), # This field is retrieved via abi_version
-            "abi_version": Fn(6, _VM_ABI),
-            "fee": Fn(7),
-            "ttl": Fn(8),
-            "gas": Fn(9),
-            "gas_price": Fn(10),
-            "call_data": Fn(11, _ENC, prefix=idf.BYTECODE),  # _binary_decode(tx_native[11]),
+            "version": Fd(1),
+            "owner_id": Fd(2, _ID),
+            "nonce": Fd(3),
+            "code": Fd(4, _ENC, prefix=idf.BYTECODE),
+            "auth_fun": Fd(5, _BIN),
+            # "vm_version": Fd(6), # This field is retrieved via abi_version
+            "abi_version": Fd(6, _VM_ABI),
+            "fee": Fd(7),
+            "ttl": Fd(8),
+            "gas": Fd(9),
+            "gas_price": Fd(10),
+            "call_data": Fd(11, _ENC, prefix=idf.BYTECODE),  # _binary_decode(tx_native[11]),
         }},
     (idf.OBJECT_TAG_GA_META_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED, base_gas_multiplier=5),
         "schema": {
-            "version": Fn(1),
-            "ga_id": Fn(2, _ID),
-            "auth_data": Fn(3, _ENC, prefix=idf.BYTECODE),
-            "abi_version": Fn(4),
-            "fee": Fn(5),
-            "gas": Fn(6),
-            "gas_price": Fn(7),
-            "ttl": Fn(8),
-            "tx": Fn(9, _TX),
+            "version": Fd(1),
+            "ga_id": Fd(2, _ID),
+            "auth_data": Fd(3, _ENC, prefix=idf.BYTECODE),
+            "abi_version": Fd(4),
+            "fee": Fd(5),
+            "gas": Fd(6),
+            "gas_price": Fd(7),
+            "ttl": Fd(8),
+            "tx": Fd(9, _TX),
         }
     },
 }
@@ -380,20 +381,25 @@ class TxObject:
     """
 
     def __init__(self, **kwargs):
-        self.data = kwargs.get("data", None)
+        self.data = namedtupled.map(kwargs.get("data", None), _nt_name="TxData")
         self.tx = kwargs.get("tx", None)
         self.hash = kwargs.get("hash", None)
-        self.metadata = kwargs.get("metadata", None)
-        self.network_id = kwargs.get("network_id", None)
-        self.signatures = kwargs.get("signatures", [])
+        self.metadata = namedtupled.map(kwargs.get("metadata", None), _nt_name="TxMeta")
+
+    def set_data(self, data):
+        self.data = namedtupled.map(data, _nt_name="TxData")
+
+    def set_metadata(self, metadata):
+        self.metadata = namedtupled.map(metadata, _nt_name="TxData")
 
     def asdict(self):
         t = dict(
             data=namedtupled.reduce(self.data),
-            metadata=self.metadata,
+            metadata=namedtupled.reduce(self.metadata),
             tx=self.tx,
-            hash=self.hash
         )
+        if self.hash is not None:
+            t["hash"] = self.hash
         if "tx" in t.get("data", {}):
             t["data"]["tx"] = t["data"]["tx"].asdict()
 
@@ -476,7 +482,7 @@ class TxBuilder:
         tx_raw = decode(encoded_tx)
         return hash_encode(idf.TRANSACTION_HASH, tx_raw)
 
-    def compute_min_fee(self, tx_data: dict, tx_descriptor: dict, tx_raw: list):
+    def compute_min_fee(self, tx_data: dict, tx_descriptor: dict, tx_raw: list) -> int:
         # if the fee is none means it is not necessary to compute the fee
         if tx_descriptor.get("fee") is None:
             return 0
@@ -515,28 +521,34 @@ class TxBuilder:
 
     def _jsontx_to_txobject(self, api_data):
         """
-        transform a dictionary built from a json reply  from the node to a transaction object.
-        a the input api_data must be obtained from a /transactions/tx_xyz endpoint
+        Transform a dictionary built from a json reply  from the node to a transaction object.
+        a the input api_data must be obtained from a /transactions/tx_xyz endpoint.
+
+        A specific case is the one for signed transactions that in the api are treated in
+        a different ways from other transactions, and their data is mixed with block informations
         """
         # transform the data to a dict since the openapi module maps them to a named tuple
         tx_data = namedtupled.reduce(api_data)
         if "signatures" in tx_data:
             tx_data["tag"] = idf.OBJECT_TAG_SIGNED_TRANSACTION
+            tx_data["type"] = idf.TRANSACTION_TAG_TO_TYPE.get(idf.OBJECT_TAG_SIGNED_TRANSACTION)
+            tx_data["version"] = 1
             # signed tx, extract the inner tx
             # TODO: this should be a tobject in the data
-            tx_data["tx"] = encode(idf.TRANSACTION, self._jsontx_to_txobject(api_data.tx))
-        tx_data["tag"] = idf.TRANSACTION_TYPE_TO_TAG.get(api_data.type)
+            tx_data["tx"] = self._jsontx_to_txobject(api_data.tx)
+        tx_data["tag"] = idf.TRANSACTION_TYPE_TO_TAG.get(tx_data.get("type"))
         # encode th tx in rlp
         tag = tx_data.get("tag")
         vsn = tx_data.get("version")
         # check if we have something
-        descriptor = txf.get((tag, vsn))
+        descriptor = tx_descriptors.get((tag, vsn))
         if descriptor is None:
             # the transaction is not defined
             raise TypeError(f"Unknown transaction tag/version: {tag}/{vsn}")
-        return self._txdata_to_txobject(tx_data, descriptor)
+        # do not compute the fee for a signed transaction
+        return self._txdata_to_txobject(tx_data, descriptor, compute_hash=False)
 
-    def _txdata_to_txobject(self, data: dict, descriptor: dict, metadata: dict = {}) -> TxObject:
+    def _txdata_to_txobject(self, data: dict, descriptor: dict, metadata: dict = {}, compute_hash=True) -> TxObject:
         # initialize the right data size
         # this is PYTHON to POSTBODY
         schema = descriptor.get("schema", [])
@@ -569,36 +581,39 @@ class TxBuilder:
                 # this can be raw or tx object
                 tx = data.get(label).tx if hasattr(data.get(label), "tx") else data.get(label)
                 raw_data[fn.index] = decode(tx)
-        # compute the minimum fee
-        metadata = metadata if metadata is not None else {}
-        metadata["min_fee"] = self.compute_min_fee(data, descriptor, raw_data)
         # encode the transaction in rlp
         rlp_tx = rlp.encode(raw_data)
         # encode the tx in base64
         rlp_b64_tx = encode(idf.TRANSACTION, rlp_tx)
-        # compute the tx hash
-        tx_hash = hash_encode(idf.TRANSACTION_HASH, rlp_tx)
         # copy the data before modifing
-        tx_meta = copy.deepcopy(metadata)
         tx_data = copy.deepcopy(data)
         # build the tx object
-        return TxObject(
-            metadata=namedtupled.map(tx_meta, _nt_name="TxMeta"),
+        txo = TxObject(
             data=namedtupled.map(tx_data, _nt_name="TxData"),
             tx=rlp_b64_tx,
-            hash=tx_hash
         )
+        # compute the tx hash
+        if compute_hash:
+            txo.hash = hash_encode(idf.TRANSACTION_HASH, rlp_tx)
+        # copy the metadata if exists or initialize it if None
+        tx_meta = copy.deepcopy(metadata) if metadata is not None else {}
+        # compute the minimum fee
+        if descriptor.get("fee") is not None:
+            tx_meta["min_fee"] = self.compute_min_fee(data, descriptor, raw_data)
+        # only set the metadata if it is not empty
+        txo.set_metadata(tx_meta)
+        return txo
 
     def _rlptx_to_txobject(self, rlp_data: bytes) -> TxObject:
         """
-        transform an rlp encode byte array transaction to a transaction object
+        Transform an rlp encoded byte array transaction to a transaction object
         """
         # decode the rlp
         raw = rlp.decode(rlp_data)
         tag = _int_decode(raw[0])
         vsn = _int_decode(raw[1])
         # TODO: verify that the schema is there
-        descriptor = txf.get((tag, vsn))
+        descriptor = tx_descriptors.get((tag, vsn))
         if descriptor is None:
             # the transaction is not defined
             raise TypeError(f"Unknown transaction tag/version: {tag}/{vsn}")
@@ -632,9 +647,10 @@ class TxBuilder:
                 # this can be raw or tx object
                 tx_data[label] = self._rlptx_to_txobject(raw[fn.index])
         # re-encode the decode object
-        return self._txdata_to_txobject(tx_data, descriptor)
+        compute_hash = True if tag == idf.OBJECT_TAG_SIGNED_TRANSACTION else False
+        return self._txdata_to_txobject(tx_data, descriptor, compute_hash=compute_hash)
 
-    def _build_tx_object(self, tx_data, metadata={}):
+    def _build_tx_object(self, tx_data, metadata={}) -> TxObject:
         """
         function used internally to the TxBuilder to build the transaction
         and set the defaults when required
@@ -645,12 +661,12 @@ class TxBuilder:
         tag = tx_data.get("tag")
         vsn = tx_data.get("version")
         # check if we have something
-        descriptor = txf.get((tag, vsn))
+        descriptor = tx_descriptors.get((tag, vsn))
         if descriptor is None:
             # the transaction is not defined
             raise TypeError(f"Unknown transaction tag/version: {tag}/{vsn}")
         # build the tx object
-        txo = self._txdata_to_txobject(tx_data, descriptor, metadata)
+        txo = self._txdata_to_txobject(tx_data, descriptor, metadata=metadata)
         # check whenever we need to automatically assign the fee
         # we use -1 as default since for the signed tx there is no field fee
         if tx_data.get("fee", -1) == 0:

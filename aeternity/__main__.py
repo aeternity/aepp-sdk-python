@@ -128,7 +128,7 @@ def _po(label, value, offset=0, label_prefix=None):
                                "channel_reserve", "deposit", "fee", "gas_price",
                                "gas", "initiator_amount_final", "initiator_amount",
                                "push_amount", "query_fee", "responder_amount_final",
-                               "responder_amount", "round", "solo_round"]:
+                               "responder_amount", "round", "solo_round", "min_fee"]:
             value = utils.format_amount(value)
 
         _pl(label, offset, value=value)
@@ -822,7 +822,8 @@ def inspect(obj, height, force, wait, json_):
             v = _node_cli().get_block_by_hash(obj)
             _print_object(v, title="block")
         elif obj.startswith("th_"):
-            v = _node_cli().get_transaction_by_hash(hash=obj)
+            # v = _node_cli().get_transaction_by_hash(hash=obj)
+            v = _node_cli().get_transaction(obj)
             _print_object(v, title="transaction")
         elif obj.startswith("ak_"):
             if height is not None and height > 0:
