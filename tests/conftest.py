@@ -65,11 +65,11 @@ def chain_fixture(scope="module"):
         debug=True,
     ))
 
-    NODE_CLI.spend(genesis, ACCOUNT.get_address(), 2000000000000000000)
+    NODE_CLI.spend(genesis, ACCOUNT.get_address(), 100000000000000000000) # 100AE
     a = NODE_CLI.get_account_by_pubkey(pubkey=ACCOUNT.get_address())
     print(f"Test account is {ACCOUNT.get_address()} with balance {a.balance}")
 
-    NODE_CLI.spend(genesis, ACCOUNT_1.get_address(), 2000000000000000000)
+    NODE_CLI.spend(genesis, ACCOUNT_1.get_address(), 100000000000000000000) # 100AE
     a = NODE_CLI.get_account_by_pubkey(pubkey=ACCOUNT_1.get_address())
     print(f"Test account (1) is {ACCOUNT_1.get_address()} with balance {a.balance}")
 

@@ -4,6 +4,8 @@ from aeternity import defaults
 from aeternity import hashing, utils, oracles
 from aeternity.identifiers import ACCOUNT_ID, NAME_ID, PROTOCOL_LIMA
 
+import math
+
 
 class NameStatus:
     REVOKED = 'REVOKED'
@@ -42,6 +44,30 @@ class AEName:
             or
             not cls.validate_name(pointer, raise_exception=False)
         )
+
+    @classmethod
+    def get_minimum_name_fee(cls, domain: str) -> int:
+        """
+        Get the minimum name fee for a domain
+        :param domain: the domain name to get the fee for
+        :return: the minimum fee for the domain auction
+        """
+        name_len = len(domain.replace(".aet", ""))
+        if name_len >= defaults.NAME_BID_MAX_LENGTH:
+            return defaults.NAME_BID_RANGES.get(defaults.NAME_BID_MAX_LENGTH)
+        return defaults.NAME_BID_RANGES.get(name_len)
+
+    @classmethod
+    def compute_minimum_bid_fee(cls, domain: str, start_fee: defaults.NAME_FEE) -> int:
+        """
+        Get the minimum bid fee for a domain
+        :param domain: the domain name to get the fee for
+        :param start_fee: the start fee to calculate the min bid fee, if not provided the min_name_fee will be used as start fee
+        :return: the minimum bid fee for the domain auction
+        """
+        if start_fee == defaults.NAME_FEE:
+            start_fee = AEName.get_minimum_name_fee(domain)
+        return math.ceil(start_fee * (1 + defaults.NAME_FEE_BID_INCREMENT))
 
     def _get_pointers(self, target):
         if target.startswith(ACCOUNT_ID):
@@ -182,7 +208,44 @@ class AEName:
         if protocol < PROTOCOL_LIMA:
             tx = txb.tx_name_claim(account.get_address(), self.domain, self.preclaim_salt, fee, ttl, nonce)
         else:
+            min_name_fee = AEName.get_minimum_name_fee(self.domain)
+            if name_fee != defaults.NAME_FEE and name_fee < min_name_fee:
+                raise TypeError(f"the provided fee {name_fee} is not enough to execute the claim, required: {min_name_fee}")
+            name_fee = max(min_name_fee, name_fee)
             tx = txb.tx_name_claim_v2(account.get_address(), self.domain, self.preclaim_salt, name_fee, fee, ttl, nonce)
+        # sign the transaction
+        tx_signed = self.client.sign_transaction(account, tx)
+        # post the transaction to the chain
+        self.client.broadcast_transaction(tx_signed)
+        # update status
+        self.status = AEName.Status.CLAIMED
+        return tx_signed
+
+    def bid(self, account, bid_fee=defaults.NAME_FEE, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
+        """
+        Implements bidding for a name, the precondition are:
+        the name has been claimed and bidding is allowed, meaning that
+        the acution is still active.
+
+        As for the bidding parameters, both  fee_multiplier and bid_fee can be set,
+        the actual bid value will be selected by max(current_name_fee*fee_multiplier, bid_fee).
+
+        If no parameter is set the bidding strategy is to bid the minimum required by protocol
+        :param preclaim_tx_hash: the hash of the preclaim transaction
+
+        :param account: the account making the bidding
+        :param fee_multiplier: the multiplier over the previous bidding value (in 0. percentage)
+        :param bid_fee: the  absoulute value of the bidding fee
+        :fee: the transaction fee
+        :tx_ttl: the transactino ttl
+        """
+        txb = self.client.tx_builder
+        # get the account nonce and ttl
+        nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
+        # firs bid is automatic TODO: does it makes sense?
+        min_bid_fee = AEName.compute_minimum_bid_fee(self.domain, bid_fee)
+        # check the protocol version
+        tx = txb.tx_name_claim_v2(account.get_address(), self.domain, 0, min_bid_fee, fee, ttl, nonce)
         # sign the transaction
         tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
