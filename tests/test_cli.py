@@ -128,7 +128,7 @@ def test_cli_inspect_name():
 def test_cli_inspect_transaction_by_hash(chain_fixture):
     # fill the account from genesys
     na = Account.generate()
-    amount = random.randint(50, 150)
+    amount = random.randint(1, 1000000000000000000)
     tx = chain_fixture.NODE_CLI.spend(chain_fixture.ACCOUNT, na.get_address(), amount)
     # now inspect the transaction
     j = call_aecli('inspect', tx.hash)

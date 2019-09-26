@@ -558,7 +558,7 @@ class TxBuilder:
         # parse fields and encode them
         for label, fn in schema.items():
             if fn.field_type == _INT:
-                raw_data[fn.index] = _int(data.get(label))
+                raw_data[fn.index] = _int(data.get(label, 0))
             elif fn.field_type == _ID:
                 raw_data[fn.index] = _id(data.get(label))
             elif fn.field_type == _ENC:
