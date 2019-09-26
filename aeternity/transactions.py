@@ -650,7 +650,7 @@ class TxBuilder:
         compute_hash = True if tag == idf.OBJECT_TAG_SIGNED_TRANSACTION else False
         return self._txdata_to_txobject(tx_data, descriptor, compute_hash=compute_hash)
 
-    def _build_tx_object(self, tx_data, metadata={}) -> TxObject:
+    def _build_txobject(self, tx_data, metadata={}) -> TxObject:
         """
         function used internally to the TxBuilder to build the transaction
         and set the defaults when required
@@ -701,7 +701,7 @@ class TxBuilder:
             signatures=signatures,
             tx=tx
         )
-        return self._build_tx_object(body, metadata=metadata)
+        return self._build_txobject(body, metadata=metadata)
 
     def tx_spend(self, sender_id, recipient_id, amount, payload, fee, ttl, nonce) -> tuple:
         """
@@ -726,7 +726,7 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce,
         )
-        return self._build_tx_object(body)
+        return self._build_txobject(body)
         # return self.api.post_spend(body=body).tx
 
     # NAMING #
@@ -749,7 +749,7 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce
         )
-        return self._build_tx_object(body)
+        return self._build_txobject(body)
         # return self.api.post_name_preclaim(body=body).tx
 
     def tx_name_claim(self, account_id, name, name_salt, fee, ttl, nonce) -> tuple:
@@ -772,7 +772,7 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce
         )
-        return self._build_tx_object(body)
+        return self._build_txobject(body)
         # return self.api.post_name_claim(body=body).tx
 
     def tx_name_update(self, account_id, name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce) -> tuple:
@@ -799,7 +799,7 @@ class TxBuilder:
             fee=fee,
             nonce=nonce
         )
-        return self._build_tx_object(body)
+        return self._build_txobject(body)
         # return self.api.post_name_update(body=body).tx
 
     def tx_name_transfer(self, account_id, name_id, recipient_id, fee, ttl, nonce) -> tuple:
@@ -822,7 +822,7 @@ class TxBuilder:
             fee=fee,
             nonce=nonce
         )
-        return self._build_tx_object(body)
+        return self._build_txobject(body)
         # return self.api.post_name_transfer(body=body).tx
 
     def tx_name_revoke(self, account_id, name_id, fee, ttl, nonce) -> tuple:
@@ -844,7 +844,7 @@ class TxBuilder:
             fee=fee,
             nonce=nonce
         )
-        return self._build_tx_object(body)
+        return self._build_txobject(body)
         # return self.api.post_name_revoke(body=body).tx
 
     # CONTRACTS
@@ -881,7 +881,7 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce
         )
-        return self._build_tx_object(body)
+        return self._build_txobject(body)
         # return tx.tx, tx.contract_id
 
     def tx_contract_call(self, caller_id, contract_id, call_data, function, arg, amount, gas, gas_price, abi_version, fee, ttl, nonce) -> tuple:
@@ -915,7 +915,7 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce
         )
-        return self._build_tx_object(body)
+        return self._build_txobject(body)
         # return self.api.post_contract_call(body=body).tx
 
     # ORACLES
@@ -941,7 +941,7 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce
         )
-        return self._build_tx_object(body)
+        return self._build_txobject(body)
         # return tx.tx
 
     def tx_oracle_query(self, oracle_id, sender_id, query,
@@ -967,7 +967,7 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce,
         )
-        return self._build_tx_object(body)
+        return self._build_txobject(body)
         # tx = self.api.post_oracle_query(body=body)
         # return tx.tx
 
@@ -989,7 +989,7 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce,
         )
-        return self._build_tx_object(body)
+        return self._build_txobject(body)
         # tx = self.api.post_oracle_respond(body=body)
         # return tx.tx
 
@@ -1009,7 +1009,7 @@ class TxBuilder:
             ttl=ttl,
             nonce=nonce,
         )
-        return self._build_tx_object(body)
+        return self._build_txobject(body)
         # tx = self.api.post_oracle_extend(body=body)
         # return tx.tx
 
@@ -1041,7 +1041,7 @@ class TxBuilder:
             gas_price=gas_price,
             call_data=call_data,
         )
-        return self._build_tx_object(body)
+        return self._build_txobject(body)
 
     def tx_ga_meta(self, ga_id,
                    auth_data,
@@ -1073,7 +1073,7 @@ class TxBuilder:
             ttl=ttl,
             tx=tx,
         )
-        return self._build_tx_object(body)
+        return self._build_txobject(body)
 
 
 class TxBuilderDebug:
