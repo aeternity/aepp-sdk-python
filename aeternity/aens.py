@@ -58,16 +58,35 @@ class AEName:
         return defaults.NAME_BID_RANGES.get(name_len)
 
     @classmethod
-    def compute_minimum_bid_fee(cls, domain: str, start_fee: defaults.NAME_FEE) -> int:
+    def compute_bid_fee(cls, domain: str, start_fee: int = defaults.NAME_FEE, increment: float = defaults.NAME_FEE_BID_INCREMENT) -> int:
         """
         Get the minimum bid fee for a domain
         :param domain: the domain name to get the fee for
         :param start_fee: the start fee to calculate the min bid fee, if not provided the min_name_fee will be used as start fee
-        :return: the minimum bid fee for the domain auction
+        :param increment: an increment in percentage in decimal notation (1)
+        :return: the computed bid fee
         """
+        if increment < defaults.NAME_FEE_BID_INCREMENT:
+            raise TypeError(f"minimum increment percentage is {defaults.NAME_FEE_BID_INCREMENT}")
         if start_fee == defaults.NAME_FEE:
             start_fee = AEName.get_minimum_name_fee(domain)
         return math.ceil(start_fee * (1 + defaults.NAME_FEE_BID_INCREMENT))
+
+    @classmethod
+    def compute_auction_end_block(cls, domain: str, claim_height: int) -> int:
+        """
+        Given a domain name and a height compute the height when an auction will end
+        :param domain: the domain name to get the auction end
+        :param claim_height: height of the last claim for the domain name
+        """
+        name_len = len(domain) - 4
+        if name_len < 4:
+            return defaults.NAME_BID_TIMEOUTS.get(1) + claim_height
+        if name_len < 8:
+            return defaults.NAME_BID_TIMEOUTS.get(4) + claim_height
+        if name_len < 31:
+            return defaults.NAME_BID_TIMEOUTS.get(8) + claim_height
+        return claim_height
 
     def _get_pointers(self, target):
         if target.startswith(ACCOUNT_ID):
@@ -221,7 +240,7 @@ class AEName:
         self.status = AEName.Status.CLAIMED
         return tx_signed
 
-    def bid(self, account, bid_fee=defaults.NAME_FEE, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
+    def bid(self, account, bid_fee, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
         """
         Implements bidding for a name, the precondition are:
         the name has been claimed and bidding is allowed, meaning that
@@ -234,7 +253,6 @@ class AEName:
         :param preclaim_tx_hash: the hash of the preclaim transaction
 
         :param account: the account making the bidding
-        :param fee_multiplier: the multiplier over the previous bidding value (in 0. percentage)
         :param bid_fee: the  absoulute value of the bidding fee
         :fee: the transaction fee
         :tx_ttl: the transactino ttl
@@ -242,10 +260,8 @@ class AEName:
         txb = self.client.tx_builder
         # get the account nonce and ttl
         nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
-        # firs bid is automatic TODO: does it makes sense?
-        min_bid_fee = AEName.compute_minimum_bid_fee(self.domain, bid_fee)
         # check the protocol version
-        tx = txb.tx_name_claim_v2(account.get_address(), self.domain, 0, min_bid_fee, fee, ttl, nonce)
+        tx = txb.tx_name_claim_v2(account.get_address(), self.domain, 0, bid_fee, fee, ttl, nonce)
         # sign the transaction
         tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
