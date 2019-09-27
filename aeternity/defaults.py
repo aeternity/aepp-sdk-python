@@ -16,7 +16,6 @@ CONTRACT_AMOUNT = 0
 # calldata for the init function with no parameters
 CONTRACT_INIT_CALLDATA = "cb_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACC5yVbyizFJqfWYeqUF89obIgnMVzkjQAYrtsG9n5" + \
     "+Z6gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAnHQYrA=="
-#* NAME_FEE_MULTIPLIER,
 # https://github.com/aeternity/protocol/blob/master/oracles/oracles.md#technical-aspects-of-oracle-operations
 ORACLE_VM_VERSION = identifiers.NO_VM
 ORACLE_TTL_TYPE = identifiers.ORACLE_TTL_TYPE_DELTA
@@ -92,6 +91,7 @@ NAME_BID_RANGES = {
     1: 5702887 * NAME_FEE_MULTIPLIER,
 }
 
+# ref: https://github.com/aeternity/aeternity/blob/72e440b8731422e335f879a31ecbbee7ac23a1cf/apps/aecore/src/aec_governance.erl#L273
 # name bid timeouts
 NAME_BID_TIMEOUTS = {
     31: 0,

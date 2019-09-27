@@ -28,10 +28,9 @@ def tempdir(scope="module"):
         shutil.rmtree(path)
 
 
-@pytest.fixture
-def random_domain(length=10):
+def random_domain(length=10, tld='aet'):
     rand_str = ''.join(random.choice(string.ascii_letters) for _ in range(length))
-    return f"{rand_str}.aet"
+    return f"{rand_str}.{tld}"
 
 
 @pytest.fixture
@@ -40,7 +39,7 @@ def client_fixture(scope="module"):
     NODE_CLI = NodeClient(Config(
         external_url=NODE_URL,
         internal_url=NODE_URL_DEBUG,
-        network_id=NETWORK_ID,
+        # network_id=NETWORK_ID,
         blocking_mode=True,
         debug=True,
     ))
@@ -60,20 +59,20 @@ def chain_fixture(scope="module"):
     NODE_CLI = NodeClient(Config(
         external_url=NODE_URL,
         internal_url=NODE_URL_DEBUG,
-        network_id=NETWORK_ID,
+        # network_id=NETWORK_ID,
         blocking_mode=True,
         debug=True,
     ))
 
-    NODE_CLI.spend(genesis, ACCOUNT.get_address(), 100000000000000000000) # 100AE
+    NODE_CLI.spend(genesis, ACCOUNT.get_address(), 5000000000000000000000) # 5000AE
     a = NODE_CLI.get_account_by_pubkey(pubkey=ACCOUNT.get_address())
     print(f"Test account is {ACCOUNT.get_address()} with balance {a.balance}")
 
-    NODE_CLI.spend(genesis, ACCOUNT_1.get_address(), 100000000000000000000) # 100AE
+    NODE_CLI.spend(genesis, ACCOUNT_1.get_address(), 5000000000000000000000) # 5000AE
     a = NODE_CLI.get_account_by_pubkey(pubkey=ACCOUNT_1.get_address())
     print(f"Test account (1) is {ACCOUNT_1.get_address()} with balance {a.balance}")
 
-    return namedtupled.map({"NODE_CLI": NODE_CLI, "ACCOUNT": ACCOUNT, "ACCOUNT_1": ACCOUNT_1}, _nt_name="TestData")
+    return namedtupled.map({"NODE_CLI": NODE_CLI, "ALICE": ACCOUNT, "BOB": ACCOUNT_1}, _nt_name="TestData")
 
 
 @pytest.fixture
