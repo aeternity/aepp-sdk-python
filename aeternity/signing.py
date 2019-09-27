@@ -1,5 +1,4 @@
 import os
-import pathlib
 from datetime import datetime
 import json
 import uuid
@@ -109,28 +108,6 @@ class Account:
             json.dump(j, fp)
         return filename
 
-    def save_to_folder(self, folder, password, name='key'):
-        """
-        save the current key in a folder and encrypts it with the provided password
-        :param folder:   the folder to save the key to
-        :param password: the password to encrypt the private key
-        :param name:     filename of the signing key in folder, default 'key'
-        """
-        enc_key = self._encrypt_key(self.signing_key.encode(encoder=HexEncoder), password)
-        enc_key_pub = self._encrypt_key(self.verifying_key.encode(encoder=HexEncoder), password)
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-        with open(os.path.join(folder, name), 'wb') as fh:
-            fh.write(enc_key)
-        with open(os.path.join(folder, f'{name}.pub'), 'wb') as fh:
-            fh.write(enc_key_pub)
-
-    def save_to_file(self, path, password):
-        p = pathlib.Path(path)
-        folder = str(p.parent)
-        filename = p.name
-        self.save_to_folder(folder, password, name=filename)
-
     #
     # initializers
     #
@@ -159,7 +136,7 @@ class Account:
     def from_secret_key_string(cls, key_string):
         """create a keypair from a aet address and key_string key string
         :param key_string: the encoded key_string key (hex for private, prefixed base58 for public)
-        :return: a keypair object or raise error if the public key doesnt match
+        :return: a keypair object or raise error if the public key doesn't match
         """
         k = cls._raw_key(key_string)
         # the secret key string is composed with [secret_key+public_key]
@@ -245,7 +222,7 @@ def keystore_seal(secret_key, password, address, name=""):
                 "memlimit_kib": round(mem / 1024),
                 "opslimit": ops,
                 "salt": bytes.hex(salt),
-                "parallelism": 1  # pynacl 1.3.0 doesnt support this parameter
+                "parallelism": 1  # pynacl 1.3.0 doesn't support this parameter
             }
         },
         "id": str(uuid.uuid4()),
@@ -261,7 +238,7 @@ def keystore_open(k, password):
     ops = k.get("crypto", {}).get("kdf_params", {}).get("opslimit")
     mem = k.get("crypto", {}).get("kdf_params", {}).get("memlimit_kib") * 1024
     par = k.get("crypto", {}).get("kdf_params", {}).get("parallelism")
-    # pynacl 1.3.0 doesnt support this parameter and can only use 1
+    # pynacl 1.3.0 doesn't support this parameter and can only use 1
     if par != 1:
         raise ValueError(f"Invalid parallelism {par} value, only parallelism = 1 is supported in the python sdk")
     key = argon2id.kdf(secret.SecretBox.KEY_SIZE, password.encode(), salt, opslimit=ops, memlimit=mem)

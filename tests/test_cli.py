@@ -128,15 +128,15 @@ def test_cli_inspect_name():
 def test_cli_inspect_transaction_by_hash(chain_fixture):
     # fill the account from genesys
     na = Account.generate()
-    amount = random.randint(50, 150)
+    amount = random.randint(1, 1000000000000000000)
     tx = chain_fixture.NODE_CLI.spend(chain_fixture.ACCOUNT, na.get_address(), amount)
     # now inspect the transaction
     j = call_aecli('inspect', tx.hash)
     assert j.get("hash") == tx.hash
-    assert j.get("block_height") > 0
-    assert j.get("tx", {}).get("recipient_id") == na.get_address()
-    assert j.get("tx", {}).get("sender_id") == chain_fixture.ACCOUNT.get_address()
-    assert j.get("tx", {}).get("amount") == amount
+    assert j.get("data", {}).get("block_height") > 0
+    assert j.get("data", {}).get("tx", {}).get("data", {}).get("recipient_id") == na.get_address()
+    assert j.get("data", {}).get("tx", {}).get("data", {}).get("sender_id") == chain_fixture.ACCOUNT.get_address()
+    assert j.get("data", {}).get("tx", {}).get("data", {}).get("amount") == amount
 
 
 def test_cli_phases_spend(chain_fixture, tempdir):

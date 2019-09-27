@@ -39,9 +39,9 @@ class OracleQuery():
                                  fee, ttl, nonce
                                  )
         # sign the transaction
-        tx_signed = self.client.sign_transaction(sender, tx.tx)
+        tx_signed = self.client.sign_transaction(sender, tx)
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
+        self.client.broadcast_transaction(tx_signed)
         # save the query id
         self.id = hashing.oracle_query_id(sender.get_address(), nonce, self.oracle_id)
         # return the transaction
@@ -84,9 +84,9 @@ class Oracle():
             vm_version, fee, ttl, nonce
         )
         # sign the transaction
-        tx_signed = self.client.sign_transaction(account, tx.tx)
+        tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
+        self.client.broadcast_transaction(tx_signed)
         # register the oracle id
         # the oracle id is the account that register the oracle
         # with the prefix substituted by with ok_
@@ -114,9 +114,9 @@ class Oracle():
                                    fee, ttl, nonce
                                    )
         # sign the transaction
-        tx_signed = self.client.sign_transaction(account, tx.tx)
+        tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
+        self.client.broadcast_transaction(tx_signed)
         # return the transaction
         return tx_signed
 
@@ -137,8 +137,8 @@ class Oracle():
         # create spend_tx
         tx = txb.tx_oracle_extend(self.id, ttl_type, ttl_value, fee, ttl, nonce)
         # sign the transaction
-        tx_signed = self.client.sign_transaction(account, tx.tx)
+        tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
-        self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
+        self.client.broadcast_transaction(tx_signed)
         # return the transaction
         return tx_signed

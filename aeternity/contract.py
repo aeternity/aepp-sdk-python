@@ -173,9 +173,9 @@ class Contract:
                                       amount, gas, gas_price, abi_version,
                                       fee, ttl, nonce)
             # sign the transaction
-            tx_signed = self.client.sign_transaction(account, tx.tx)
+            tx_signed = self.client.sign_transaction(account, tx)
             # post the transaction to the chain
-            self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
+            self.client.broadcast_transaction(tx_signed)
             return tx_signed
         except openapi.OpenAPIClientException as e:
             raise ContractError(e)
@@ -226,7 +226,7 @@ class Contract:
             # sign the transaction
             tx_signed = self.client.sign_transaction(account, tx, metadata={"contract_id": self.address})
             # post the transaction to the chain
-            self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
+            self.client.broadcast_transaction(tx_signed)
             return tx_signed
         except openapi.OpenAPIClientException as e:
             raise ContractError(e)
