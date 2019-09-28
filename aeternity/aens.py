@@ -156,7 +156,7 @@ class AEName:
         # wait for the block confirmation
         self.client.wait_for_confirmation(tx.hash)
         # run claim
-        tx = self.claim(account, tx.metadata.salt, tx.hash)
+        tx = self.claim(tx.hash, account, tx.metadata.salt)
         hashes['claim_tx'] = tx
         # target is the same of account is not specified
         if target is None:
