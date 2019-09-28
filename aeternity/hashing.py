@@ -134,14 +134,14 @@ def namehash_encode(prefix, name):
     return encode(prefix, namehash(name))
 
 
-# TODO: version should be changed to 2 defautl after lima
-def commitment_id(domain: str, salt: int = None, version: int = 1) -> tuple:
+def commitment_id(domain: str, salt: int = None) -> tuple:
     """
-    Compute the commitment id
-    :return: the generated salt and the commitment_id
+    Compute the commitment id, the computed id will be different for .test (pre lima) and .aet domains
+    :param domain: the domain for which the commitment_id has to be generated
+    :param salt: the salt to use, if not provided it is randomly generated
     """
     name_salt = randint() if salt is None else salt
-    if version == 1:
+    if domain.endswith(".test"):
         commitment_id = hash_encode(identifiers.COMMITMENT_ID, namehash(domain) + _int(name_salt, 32))
     else:
         commitment_id = hash_encode(identifiers.COMMITMENT_ID, domain.lower().encode('ascii') + _int(name_salt, 32))

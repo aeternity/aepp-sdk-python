@@ -174,11 +174,8 @@ class AEName:
         """
         # check which block we used to create the preclaim
         self.preclaimed_block_height = self.client.get_current_key_block_height()
-        # first get the protocol version
-        protocol = self.client.get_consensus_protocol_version()
-        commitment_id_version = 1 if protocol < PROTOCOL_LIMA else 2
         # calculate the commitment id
-        commitment_id, self.preclaim_salt = hashing.commitment_id(self.domain, version=commitment_id_version)
+        commitment_id, self.preclaim_salt = hashing.commitment_id(self.domain)
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl
@@ -206,8 +203,7 @@ class AEName:
         protocol = self.client.get_consensus_protocol_version()
         # if the commitment_id mismatch
         pre_claim_commitment_id = pre_claim_tx.tx.commitment_id
-        commitment_id_version = 1 if protocol < PROTOCOL_LIMA else 2
-        commitment_id, _ = hashing.commitment_id(self.domain, salt=name_salt, version=commitment_id_version)
+        commitment_id, _ = hashing.commitment_id(self.domain, salt=name_salt)
         if pre_claim_commitment_id != commitment_id:
             raise NameCommitmentIdMismatch(f"Commitment id mismatch, wanted {pre_claim_commitment_id} got {commitment_id}")
         # if the transaction has not been mined
