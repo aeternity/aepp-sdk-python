@@ -32,7 +32,7 @@ def _test_node_spend(node_cli, sender_account):
 
 
 def test_node_spend_native(chain_fixture):
-    _test_node_spend(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
+    _test_node_spend(chain_fixture.NODE_CLI, chain_fixture.ALICE)
 
 
 @pytest.mark.parametrize("height,protocol_version", [(0, 1), (1, 1), (2, 2), (3, 2), (4, 3), (5, 3)])
@@ -48,7 +48,7 @@ def test_node_get_protocol_version(chain_fixture, height, protocol_version):
 def test_node_ga_attach(chain_fixture, compiler_fixture):
 
     ae_cli = chain_fixture.NODE_CLI
-    account = chain_fixture.ACCOUNT
+    account = chain_fixture.ALICE
     c_cli = compiler_fixture.COMPILER
     # test that the account is not already generalized
     poa_account = ae_cli.get_account_by_pubkey(pubkey=account.get_address())
@@ -72,7 +72,7 @@ def test_node_ga_attach(chain_fixture, compiler_fixture):
 def test_node_ga_meta_spend(chain_fixture, compiler_fixture):
 
     ae_cli = chain_fixture.NODE_CLI
-    account = chain_fixture.ACCOUNT
+    account = chain_fixture.ALICE
     c_cli = compiler_fixture.COMPILER
     # make the account poa
     

@@ -2,25 +2,19 @@ from aeternity.aens import AEName
 from aeternity.identifiers import PROTOCOL_LIMA
 from tests.conftest import random_domain
 
-from pytest import raises
+from pytest import raises, skip
 
 
 def test_name_validation_fails(chain_fixture):
     with raises(ValueError):
         chain_fixture.NODE_CLI.AEName('test.lol')
-    if chain_fixture.NODE_CLI.get_consensus_protocol_version() < PROTOCOL_LIMA:
-        with raises(ValueError):
-            chain_fixture.NODE_CLI.AEName('test.aet')
-    if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA:
-        with raises(ValueError):
-            chain_fixture.NODE_CLI.AEName('test.test')
+    chain_fixture.NODE_CLI.AEName('test.aet')
+    chain_fixture.NODE_CLI.AEName('test.test')
 
 
 def test_name_validation_succeeds(chain_fixture):
-    if chain_fixture.NODE_CLI.get_consensus_protocol_version() < PROTOCOL_LIMA:
-        chain_fixture.NODE_CLI.AEName('test.test')
-    if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA:
-        chain_fixture.NODE_CLI.AEName('test.aet')
+    chain_fixture.NODE_CLI.AEName('test.test')
+    chain_fixture.NODE_CLI.AEName('test.aet')
 
 
 def test_name_is_available(chain_fixture):
@@ -30,7 +24,7 @@ def test_name_is_available(chain_fixture):
 
 
 def test_name_status_available(chain_fixture):
-    domain = random_domain(tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+    domain = random_domain(length=32 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
     name = chain_fixture.NODE_CLI.AEName(domain)
     assert name.status == AEName.Status.UNKNOWN
     name.update_status()
@@ -39,7 +33,8 @@ def test_name_status_available(chain_fixture):
 
 def test_name_claim_lifecycle(chain_fixture):
     try:
-        domain = random_domain(tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+        # avoid auctions
+        domain = random_domain(length=32 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
         node_cli = chain_fixture.NODE_CLI
         name = node_cli.AEName(domain)
         assert name.status == AEName.Status.UNKNOWN
@@ -54,13 +49,12 @@ def test_name_claim_lifecycle(chain_fixture):
         print(e)
         assert e is None
 
-def test_name_bidding(chain_fixture):
+def test_name_auction(chain_fixture):
+    if chain_fixture.NODE_CLI.get_consensus_protocol_version() < PROTOCOL_LIMA:
+        skip("name auction is only supported after Lima HF")
+        return
     try:
-        if chain_fixture.NODE_CLI.get_consensus_protocol_version() < PROTOCOL_LIMA:
-            print("BIDDING UNAVAILABLE FOR PROTOCOL BEFOR LIMA, SKIPPING")
-            return
-
-        domain = random_domain(4)
+        domain = random_domain(length=18)
         node_cli = chain_fixture.NODE_CLI
         name = node_cli.AEName(domain)
         assert name.status == AEName.Status.UNKNOWN
@@ -89,9 +83,9 @@ def test_name_bidding(chain_fixture):
         assert e is None
 
 
-def test_name_status_unavailable(chain_fixture, random_domain):
-    # claim a domain
-    domain = random_domain
+def test_name_status_unavailable(chain_fixture):
+    # avoid auctions
+    domain = random_domain(length=32 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
     print(f"domain is {domain}")
     occupy_name = chain_fixture.NODE_CLI.AEName(domain)
     occupy_name.full_claim_blocking(chain_fixture.ALICE)
@@ -100,9 +94,9 @@ def test_name_status_unavailable(chain_fixture, random_domain):
     assert not same_name.is_available()
 
 
-def test_name_update(chain_fixture, random_domain):
-    # claim a domain
-    domain = random_domain
+def test_name_update(chain_fixture):
+    # avoid auctions
+    domain = random_domain(length=32 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
     print(f"domain is {domain}")
     name = chain_fixture.NODE_CLI.AEName(domain)
     print("Claim name ", domain)
@@ -120,8 +114,10 @@ def test_name_update(chain_fixture, random_domain):
 
 # TODO: enable the test check for pointers
 
-def test_name_transfer_ownership(chain_fixture, random_domain):
-    name = chain_fixture.NODE_CLI.AEName(random_domain)
+def test_name_transfer_ownership(chain_fixture):
+    # avoid auctions
+    domain = random_domain(length=32 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+    name = chain_fixture.NODE_CLI.AEName(domain)
     name.full_claim_blocking(chain_fixture.ALICE)
     assert name.status == AEName.Status.CLAIMED
     name.update_status()
@@ -129,19 +125,20 @@ def test_name_transfer_ownership(chain_fixture, random_domain):
     assert name.pointers[0].key == "account_pubkey"
 
     # now transfer the name to the other account
-    name.transfer_ownership(chain_fixture.ALICE, chain_fixture.ACCOUNT_1.get_address())
+    name.transfer_ownership(chain_fixture.ALICE, chain_fixture.BOB.get_address())
     assert name.status == AEName.Status.TRANSFERRED
     # try changing the target using that new account
     name.update_status()
-    name.update(chain_fixture.ACCOUNT_1, chain_fixture.ACCOUNT_1.get_address())
+    name.update(chain_fixture.BOB, chain_fixture.BOB.get_address())
     name.update_status()
     assert len(name.pointers) > 0, 'Pointers should not be empty'
-    assert name.pointers[0].id == chain_fixture.ACCOUNT_1.get_address()
+    assert name.pointers[0].id == chain_fixture.BOB.get_address()
     assert name.pointers[0].key == "account_pubkey"
 
 
-def test_name_revocation(chain_fixture, random_domain):
-    domain = random_domain
+def test_name_revocation(chain_fixture):
+    # avoid auctions
+    domain = random_domain(length=32 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
     name = chain_fixture.NODE_CLI.AEName(domain)
     name.full_claim_blocking(chain_fixture.ALICE)
     name.revoke(chain_fixture.ALICE)

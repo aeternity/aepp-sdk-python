@@ -63,9 +63,9 @@ def _test_oracle_response(query, expected):
 
 def test_oracle_lifecycle_native(chain_fixture):
     # registration
-    oracle = _test_oracle_registration(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT_1)
+    oracle = _test_oracle_registration(chain_fixture.NODE_CLI, chain_fixture.BOB)
     # query
-    query = _test_oracle_query(chain_fixture.NODE_CLI, oracle, chain_fixture.ACCOUNT, "{'city': 'Sofia'}")
+    query = _test_oracle_query(chain_fixture.NODE_CLI, oracle, chain_fixture.ALICE, "{'city': 'Sofia'}")
     # respond
-    _test_oracle_respond(oracle, query, chain_fixture.ACCOUNT_1,  "{'temp_c': 2000}")
+    _test_oracle_respond(oracle, query, chain_fixture.BOB,  "{'temp_c': 2000}")
     _test_oracle_response(query, "{'temp_c': 2000}")

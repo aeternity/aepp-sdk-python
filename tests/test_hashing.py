@@ -108,7 +108,7 @@ def test_hashing_oracle_id():
         assert (hashing.oracle_id(t[0]) == t[1]) == t[2]
 
 
-def test_hashing_committment_id(random_domain):
+def test_hashing_committment_id():
 
     tests = [
         {
@@ -125,6 +125,21 @@ def test_hashing_committment_id(random_domain):
             "domain": "aepps.test",
             "salt": 723907012945811264198,
             "commitment_id": "cm_pQu4wAuiyhe1mHqZzh3yNA4JwBPaess3MY7MnZFG9vsFjD5yE"
+        },
+        {
+            "domain": "aeternity.aet",
+            "salt": 10692426485854419779,
+            "commitment_id": "cm_s7xYUEpNNz4v3BenNMBP9YknxYRNqBMNTWG99Vu6v1d8kXxuH"
+        },
+        {
+            "domain": "whatever.aet",
+            "salt": 4703192432112,
+            "commitment_id": "cm_2EoRHJoWoNv4EpZLxgWKBrvgmrbSvA5BxMvDSwPDc6CUYBqanb"
+        },
+        {
+            "domain": "aepps.aet",
+            "salt": 723907012945811264198,
+            "commitment_id": "cm_2gPm7nAvTQojYnVGDPEMZd6uJbkVbZ4aX1nbFm1NCE5HW3kHE6"
         },
     ]
 

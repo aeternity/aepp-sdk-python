@@ -51,7 +51,7 @@ def test_api_get_block_by_hash(chain_fixture):
         # create a transaction so the top block is going to be an micro block
         if not has_mb:
             account = Account.generate().get_address()
-            chain_fixture.NODE_CLI.spend(chain_fixture.ACCOUNT, account, 100)
+            chain_fixture.NODE_CLI.spend(chain_fixture.ALICE, account, 100)
         # wait for the next block
         block = chain_fixture.NODE_CLI.get_block_by_hash(hash=latest_block.hash)
         # assert block.hash == latest_block.hash

@@ -74,12 +74,12 @@ def _sophia_contract_tx_call_online(node_cli, account):
 
 def test_sophia_contract_tx_create_native(chain_fixture):
     # save settings and go online
-    _sophia_contract_tx_create_online(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
+    _sophia_contract_tx_create_online(chain_fixture.NODE_CLI, chain_fixture.ALICE)
 
 
 def test_sophia_contract_tx_call_native(chain_fixture):
     # save settings and go online
-    _sophia_contract_tx_call_online(chain_fixture.NODE_CLI, chain_fixture.ACCOUNT)
+    _sophia_contract_tx_call_online(chain_fixture.NODE_CLI, chain_fixture.ALICE)
     # restore settings
 
 
