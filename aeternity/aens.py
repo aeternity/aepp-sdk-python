@@ -26,6 +26,7 @@ class AEName:
 
         self.client = client
         self.domain = domain.lower()
+        self.name_id = hashing.name_id(domain)
         self.status = NameStatus.UNKNOWN
         # set after preclaimed:
         self.preclaimed_block_height = None
@@ -36,6 +37,9 @@ class AEName:
         self.name_hash = None
         self.name_ttl = 0
         self.pointers = None
+
+    def __str__(self):
+        return f"{self.domain}:{self.name_id}"
 
     @classmethod
     def validate_pointer(cls, pointer):
@@ -157,6 +161,8 @@ class AEName:
         self.client.wait_for_confirmation(tx.hash)
         # run claim
         tx = self.claim(tx.hash, account, tx.metadata.salt)
+        # wait for the block confirmation
+        self.client.wait_for_confirmation(tx.hash)
         hashes['claim_tx'] = tx
         # target is the same of account is not specified
         if target is None:
@@ -279,15 +285,13 @@ class AEName:
             if target.oracle_id is None:
                 raise ValueError('You must register the oracle before using it as target')
             target = target.oracle_id
-        # get the name_id and pointers
-        name_id = hashing.namehash_encode(NAME_ID, self.domain)
         pointers = self._get_pointers(target)
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl
         nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
         # create transaction
-        tx = txb.tx_name_update(account.get_address(), name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce)
+        tx = txb.tx_name_update(account.get_address(), self.name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce)
         # sign the transaction
         tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
@@ -299,14 +303,12 @@ class AEName:
         transfer ownership of a name
         :return: the transaction
         """
-        # get the name_id and pointers
-        name_id = hashing.namehash_encode(NAME_ID, self.domain)
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl
         nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
         # create transaction
-        tx = txb.tx_name_transfer(account.get_address(), name_id, recipient_pubkey, fee, ttl, nonce)
+        tx = txb.tx_name_transfer(account.get_address(), self.name_id, recipient_pubkey, fee, ttl, nonce)
         # sign the transaction
         tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
@@ -320,14 +322,12 @@ class AEName:
         revoke a name
         :return: the transaction
         """
-        # get the name_id and pointers
-        name_id = hashing.namehash_encode(NAME_ID, self.domain)
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl
         nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
         # create transaction
-        tx = txb.tx_name_revoke(account.get_address(), name_id, fee, ttl, nonce)
+        tx = txb.tx_name_revoke(account.get_address(), self.name_id, fee, ttl, nonce)
         # sign the transaction
         tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain

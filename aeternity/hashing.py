@@ -4,6 +4,7 @@ import hashlib
 import rlp
 import secrets
 import math
+from deprecated import deprecated
 
 from nacl.hash import blake2b
 from nacl.encoding import RawEncoder
@@ -115,7 +116,8 @@ def hash_encode(prefix, data):
     return encode(prefix, hash(data))
 
 
-def namehash(name):
+@deprecated(version="5.0.0", reason="will not be necessary from lima release")
+def namehash(name: str):
     if isinstance(name, str):
         name = name.lower().encode('ascii')
     # see:
@@ -130,7 +132,11 @@ def namehash(name):
     return hashed
 
 
+@deprecated(version="5.0.0", reason="will not be necessary from lima release")
 def namehash_encode(prefix, name):
+    """
+    Encode the namehash to
+    """
     return encode(prefix, namehash(name))
 
 
@@ -225,12 +231,14 @@ def _id_decode(data):
     return encode(prefix, data[1:])
 
 
-def name_id(name):
+def name_id(name: str):
     """
     Encode a domain name
     :param name: the domain name to encode
     """
-    return encode(identifiers.NAME, name)
+    if name.endswith('.aet'):
+        return encode(identifiers.NAME_ID, hash(name.lower().encode('ascii')))
+    return encode(identifiers.NAME_ID, namehash(name))
 
 
 def contract_id(owner_id, nonce):
