@@ -10,7 +10,7 @@ from aeternity import _version
 
 from aeternity.node import NodeClient, Config
 from aeternity.transactions import TxSigner, TxBuilder, TxObject
-from aeternity.identifiers import NETWORK_ID_MAINNET
+from aeternity.identifiers import NETWORK_ID_MAINNET, PROTOCOL_LIMA  # TODO: remove after HF
 from . import utils, signing, aens, defaults, exceptions
 from aeternity.contract import CompilerClient
 from datetime import datetime, timezone
@@ -537,6 +537,35 @@ def name_claim(keystore_name, domain, name_ttl, name_salt, preclaim_tx_hash, ttl
         # claim
         tx = name.claim(account, name_salt, preclaim_tx_hash, fee=fee, tx_ttl=ttl)
         _print_object(tx, title=f'Name {domain} claim transaction')
+    except ValueError as e:
+        _print_error(e, exit_code=1)
+    except Exception as e:
+        _print_error(e, exit_code=1)
+
+
+@name.command('bid', help="Bid on a name auction")
+@click.argument('keystore_name', required=True)
+@click.argument('domain', required=True)
+@click.argument('name_fee', required=True)
+@click.option("--name-ttl", default=defaults.NAME_TTL, help=f'Lifetime of the name in blocks', show_default=True, type=int)
+@global_options
+@account_options
+@online_options
+@transaction_options
+@sign_options
+def name_bid(keystore_name, domain, name_fee, ttl, fee, nonce, password, network_id, force, wait, json_):
+    try:
+        set_global_options(json_, force, wait)
+        account, _ = _account(keystore_name, password=password)
+        if _node_cli().get_consensus_protocol_version() < PROTOCOL_LIMA:
+            raise TypeError(f"Name auctions are not supported in procotol before LIMA ({PROTOCOL_LIMA})")
+        name = _node_cli(network_id=network_id).AEName(domain)
+        name.update_status()
+        if name.status != aens.AEName.Status.AVAILABLE:
+            raise TypeError("Domain {domain} not available")
+        # execute the bid
+        tx = name.bid(account, name_fee, fee=fee, tx_ttl=ttl)
+        _print_object(tx, title=f'Name {domain} bid tx')
     except ValueError as e:
         _print_error(e, exit_code=1)
     except Exception as e:
