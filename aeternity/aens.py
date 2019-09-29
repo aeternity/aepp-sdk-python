@@ -2,7 +2,7 @@ from aeternity.exceptions import NameNotAvailable, MissingPreclaim, NameUpdateEr
 from aeternity.openapi import OpenAPIClientException
 from aeternity import defaults
 from aeternity import hashing, utils, oracles
-from aeternity.identifiers import ACCOUNT_ID, NAME_ID, PROTOCOL_LIMA
+from aeternity.identifiers import ACCOUNT_ID,  PROTOCOL_LIMA
 
 import math
 
