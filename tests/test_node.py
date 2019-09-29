@@ -44,7 +44,7 @@ def test_node_get_protocol_version(chain_fixture, height, protocol_version):
     #      "3": 4
     assert(chain_fixture.NODE_CLI.get_consensus_protocol_version(height)) == protocol_version
 
-
+@pytest.mark.skip("needs upgrade for lima compiler")
 def test_node_ga_attach(chain_fixture, compiler_fixture):
 
     ae_cli = chain_fixture.NODE_CLI
@@ -68,7 +68,7 @@ def test_node_ga_attach(chain_fixture, compiler_fixture):
     ga_account = ae_cli.get_account_by_pubkey(pubkey=account.get_address())
     assert ga_account.kind == identifiers.ACCOUNT_KIND_GENERALIZED
 
-
+@pytest.mark.skip("needs upgrade for lima compiler")
 def test_node_ga_meta_spend(chain_fixture, compiler_fixture):
 
     ae_cli = chain_fixture.NODE_CLI
