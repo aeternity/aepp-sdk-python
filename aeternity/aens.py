@@ -2,7 +2,9 @@ from aeternity.exceptions import NameNotAvailable, MissingPreclaim, NameUpdateEr
 from aeternity.openapi import OpenAPIClientException
 from aeternity import defaults
 from aeternity import hashing, utils, oracles
-from aeternity.identifiers import ACCOUNT_ID, NAME_ID
+from aeternity.identifiers import ACCOUNT_ID,  PROTOCOL_LIMA
+
+import math
 
 
 class NameStatus:
@@ -24,6 +26,7 @@ class AEName:
 
         self.client = client
         self.domain = domain.lower()
+        self.name_id = hashing.name_id(domain)
         self.status = NameStatus.UNKNOWN
         # set after preclaimed:
         self.preclaimed_block_height = None
@@ -35,6 +38,9 @@ class AEName:
         self.name_ttl = 0
         self.pointers = None
 
+    def __str__(self):
+        return f"{self.domain}:{self.name_id}"
+
     @classmethod
     def validate_pointer(cls, pointer):
         return (
@@ -42,6 +48,49 @@ class AEName:
             or
             not cls.validate_name(pointer, raise_exception=False)
         )
+
+    @classmethod
+    def get_minimum_name_fee(cls, domain: str) -> int:
+        """
+        Get the minimum name fee for a domain
+        :param domain: the domain name to get the fee for
+        :return: the minimum fee for the domain auction
+        """
+        name_len = len(domain.replace(".aet", ""))
+        if name_len >= defaults.NAME_BID_MAX_LENGTH:
+            return defaults.NAME_BID_RANGES.get(defaults.NAME_BID_MAX_LENGTH)
+        return defaults.NAME_BID_RANGES.get(name_len)
+
+    @classmethod
+    def compute_bid_fee(cls, domain: str, start_fee: int = defaults.NAME_FEE, increment: float = defaults.NAME_FEE_BID_INCREMENT) -> int:
+        """
+        Get the minimum bid fee for a domain
+        :param domain: the domain name to get the fee for
+        :param start_fee: the start fee to calculate the min bid fee, if not provided the min_name_fee will be used as start fee
+        :param increment: an increment in percentage in decimal notation (1)
+        :return: the computed bid fee
+        """
+        if increment < defaults.NAME_FEE_BID_INCREMENT:
+            raise TypeError(f"minimum increment percentage is {defaults.NAME_FEE_BID_INCREMENT}")
+        if start_fee == defaults.NAME_FEE:
+            start_fee = AEName.get_minimum_name_fee(domain)
+        return math.ceil(start_fee * (1 + defaults.NAME_FEE_BID_INCREMENT))
+
+    @classmethod
+    def compute_auction_end_block(cls, domain: str, claim_height: int) -> int:
+        """
+        Given a domain name and a height compute the height when an auction will end
+        :param domain: the domain name to get the auction end
+        :param claim_height: height of the last claim for the domain name
+        """
+        name_len = len(domain) - 4
+        if name_len < 4:
+            return defaults.NAME_BID_TIMEOUTS.get(1) + claim_height
+        if name_len < 8:
+            return defaults.NAME_BID_TIMEOUTS.get(4) + claim_height
+        if name_len < 31:
+            return defaults.NAME_BID_TIMEOUTS.get(8) + claim_height
+        return claim_height
 
     def _get_pointers(self, target):
         if target.startswith(ACCOUNT_ID):
@@ -111,7 +160,9 @@ class AEName:
         # wait for the block confirmation
         self.client.wait_for_confirmation(tx.hash)
         # run claim
-        tx = self.claim(account, tx.metadata.salt, tx.hash)
+        tx = self.claim(tx.hash, account, tx.metadata.salt)
+        # wait for the block confirmation
+        self.client.wait_for_confirmation(tx.hash)
         hashes['claim_tx'] = tx
         # target is the same of account is not specified
         if target is None:
@@ -129,7 +180,7 @@ class AEName:
         """
         # check which block we used to create the preclaim
         self.preclaimed_block_height = self.client.get_current_key_block_height()
-        # calculate the commitment hash
+        # calculate the commitment id
         commitment_id, self.preclaim_salt = hashing.commitment_id(self.domain)
         # get the transaction builder
         txb = self.client.tx_builder
@@ -146,7 +197,7 @@ class AEName:
         self.preclaim_tx_hash = tx_signed.hash
         return tx_signed
 
-    def claim(self, account, name_salt, preclaim_tx_hash, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
+    def claim(self, preclaim_tx_hash, account, name_salt, name_fee=defaults.NAME_FEE, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
         self.preclaim_salt = name_salt
         # get the preclaim height
         try:
@@ -154,6 +205,8 @@ class AEName:
             self.preclaimed_block_height = pre_claim_tx.block_height
         except OpenAPIClientException:
             raise MissingPreclaim(f"Preclaim transaction {preclaim_tx_hash} not found")
+        # first get the protocol version
+        protocol = self.client.get_consensus_protocol_version()
         # if the commitment_id mismatch
         pre_claim_commitment_id = pre_claim_tx.tx.commitment_id
         commitment_id, _ = hashing.commitment_id(self.domain, salt=name_salt)
@@ -172,7 +225,45 @@ class AEName:
         # get the account nonce and ttl
         nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
         # create transaction
-        tx = txb.tx_name_claim(account.get_address(), self.domain, self.preclaim_salt, fee, ttl, nonce)
+        # check the protocol version
+        if protocol < PROTOCOL_LIMA:
+            tx = txb.tx_name_claim(account.get_address(), self.domain, self.preclaim_salt, fee, ttl, nonce)
+        else:
+            min_name_fee = AEName.get_minimum_name_fee(self.domain)
+            if name_fee != defaults.NAME_FEE and name_fee < min_name_fee:
+                raise TypeError(f"the provided fee {name_fee} is not enough to execute the claim, required: {min_name_fee}")
+            name_fee = max(min_name_fee, name_fee)
+            tx = txb.tx_name_claim_v2(account.get_address(), self.domain, self.preclaim_salt, name_fee, fee, ttl, nonce)
+        # sign the transaction
+        tx_signed = self.client.sign_transaction(account, tx)
+        # post the transaction to the chain
+        self.client.broadcast_transaction(tx_signed)
+        # update status
+        self.status = AEName.Status.CLAIMED
+        return tx_signed
+
+    def bid(self, account, bid_fee, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
+        """
+        Implements bidding for a name, the precondition are:
+        the name has been claimed and bidding is allowed, meaning that
+        the auction is still active.
+
+        As for the bidding parameters, both  fee_multiplier and bid_fee can be set,
+        the actual bid value will be selected by max(current_name_fee*fee_multiplier, bid_fee).
+
+        If no parameter is set the bidding strategy is to bid the minimum required by protocol
+        :param preclaim_tx_hash: the hash of the preclaim transaction
+
+        :param account: the account making the bidding
+        :param bid_fee: the  absolute value of the bidding fee
+        :fee: the transaction fee
+        :tx_ttl: the transaction ttl
+        """
+        txb = self.client.tx_builder
+        # get the account nonce and ttl
+        nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
+        # check the protocol version
+        tx = txb.tx_name_claim_v2(account.get_address(), self.domain, 0, bid_fee, fee, ttl, nonce)
         # sign the transaction
         tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
@@ -194,15 +285,13 @@ class AEName:
             if target.oracle_id is None:
                 raise ValueError('You must register the oracle before using it as target')
             target = target.oracle_id
-        # get the name_id and pointers
-        name_id = hashing.namehash_encode(NAME_ID, self.domain)
         pointers = self._get_pointers(target)
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl
         nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
         # create transaction
-        tx = txb.tx_name_update(account.get_address(), name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce)
+        tx = txb.tx_name_update(account.get_address(), self.name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce)
         # sign the transaction
         tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
@@ -214,14 +303,12 @@ class AEName:
         transfer ownership of a name
         :return: the transaction
         """
-        # get the name_id and pointers
-        name_id = hashing.namehash_encode(NAME_ID, self.domain)
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl
         nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
         # create transaction
-        tx = txb.tx_name_transfer(account.get_address(), name_id, recipient_pubkey, fee, ttl, nonce)
+        tx = txb.tx_name_transfer(account.get_address(), self.name_id, recipient_pubkey, fee, ttl, nonce)
         # sign the transaction
         tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
@@ -235,14 +322,12 @@ class AEName:
         revoke a name
         :return: the transaction
         """
-        # get the name_id and pointers
-        name_id = hashing.namehash_encode(NAME_ID, self.domain)
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl
         nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
         # create transaction
-        tx = txb.tx_name_revoke(account.get_address(), name_id, fee, ttl, nonce)
+        tx = txb.tx_name_revoke(account.get_address(), self.name_id, fee, ttl, nonce)
         # sign the transaction
         tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain

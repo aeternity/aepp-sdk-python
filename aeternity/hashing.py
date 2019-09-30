@@ -4,6 +4,7 @@ import hashlib
 import rlp
 import secrets
 import math
+from deprecated import deprecated
 
 from nacl.hash import blake2b
 from nacl.encoding import RawEncoder
@@ -115,7 +116,8 @@ def hash_encode(prefix, data):
     return encode(prefix, hash(data))
 
 
-def namehash(name):
+@deprecated(version="5.0.0", reason="will not be necessary from lima release")
+def namehash(name: str):
     if isinstance(name, str):
         name = name.lower().encode('ascii')
     # see:
@@ -130,17 +132,25 @@ def namehash(name):
     return hashed
 
 
+@deprecated(version="5.0.0", reason="will not be necessary from lima release")
 def namehash_encode(prefix, name):
+    """
+    Encode the namehash to
+    """
     return encode(prefix, namehash(name))
 
 
 def commitment_id(domain: str, salt: int = None) -> tuple:
     """
-    Compute the commitment id
-    :return: the generated salt and the commitment_id
+    Compute the commitment id, the computed id will be different for .test (pre lima) and .aet domains
+    :param domain: the domain for which the commitment_id has to be generated
+    :param salt: the salt to use, if not provided it is randomly generated
     """
     name_salt = randint() if salt is None else salt
-    commitment_id = hash_encode(identifiers.COMMITMENT_ID, namehash(domain) + _int(name_salt, 32))
+    if domain.endswith(".test"):
+        commitment_id = hash_encode(identifiers.COMMITMENT_ID, namehash(domain) + _int(name_salt, 32))
+    else:
+        commitment_id = hash_encode(identifiers.COMMITMENT_ID, domain.lower().encode('ascii') + _int(name_salt, 32))
     return commitment_id, name_salt
 
 
@@ -221,12 +231,14 @@ def _id_decode(data):
     return encode(prefix, data[1:])
 
 
-def name_id(name):
+def name_id(name: str):
     """
     Encode a domain name
     :param name: the domain name to encode
     """
-    return encode(identifiers.NAME, name)
+    if name.endswith('.aet'):
+        return encode(identifiers.NAME_ID, hash(name.lower().encode('ascii')))
+    return encode(identifiers.NAME_ID, namehash(name))
 
 
 def contract_id(owner_id, nonce):

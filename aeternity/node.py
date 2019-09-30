@@ -46,7 +46,7 @@ class Config:
         self.contract_gas = kwargs.get("contract_gas", defaults.CONTRACT_GAS)
         self.contract_gas_price = kwargs.get("contract_gas_price", defaults.CONTRACT_GAS_PRICE)
         # oracles default
-        self.orcale_ttl_type = kwargs.get("oracle_ttl_type", defaults.ORACLE_TTL_TYPE)
+        self.oracle_ttl_type = kwargs.get("oracle_ttl_type", defaults.ORACLE_TTL_TYPE)
         # chain defaults
         self.key_block_interval = kwargs.get("key_block_interval", defaults.KEY_BLOCK_INTERVAL)
         self.key_block_confirmation_num = kwargs.get("key_block_confirmation_num", defaults.KEY_BLOCK_CONFIRMATION_NUM)
@@ -185,7 +185,7 @@ class NodeClient:
             return self.tx_builder.tx_signed([signature], tx, metadata=metadata)
 
         # if the account is generalized then prepare the ga_meta_tx
-        # 1. wrap the tx into a sigend tx (without signatures)
+        # 1. wrap the tx into a signed tx (without signatures)
         sg_tx = self.tx_builder.tx_signed([], tx)
         # 2. wrap the tx into a ga_meta_tx
         # get the absolute ttl

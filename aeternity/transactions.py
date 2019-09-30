@@ -38,6 +38,7 @@ class Fd:
         self.index = index
         self.field_type = field_type
         self.encoding_prefix = kwargs.get("prefix")
+        self.data_type = kwargs.get("data_type", bytes)
 
     def __str__(self):
         return f"{self.index}:{self.field_type}"
@@ -98,10 +99,22 @@ tx_descriptors = {
             "version": Fd(1),
             "account_id": Fd(2, _ID),
             "nonce": Fd(3),
-            "name": Fd(4, _BIN),
-            "name_salt": Fd(5),  # TODO: this has to be verified
+            "name": Fd(4, _BIN, data_type=str),
+            "name_salt": Fd(5),
             "fee": Fd(6),
             "ttl": Fd(7),
+        }},
+    (idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION, 2): {
+        "fee": Fee(SIZE_BASED),
+        "schema": {
+            "version": Fd(1),
+            "account_id": Fd(2, _ID),
+            "nonce": Fd(3),
+            "name": Fd(4, _BIN, data_type=str),
+            "name_salt": Fd(5),
+            "name_fee": Fd(6),
+            "fee": Fd(7),
+            "ttl": Fd(8),
         }},
     (idf.OBJECT_TAG_NAME_SERVICE_UPDATE_TRANSACTION, 1): {
         "fee": Fee(SIZE_BASED),
@@ -407,7 +420,7 @@ class TxObject:
 
     def get_signatures(self):
         """
-        retrieves the list of signatures for a signed transaction, otherwhise returns a empty list
+        retrieves the list of signatures for a signed transaction, otherwise returns a empty list
         """
         if self.data.tag == idf.OBJECT_TAG_SIGNED_TRANSACTION:
             return self.data.signatures
@@ -419,7 +432,7 @@ class TxObject:
         """
         sgs = self.get_signatures()
         if index < 0 or index >= len(sgs):
-            raise TypeError(f"there is no signaure at index {index}")
+            raise TypeError(f"there is no signature at index {index}")
         return sgs[index]
 
     def __repr__(self):
@@ -585,7 +598,7 @@ class TxBuilder:
         rlp_tx = rlp.encode(raw_data)
         # encode the tx in base64
         rlp_b64_tx = encode(idf.TRANSACTION, rlp_tx)
-        # copy the data before modifing
+        # copy the data before modifying
         tx_data = copy.deepcopy(data)
         # build the tx object
         txo = TxObject(
@@ -638,8 +651,8 @@ class TxBuilder:
                 tx_data["vm_version"] = _int_decode(raw[fn.index][0:vml - 2])
                 tx_data["abi_version"] = _int_decode(raw[fn.index][vml - 2:])
             elif fn.field_type == _BIN:
-                # this are byte arrays, TODO: should add type
-                tx_data[label] = _binary_decode(raw[fn.index])
+                # this are byte arrays
+                tx_data[label] = _binary_decode(raw[fn.index], data_type=fn.data_type)
             elif fn.field_type == _PTR:
                 # this are name pointers
                 tx_data[label] = [{"key": _binary_decode(p[0], data_type=str), "id": _id_decode(p[1])} for p in raw[fn.index]]
@@ -656,7 +669,7 @@ class TxBuilder:
         and set the defaults when required
         """
         # 1. (namedtuple) from api queries so everything is wrapped around a json object that is a  generic signed transaction
-        # 2. (string) from and b64c enocoded rlp tx
+        # 2. (string) from and b64c encoded rlp tx
         # 3. (dict) from functions of this class
         tag = tx_data.get("tag")
         vsn = tx_data.get("version")
@@ -773,7 +786,30 @@ class TxBuilder:
             nonce=nonce
         )
         return self._build_txobject(body)
-        # return self.api.post_name_claim(body=body).tx
+
+    def tx_name_claim_v2(self, account_id, name, name_salt, name_fee, fee, ttl, nonce) -> tuple:
+        """
+        create a preclaim transaction
+        :param account_id: the account registering the name
+        :param name: the actual name to claim
+        :param name_salt: the salt used to create the commitment_id during preclaim
+        :param name_fee: the fee bidded to claim the name
+        :param fee:  the fee for the transaction
+        :param ttl:  the ttl for the transaction
+        :param nonce: the nonce of the account for the transaction
+        """
+        body = dict(
+            tag=idf.OBJECT_TAG_NAME_SERVICE_CLAIM_TRANSACTION,
+            version=2,
+            account_id=account_id,
+            name=name,
+            name_salt=name_salt,
+            name_fee=name_fee,
+            fee=fee,
+            ttl=ttl,
+            nonce=nonce
+        )
+        return self._build_txobject(body)
 
     def tx_name_update(self, account_id, name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce) -> tuple:
         """

@@ -10,7 +10,7 @@ from aeternity import _version
 
 from aeternity.node import NodeClient, Config
 from aeternity.transactions import TxSigner, TxBuilder, TxObject
-from aeternity.identifiers import NETWORK_ID_MAINNET
+from aeternity.identifiers import NETWORK_ID_MAINNET, PROTOCOL_LIMA  # TODO: remove after HF
 from . import utils, signing, aens, defaults, exceptions
 from aeternity.contract import CompilerClient
 from datetime import datetime, timezone
@@ -127,7 +127,7 @@ def _po(label, value, offset=0, label_prefix=None):
                                "channel_reserve", "deposit", "fee", "gas_price",
                                "gas", "initiator_amount_final", "initiator_amount",
                                "push_amount", "query_fee", "responder_amount_final",
-                               "responder_amount", "round", "solo_round", "min_fee"]:
+                               "responder_amount", "round", "solo_round", "min_fee", "name_fee"]:
             value = utils.format_amount(value)
 
         _pl(label, offset, value=value)
@@ -543,6 +543,35 @@ def name_claim(keystore_name, domain, name_ttl, name_salt, preclaim_tx_hash, ttl
         _print_error(e, exit_code=1)
 
 
+@name.command('bid', help="Bid on a name auction")
+@click.argument('keystore_name', required=True)
+@click.argument('domain', required=True)
+@click.argument('name_fee', required=True)
+@click.option("--name-ttl", default=defaults.NAME_TTL, help=f'Lifetime of the name in blocks', show_default=True, type=int)
+@global_options
+@account_options
+@online_options
+@transaction_options
+@sign_options
+def name_bid(keystore_name, domain, name_fee, ttl, fee, nonce, password, network_id, force, wait, json_):
+    try:
+        set_global_options(json_, force, wait)
+        account, _ = _account(keystore_name, password=password)
+        if _node_cli().get_consensus_protocol_version() < PROTOCOL_LIMA:
+            raise TypeError(f"Name auctions are not supported in protocol before LIMA ({PROTOCOL_LIMA})")
+        name = _node_cli(network_id=network_id).AEName(domain)
+        name.update_status()
+        if name.status != aens.AEName.Status.AVAILABLE:
+            raise TypeError("Domain {domain} not available")
+        # execute the bid
+        tx = name.bid(account, name_fee, fee=fee, tx_ttl=ttl)
+        _print_object(tx, title=f'Name {domain} bid tx')
+    except ValueError as e:
+        _print_error(e, exit_code=1)
+    except Exception as e:
+        _print_error(e, exit_code=1)
+
+
 @name.command('update')
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
@@ -630,7 +659,7 @@ def name_transfer(keystore_name, domain, address, ttl, fee, nonce, password, net
 #
 #
 
-@cli.group(help="Interact with Æternity smart contract compiler")
+@cli.group(help="Interact with Aeternity smart contract compiler")
 def compiler():
     pass
 
@@ -814,7 +843,7 @@ def contract_call_info(tx_hash, force, wait, json_):
 def inspect(obj, height, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
-        if obj.endswith(".test"):
+        if obj.endswith(".test") or obj.endswith(".aet"):
             data = _node_cli().get_name_entry_by_name(name=obj)
             _print_object(data, title="name")
         elif obj.startswith("kh_") or obj.startswith("mh_"):
