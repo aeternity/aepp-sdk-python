@@ -420,7 +420,7 @@ class TxObject:
 
     def get_signatures(self):
         """
-        retrieves the list of signatures for a signed transaction, otherwhise returns a empty list
+        retrieves the list of signatures for a signed transaction, otherwise returns a empty list
         """
         if self.data.tag == idf.OBJECT_TAG_SIGNED_TRANSACTION:
             return self.data.signatures
@@ -432,7 +432,7 @@ class TxObject:
         """
         sgs = self.get_signatures()
         if index < 0 or index >= len(sgs):
-            raise TypeError(f"there is no signaure at index {index}")
+            raise TypeError(f"there is no signature at index {index}")
         return sgs[index]
 
     def __repr__(self):
@@ -598,7 +598,7 @@ class TxBuilder:
         rlp_tx = rlp.encode(raw_data)
         # encode the tx in base64
         rlp_b64_tx = encode(idf.TRANSACTION, rlp_tx)
-        # copy the data before modifing
+        # copy the data before modifying
         tx_data = copy.deepcopy(data)
         # build the tx object
         txo = TxObject(
@@ -669,7 +669,7 @@ class TxBuilder:
         and set the defaults when required
         """
         # 1. (namedtuple) from api queries so everything is wrapped around a json object that is a  generic signed transaction
-        # 2. (string) from and b64c enocoded rlp tx
+        # 2. (string) from and b64c encoded rlp tx
         # 3. (dict) from functions of this class
         tag = tx_data.get("tag")
         vsn = tx_data.get("version")

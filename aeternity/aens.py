@@ -246,7 +246,7 @@ class AEName:
         """
         Implements bidding for a name, the precondition are:
         the name has been claimed and bidding is allowed, meaning that
-        the acution is still active.
+        the auction is still active.
 
         As for the bidding parameters, both  fee_multiplier and bid_fee can be set,
         the actual bid value will be selected by max(current_name_fee*fee_multiplier, bid_fee).
@@ -255,9 +255,9 @@ class AEName:
         :param preclaim_tx_hash: the hash of the preclaim transaction
 
         :param account: the account making the bidding
-        :param bid_fee: the  absoulute value of the bidding fee
+        :param bid_fee: the  absolute value of the bidding fee
         :fee: the transaction fee
-        :tx_ttl: the transactino ttl
+        :tx_ttl: the transaction ttl
         """
         txb = self.client.tx_builder
         # get the account nonce and ttl

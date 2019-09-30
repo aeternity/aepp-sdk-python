@@ -558,7 +558,7 @@ def name_bid(keystore_name, domain, name_fee, ttl, fee, nonce, password, network
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
         if _node_cli().get_consensus_protocol_version() < PROTOCOL_LIMA:
-            raise TypeError(f"Name auctions are not supported in procotol before LIMA ({PROTOCOL_LIMA})")
+            raise TypeError(f"Name auctions are not supported in protocol before LIMA ({PROTOCOL_LIMA})")
         name = _node_cli(network_id=network_id).AEName(domain)
         name.update_status()
         if name.status != aens.AEName.Status.AVAILABLE:
@@ -659,7 +659,7 @@ def name_transfer(keystore_name, domain, address, ttl, fee, nonce, password, net
 #
 #
 
-@cli.group(help="Interact with Æternity smart contract compiler")
+@cli.group(help="Interact with Aeternity smart contract compiler")
 def compiler():
     pass
 

@@ -51,7 +51,7 @@ NAME_TTL = 500
 NAME_FEE = 0
 # see https://github.com/aeternity/aeternity/blob/72e440b8731422e335f879a31ecbbee7ac23a1cf/apps/aecore/src/aec_governance.erl#L67
 NAME_FEE_MULTIPLIER = 100000000000000
-NAME_FEE_BID_INCREMENT = 0.05  # the incremet is in percentage
+NAME_FEE_BID_INCREMENT = 0.05  # the increment is in percentage
 # see https://github.com/aeternity/aeternity/blob/72e440b8731422e335f879a31ecbbee7ac23a1cf/apps/aecore/src/aec_governance.erl#L272
 NAME_BID_TIMEOUT_BLOCKS = 480  # ~1 day
 NAME_BID_MAX_LENGTH = 31  # this is the max length for a domain to be part of a bid
