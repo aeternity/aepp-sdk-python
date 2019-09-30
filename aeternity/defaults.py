@@ -44,7 +44,7 @@ GA_ACCOUNTS_NONCE = 0  # for tx in ga transactions the nonce must be 0
 # max number of block into the future that the name is going to be available
 # https://github.com/aeternity/protocol/blob/epoch-v0.22.0/AENS.md#update
 # https://github.com/aeternity/protocol/blob/44a93d3aab957ca820183c3520b9daf6b0fedff4/AENS.md#aens-entry
-NAME_MAX_TLL = 36000
+NAME_MAX_TTL = 36000
 NAME_MAX_CLIENT_TTL = 84600
 NAME_CLIENT_TTL = NAME_MAX_CLIENT_TTL
 NAME_TTL = 500
