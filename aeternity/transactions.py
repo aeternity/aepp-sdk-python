@@ -909,6 +909,7 @@ class TxBuilder:
         :param ttl: the absolute ttl of the transaction
         :param nonce: the nonce of the transaction
         """
+
         name_id = namehash_encode(idf.NAME_ID, recipient_name)
         print("Name ID: ", name_id)
         body = dict(
