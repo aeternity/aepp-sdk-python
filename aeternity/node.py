@@ -251,7 +251,28 @@ class NodeClient:
         self.broadcast_transaction(tx)
         return tx
 
-    def wait_for_transaction(self, tx_hash, max_retries=None, polling_interval=None):
+    def spend_by_name(self, account: Account,
+                      recipient_name: str,
+                      amount: int,
+                      payload: str = "",
+                      fee: int = defaults.FEE,
+                      tx_ttl: int = defaults.TX_TTL):
+        """
+        Create and execute a spend to name_id transaction
+        """
+        # retrieve the nonce
+        account.nonce = self.get_next_nonce(account.get_address()) if account.nonce == 0 else account.nonce + 1
+        # retrieve ttl
+        tx_ttl = self.compute_absolute_ttl(tx_ttl)
+        # build the transaction
+        tx = self.tx_builder.tx_name_spend(account.get_address(), recipient_name, amount, payload, fee, tx_ttl.absolute_ttl, account.nonce)
+        # get the signature
+        tx = self.sign_transaction(account, tx)
+        # post the signed transaction transaction
+        self.broadcast_transaction(tx)
+        return tx
+
+    def wait_for_transaction(self, tx_hash, max_retries=None, polling_interval=None, confirm_transaction=False):
         """
         Wait for a transaction to be mined for an account
         The method will wait for a specific transaction to be included in the chain,
