@@ -252,11 +252,11 @@ class NodeClient:
         return tx
 
     def spend_by_name(self, account: Account,
-              recipient_name: str,
-              amount: int,
-              payload: str = "",
-              fee: int = defaults.FEE,
-              tx_ttl: int = defaults.TX_TTL):
+                      recipient_name: str,
+                      amount: int,
+                      payload: str = "",
+                      fee: int = defaults.FEE,
+                      tx_ttl: int = defaults.TX_TTL):
         """
         Create and execute a spend to name_id transaction
         """
