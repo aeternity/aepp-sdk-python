@@ -7,7 +7,7 @@ import random
 import string
 from aeternity.signing import Account
 from aeternity.node import NodeClient, Config
-from aeternity.contract import CompilerClient
+from aeternity.contract import CompilerFactory
 
 
 PUBLIC_KEY = os.environ.get('WALLET_PUB')
@@ -77,7 +77,8 @@ def chain_fixture(scope="module"):
 
 @pytest.fixture
 def compiler_fixture(scope="module"):
-    compiler = CompilerClient(COMPILER_URL)
+    # Instantiate the node client for the tests
+    compiler = CompilerFactory.get_compiler(COMPILER_URL)
     return namedtupled.map({"COMPILER": compiler}, _nt_name="TestData")
 
 @pytest.fixture
