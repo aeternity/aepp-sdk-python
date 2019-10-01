@@ -120,7 +120,7 @@ def test_spend_by_name(chain_fixture, random_domain):
     print("Claim name ", domain)
     # generate a new address
     target_address = Account.generate().get_address()
-    print(f"Target address {}")
+    print(f"Target address {target_address}")
     name.full_claim_blocking(chain_fixture.ACCOUNT, target=target_address)
     # domain claimed
     name.update_status()
