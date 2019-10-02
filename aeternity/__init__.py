@@ -1,7 +1,7 @@
 import pkg_resources
 
 __node_compatibility__ = (">=3.0.1", "<=5.0.0-rc.3")
-__compiler_compatibility__ = (">=3.9.9", "<5.0.0")
+__compiler_compatibility__ = (">=3.2.0", "<5.0.0")
 
 
 def _version():
