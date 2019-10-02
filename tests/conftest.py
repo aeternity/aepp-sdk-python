@@ -77,6 +77,7 @@ def chain_fixture(scope="module"):
 
 @pytest.fixture
 def compiler_fixture(scope="module"):
+    # Instantiate the node client for the tests
     compiler = CompilerClient(COMPILER_URL)
     return namedtupled.map({"COMPILER": compiler}, _nt_name="TestData")
 
