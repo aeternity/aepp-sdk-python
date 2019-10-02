@@ -116,7 +116,7 @@ def hash_encode(prefix, data):
     return encode(prefix, hash(data))
 
 
-@deprecated(version="5.0.0", reason="will not be necessary from lima release")
+@deprecated(version="5.0.0", reason="changes in the protocol from lima release. use name_id(name: str) instead.")
 def namehash(name: str):
     if isinstance(name, str):
         name = name.lower().encode('ascii')
