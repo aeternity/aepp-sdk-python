@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [5.0.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/5.0.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/4.3.0...5.0.0)) - 2019-10-02
+
+this version is cross compatible with Fortuna and Lima versions of the node
+
+### Code Refactoring
+- refactor(tx): tx management consolidation (#230) ([542beb6](https://github.com/aeternity/aepp-sdk-python/commit/542beb64d4198b036d62b3b30014da02801ffac5)). Related issues/PRs: #237, #238
+
+### Features
+- feat(aens): support lima aens model (#241) ([1ffae14](https://github.com/aeternity/aepp-sdk-python/commit/1ffae147c8f666c8a4674608246c2b7ca5be82be)). Related issues/PRs: #233, #236, #235
+- feat(compiler): support for compiler series v4 / FATE (#229) ([3276eec](https://github.com/aeternity/aepp-sdk-python/commit/3276eeca31c989ec6afa13f9eb48706eb555abee)).
+
+### Deprecated
+- namehash function is deprecated and will be removed after Lima HF
+
+### BREAKING CHANGES
+- `sign_transaction(str)` has been changed to  `broadcast_transaction(TxObject)` where TxObject is the default transaction object troughout the sdk
+- `broadcast_transaction(str)`  has been changed to  `broadcast_transaction(TxObject)` 
+
+more details can be found at the relevant commit: [542beb6](https://github.com/aeternity/aepp-sdk-python/commit/542beb64d4198b036d62b3b30014da02801ffac5)
+
 
 ## [4.3.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/4.3.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/4.2.0...4.3.0)) - 2019-08-29
 
