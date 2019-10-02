@@ -1,4 +1,4 @@
-from aeternity.hashing import _int, _int_decode, _binary, _binary_decode, _id, _id_decode, encode, decode, hash_encode, namehash_encode
+from aeternity.hashing import _int, _int_decode, _binary, _binary_decode, _id, _id_decode, encode, decode, hash_encode, name_id
 from aeternity.openapi import OpenAPICli
 from aeternity import identifiers as idf
 from aeternity import defaults
@@ -894,12 +894,12 @@ class TxBuilder:
         :param ttl: the absolute ttl of the transaction
         :param nonce: the nonce of the transaction
         """
-        name_id = namehash_encode(idf.NAME_ID, recipient_name)
-        print("Name ID: ", name_id)
+        gen_name_id = name_id(recipient_name)
+        print("Name ID: ", gen_name_id)
         body = dict(
             tag=idf.OBJECT_TAG_SPEND_TRANSACTION,
             version=idf.VSN,
-            recipient_id=name_id,
+            recipient_id=gen_name_id,
             amount=amount,
             fee=fee,
             sender_id=sender_id,
