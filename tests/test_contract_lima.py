@@ -49,11 +49,11 @@ def _sophia_contract_tx_call_online(node_cli, account):
             "name": "identity.aes",
             "sourcecode": "contract Identity =\n  entrypoint main(x : int) = x",
             "bytecode": "cb_+GpGA6Abk28ISckRxfWDHCo6FYfNzlAYCRW6TBDvQZ2BYQUmH8C4OZ7+RNZEHwA3ADcAGg6CPwEDP/64F37sADcBBwcBAQCWLwIRRNZEHxFpbml0EbgXfuwRbWFpboIvAIk0LjAuMC1yYzUAfpEWYw==",
-            "init.calldata": "cb_KxFE1kQfG1TH2kjs",
+            "init.calldata": "cb_KxFE1kQfP4oEp9E=",
             "call.function": "main",
             "call.arguments": [42],
             "call.calldata": "cb_KxG4F37sG1Q/+F7e",
-            "return.value": "XXXXXXXXXXXXXXXXXX"  # 42
+            "return.value": "cb_VNLOFXc="  # 42
 
         }
 

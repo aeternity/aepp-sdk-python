@@ -673,7 +673,7 @@ def contract_compile(contract_file, compiler_url, json_):
         set_global_options(json_, False, False)
         with open(contract_file) as fp:
             code = fp.read()
-            c = CompilerClient(compiler_url)
+            c = CompilerClient(compiler_url=compiler_url)
             result = c.compile(code)
             if click.confirm(f'Save contract bytecode to file ({contract_file}.bin) ?', default=True, show_default=True):
                 with open(f"{contract_file}.bin", "w") as fp:
@@ -692,7 +692,7 @@ def contract_aci(contract_file, compiler_url, json_):
         set_global_options(json_, False, False)
         with open(contract_file) as fp:
             code = fp.read()
-            c = CompilerClient(compiler_url)
+            c = CompilerClient(compiler_url=compiler_url)
             result = c.aci(code)
             _print_object(result, title="contract")
     except Exception as e:
@@ -710,7 +710,7 @@ def contract_encode_calldata(contract_file, function_name, arguments, compiler_u
         set_global_options(json_, False, False)
         with open(contract_file) as fp:
             code = fp.read()
-            c = CompilerClient(compiler_url)
+            c = CompilerClient(compiler_url=compiler_url)
             arguments = [] if arguments is None else arguments.split(",")
             result = c.encode_calldata(code, function_name, arguments=arguments)
             _print_object(result, title="contract")
@@ -728,7 +728,7 @@ def contract_encode_calldata(contract_file, function_name, arguments, compiler_u
 def contract_decode_data(contract_file, encoded_data, sophia_type, compiler_url, json_):
     try:
         set_global_options(json_, False, False)
-        c = CompilerClient(compiler_url)
+        c = CompilerClient(compiler_url=compiler_url)
         result = c.decode_data(sophia_type, encoded_data)
         _print_object(result, title="contract")
     except Exception as e:
