@@ -206,11 +206,15 @@ TRANSACTION_TAG_TO_TYPE = {
 NO_VM = 0
 VM_SOPHIA = 1
 VM_SOLIDITY = 2
-VM_SOPHIA_IMPROVEMENTS = 3
+VM_SOPHIA_MINERVA = 3
+VM_SOPHIA_FORTUNA = 4
+VM_FATE = 5
+VM_SOFIA_LIMA = 6
 # abi
 NO_ABI = 0
 ABI_SOPHIA = 1
 ABI_SOLIDITY = 2
+ABI_FATE = 3
 # Consensus Protocol
 PROTOCOL_ROMA = 1
 PROTOCOL_MINERVA = 2
@@ -224,18 +228,21 @@ PROTOCOL_ABI_VM = {
     },
     PROTOCOL_MINERVA: {
         # For Minerva: 196609  # that is int.from_bytes(int(3).to_bytes(2, "big") + int(1).to_bytes(2, "big"), "big")
-        "vm": 3,
-        "abi": 1
+        "vm": VM_SOPHIA_MINERVA,
+        "abi": ABI_SOPHIA
     },
     PROTOCOL_FORTUNA: {
-        "vm": 4,
-        "abi": 1
+        "vm": VM_SOPHIA_FORTUNA,
+        "abi": ABI_SOPHIA
     },
     PROTOCOL_LIMA: {
-        "vm": 5,
-        "abi": 1
+        "vm": VM_FATE,  # fate, sofia lima
+        "abi": ABI_FATE,  # sofia 1, fate 3
     }
 }
+# Compiler backend
+COMPILER_OPTIONS_BACKEND_AEVM = "aevm"
+COMPILER_OPTIONS_BACKEND_FATE = "fate"
 
 
 # Oracles

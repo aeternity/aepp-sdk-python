@@ -6,7 +6,7 @@ import namedtupled
 
 from aeternity.signing import Account
 from aeternity.openapi import OpenAPIClientException
-from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers, exceptions, utils
+from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers, exceptions, utils, hashing
 from aeternity.exceptions import TransactionWaitTimeoutExpired, TransactionHashMismatch
 from aeternity import __node_compatibility__
 
@@ -413,6 +413,9 @@ class NodeClient:
         # decode the contract and search for the authorization function
         auth_fun_hash = None
         contract_data = contract.CompilerClient.decode_bytecode(ga_contract)
+        if len(contract_data.type_info) == 0:
+            # TODO: we assume is a FATE env, but is a bit weak
+            auth_fun_hash = hashing.hash(auth_fun.encode('utf-8'))
         for ti in contract_data.type_info:
             if ti.fun_name == auth_fun:
                 auth_fun_hash = ti.fun_hash
