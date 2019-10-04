@@ -26,6 +26,7 @@ def test_utils_is_valid_hash():
 
 def test_utils_is_valid_name():
     # input (hash_str, prefix, expected output)
+    # TODO: 
     args = [
         ('valid.test', True),
         ('v.test', True),
@@ -35,7 +36,7 @@ def test_utils_is_valid_name():
         ('valid.test', True),
         ('valid.test', True),
         ('aeternity.com', False),
-        ('aeternity.aet', False),
+        ('aeternity.aet', True),
         ('om', False),
         (None, False),
         (".o.test", False),

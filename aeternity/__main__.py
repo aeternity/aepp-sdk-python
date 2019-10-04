@@ -9,8 +9,8 @@ import namedtupled
 from aeternity import _version
 
 from aeternity.node import NodeClient, Config
-from aeternity.transactions import TxSigner, TxBuilder
-from aeternity.identifiers import NETWORK_ID_MAINNET
+from aeternity.transactions import TxSigner, TxBuilder, TxObject
+from aeternity.identifiers import NETWORK_ID_MAINNET, PROTOCOL_LIMA  # TODO: remove after HF
 from . import utils, signing, aens, defaults, exceptions
 from aeternity.contract import CompilerClient
 from datetime import datetime, timezone
@@ -118,6 +118,8 @@ def _po(label, value, offset=0, label_prefix=None):
     elif isinstance(value, datetime):
         val = value.strftime("%Y-%m-%d %H:%M")
         _pl(label, offset, value=val)
+    elif isinstance(value, TxObject):
+        _po(label, value.asdict())
     else:
         if label.lower() == "time":
             value = datetime.fromtimestamp(value / 1000, timezone.utc).isoformat('T')
@@ -125,7 +127,7 @@ def _po(label, value, offset=0, label_prefix=None):
                                "channel_reserve", "deposit", "fee", "gas_price",
                                "gas", "initiator_amount_final", "initiator_amount",
                                "push_amount", "query_fee", "responder_amount_final",
-                               "responder_amount", "round", "solo_round"]:
+                               "responder_amount", "round", "solo_round", "min_fee", "name_fee"]:
             value = utils.format_amount(value)
 
         _pl(label, offset, value=value)
@@ -137,6 +139,9 @@ def _print_object(data, title):
     if ctx.obj.get(CTX_OUTPUT_JSON, False):
         if isinstance(data, tuple):
             print(json.dumps(namedtupled.reduce(data), indent=2))
+            return
+        if isinstance(data, TxObject):
+            print(json.dumps(data.asdict(), indent=2))
             return
         if isinstance(data, str):
             print(data)
@@ -315,7 +320,7 @@ def account_save(keystore_name, secret_key, password, overwrite, json_):
 def account_address(password, keystore_name, secret_key, json_):
     try:
         set_global_options(json_)
-        account, keystore_path = _account(keystore_name, password=password)
+        account, _ = _account(keystore_name, password=password)
         o = {'Address': account.get_address()}
         if secret_key:
             click.confirm(f'!Warning! this will print your secret key on the screen, are you sure?', abort=True)
@@ -354,15 +359,14 @@ def account_balance(keystore_name, password, height, force, wait, json_):
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def account_spend(keystore_name, recipient_id, amount, payload, fee, ttl, nonce, password, network_id, force, wait, json_):
+def account_spend(keystore_name, recipient_id, amount, payload, fee, ttl, nonce, password, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
-        account, keystore_path = _account(keystore_name, password=password)
+        account, _ = _account(keystore_name, password=password)
         account.nonce = nonce
         if not utils.is_valid_hash(recipient_id, prefix="ak"):
             raise ValueError("Invalid recipient address")
-        tx = _node_cli(network_id=network_id).spend(account, recipient_id, amount, tx_ttl=ttl, fee=fee, payload=payload)
+        tx = _node_cli().spend(account, recipient_id, amount, tx_ttl=ttl, fee=fee, payload=payload)
         _print_object(tx, title='spend transaction')
     except Exception as e:
         _print_error(e, exit_code=1)
@@ -378,15 +382,14 @@ def account_spend(keystore_name, recipient_id, amount, payload, fee, ttl, nonce,
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def account_transfer_amount(keystore_name, recipient_id, transfer_amount, include_fee, payload, fee, ttl, nonce, password, network_id, force, wait, json_):
+def account_transfer_amount(keystore_name, recipient_id, transfer_amount, include_fee, payload, fee, ttl, nonce, password, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
-        account, keystore_path = _account(keystore_name, password=password)
+        account, _ = _account(keystore_name, password=password)
         account.nonce = nonce
         if not utils.is_valid_hash(recipient_id, prefix="ak"):
             raise ValueError("Invalid recipient address")
-        tx = _node_cli(network_id=network_id).transfer_funds(account, recipient_id, transfer_amount, tx_ttl=ttl, payload=payload, include_fee=include_fee)
+        tx = _node_cli().transfer_funds(account, recipient_id, transfer_amount, tx_ttl=ttl, payload=payload, include_fee=include_fee)
         _print_object(tx, title='spend transaction')
     except Exception as e:
         _print_error(e, exit_code=1)
@@ -401,12 +404,17 @@ def account_transfer_amount(keystore_name, recipient_id, transfer_amount, includ
 def account_sign(keystore_name, password, network_id, unsigned_transaction, json_):
     try:
         set_global_options(json_)
-        account, keystore_path = _account(keystore_name, password=password)
+        account, _ = _account(keystore_name, password=password)
         if not utils.is_valid_hash(unsigned_transaction, prefix="tx"):
             raise ValueError("Invalid transaction format")
         # force offline mode for the node_client
-        tx = TxSigner(account, network_id).sign_encode_transaction(unsigned_transaction)
-        _print_object(tx, title='signed transaction')
+        txb = TxBuilder()
+        txu = txb.parse_tx_string(unsigned_transaction)
+        signature = TxSigner(account, network_id).sign_transaction(txu)
+        # TODO: better handling of metadata
+        txs = txb.tx_signed([signature], txu, metadata={"network_id": network_id})
+        # _print_object(txu, title='unsigned transaction')
+        _print_object(txs, title='signed transaction')
     except Exception as e:
         _print_error(e, exit_code=1)
 
@@ -438,6 +446,7 @@ def tx_broadcast(signed_transaction, force, wait, json_):
         if not utils.is_valid_hash(signed_transaction, prefix="tx"):
             raise ValueError("Invalid transaction format")
         cli = _node_cli()
+        signed_transaction = TxBuilder().parse_tx_string(signed_transaction)
         tx_hash = cli.broadcast_transaction(signed_transaction)
         _print_object({
             "Transaction hash": tx_hash,
@@ -484,12 +493,11 @@ def name():
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def name_pre_claim(keystore_name, domain, ttl, fee, nonce, password, network_id, force, wait, json_):
+def name_pre_claim(keystore_name, domain, ttl, fee, nonce, password, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
-        name = _node_cli(network_id=network_id).AEName(domain)
+        name = _node_cli().AEName(domain)
         name.update_status()
         if name.status != aens.AEName.Status.AVAILABLE:
             print("Domain not available")
@@ -513,12 +521,11 @@ def name_pre_claim(keystore_name, domain, ttl, fee, nonce, password, network_id,
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def name_claim(keystore_name, domain, name_ttl, name_salt, preclaim_tx_hash, ttl, fee, nonce, password, network_id, force, wait, json_):
+def name_claim(keystore_name, domain, name_ttl, name_salt, preclaim_tx_hash, ttl, fee, nonce, password, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
-        name = _node_cli(network_id=network_id).AEName(domain)
+        name = _node_cli().AEName(domain)
         name.update_status()
         if name.status != aens.AEName.Status.AVAILABLE:
             print("Domain not available")
@@ -526,6 +533,34 @@ def name_claim(keystore_name, domain, name_ttl, name_salt, preclaim_tx_hash, ttl
         # claim
         tx = name.claim(account, name_salt, preclaim_tx_hash, fee=fee, tx_ttl=ttl)
         _print_object(tx, title=f'Name {domain} claim transaction')
+    except ValueError as e:
+        _print_error(e, exit_code=1)
+    except Exception as e:
+        _print_error(e, exit_code=1)
+
+
+@name.command('bid', help="Bid on a name auction")
+@click.argument('keystore_name', required=True)
+@click.argument('domain', required=True)
+@click.argument('name_fee', required=True)
+@click.option("--name-ttl", default=defaults.NAME_TTL, help=f'Lifetime of the name in blocks', show_default=True, type=int)
+@global_options
+@account_options
+@online_options
+@transaction_options
+def name_bid(keystore_name, domain, name_fee, ttl, fee, nonce, password, force, wait, json_):
+    try:
+        set_global_options(json_, force, wait)
+        account, _ = _account(keystore_name, password=password)
+        if _node_cli().get_consensus_protocol_version() < PROTOCOL_LIMA:
+            raise TypeError(f"Name auctions are not supported in protocol before LIMA ({PROTOCOL_LIMA})")
+        name = _node_cli().AEName(domain)
+        name.update_status()
+        if name.status != aens.AEName.Status.AVAILABLE:
+            raise TypeError("Domain {domain} not available")
+        # execute the bid
+        tx = name.bid(account, name_fee, fee=fee, tx_ttl=ttl)
+        _print_object(tx, title=f'Name {domain} bid tx')
     except ValueError as e:
         _print_error(e, exit_code=1)
     except Exception as e:
@@ -541,15 +576,14 @@ def name_claim(keystore_name, domain, name_ttl, name_salt, preclaim_tx_hash, ttl
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def name_update(keystore_name, domain, address, name_ttl, ttl, fee, nonce, password, network_id, force, wait, json_):
+def name_update(keystore_name, domain, address, name_ttl, ttl, fee, nonce, password, force, wait, json_):
     """
     Update a name pointer
     """
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
-        name = _node_cli(network_id=network_id).AEName(domain)
+        name = _node_cli().AEName(domain)
         name.update_status()
         if name.status != name.Status.CLAIMED:
             print(f"Domain is {name.status} and cannot be transferred")
@@ -567,12 +601,11 @@ def name_update(keystore_name, domain, address, name_ttl, ttl, fee, nonce, passw
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def name_revoke(keystore_name, domain, ttl, fee, nonce, password, network_id, force, wait, json_):
+def name_revoke(keystore_name, domain, ttl, fee, nonce, password, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
-        name = _node_cli(network_id=network_id).AEName(domain)
+        name = _node_cli().AEName(domain)
         name.update_status()
         if name.status == name.Status.AVAILABLE:
             print("Domain is available, nothing to revoke")
@@ -591,15 +624,14 @@ def name_revoke(keystore_name, domain, ttl, fee, nonce, password, network_id, fo
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def name_transfer(keystore_name, domain, address, ttl, fee, nonce, password, network_id, force, wait, json_):
+def name_transfer(keystore_name, domain, address, ttl, fee, nonce, password, force, wait, json_):
     """
     Transfer a name to another account
     """
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
-        name = _node_cli(network_id=network_id).AEName(domain)
+        name = _node_cli().AEName(domain)
         name.update_status()
         if name.status != name.Status.CLAIMED:
             print(f"Domain is {name.status} and cannot be transferred")
@@ -619,7 +651,7 @@ def name_transfer(keystore_name, domain, address, ttl, fee, nonce, password, net
 #
 #
 
-@cli.group(help="Interact with Æternity smart contract compiler")
+@cli.group(help="Interact with Aeternity smart contract compiler")
 def compiler():
     pass
 
@@ -633,7 +665,7 @@ def contract_compile(contract_file, compiler_url, json_):
         set_global_options(json_, False, False)
         with open(contract_file) as fp:
             code = fp.read()
-            c = CompilerClient(compiler_url)
+            c = CompilerClient(compiler_url=compiler_url)
             result = c.compile(code)
             if click.confirm(f'Save contract bytecode to file ({contract_file}.bin) ?', default=True, show_default=True):
                 with open(f"{contract_file}.bin", "w") as fp:
@@ -652,7 +684,7 @@ def contract_aci(contract_file, compiler_url, json_):
         set_global_options(json_, False, False)
         with open(contract_file) as fp:
             code = fp.read()
-            c = CompilerClient(compiler_url)
+            c = CompilerClient(compiler_url=compiler_url)
             result = c.aci(code)
             _print_object(result, title="contract")
     except Exception as e:
@@ -670,7 +702,7 @@ def contract_encode_calldata(contract_file, function_name, arguments, compiler_u
         set_global_options(json_, False, False)
         with open(contract_file) as fp:
             code = fp.read()
-            c = CompilerClient(compiler_url)
+            c = CompilerClient(compiler_url=compiler_url)
             arguments = [] if arguments is None else arguments.split(",")
             result = c.encode_calldata(code, function_name, arguments=arguments)
             _print_object(result, title="contract")
@@ -688,7 +720,7 @@ def contract_encode_calldata(contract_file, function_name, arguments, compiler_u
 def contract_decode_data(contract_file, encoded_data, sophia_type, compiler_url, json_):
     try:
         set_global_options(json_, False, False)
-        c = CompilerClient(compiler_url)
+        c = CompilerClient(compiler_url=compiler_url)
         result = c.decode_data(sophia_type, encoded_data)
         _print_object(result, title="contract")
     except Exception as e:
@@ -712,8 +744,7 @@ def contracts():
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price, amount, deposit, password, ttl, fee, nonce, network_id, force, wait, json_):
+def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price, amount, deposit, password, ttl, fee, nonce, force, wait, json_):
     """
     Deploy a contract to the chain and create a deploy descriptor
     with the contract informations that can be use to invoke the contract
@@ -730,7 +761,7 @@ def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price,
             set_global_options(json_, force, wait)
             account, _ = _account(keystore_name, password=password)
             bytecode = fp.read()
-            contract = _node_cli(network_id=network_id).Contract()
+            contract = _node_cli().Contract()
             tx = contract.create(account, bytecode, init_calldata=init_calldata, gas=gas, amount=amount,
                                  gas_price=gas_price, deposit=deposit, tx_ttl=ttl, fee=fee)
             _print_object(tx, title="contract create")
@@ -749,8 +780,7 @@ def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price,
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def contract_call(keystore_name, deploy_descriptor, function, params, return_type, gas,  password, network_id, force, wait, json_):
+def contract_call(keystore_name, deploy_descriptor, function, params, return_type, gas,  password, force, wait, json_):
     print("Not yet implemented")
     return
     try:
@@ -763,7 +793,7 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
             set_global_options(json_, force, wait)
             account, _ = _account(keystore_name, password=password)
 
-            contract = _node_cli(network_id=network_id).Contract(source, bytecode=bytecode, address=address)
+            contract = _node_cli().Contract(source, bytecode=bytecode, address=address)
             tx = contract.tx_call(account, function, params, gas=gas)
             _print_object(tx, "contract call")
     except Exception as e:
@@ -803,14 +833,15 @@ def contract_call_info(tx_hash, force, wait, json_):
 def inspect(obj, height, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
-        if obj.endswith(".test"):
+        if obj.endswith(".test") or obj.endswith(".aet"):
             data = _node_cli().get_name_entry_by_name(name=obj)
             _print_object(data, title="name")
         elif obj.startswith("kh_") or obj.startswith("mh_"):
             v = _node_cli().get_block_by_hash(obj)
             _print_object(v, title="block")
         elif obj.startswith("th_"):
-            v = _node_cli().get_transaction_by_hash(hash=obj)
+            # v = _node_cli().get_transaction_by_hash(hash=obj)
+            v = _node_cli().get_transaction(obj)
             _print_object(v, title="transaction")
         elif obj.startswith("ak_"):
             if height is not None and height > 0:

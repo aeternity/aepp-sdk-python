@@ -4,10 +4,9 @@ import random
 from datetime import datetime, timedelta
 import namedtupled
 
-from aeternity.transactions import TxSigner
 from aeternity.signing import Account
 from aeternity.openapi import OpenAPIClientException
-from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers, exceptions, utils
+from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers, exceptions, utils, hashing
 from aeternity.exceptions import TransactionWaitTimeoutExpired, TransactionHashMismatch
 from aeternity import __node_compatibility__
 
@@ -47,7 +46,7 @@ class Config:
         self.contract_gas = kwargs.get("contract_gas", defaults.CONTRACT_GAS)
         self.contract_gas_price = kwargs.get("contract_gas_price", defaults.CONTRACT_GAS_PRICE)
         # oracles default
-        self.orcale_ttl_type = kwargs.get("oracle_ttl_type", defaults.ORACLE_TTL_TYPE)
+        self.oracle_ttl_type = kwargs.get("oracle_ttl_type", defaults.ORACLE_TTL_TYPE)
         # chain defaults
         self.key_block_interval = kwargs.get("key_block_interval", defaults.KEY_BLOCK_INTERVAL)
         self.key_block_confirmation_num = kwargs.get("key_block_confirmation_num", defaults.KEY_BLOCK_CONFIRMATION_NUM)
@@ -81,7 +80,12 @@ class NodeClient:
                                       force_compatibility=config.force_compatibility,
                                       compatibility_version_range=__node_compatibility__)
         # instantiate the transaction builder object
-        self.tx_builder = transactions.TxBuilder()
+        self.tx_builder = transactions.TxBuilder(
+            base_gas=config.tx_base_gas,
+            gas_per_byte=config.tx_gas_per_byte,
+            gas_price=config.tx_gas_price,
+            key_block_interval=config.key_block_interval
+        )
         # network id
         if self.config.network_id is None:
             self.config.network_id = self.api.get_status().network_id
@@ -152,21 +156,20 @@ class NodeClient:
             block = self.api.get_micro_block_header_by_hash(hash=hash)
         return block
 
-    def broadcast_transaction(self, tx, tx_hash=None):
+    def broadcast_transaction(self, tx: transactions.TxObject):
         """
         Post a transaction to the chain and verify that the hash match the local calculated hash
         It blocks for a period of time to wait for the transaction to be included if in blocking_mode
         """
-        tx = tx.tx if hasattr(tx, "tx") else tx
-        reply = self.post_transaction(body={"tx": tx})
-        if tx_hash is not None and reply.tx_hash != tx_hash:
-            raise TransactionHashMismatch(f"Transaction hash doesn't match, expected {tx_hash} got {reply.tx_hash}")
+        reply = self.post_transaction(body={"tx": tx.tx})
+        if reply.tx_hash != tx.hash:
+            raise TransactionHashMismatch(f"Transaction hash doesn't match, expected {tx.hash} got {reply.tx_hash}")
 
         if self.config.blocking_mode:
             self.wait_for_transaction(reply.tx_hash)
         return reply.tx_hash
 
-    def sign_transaction(self, account: Account, tx: object, metadata: dict = None, **kwargs) -> tuple:
+    def sign_transaction(self, account: Account, tx: transactions.TxObject, metadata: dict = {}, **kwargs) -> tuple:
         """
         Sign a transaction
         :return: the transaction for the transaction
@@ -177,11 +180,12 @@ class NodeClient:
 
         # if the account is not generalized sign and return the transaction
         if not on_chain_account.is_generalized():
-            s = TxSigner(account, self.config.network_id)
-            return s.sign_encode_transaction(tx, metadata)
+            s = transactions.TxSigner(account, self.config.network_id)
+            signature = s.sign_transaction(tx, metadata)
+            return self.tx_builder.tx_signed([signature], tx, metadata=metadata)
 
         # if the account is generalized then prepare the ga_meta_tx
-        # 1. wrap the tx into a sigend tx (without signatures)
+        # 1. wrap the tx into a signed tx (without signatures)
         sg_tx = self.tx_builder.tx_signed([], tx)
         # 2. wrap the tx into a ga_meta_tx
         # get the absolute ttl
@@ -208,7 +212,7 @@ class NodeClient:
             sg_tx
         )
         # 3. wrap the the ga into a signed transaction
-        sg_ga_sg_tx = self.tx_builder.tx_signed([], ga_sg_tx)
+        sg_ga_sg_tx = self.tx_builder.tx_signed([], ga_sg_tx, metadata=metadata)
         return sg_ga_sg_tx
 
     def get_account(self, address: str) -> Account:
@@ -219,6 +223,12 @@ class NodeClient:
             raise TypeError(f"Input {address} is not a valid aeternity address")
         remote_account = self.get_account_by_pubkey(pubkey=address)
         return Account.from_node_api(remote_account)
+
+    def get_transaction(self, transaction_hash):  # TODO: continue
+        if not utils.is_valid_hash(transaction_hash, identifiers.TRANSACTION_HASH):
+            raise TypeError(f"Input {transaction_hash} is not a valid aeternity address")
+        tx = self.get_transaction_by_hash(hash=transaction_hash)
+        return self.tx_builder.parse_node_reply(tx)
 
     def spend(self, account: Account,
               recipient_id: str,
@@ -235,13 +245,13 @@ class NodeClient:
         tx_ttl = self.compute_absolute_ttl(tx_ttl)
         # build the transaction
         tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, amount, payload, fee, tx_ttl.absolute_ttl, account.nonce)
-        # execute the transaction
-        tx = self.sign_transaction(account, tx.tx)
-        # post the transaction
-        self.broadcast_transaction(tx.tx, tx_hash=tx.hash)
+        # get the signature
+        tx = self.sign_transaction(account, tx)
+        # post the signed transaction transaction
+        self.broadcast_transaction(tx)
         return tx
 
-    def wait_for_transaction(self, tx_hash, max_retries=None, polling_interval=None, confirm_transaction=False):
+    def wait_for_transaction(self, tx_hash, max_retries=None, polling_interval=None):
         """
         Wait for a transaction to be mined for an account
         The method will wait for a specific transaction to be included in the chain,
@@ -249,9 +259,13 @@ class NodeClient:
         - the chain reply with a 404 not found (the transaction was expunged)
         - the account nonce is >= of the transaction nonce (transaction is in an illegal state)
         - the ttl of the transaction or the one passed as parameter has been reached
+
+        :param tx_hash: the hash of the transaction to wait for
+        :param max_retries: the maximum number of retries to test for transaction
+        :param polling_interval: the interval between transaction polls
         :return: the block height of the transaction if it has been found
 
-        Raises TransactionWaitTimeoutExpired if the transaction hasnt been found
+        Raises TransactionWaitTimeoutExpired if the transaction hasn't been found
         """
 
         retries = max_retries if max_retries is not None else self.config.poll_tx_max_retries
@@ -291,6 +305,12 @@ class NodeClient:
         """
         Wait for a transaction to be confirmed by at least "key_block_confirmation_num" blocks (default 3)
         The amount of blocks can be configured in the Config object using key_block_confirmation_num parameter
+
+        :param tx_hash: the hash of the transaction to wait for
+        :param max_retries: the maximum number of retries to test for transaction
+        :param polling_interval: the interval between transaction polls
+        :return: the block height of the transaction if it has been found
+
         """
         # first wait for the transaction to be found
         tx_height = self.wait_for_transaction(tx_hash)
@@ -316,12 +336,14 @@ class NodeClient:
             total_sleep += interval
             # increment n
             n += 1
+        return tx_height
 
     def transfer_funds(self, account: Account,
                        recipient_id: str,
                        percentage: float,
                        payload: str = "",
                        tx_ttl: int = defaults.TX_TTL,
+                       fee: int = defaults.FEE,
                        include_fee=True):
         """
         Create and execute a spend transaction
@@ -335,17 +357,17 @@ class NodeClient:
         # retrieve ttl
         tx_ttl = self.compute_absolute_ttl(tx_ttl)
         # build the transaction
-        tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, request_transfer_amount, payload, defaults.FEE, tx_ttl.absolute_ttl, account.nonce)
+        tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, request_transfer_amount, payload, fee, tx_ttl.absolute_ttl, account.nonce)
         # if the request_transfer_amount should include the fee keep calculating the fee
         if include_fee:
             amount = request_transfer_amount
             while (amount + tx.data.fee) > request_transfer_amount:
                 amount = request_transfer_amount - tx.data.fee
-                tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, amount, payload, defaults.FEE, tx_ttl.absolute_ttl, account.nonce)
+                tx = self.tx_builder.tx_spend(account.get_address(), recipient_id, amount, payload, fee, tx_ttl.absolute_ttl, account.nonce)
         # execute the transaction
-        tx = self.sign_transaction(account, tx.tx)
+        tx = self.sign_transaction(account, tx)
         # post the transaction
-        self.broadcast_transaction(tx.tx, tx_hash=tx.hash)
+        self.broadcast_transaction(tx)
         return tx
 
     def get_consensus_protocol_version(self, height: int = None) -> int:
@@ -366,11 +388,11 @@ class NodeClient:
                 version, effective_at_height = p.version, p.effective_at_height
         return version
 
-    def verify(self, encoded_tx):
+    def verify(self, encoded_tx: str) -> transactions.TxObject:
         """
         Unpack and verify an encoded transaction
         """
-        decoded = transactions._tx_native(transactions.UNPACK_TX, tx=encoded_tx)
+        decoded = self.tx_builder.parse_tx_string(encoded_tx)
         return decoded
 
     def get_vm_abi_versions(self):
@@ -402,6 +424,9 @@ class NodeClient:
         # decode the contract and search for the authorization function
         auth_fun_hash = None
         contract_data = contract.CompilerClient.decode_bytecode(ga_contract)
+        if len(contract_data.type_info) == 0:
+            # TODO: we assume is a FATE env, but is a bit weak
+            auth_fun_hash = hashing.hash(auth_fun.encode('utf-8'))
         for ti in contract_data.type_info:
             if ti.fun_name == auth_fun:
                 auth_fun_hash = ti.fun_hash
@@ -431,7 +456,7 @@ class NodeClient:
         # sign the transaction
         tx = self.sign_transaction(account, tx)
         # broadcast the transaction
-        self.broadcast_transaction(tx, tx_hash=tx.hash)
+        self.broadcast_transaction(tx)
         return tx
 
     # support naming

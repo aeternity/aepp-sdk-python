@@ -1,6 +1,8 @@
 from aeternity import exceptions, __compiler_compatibility__
 from aeternity import utils, defaults, hashing, openapi, identifiers
+
 import namedtupled
+import semver
 
 
 class CompilerError(exceptions.AException):
@@ -12,14 +14,24 @@ class CompilerError(exceptions.AException):
 
 class CompilerClient(object):
     """
-    CompilerClient is the rest client to interact with the aesophia_http compiler
+    The compiler client Fate version is the client for the aesophia_http compiler v4.x.x series,
+    that is compatible with LIMA protocol (v4)
     """
-
-    def __init__(self, compiler_url='http://localhost:3080'):
+    def __init__(self, compiler_url='http://localhost:3080', **kwargs):
         self.compiler_url = compiler_url
         self.compiler_cli = openapi.OpenAPICli(compiler_url, compatibility_version_range=__compiler_compatibility__)
+        # chec the compatibiity node protocol
+        self.target_protocol = identifiers.PROTOCOL_LIMA if semver.match(self.compiler_cli.version().version, ">3.9.9") else identifiers.PROTOCOL_FORTUNA
+        self.compiler_options = {
+        }
+        if self.target_protocol >= identifiers.PROTOCOL_LIMA:
+            self.set_option("backend", kwargs.get("backend", identifiers.COMPILER_OPTIONS_BACKEND_FATE))
+
+    def set_option(self, name, value):
+        self.compiler_options[name] = value
 
     def compile(self, source_code, compiler_options={}):
+        compiler_options = compiler_options if len(compiler_options) > 0 else self.compiler_options
         body = dict(
             code=source_code,
             options=compiler_options
@@ -27,13 +39,15 @@ class CompilerClient(object):
         return self.compiler_cli.compile_contract(body=body)
 
     def aci(self, source_code, compiler_options={}):
+        compiler_options = compiler_options if len(compiler_options) > 0 else self.compiler_options
         body = dict(
             code=source_code,
             options=compiler_options
         )
         return self.compiler_cli.generate_aci(body=body)
 
-    def encode_calldata(self, source_code, function_name, arguments=[]):
+    def encode_calldata(self, source_code, function_name, arguments=[], compiler_options={}):
+        compiler_options = compiler_options if len(compiler_options) > 0 else self.compiler_options
         if not isinstance(arguments, list):
             arguments = [arguments]
         if arguments is None:
@@ -41,7 +55,8 @@ class CompilerClient(object):
         body = dict(
             source=source_code,
             function=function_name,
-            arguments=[str(v) for v in arguments]
+            arguments=[str(v) for v in arguments],
+            options=compiler_options
         )
         return self.compiler_cli.encode_calldata(body=body)
 
@@ -52,18 +67,29 @@ class CompilerClient(object):
         }
         return self.compiler_cli.decode_data(body=body)
 
-    def decode_calldata_with_bytecode(self, bytecode, encoded_calldata):
+    def decode_call_result(self, sophia_type, encoded_data):
+        body = {
+            "data": encoded_data,
+            "sophia-type": sophia_type
+        }
+        return self.compiler_cli.decode_data(body=body)
+
+    def decode_calldata_with_bytecode(self, bytecode, encoded_calldata, compiler_options={}):
+        compiler_options = compiler_options if len(compiler_options) > 0 else self.compiler_options
         body = {
             "calldata": encoded_calldata,
-            "bytecode": bytecode
+            "bytecode": bytecode,
+            "backend": compiler_options.get("backend", self.compiler_options.get("backend", identifiers.COMPILER_OPTIONS_BACKEND_FATE))
         }
         return self.compiler_cli.decode_calldata_bytecode(body=body)
 
-    def decode_calldata_with_sourcecode(self, sourcecode, function, encoded_calldata):
+    def decode_calldata_with_sourcecode(self, sourcecode, function, encoded_calldata, compiler_options={}):
+        compiler_options = compiler_options if len(compiler_options) > 0 else self.compiler_options
         body = {
             "source": sourcecode,
             "function": function,
-            "calldata": encoded_calldata
+            "calldata": encoded_calldata,
+            "options": compiler_options
         }
         return self.compiler_cli.decode_calldata_source(body=body)
 
@@ -102,6 +128,7 @@ class CompilerClient(object):
             type_info=[],
             bytecode=raw_contract[4],
             compiler_version=hashing._binary_decode(raw_contract[5], str),
+            # payable=raw_contract[6]
         )
         # print(type_info)
         for t in raw_contract[3]:
@@ -173,9 +200,9 @@ class Contract:
                                       amount, gas, gas_price, abi_version,
                                       fee, ttl, nonce)
             # sign the transaction
-            tx_signed = self.client.sign_transaction(account, tx.tx)
+            tx_signed = self.client.sign_transaction(account, tx)
             # post the transaction to the chain
-            self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
+            self.client.broadcast_transaction(tx_signed)
             return tx_signed
         except openapi.OpenAPIClientException as e:
             raise ContractError(e)
@@ -226,7 +253,7 @@ class Contract:
             # sign the transaction
             tx_signed = self.client.sign_transaction(account, tx, metadata={"contract_id": self.address})
             # post the transaction to the chain
-            self.client.broadcast_transaction(tx_signed.tx, tx_signed.hash)
+            self.client.broadcast_transaction(tx_signed)
             return tx_signed
         except openapi.OpenAPIClientException as e:
             raise ContractError(e)

@@ -1,32 +1,29 @@
-<!--- Provide a general summary of the issue in the Title above -->
+**Note: for support questions, please use the [forum](https://forum.aeternity.com)**. This repository's issues are reserved for feature requests and bug reports.
 
-## Expected Behavior
-<!--- Tell us what should happen -->
+* **I'm submitting a ...**
+  - [ ] bug report
+  - [ ] feature request
+  - [ ] support request => Please do not submit support request here, see note at the top of this template.
 
-## Current Behavior
-<!--- Tell us what happens instead of the expected behavior -->
 
-## Possible Solution
-<!--- Not obligatory, but suggest a fix/reason for the bug, -->
+* **Do you want to request a *feature* or report a *bug*?**
 
-## Steps to Reproduce
-<!--- Provide a link to a live example, or an unambiguous set of steps to -->
-<!--- reproduce this bug. Include code to reproduce, if relevant -->
-1.
-2.
-3.
-4.
+* **What is the current behavior?**
 
-## Environment / Context
-<!--- How has this issue affected you? What are you trying to accomplish? -->
-<!--- Providing context helps us come up with a solution that is most useful in the real world -->
+* **If the current behavior is a bug, please provide the steps to reproduce and if possible a minimal demo of the problem**
 
-<!--- Provide a general summary of the issue in the Title above -->
+* **What is the expected behavior?**
 
-## [Aeternity Node](https://github.com/aeternity/aeternity/releases) Version
+* **What is the motivation / use case for changing the behavior?**
 
-## Detailed Description
-<!--- Provide a detailed description of the change or addition you are proposing -->
+* **Please tell us about your environment:**
+  
+  - Node Version: v0.0.0
+  - Protocol Version: 1
+  - Compiler version: v0.0.0
+  - VM Version: aevm | fate
+  - SDK Version: v0.0.0
+  - Python version: v3.7.0
 
-## Possible Implementation
-<!--- Not obligatory, but suggest an idea for implementing addition or change -->
+
+* **Other information** (e.g. detailed explanation, stacktraces, related issues, suggestions how to fix, links for us to have context, eg. forum, telegram, etc)

@@ -37,10 +37,10 @@ def call_aecli(*params):
 
 
 def test_cli_balance(chain_fixture):
-    j = call_aecli('inspect', chain_fixture.ACCOUNT.get_address())
+    j = call_aecli('inspect', chain_fixture.ALICE.get_address())
     assert isinstance(j.get("balance"), int)
     assert isinstance(j.get("nonce"), int)
-    assert j.get("id") == chain_fixture.ACCOUNT.get_address()
+    assert j.get("id") == chain_fixture.ALICE.get_address()
     assert j.get("balance") > 0
 
 
@@ -81,11 +81,11 @@ def test_cli_read_account_fail(tempdir):
 
 
 def test_cli_spend(chain_fixture, tempdir):
-    account_path = _account_path(tempdir, chain_fixture.ACCOUNT)
+    account_path = _account_path(tempdir, chain_fixture.ALICE)
     # generate a new address
     recipient_address = Account.generate().get_address()
     # call the cli
-    call_aecli('account', 'spend', account_path, recipient_address, "90", '--password', 'aeternity_bc', '--network-id', NETWORK_ID, '--wait')
+    call_aecli('account', 'spend', account_path, recipient_address, "90", '--password', 'aeternity_bc', '--wait')
     # test that the recipient account has the requested amount
     print(f"recipient address is {recipient_address}")
     recipient_account = chain_fixture.NODE_CLI.get_account_by_pubkey(pubkey=recipient_address)
@@ -95,7 +95,7 @@ def test_cli_spend(chain_fixture, tempdir):
 
 def test_cli_spend_invalid_amount(chain_fixture, tempdir):
     with pytest.raises(subprocess.CalledProcessError):
-        account_path = _account_path(tempdir, chain_fixture.ACCOUNT)
+        account_path = _account_path(tempdir, chain_fixture.ALICE)
         receipient_address = Account.generate().get_address()
         call_aecli('account', 'spend', account_path,  receipient_address, '-1', '--password', 'secret')
 
@@ -128,25 +128,25 @@ def test_cli_inspect_name():
 def test_cli_inspect_transaction_by_hash(chain_fixture):
     # fill the account from genesys
     na = Account.generate()
-    amount = random.randint(50, 150)
-    tx = chain_fixture.NODE_CLI.spend(chain_fixture.ACCOUNT, na.get_address(), amount)
+    amount = random.randint(1, 1000000000000000000)
+    tx = chain_fixture.NODE_CLI.spend(chain_fixture.ALICE, na.get_address(), amount)
     # now inspect the transaction
     j = call_aecli('inspect', tx.hash)
     assert j.get("hash") == tx.hash
-    assert j.get("block_height") > 0
-    assert j.get("tx", {}).get("recipient_id") == na.get_address()
-    assert j.get("tx", {}).get("sender_id") == chain_fixture.ACCOUNT.get_address()
-    assert j.get("tx", {}).get("amount") == amount
+    assert j.get("data", {}).get("block_height") > 0
+    assert j.get("data", {}).get("tx", {}).get("data", {}).get("recipient_id") == na.get_address()
+    assert j.get("data", {}).get("tx", {}).get("data", {}).get("sender_id") == chain_fixture.ALICE.get_address()
+    assert j.get("data", {}).get("tx", {}).get("data", {}).get("amount") == amount
 
 
 def test_cli_phases_spend(chain_fixture, tempdir):
-    account_path = _account_path(tempdir, chain_fixture.ACCOUNT)
+    account_path = _account_path(tempdir, chain_fixture.ALICE)
     # generate a new address
     recipient_id = Account.generate().get_address()
     # step one, generate transaction
-    nonce = chain_fixture.NODE_CLI.get_account_by_pubkey(pubkey=chain_fixture.ACCOUNT.get_address()).nonce + 1
-    j = call_aecli('tx', 'spend', chain_fixture.ACCOUNT.get_address(), recipient_id, '100', '--nonce', f'{nonce}')
-    # assert chain_fixture.ACCOUNT.get_address == j.get("Sender account")
+    nonce = chain_fixture.NODE_CLI.get_account_by_pubkey(pubkey=chain_fixture.ALICE.get_address()).nonce + 1
+    j = call_aecli('tx', 'spend', chain_fixture.ALICE.get_address(), recipient_id, '100', '--nonce', f'{nonce}')
+    # assert chain_fixture.ALICE.get_address == j.get("Sender account")
     assert recipient_id == j.get("data", {}).get("recipient_id")
     # step 2, sign the transaction
     tx_unsigned = j.get("tx")
