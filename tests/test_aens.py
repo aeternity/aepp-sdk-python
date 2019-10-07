@@ -25,7 +25,7 @@ def test_name_is_available(chain_fixture):
 
 
 def test_name_status_available(chain_fixture):
-    domain = random_domain(length=32 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+    domain = random_domain(length=13 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
     name = chain_fixture.NODE_CLI.AEName(domain)
     assert name.status == AEName.Status.UNKNOWN
     name.update_status()
@@ -35,7 +35,7 @@ def test_name_status_available(chain_fixture):
 def test_name_claim_lifecycle(chain_fixture):
     try:
         # avoid auctions
-        domain = random_domain(length=32 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+        domain = random_domain(length=13 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
         node_cli = chain_fixture.NODE_CLI
         name = node_cli.AEName(domain)
         assert name.status == AEName.Status.UNKNOWN
@@ -55,7 +55,7 @@ def test_name_auction(chain_fixture):
         skip("name auction is only supported after Lima HF")
         return
     try:
-        domain = random_domain(length=18)
+        domain = random_domain(length=12)
         node_cli = chain_fixture.NODE_CLI
         name = node_cli.AEName(domain)
         assert name.status == AEName.Status.UNKNOWN
@@ -73,7 +73,7 @@ def test_name_auction(chain_fixture):
         bid_tx = name2.bid(chain_fixture.BOB, bid)
         print("BID TX", bid_tx)
         # get the tx height
-        bid_h = node_cli.wait_for_confirmation(bid_tx.hash)
+        bid_h = node_cli.wait_for_transaction(bid_tx.hash)
         print(f"BOB BID Height is  {bid_h}")
         # now we should wait to see that bob gets the name
         bid_ends = AEName.compute_auction_end_block(domain, bid_h)
@@ -86,7 +86,7 @@ def test_name_auction(chain_fixture):
 
 def test_name_status_unavailable(chain_fixture):
     # avoid auctions
-    domain = random_domain(length=32 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+    domain = random_domain(length=13 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
     print(f"domain is {domain}")
     occupy_name = chain_fixture.NODE_CLI.AEName(domain)
     occupy_name.full_claim_blocking(chain_fixture.ALICE)
@@ -97,7 +97,7 @@ def test_name_status_unavailable(chain_fixture):
 
 def test_name_update(chain_fixture):
     # avoid auctions
-    domain = random_domain(length=32 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+    domain = random_domain(length=13 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
     print(f"domain is {domain}")
     name = chain_fixture.NODE_CLI.AEName(domain)
     print("Claim name ", domain)
@@ -138,7 +138,7 @@ def test_spend_by_name(chain_fixture):
 
 def test_name_transfer_ownership(chain_fixture):
     # avoid auctions
-    domain = random_domain(length=32 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+    domain = random_domain(length=13 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
     name = chain_fixture.NODE_CLI.AEName(domain)
     name.full_claim_blocking(chain_fixture.ALICE)
     assert name.status == AEName.Status.CLAIMED
@@ -160,7 +160,7 @@ def test_name_transfer_ownership(chain_fixture):
 
 def test_name_revocation(chain_fixture):
     # avoid auctions
-    domain = random_domain(length=32 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+    domain = random_domain(length=13 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
     name = chain_fixture.NODE_CLI.AEName(domain)
     name.full_claim_blocking(chain_fixture.ALICE)
     name.revoke(chain_fixture.ALICE)

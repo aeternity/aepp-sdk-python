@@ -272,7 +272,7 @@ class NodeClient:
         self.broadcast_transaction(tx)
         return tx
 
-    def wait_for_transaction(self, tx_hash, max_retries=None, polling_interval=None, confirm_transaction=False):
+    def wait_for_transaction(self, tx_hash, max_retries=None, polling_interval=None):
         """
         Wait for a transaction to be mined for an account
         The method will wait for a specific transaction to be included in the chain,
@@ -280,6 +280,10 @@ class NodeClient:
         - the chain reply with a 404 not found (the transaction was expunged)
         - the account nonce is >= of the transaction nonce (transaction is in an illegal state)
         - the ttl of the transaction or the one passed as parameter has been reached
+
+        :param tx_hash: the hash of the transaction to wait for
+        :param max_retries: the maximum number of retries to test for transaction
+        :param polling_interval: the interval between transaction polls
         :return: the block height of the transaction if it has been found
 
         Raises TransactionWaitTimeoutExpired if the transaction hasn't been found
@@ -322,6 +326,12 @@ class NodeClient:
         """
         Wait for a transaction to be confirmed by at least "key_block_confirmation_num" blocks (default 3)
         The amount of blocks can be configured in the Config object using key_block_confirmation_num parameter
+
+        :param tx_hash: the hash of the transaction to wait for
+        :param max_retries: the maximum number of retries to test for transaction
+        :param polling_interval: the interval between transaction polls
+        :return: the block height of the transaction if it has been found
+
         """
         # first wait for the transaction to be found
         tx_height = self.wait_for_transaction(tx_hash)
@@ -347,6 +357,7 @@ class NodeClient:
             total_sleep += interval
             # increment n
             n += 1
+        return tx_height
 
     def transfer_funds(self, account: Account,
                        recipient_id: str,

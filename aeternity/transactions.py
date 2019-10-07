@@ -557,6 +557,21 @@ class TxBuilder:
         if descriptor is None:
             # the transaction is not defined
             raise TypeError(f"Unknown transaction tag/version: {tag}/{vsn}")
+
+        # flatten the oracle_ttl fields
+        def flatten_ttl(key, data):
+            ttl = data.pop(key)
+            data[f"{key}_type"] = ttl.get("type")
+            data[f"{key}_value"] = ttl.get("value")
+
+        if tag == idf.OBJECT_TAG_ORACLE_QUERY_TRANSACTION:
+            flatten_ttl("query_ttl", tx_data)
+            flatten_ttl("response_ttl", tx_data)
+        if tag in [idf.OBJECT_TAG_ORACLE_REGISTER_TRANSACTION, idf.OBJECT_TAG_ORACLE_EXTEND_TRANSACTION]:
+            flatten_ttl("oracle_ttl", tx_data)
+        if tag == idf.OBJECT_TAG_ORACLE_RESPONSE_TRANSACTION:
+            flatten_ttl("response_ttl", tx_data)
+
         # do not compute the fee for a signed transaction
         compute_hash = True if tag == idf.OBJECT_TAG_SIGNED_TRANSACTION else False
         return self._txdata_to_txobject(tx_data, descriptor, compute_hash=compute_hash)

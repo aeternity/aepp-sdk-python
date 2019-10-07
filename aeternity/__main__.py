@@ -359,15 +359,14 @@ def account_balance(keystore_name, password, height, force, wait, json_):
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def account_spend(keystore_name, recipient_id, amount, payload, fee, ttl, nonce, password, network_id, force, wait, json_):
+def account_spend(keystore_name, recipient_id, amount, payload, fee, ttl, nonce, password, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
         account.nonce = nonce
         if not utils.is_valid_hash(recipient_id, prefix="ak"):
             raise ValueError("Invalid recipient address")
-        tx = _node_cli(network_id=network_id).spend(account, recipient_id, amount, tx_ttl=ttl, fee=fee, payload=payload)
+        tx = _node_cli().spend(account, recipient_id, amount, tx_ttl=ttl, fee=fee, payload=payload)
         _print_object(tx, title='spend transaction')
     except Exception as e:
         _print_error(e, exit_code=1)
@@ -383,15 +382,14 @@ def account_spend(keystore_name, recipient_id, amount, payload, fee, ttl, nonce,
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def account_transfer_amount(keystore_name, recipient_id, transfer_amount, include_fee, payload, fee, ttl, nonce, password, network_id, force, wait, json_):
+def account_transfer_amount(keystore_name, recipient_id, transfer_amount, include_fee, payload, fee, ttl, nonce, password, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
         account.nonce = nonce
         if not utils.is_valid_hash(recipient_id, prefix="ak"):
             raise ValueError("Invalid recipient address")
-        tx = _node_cli(network_id=network_id).transfer_funds(account, recipient_id, transfer_amount, tx_ttl=ttl, payload=payload, include_fee=include_fee)
+        tx = _node_cli().transfer_funds(account, recipient_id, transfer_amount, tx_ttl=ttl, payload=payload, include_fee=include_fee)
         _print_object(tx, title='spend transaction')
     except Exception as e:
         _print_error(e, exit_code=1)
@@ -495,12 +493,11 @@ def name():
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def name_pre_claim(keystore_name, domain, ttl, fee, nonce, password, network_id, force, wait, json_):
+def name_pre_claim(keystore_name, domain, ttl, fee, nonce, password, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
-        name = _node_cli(network_id=network_id).AEName(domain)
+        name = _node_cli().AEName(domain)
         name.update_status()
         if name.status != aens.AEName.Status.AVAILABLE:
             print("Domain not available")
@@ -524,12 +521,11 @@ def name_pre_claim(keystore_name, domain, ttl, fee, nonce, password, network_id,
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def name_claim(keystore_name, domain, name_ttl, name_salt, preclaim_tx_hash, ttl, fee, nonce, password, network_id, force, wait, json_):
+def name_claim(keystore_name, domain, name_ttl, name_salt, preclaim_tx_hash, ttl, fee, nonce, password, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
-        name = _node_cli(network_id=network_id).AEName(domain)
+        name = _node_cli().AEName(domain)
         name.update_status()
         if name.status != aens.AEName.Status.AVAILABLE:
             print("Domain not available")
@@ -552,14 +548,13 @@ def name_claim(keystore_name, domain, name_ttl, name_salt, preclaim_tx_hash, ttl
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def name_bid(keystore_name, domain, name_fee, ttl, fee, nonce, password, network_id, force, wait, json_):
+def name_bid(keystore_name, domain, name_fee, ttl, fee, nonce, password, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
         if _node_cli().get_consensus_protocol_version() < PROTOCOL_LIMA:
             raise TypeError(f"Name auctions are not supported in protocol before LIMA ({PROTOCOL_LIMA})")
-        name = _node_cli(network_id=network_id).AEName(domain)
+        name = _node_cli().AEName(domain)
         name.update_status()
         if name.status != aens.AEName.Status.AVAILABLE:
             raise TypeError("Domain {domain} not available")
@@ -581,15 +576,14 @@ def name_bid(keystore_name, domain, name_fee, ttl, fee, nonce, password, network
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def name_update(keystore_name, domain, address, name_ttl, ttl, fee, nonce, password, network_id, force, wait, json_):
+def name_update(keystore_name, domain, address, name_ttl, ttl, fee, nonce, password, force, wait, json_):
     """
     Update a name pointer
     """
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
-        name = _node_cli(network_id=network_id).AEName(domain)
+        name = _node_cli().AEName(domain)
         name.update_status()
         if name.status != name.Status.CLAIMED:
             print(f"Domain is {name.status} and cannot be transferred")
@@ -607,12 +601,11 @@ def name_update(keystore_name, domain, address, name_ttl, ttl, fee, nonce, passw
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def name_revoke(keystore_name, domain, ttl, fee, nonce, password, network_id, force, wait, json_):
+def name_revoke(keystore_name, domain, ttl, fee, nonce, password, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
-        name = _node_cli(network_id=network_id).AEName(domain)
+        name = _node_cli().AEName(domain)
         name.update_status()
         if name.status == name.Status.AVAILABLE:
             print("Domain is available, nothing to revoke")
@@ -631,15 +624,14 @@ def name_revoke(keystore_name, domain, ttl, fee, nonce, password, network_id, fo
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def name_transfer(keystore_name, domain, address, ttl, fee, nonce, password, network_id, force, wait, json_):
+def name_transfer(keystore_name, domain, address, ttl, fee, nonce, password, force, wait, json_):
     """
     Transfer a name to another account
     """
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
-        name = _node_cli(network_id=network_id).AEName(domain)
+        name = _node_cli().AEName(domain)
         name.update_status()
         if name.status != name.Status.CLAIMED:
             print(f"Domain is {name.status} and cannot be transferred")
@@ -752,8 +744,7 @@ def contracts():
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price, amount, deposit, password, ttl, fee, nonce, network_id, force, wait, json_):
+def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price, amount, deposit, password, ttl, fee, nonce, force, wait, json_):
     """
     Deploy a contract to the chain and create a deploy descriptor
     with the contract informations that can be use to invoke the contract
@@ -770,7 +761,7 @@ def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price,
             set_global_options(json_, force, wait)
             account, _ = _account(keystore_name, password=password)
             bytecode = fp.read()
-            contract = _node_cli(network_id=network_id).Contract()
+            contract = _node_cli().Contract()
             tx = contract.create(account, bytecode, init_calldata=init_calldata, gas=gas, amount=amount,
                                  gas_price=gas_price, deposit=deposit, tx_ttl=ttl, fee=fee)
             _print_object(tx, title="contract create")
@@ -789,8 +780,7 @@ def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price,
 @account_options
 @online_options
 @transaction_options
-@sign_options
-def contract_call(keystore_name, deploy_descriptor, function, params, return_type, gas,  password, network_id, force, wait, json_):
+def contract_call(keystore_name, deploy_descriptor, function, params, return_type, gas,  password, force, wait, json_):
     print("Not yet implemented")
     return
     try:
@@ -803,7 +793,7 @@ def contract_call(keystore_name, deploy_descriptor, function, params, return_typ
             set_global_options(json_, force, wait)
             account, _ = _account(keystore_name, password=password)
 
-            contract = _node_cli(network_id=network_id).Contract(source, bytecode=bytecode, address=address)
+            contract = _node_cli().Contract(source, bytecode=bytecode, address=address)
             tx = contract.tx_call(account, function, params, gas=gas)
             _print_object(tx, "contract call")
     except Exception as e:

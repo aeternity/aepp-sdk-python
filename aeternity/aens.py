@@ -88,7 +88,7 @@ class AEName:
             return defaults.NAME_BID_TIMEOUTS.get(1) + claim_height
         if name_len < 8:
             return defaults.NAME_BID_TIMEOUTS.get(4) + claim_height
-        if name_len < 31:
+        if name_len <= defaults.NAME_BID_MAX_LENGTH:
             return defaults.NAME_BID_TIMEOUTS.get(8) + claim_height
         return claim_height
 
