@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [5.0.1](https://github.com/aeternity/aepp-sdk-python/releases/tag/5.0.1) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/5.0.0...5.0.1)) - 2019-10-06
+
+### Bug Fixes
+- fix: compatibility range for node version (#251) ([a1b273e](https://github.com/aeternity/aepp-sdk-python/commit/a1b273eb73b093c81c8ef3e8de3dcfe24989a8d5)).
+- fix: inspect oracle (#252) ([9daf5ef](https://github.com/aeternity/aepp-sdk-python/commit/9daf5efae9a6abb2a312667078c1f76ccf21be39)).
+
+
+
 ## [5.0.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/5.0.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/4.3.0...5.0.0)) - 2019-10-04
 
 
