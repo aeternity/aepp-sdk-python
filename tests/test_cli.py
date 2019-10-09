@@ -193,7 +193,7 @@ def test_cli_name_claim(chain_fixture, tempdir):
 
 def test_cli_name_auction(chain_fixture, tempdir):
     if chain_fixture.NODE_CLI.get_consensus_protocol_version() < identifiers.PROTOCOL_LIMA:
-        skip("name auction is only supported after Lima HF")
+        pytest.skip("name auction is only supported after Lima HF")
         return
     node_cli = chain_fixture.NODE_CLI
     account_alice_path = _account_path(tempdir, chain_fixture.ALICE)
