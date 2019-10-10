@@ -1,4 +1,4 @@
-from aeternity.hashing import _int, _int_decode, _binary, _binary_decode, _id, _id_decode, encode, decode, hash_encode, name_id
+from aeternity.hashing import _int, _int_decode, _binary, _binary_decode, _id, _id_decode, encode, decode, hash_encode
 from aeternity.openapi import OpenAPICli
 from aeternity import identifiers as idf
 from aeternity import defaults
@@ -897,32 +897,6 @@ class TxBuilder:
         )
         return self._build_txobject(body)
         # return self.api.post_name_revoke(body=body).tx
-
-    def tx_name_spend(self, sender_id, recipient_name, amount, payload, fee, ttl, nonce) -> tuple:
-        """
-        create a spend by name transaction
-        :param sender_id: the public key of the sender
-        :param recipient_name: AENS name to transfer amount to
-        :param amount: the amount to send
-        :param payload: the payload associated with the data
-        :param fee: the fee for the transaction
-        :param ttl: the absolute ttl of the transaction
-        :param nonce: the nonce of the transaction
-        """
-        gen_name_id = name_id(recipient_name)
-        print("Name ID: ", gen_name_id)
-        body = dict(
-            tag=idf.OBJECT_TAG_SPEND_TRANSACTION,
-            version=idf.VSN,
-            recipient_id=gen_name_id,
-            amount=amount,
-            fee=fee,
-            sender_id=sender_id,
-            payload=encode(idf.BYTE_ARRAY, payload),
-            ttl=ttl,
-            nonce=nonce,
-        )
-        return self._build_txobject(body)
 
     # CONTRACTS
 
