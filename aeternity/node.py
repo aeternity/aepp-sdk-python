@@ -260,17 +260,10 @@ class NodeClient:
         """
         Create and execute a spend to name_id transaction
         """
-        # retrieve the nonce
-        account.nonce = self.get_next_nonce(account.get_address()) if account.nonce == 0 else account.nonce + 1
-        # retrieve ttl
-        tx_ttl = self.compute_absolute_ttl(tx_ttl)
-        # build the transaction
-        tx = self.tx_builder.tx_name_spend(account.get_address(), recipient_name, amount, payload, fee, tx_ttl.absolute_ttl, account.nonce)
-        # get the signature
-        tx = self.sign_transaction(account, tx)
-        # post the signed transaction transaction
-        self.broadcast_transaction(tx)
-        return tx
+        if utils.is_valid_aens_name(recipient_name):
+            name_id = hashing.name_id(recipient_name)
+            return self.spend(account, name_id, amount, payload, fee, tx_ttl)
+        raise TypeError("Invalid AENS name. Please provide a valid AENS name.")
 
     def wait_for_transaction(self, tx_hash, max_retries=None, polling_interval=None):
         """
