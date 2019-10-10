@@ -272,7 +272,7 @@ class NodeClient:
         self.broadcast_transaction(tx)
         return tx
 
-    def wait_for_transaction(self, tx_hash, max_retries=None, polling_interval=None, confirm_transaction=False):
+    def wait_for_transaction(self, tx_hash, max_retries=None, polling_interval=None):
         """
         Wait for a transaction to be mined for an account
         The method will wait for a specific transaction to be included in the chain,
