@@ -735,7 +735,7 @@ def contracts():
 @contracts.command('deploy', help='Deploy a contract on the chain')
 @click.argument('keystore_name', required=True)
 @click.argument("bytecode_file", required=True)
-@click.option("--init-calldata", default=defaults.CONTRACT_INIT_CALLDATA, help="The calldata for the init function", show_default=True)
+@click.option("--init-calldata", help="The calldata for the init function", required=True)
 @click.option("--gas", default=defaults.CONTRACT_GAS, help='Amount of gas to deploy the contract', show_default=True)
 @click.option("--amount", default=defaults.CONTRACT_AMOUNT, help='Amount of tokens to transfer to the contract', show_default=True)
 @click.option("--gas-price", default=defaults.CONTRACT_GAS_PRICE, help='The gas price used to execute the contract init function', show_default=True)
@@ -754,16 +754,19 @@ def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price,
     source file. Multiple deploy of the same contract file will generate different
     deploy descriptor
     """
-    print("Not yet implemented")
-    return
     try:
         with open(bytecode_file) as fp:
             set_global_options(json_, force, wait)
             account, _ = _account(keystore_name, password=password)
             bytecode = fp.read()
             contract = _node_cli().Contract()
-            tx = contract.create(account, bytecode, init_calldata=init_calldata, gas=gas, amount=amount,
-                                 gas_price=gas_price, deposit=deposit, tx_ttl=ttl, fee=fee)
+            tx = contract.create(account, bytecode, init_calldata,
+                                 gas=gas,
+                                 amount=amount,
+                                 gas_price=gas_price,
+                                 deposit=deposit,
+                                 tx_ttl=ttl,
+                                 fee=fee)
             _print_object(tx, title="contract create")
     except Exception as e:
         _print_error(e, exit_code=1)
