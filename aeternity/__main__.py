@@ -774,31 +774,32 @@ def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price,
 
 @contracts.command('call', help='Execute a function of the contract')
 @click.argument('keystore_name', required=True)
-@click.argument("deploy_descriptor", required=True)
-@click.argument("function", required=True)
-@click.argument("params", required=True)
-@click.argument("return_type", required=True)
-@click.option("--gas", default=defaults.CONTRACT_GAS, help='Amount of gas to deploy the contract', show_default=True)
+@click.argument('contract_id', help='the id of the deployed contract ex. ct_xyz', required=True)
+@click.argument("calldata", required=True)
+@click.argument("function_name")
+@click.option("--arguments", default=None, help="Argument of the function if any, comma separated")
+@click.option("--gas", default=defaults.CONTRACT_GAS, help='Gas limit for the contract call', show_default=True)
+@click.option("--gas-price", default=defaults.CONTRACT_GAS_PRICE, help='Gas unit price for the contract call', show_default=True)
+@click.option("--amount", default=defaults.CONTRACT_AMOUNT, help='Amount of token (only for payable contracts)', show_default=True)
 @global_options
 @account_options
 @online_options
 @transaction_options
-def contract_call(keystore_name, deploy_descriptor, function, params, return_type, gas,  password, force, wait, json_):
-    print("Not yet implemented")
-    return
+def contract_call(keystore_name, contract_id, function_name, arguments, calldata, gas, gas_price, amount,
+                  password, ttl, fee, nonce, force, wait, json_):
     try:
-        with open(deploy_descriptor) as fp:
-            contract = json.load(fp)
-            source = contract.get('source')
-            bytecode = contract.get('bytecode')
-            address = contract.get('address')
-
-            set_global_options(json_, force, wait)
-            account, _ = _account(keystore_name, password=password)
-
-            contract = _node_cli().Contract(source, bytecode=bytecode, address=address)
-            tx = contract.tx_call(account, function, params, gas=gas)
-            _print_object(tx, "contract call")
+        set_global_options(json_, force, wait)
+        account, _ = _account(keystore_name, password=password)
+        arguments = [] if arguments is None else arguments.split(",")
+        contract = _node_cli().Contract(address=contract_id)
+        tx = contract.call(contract_id,
+                           account, function_name, arguments, calldata,
+                           amount=amount,
+                           gas=gas,
+                           gas_price=gas_price,
+                           fee=fee,
+                           tx_ttl=ttl)
+        _print_object(tx, "contract call")
     except Exception as e:
         _print_error(e, exit_code=1)
 
