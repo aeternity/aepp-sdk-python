@@ -153,13 +153,7 @@ class Contract:
         """
         Initialize a contract object
 
-        if bytecode is not provided it will be computed using the compile command.
-
-        :param source_code: the source code of the contract
-        :param bytecode: the bytecode of the contract
-        :param address: the address of the contract
-        :param abi: the abi, default 'sophia'
-        :param client: the epoch client to use
+        :param client: the node client to use
         """
         self.client = client
 
@@ -196,7 +190,7 @@ class Contract:
             # get the account nonce and ttl
             nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
             # build the transaction
-            tx = txb.tx_contract_call(account.get_address(), self.address, calldata, function, arg,
+            tx = txb.tx_contract_call(account.get_address(), contract_id, calldata, function, arg,
                                       amount, gas, gas_price, abi_version,
                                       fee, ttl, nonce)
             # sign the transaction
@@ -219,12 +213,10 @@ class Contract:
         # version 2.5.x
         return call_object
 
-    def create(self,
-               account,
-               bytecode,
+    # TODO: this has to be deprecated, the init_calldata must always be present
+    def create(self, account, bytecode, init_calldata,
                amount=defaults.CONTRACT_AMOUNT,
                deposit=defaults.CONTRACT_DEPOSIT,
-               init_calldata=defaults.CONTRACT_INIT_CALLDATA,
                gas=defaults.CONTRACT_GAS,
                gas_price=defaults.CONTRACT_GAS_PRICE,
                fee=defaults.FEE,
