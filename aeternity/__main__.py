@@ -736,10 +736,10 @@ def contracts():
 @click.argument('keystore_name', required=True)
 @click.argument("bytecode_file", required=True)
 @click.option("--init-calldata", help="The calldata for the init function", required=True)
-@click.option("--gas", default=defaults.CONTRACT_GAS, help='Amount of gas to deploy the contract', show_default=True)
-@click.option("--amount", default=defaults.CONTRACT_AMOUNT, help='Amount of tokens to transfer to the contract', show_default=True)
-@click.option("--gas-price", default=defaults.CONTRACT_GAS_PRICE, help='The gas price used to execute the contract init function', show_default=True)
-@click.option("--deposit", default=defaults.CONTRACT_AMOUNT, help='A initial deposit to the contract', show_default=True)
+@click.option("--gas", default=defaults.CONTRACT_GAS, help='Amount of gas to deploy the contract', show_default=True, type=int)
+@click.option("--amount", default=defaults.CONTRACT_AMOUNT, help='Amount of tokens to transfer to the contract', show_default=True, type=int)
+@click.option("--gas-price", default=defaults.CONTRACT_GAS_PRICE, help='The gas price used to execute the contract init function', show_default=True, type=int)
+@click.option("--deposit", default=defaults.CONTRACT_AMOUNT, help='A initial deposit to the contract', show_default=True, type=int)
 @global_options
 @account_options
 @online_options
@@ -774,9 +774,9 @@ def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price,
 
 @contracts.command('call', help='Execute a function of the contract')
 @click.argument('keystore_name', required=True)
-@click.argument('contract_id', help='the id of the deployed contract ex. ct_xyz', required=True)
-@click.argument("calldata", required=True)
+@click.argument('contract_id', required=True)
 @click.argument("function_name")
+@click.option("--call-data", default=None, help="The encoded calldata of the function", show_default=True)
 @click.option("--arguments", default=None, help="Argument of the function if any, comma separated")
 @click.option("--gas", default=defaults.CONTRACT_GAS, help='Gas limit for the contract call', show_default=True)
 @click.option("--gas-price", default=defaults.CONTRACT_GAS_PRICE, help='Gas unit price for the contract call', show_default=True)
@@ -809,8 +809,6 @@ def contract_call(keystore_name, contract_id, function_name, arguments, calldata
 @global_options
 @online_options
 def contract_call_info(tx_hash, force, wait, json_):
-    print("Not yet implemented")
-    return
     try:
         contract = _node_cli().Contract()
         call_object = contract.get_call_object(tx_hash)
