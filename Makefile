@@ -19,7 +19,7 @@ test: test-all
 
 test-all:
 	@echo run pytest
-	pytest -v --junitxml test-results.xml tests --cov=aeternity --cov-config .coveragerc --cov-report xml:coverage.xml
+	pytest -W ignore::DeprecationWarning -v --junitxml test-results.xml tests --cov=aeternity --cov-config .coveragerc --cov-report xml:coverage.xml
 	@echo done
 
 lint: lint-all
