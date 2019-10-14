@@ -51,8 +51,8 @@ def _base64_decode(encoded_str: str) -> bytes:
     return data
 
 
-def _blacke2b_digest(data):
-    """create a blacke2b 32 bit raw encoded digest"""
+def _blake2b_digest(data):
+    """create a blake2b 32 bit raw encoded digest"""
     return blake2b(data=data, digest_size=32, encoder=RawEncoder)
 
 
@@ -108,7 +108,7 @@ def decode_rlp(data):
 
 def hash(data):
     """run the default hashing algorithm"""
-    return _blacke2b_digest(data)
+    return _blake2b_digest(data)
 
 
 def hash_encode(prefix, data):
