@@ -199,9 +199,11 @@ class Contract(object):
             raise ValueError(f"Invalid contract address {address}")
         self.address = address
 
-    def aci(self, aci):
+    def setACI(self, aci):
         if self.aci:
             raise ContractError("ACI already set")
+        if aci is None:
+            raise ValueError("Invalid ACI")
         self.aci = aci
         self.__generate_methods()
 
