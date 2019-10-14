@@ -161,7 +161,9 @@ class Contract:
         if not self.client:
             raise ValueError("Node client not provided")
         self.source = kwargs.get('source', None)
-        self.address = kwargs.get('address', None)
+        address = kwargs.get('address', None)
+        if address:
+            self.at(address)
         self.bytecode = kwargs.get('bytecode', None)
         self.aci = kwargs.get('aci', None)
         self.compiler = kwargs.get('compiler', None)
@@ -201,7 +203,7 @@ class Contract:
         """Call a sophia contract"""
 
         if not utils.is_valid_hash(contract_id, prefix=identifiers.CONTRACT_ID):
-            raise ValueError(f"Invalid contract id {contract_id}")
+            raise ValueError(f"Invalid contract address {contract_id}")
         # check if the contract exists
         try:
             self.client.get_contract(pubkey=contract_id)
