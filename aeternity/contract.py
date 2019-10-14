@@ -150,13 +150,25 @@ class ContractError(Exception):
 
 class Contract:
 
-    def __init__(self, client):
+    def __init__(self, **kwargs):
         """
         Initialize a contract object
 
         :param client: the node client to use
         """
-        self.client = client
+        self.client = kwargs.get('client', None)
+        if not self.client:
+            raise ValueError("Node client not provided")
+        self.source = kwargs.get('source', None)
+        self.address = kwargs.get('address', None)
+        self.bytecode = kwargs.get('bytecode', None)
+        self.aci = kwargs.get('aci', None)
+        self.compiler = kwargs.get('compiler', None)
+        if self.compiler and isinstance(self.compiler, str):
+            self.compiler = CompilerClient(self.compiler)
+        if self.compiler and self.source:
+            self.bytecode = self.compiler.compile(self.source)
+            self.aci = self.compiler.aci(self.source)
 
     def call(self, contract_id,
              account, function, calldata,
@@ -198,7 +210,7 @@ class Contract:
 
     def get_call_object(self, tx_hash):
         """
-        retrieve the call object for a contract call transactio
+        retrieve the call object for a contract call transaction
         """
         # unsigned transaction of the call
         call_object = self.client.get_transaction_info_by_hash(hash=tx_hash)
