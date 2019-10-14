@@ -163,7 +163,9 @@ class Contract(object):
         if not self.client:
             raise ValueError("Node client not provided")
         self.source = kwargs.get('source', None)
-        self.address = kwargs.get('address', None)
+        address = kwargs.get('address', None)
+        if address:
+            self.at(address)
         self.bytecode = kwargs.get('bytecode', None)
         self.aci = kwargs.get('aci', None)
         self.compiler = kwargs.get('compiler', None)
@@ -192,6 +194,11 @@ class Contract(object):
         contract_method.__doc__ = method.doc
         setattr(self, contract_method.__name__, contract_method)
 
+    def at(self, address):
+        if not address or not utils.is_valid_hash(address, prefix=identifiers.CONTRACT_ID):
+            raise ValueError(f"Invalid contract address {address}")
+        self.address = address
+
     def call_static(self, contract_id):
         """
         Execute a static contract call
@@ -209,7 +216,7 @@ class Contract(object):
         """Call a sophia contract"""
 
         if not utils.is_valid_hash(contract_id, prefix=identifiers.CONTRACT_ID):
-            raise ValueError(f"Invalid contract id {contract_id}")
+            raise ValueError(f"Invalid contract address {contract_id}")
         # check if the contract exists
         try:
             self.client.get_contract(pubkey=contract_id)
