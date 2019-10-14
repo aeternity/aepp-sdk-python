@@ -195,11 +195,17 @@ class Contract(object):
         setattr(self, contract_method.__name__, contract_method)
 
     def at(self, address):
+        """
+        Set contract address
+        """
         if not address or not utils.is_valid_hash(address, prefix=identifiers.CONTRACT_ID):
             raise ValueError(f"Invalid contract address {address}")
         self.address = address
 
     def setACI(self, aci):
+        """
+        Set contract ACI (if not provided during initialization)
+        """
         if self.aci:
             raise ContractError("ACI already set")
         if aci is None:
@@ -208,6 +214,9 @@ class Contract(object):
         self.__generate_methods()
 
     def setSource(self, source):
+        """
+        Set contract source (if not provided during initialization)
+        """
         if self.source:
             raise ContractError("Source already provided")
         if source is None:
