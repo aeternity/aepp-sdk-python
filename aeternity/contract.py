@@ -207,6 +207,18 @@ class Contract(object):
         self.aci = aci
         self.__generate_methods()
 
+    def setSource(self, source):
+        if self.source:
+            raise ContractError("Source already provided")
+        if source is None:
+            raise ValueError("Invalid contract source")
+        self.source = source
+        if self.compiler:
+            self.bytecode = self.compiler.compile(self.source)
+            if not self.aci:
+                aci = self.compiler.aci(self.source)
+                self.setACI(aci)
+
     def call_static(self, contract_id):
         """
         Execute a static contract call
