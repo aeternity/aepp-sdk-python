@@ -199,6 +199,12 @@ class Contract(object):
             raise ValueError(f"Invalid contract address {address}")
         self.address = address
 
+    def aci(self, aci):
+        if self.aci:
+            raise ContractError("ACI already set")
+        self.aci = aci
+        self.__generate_methods()
+
     def call_static(self, contract_id):
         """
         Execute a static contract call
