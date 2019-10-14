@@ -17,6 +17,7 @@ class CompilerClient(object):
     The compiler client Fate version is the client for the aesophia_http compiler v4.x.x series,
     that is compatible with LIMA protocol (v4)
     """
+
     def __init__(self, compiler_url='http://localhost:3080', **kwargs):
         self.compiler_url = compiler_url
         self.compiler_cli = openapi.OpenAPICli(compiler_url, compatibility_version_range=__compiler_compatibility__)
@@ -171,6 +172,25 @@ class Contract(object):
         if self.compiler and self.source:
             self.bytecode = self.compiler.compile(self.source)
             self.aci = self.compiler.aci(self.source)
+        self.__generate_methods()
+
+    def __generate_methods(self):
+        if self.aci:
+            for f in self.aci.encoded_aci.contract.functions:
+                self.__add_contract_method(namedtupled.map({
+                    "name": f.name,
+                    "doc": f"Contract Method {f.name}",
+                    "typeDef": f.arguments,
+                    "stateful": f.stateful
+                }, _nt_name="ContractMethod"))
+
+    def __add_contract_method(self, method):
+        def contract_method(*args, **kwargs):
+            typeDef = method.typeDef
+            isStateful = method.stateful
+        contract_method.__name__ = method.name
+        contract_method.__doc__ = method.doc
+        setattr(self, contract_method.__name__, contract_method)
 
     def call_static(self, contract_id):
         """
