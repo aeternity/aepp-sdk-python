@@ -158,7 +158,14 @@ class Contract(object):
         :param aci: the aci of the contract (optional). If provided with the source and compiler, then the provided value will be overwritten.
         :param compiler: compiler url or instance of the CompilerClient (optional)
         :param client: the aeternity client to use
+        :param gas: Gas to be used for all contract interactions (optional)
+        :param fee: fee to be used for all contract interactions (optional)
+        :param gas_price: Gas price to be used for all contract interactions (optional)
         """
+        self.gas = kwargs.get('gas', defaults.CONTRACT_GAS)
+        self.gas_price = kwargs.get('gas_price', defaults.CONTRACT_GAS_PRICE)
+        self.fee = kwargs.get('fee', defaults.FEE)
+
         self.client = kwargs.get('client', None)
         if not self.client:
             raise ValueError("Node client not provided")
@@ -237,13 +244,15 @@ class Contract(object):
     def call(self, contract_id,
              account, function, arg, calldata,
              amount=defaults.CONTRACT_AMOUNT,
-             gas=defaults.CONTRACT_GAS,
-             gas_price=defaults.CONTRACT_GAS_PRICE,
-             fee=defaults.FEE,
+             gas=None,
+             gas_price=None,
+             fee=None,
              abi_version=None,
              tx_ttl=defaults.TX_TTL):
         """Call a sophia contract"""
-
+        gas = gas if gas is not None else self.gas
+        gas_price = gas_price if gas_price is not None else self.gas_price
+        fee = fee if fee is not None else self.fee
         if not utils.is_valid_hash(contract_id, prefix=identifiers.CONTRACT_ID):
             raise ValueError(f"Invalid contract address {contract_id}")
         # check if the contract exists
@@ -290,9 +299,9 @@ class Contract(object):
                amount=defaults.CONTRACT_AMOUNT,
                deposit=defaults.CONTRACT_DEPOSIT,
                init_calldata=defaults.CONTRACT_INIT_CALLDATA,
-               gas=defaults.CONTRACT_GAS,
-               gas_price=defaults.CONTRACT_GAS_PRICE,
-               fee=defaults.FEE,
+               gas=None,
+               gas_price=None,
+               fee=None,
                vm_version=None,
                abi_version=None,
                tx_ttl=defaults.TX_TTL):
@@ -301,6 +310,9 @@ class Contract(object):
         :return: the transaction
         """
         try:
+            gas = gas if gas is not None else self.gas
+            gas_price = gas_price if gas_price is not None else self.gas_price
+            fee = fee if fee is not None else self.fee
             # retrieve the correct vm/abi version
             vm, abi = self.client.get_vm_abi_versions()
             vm_version = vm if vm_version is None else vm_version
