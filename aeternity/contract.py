@@ -157,6 +157,10 @@ class Contract:
 
         :param client: the node client to use
         """
+        self.gas = kwargs.get('gas', defaults.CONTRACT_GAS)
+        self.gas_price = kwargs.get('gas_price', defaults.CONTRACT_GAS_PRICE)
+        self.fee = kwargs.get('fee', defaults.FEE)
+
         self.client = kwargs.get('client', None)
         if not self.client:
             raise ValueError("Node client not provided")
@@ -195,13 +199,15 @@ class Contract:
     def call(self, contract_id,
              account, function, calldata,
              amount=defaults.CONTRACT_AMOUNT,
-             gas=defaults.CONTRACT_GAS,
-             gas_price=defaults.CONTRACT_GAS_PRICE,
-             fee=defaults.FEE,
+             gas=None,
+             gas_price=None,
+             fee=None,
              abi_version=None,
              tx_ttl=defaults.TX_TTL):
         """Call a sophia contract"""
-
+        gas = gas if gas is not None else self.gas
+        gas_price = gas_price if gas_price is not None else self.gas_price
+        fee = fee if fee is not None else self.fee
         if not utils.is_valid_hash(contract_id, prefix=identifiers.CONTRACT_ID):
             raise ValueError(f"Invalid contract address {contract_id}")
         # check if the contract exists
@@ -267,6 +273,9 @@ class Contract:
         :return: the transaction
         """
         try:
+            gas = gas if gas is not None else self.gas
+            gas_price = gas_price if gas_price is not None else self.gas_price
+            fee = fee if fee is not None else self.fee
             # retrieve the correct vm/abi version
             vm, abi = self.client.get_vm_abi_versions()
             vm_version = vm if vm_version is None else vm_version
