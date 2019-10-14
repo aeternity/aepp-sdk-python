@@ -2,7 +2,7 @@
 DIST_FOLDER = dist
 BUILD_FOLDER = build
 # extra test options
-TEST_OPTS = ''
+TEST_OPTS = '-k test_cli_name_claim'
 
 .PHONY: list
 list:
