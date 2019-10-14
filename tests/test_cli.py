@@ -29,9 +29,10 @@ def call_aecli(*params):
     print(cmd)
     status, output = subprocess.getstatusoutput(cmd)
     if status != 0:
-        print(output)
+        print(f"CMD status {status}, output: {output}")
         raise subprocess.CalledProcessError(status, cmd)
     try:
+        print(f"CMD status {status}, output: {output}")
         return json.loads(output)
     except Exception as e:
         return output
