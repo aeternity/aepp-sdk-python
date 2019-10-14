@@ -163,7 +163,7 @@ def test_cli_phases_spend(chain_fixture, tempdir):
     recipient_account = chain_fixture.NODE_CLI.get_account_by_pubkey(pubkey=recipient_id)
     assert recipient_account.balance == 100
 
-
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_cli_name_claim(chain_fixture, tempdir):
     account_alice_path = _account_path(tempdir, chain_fixture.ALICE)
     # get a domain that is not under auction scheme
@@ -192,6 +192,7 @@ def test_cli_name_claim(chain_fixture, tempdir):
     assert(pointers[0]['id'] == chain_fixture.ALICE.get_address())
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_cli_name_auction(chain_fixture, tempdir):
     if chain_fixture.NODE_CLI.get_consensus_protocol_version() < identifiers.PROTOCOL_LIMA:
         pytest.skip("name auction is only supported after Lima HF")
