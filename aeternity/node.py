@@ -471,5 +471,5 @@ class NodeClient:
         return oracles.OracleQuery(self, oracle_id, id=query_id)
 
     # support contract
-    def Contract(self):
-        return contract.Contract(client=self)
+    def Contract(self, **kwargs):
+        return contract.Contract(client=self, **kwargs)

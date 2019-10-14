@@ -145,23 +145,32 @@ class ContractError(Exception):
     pass
 
 
-class Contract:
-    EVM = 'evm'
-    SOPHIA = 'sophia'
+class Contract(object):
 
-    def __init__(self, client):
+    def __init__(self, **kwargs):
         """
         Initialize a contract object
 
-        if bytecode is not provided it will be computed using the compile command.
-
-        :param source_code: the source code of the contract
-        :param bytecode: the bytecode of the contract
-        :param address: the address of the contract
-        :param abi: the abi, default 'sophia'
-        :param client: the epoch client to use
+        :param source: the source code of the contract (optional)
+        :param address: address of the currently deployed contract (optional)
+        :param bytecode: the bytecode of the contract (optional). If provided with the source and compiler, then the provided value will be overwritten.
+        :param aci: the aci of the contract (optional). If provided with the source and compiler, then the provided value will be overwritten.
+        :param compiler: compiler url or instance of the CompilerClient (optional)
+        :param client: the aeternity client to use
         """
-        self.client = client
+        self.client = kwargs.get('client', None)
+        if not self.client:
+            raise ValueError("Node client not provided")
+        self.source = kwargs.get('source', None)
+        self.address = kwargs.get('address', None)
+        self.bytecode = kwargs.get('bytecode', None)
+        self.aci = kwargs.get('aci', None)
+        self.compiler = kwargs.get('compiler', None)
+        if self.compiler and isinstance(self.compiler, str):
+            self.compiler = CompilerClient(self.compiler)
+        if self.compiler and self.source:
+            self.bytecode = self.compiler.compile(self.source)
+            self.aci = self.compiler.aci(self.source)
 
     def call_static(self, contract_id):
         """
@@ -209,7 +218,7 @@ class Contract:
 
     def get_call_object(self, tx_hash):
         """
-        retrieve the call object for a contract call transactio
+        retrieve the call object for a contract call transaction
         """
         # unsigned transaction of the call
         call_object = self.client.get_transaction_info_by_hash(hash=tx_hash)
