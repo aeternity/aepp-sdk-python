@@ -2,7 +2,7 @@
 DIST_FOLDER = dist
 BUILD_FOLDER = build
 # extra test options
-TEST_OPTS = '-k test_cli_name_claim'
+TEST_OPTS = ''
 
 .PHONY: list
 list:
@@ -21,7 +21,7 @@ test: test-all
 
 test-all:
 	@echo run pytest
-	PYTHONWARNINGS=ignore pytest -v --junitxml test-results.xml tests --cov=aeternity --cov-config .coveragerc --cov-report xml:coverage.xml $(TEST_OPTS)
+	pytest -v --junitxml test-results.xml tests --cov=aeternity --cov-config .coveragerc --cov-report xml:coverage.xml $(TEST_OPTS)
 	@echo done
 
 lint: lint-all
