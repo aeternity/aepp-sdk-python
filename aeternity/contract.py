@@ -164,7 +164,7 @@ class Contract:
         pass
 
     def call(self, contract_id,
-             account, function, arg, calldata,
+             account, function, calldata,
              amount=defaults.CONTRACT_AMOUNT,
              gas=defaults.CONTRACT_GAS,
              gas_price=defaults.CONTRACT_GAS_PRICE,
@@ -190,7 +190,7 @@ class Contract:
             # get the account nonce and ttl
             nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
             # build the transaction
-            tx = txb.tx_contract_call(account.get_address(), contract_id, calldata, function, arg,
+            tx = txb.tx_contract_call(account.get_address(), contract_id, calldata, function,
                                       amount, gas, gas_price, abi_version,
                                       fee, ttl, nonce)
             # sign the transaction

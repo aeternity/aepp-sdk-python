@@ -777,7 +777,6 @@ def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price,
 @click.argument('contract_id', required=True)
 @click.argument("function_name")
 @click.option("--call-data", default=None, help="The encoded calldata of the function", show_default=True)
-@click.option("--arguments", default=None, help="Argument of the function if any, comma separated")
 @click.option("--gas", default=defaults.CONTRACT_GAS, help='Gas limit for the contract call', show_default=True)
 @click.option("--gas-price", default=defaults.CONTRACT_GAS_PRICE, help='Gas unit price for the contract call', show_default=True)
 @click.option("--amount", default=defaults.CONTRACT_AMOUNT, help='Amount of token (only for payable contracts)', show_default=True)
@@ -785,15 +784,14 @@ def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price,
 @account_options
 @online_options
 @transaction_options
-def contract_call(keystore_name, contract_id, function_name, arguments, calldata, gas, gas_price, amount,
+def contract_call(keystore_name, contract_id, function_name, calldata, gas, gas_price, amount,
                   password, ttl, fee, nonce, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
-        arguments = [] if arguments is None else arguments.split(",")
         contract = _node_cli().Contract(address=contract_id)
         tx = contract.call(contract_id,
-                           account, function_name, arguments, calldata,
+                           account, function_name, calldata,
                            amount=amount,
                            gas=gas,
                            gas_price=gas_price,
