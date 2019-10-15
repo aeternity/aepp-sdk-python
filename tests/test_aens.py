@@ -1,6 +1,7 @@
 from aeternity.aens import AEName
 from aeternity.identifiers import PROTOCOL_LIMA
 from tests.conftest import random_domain
+from aeternity.signing import Account
 
 from pytest import raises, skip
 
@@ -111,6 +112,27 @@ def test_name_update(chain_fixture):
     assert name.pointers[0].id == chain_fixture.ALICE.get_address()
     assert name.pointers[0].key == "account_pubkey"
 
+def test_spend_by_name(chain_fixture):
+    # claim a domain
+    domain = random_domain(tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+    print(f"domain is {domain}")
+    name = chain_fixture.NODE_CLI.AEName(domain)
+    print("Claim name ", domain)
+    # generate a new address
+    target_address = Account.generate().get_address()
+    print(f"Target address {target_address}")
+    name.full_claim_blocking(chain_fixture.ALICE, target=target_address)
+    # domain claimed
+    name.update_status()
+    assert not chain_fixture.NODE_CLI.AEName(domain).is_available(), 'The name should be claimed now'
+    name.update_status()
+    print(f"domain is {name.domain} name_hash {name.name_hash}")
+    print("pointers", name.pointers)
+    tx = chain_fixture.NODE_CLI.spend_by_name(chain_fixture.ALICE, domain, 100)
+    print("DATA ", tx)
+    recipient_account = chain_fixture.NODE_CLI.get_account_by_pubkey(pubkey=target_address)
+    print(f"recipient address {target_address}, balance {recipient_account.balance}")
+    assert recipient_account.balance == 100
 
 # TODO: enable the test check for pointers
 
