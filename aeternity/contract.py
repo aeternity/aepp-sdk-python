@@ -1,5 +1,5 @@
 from aeternity import exceptions, __compiler_compatibility__
-from aeternity import utils, defaults, hashing, openapi, identifiers
+from aeternity import utils, defaults, hashing, openapi, identifiers, signing
 
 import namedtupled
 import semver
@@ -162,6 +162,7 @@ class Contract:
         self.fee = kwargs.get('fee', defaults.FEE)
         self.contract_amount = kwargs.get('amount', defaults.CONTRACT_AMOUNT)
         self.client = kwargs.get('client', None)
+        self.account = kwargs.get('account', None)
         if not self.client:
             raise ValueError("Node client not provided")
         self.source = kwargs.get('source', None)
@@ -171,6 +172,8 @@ class Contract:
         self.bytecode = kwargs.get('bytecode', None)
         self.aci = kwargs.get('aci', None)
         self.compiler = kwargs.get('compiler', None)
+        if self.account and type(self.account) is not signing.Account:
+            raise TypeError("Invalid account type. Use `class Account` for creating an account")
         if self.compiler and isinstance(self.compiler, str):
             self.compiler = CompilerClient(self.compiler)
         if self.compiler and self.source:
@@ -205,7 +208,7 @@ class Contract:
              abi_version=None,
              tx_ttl=defaults.TX_TTL):
         """Call a sophia contract"""
-        opts = self.__process_options(gas=gas, gas_price=gas_price, amount=amount, fee=fee)
+        opts = self.__process_options(gas=gas, gas_price=gas_price, amount=amount, fee=fee, account=account)
         if not utils.is_valid_hash(contract_id, prefix=identifiers.CONTRACT_ID):
             raise ValueError(f"Invalid contract address {contract_id}")
         # check if the contract exists
@@ -221,13 +224,13 @@ class Contract:
             # get the transaction builder
             txb = self.client.tx_builder
             # get the account nonce and ttl
-            nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
+            nonce, ttl = self.client._get_nonce_ttl(opts.account.get_address(), tx_ttl)
             # build the transaction
             tx = txb.tx_contract_call(account.get_address(), contract_id, calldata, function,
                                       amount, gas, gas_price, abi_version,
                                       fee, ttl, nonce)
             # sign the transaction
-            tx_signed = self.client.sign_transaction(account, tx)
+            tx_signed = self.client.sign_transaction(opts.account, tx)
             # post the transaction to the chain
             self.client.broadcast_transaction(tx_signed)
             return tx_signed
@@ -271,8 +274,7 @@ class Contract:
         :return: the transaction
         """
         try:
-            opts = self.__process_options(gas=gas, gas_price=gas_price, amount=amount, fee=fee)
-            print('Options:', opts, fee, self.fee, amount, self.contract_amount)
+            opts = self.__process_options(gas=gas, gas_price=gas_price, amount=amount, fee=fee, account=account)
             # retrieve the correct vm/abi version
             vm, abi = self.client.get_vm_abi_versions()
             vm_version = vm if vm_version is None else vm_version
@@ -280,7 +282,7 @@ class Contract:
             # get the transaction builder
             txb = self.client.tx_builder
             # get the account nonce and ttl
-            nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
+            nonce, ttl = self.client._get_nonce_ttl(opts.account.get_address(), tx_ttl)
             # build the transaction
             tx = txb.tx_contract_create(account.get_address(), bytecode, calldata,
                                         amount, deposit, gas, gas_price, vm_version, abi_version,
