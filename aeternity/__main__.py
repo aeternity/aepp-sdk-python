@@ -531,7 +531,7 @@ def name_claim(keystore_name, domain, name_ttl, name_salt, preclaim_tx_hash, ttl
             print("Domain not available")
             exit(0)
         # claim
-        tx = name.claim(account, name_salt, preclaim_tx_hash, fee=fee, tx_ttl=ttl)
+        tx = name.claim(preclaim_tx_hash, account, name_salt, fee=fee, tx_ttl=ttl)
         _print_object(tx, title=f'Name {domain} claim transaction')
     except ValueError as e:
         _print_error(e, exit_code=1)
@@ -542,13 +542,13 @@ def name_claim(keystore_name, domain, name_ttl, name_salt, preclaim_tx_hash, ttl
 @name.command('bid', help="Bid on a name auction")
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
-@click.argument('name_fee', required=True)
+@click.argument('name_fee', required=True, type=int)
 @click.option("--name-ttl", default=defaults.NAME_TTL, help=f'Lifetime of the name in blocks', show_default=True, type=int)
 @global_options
 @account_options
 @online_options
 @transaction_options
-def name_bid(keystore_name, domain, name_fee, ttl, fee, nonce, password, force, wait, json_):
+def name_bid(keystore_name, domain, name_ttl, name_fee, ttl, fee, nonce, password, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
