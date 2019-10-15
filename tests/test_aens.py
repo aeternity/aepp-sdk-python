@@ -151,7 +151,7 @@ def test_name_transfer_ownership(chain_fixture):
     name.full_claim_blocking(chain_fixture.ALICE)
     assert name.status == AEName.Status.CLAIMED
     name.update_status()
-    assert len(name.pointers == 0), "Pointers should be empty"
+    assert len(name.pointers) == 0, "Pointers should be empty"
 
     # now transfer the name to the other account
     name.transfer_ownership(chain_fixture.ALICE, chain_fixture.BOB.get_address())

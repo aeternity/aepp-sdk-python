@@ -32,7 +32,6 @@ class AEName:
         self.preclaimed_commitment_hash = None
         self.preclaim_salt = None
         # set after claimed
-        self.name_hash = None
         self.name_ttl = 0
         self.pointers = None
 
@@ -115,13 +114,11 @@ class AEName:
             response = self.client.get_name_entry_by_name(name=self.domain)
             self.status = NameStatus.CLAIMED
             self.name_ttl = response.ttl
-            self.name_hash = response.id
             self.pointers = response.pointers
         except OpenAPIClientException as e:
             # e.g. if the status is already PRECLAIMED or CLAIMED, don't reset
             # it to AVAILABLE.
             self.name_ttl = 0
-            self.name_hash = None
             self.pointers = None
             if e.code == 404:
                 self.status = NameStatus.AVAILABLE
