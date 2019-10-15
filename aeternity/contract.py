@@ -275,6 +275,9 @@ class Contract:
         """
         try:
             opts = self.__process_options(gas=gas, gas_price=gas_price, amount=amount, fee=fee, account=account)
+            bytecode = bytecode if bytecode is not None else self.bytecode
+            if bytecode is None:
+                raise ValueError("bytecode not present. Either provide contract bytecode or set contract source using `setSource` method")
             # retrieve the correct vm/abi version
             vm, abi = self.client.get_vm_abi_versions()
             vm_version = vm if vm_version is None else vm_version
