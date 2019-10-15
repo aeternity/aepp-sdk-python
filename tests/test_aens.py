@@ -134,7 +134,7 @@ def test_spend_by_name(chain_fixture):
     name.update_status()
     assert not chain_fixture.NODE_CLI.AEName(domain).is_available(), 'The name should be claimed now'
     name.update_status()
-    print(f"domain is {name.domain} name_hash {name.name_hash}")
+    print(f"domain is {name.domain} name_id {name.name_id}")
     print("pointers", name.pointers)
     tx = chain_fixture.NODE_CLI.spend_by_name(chain_fixture.ALICE, domain, 100)
     print("DATA ", tx)
