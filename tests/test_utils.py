@@ -36,7 +36,7 @@ def test_utils_is_valid_name():
         ('valid.test', True),
         ('valid.test', True),
         ('aeternity.com', False),
-        ('aeternity.aet', True),
+        ('aeternity.chain', True),
         ('om', False),
         (None, False),
         (".o.test", False),

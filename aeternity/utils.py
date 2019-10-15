@@ -50,7 +50,7 @@ def is_valid_aens_name(domain_name):
     Test if the provided name is valid for the aens system
     """
     if domain_name is None or not validators.domain(domain_name.lower()) or (
-            not domain_name.endswith(('.aet')) and not domain_name.endswith(('.test'))):
+            not domain_name.endswith(('.chain')) and not domain_name.endswith(('.test'))):
         return False
     return True
 

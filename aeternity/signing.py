@@ -134,7 +134,7 @@ class Account:
 
     @classmethod
     def from_secret_key_string(cls, key_string):
-        """create a keypair from a aet address and key_string key string
+        """create a keypair from a chain address and key_string key string
         :param key_string: the encoded key_string key (hex for private, prefixed base58 for public)
         :return: a keypair object or raise error if the public key doesn't match
         """
