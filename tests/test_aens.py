@@ -101,7 +101,7 @@ def test_name_update(chain_fixture):
     print(f"domain is {domain}")
     name = chain_fixture.NODE_CLI.AEName(domain)
     print("Claim name ", domain)
-    name.full_claim_blocking(chain_fixture.ALICE)
+    name.full_claim_blocking(chain_fixture.ALICE, chain_fixture.ALICE.get_address())
     # domain claimed
     name.update_status()
     assert not chain_fixture.NODE_CLI.AEName(domain).is_available(), 'The name should be claimed now'
@@ -129,7 +129,7 @@ def test_spend_by_name(chain_fixture):
     # generate a new address
     target_address = Account.generate().get_address()
     print(f"Target address {target_address}")
-    name.full_claim_blocking(chain_fixture.ALICE, target=target_address)
+    name.full_claim_blocking(chain_fixture.ALICE, target_address)
     # domain claimed
     name.update_status()
     assert not chain_fixture.NODE_CLI.AEName(domain).is_available(), 'The name should be claimed now'

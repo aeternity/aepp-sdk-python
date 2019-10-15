@@ -136,10 +136,9 @@ class AEName:
         self.update_status()
         return self.status == NameStatus.CLAIMED
 
-    def full_claim_blocking(self, account,
+    def full_claim_blocking(self, account, *targets,
                             name_ttl=defaults.NAME_TTL,
                             client_ttl=defaults.NAME_CLIENT_TTL,
-                            target=None,
                             tx_ttl=defaults.TX_TTL):
         """
         Execute a name claim and updates the pointer to it.
@@ -150,12 +149,12 @@ class AEName:
         3. pointers update
 
         :param account: the account registering the name
+        :param targets: the  name pointer targets to associate to the name
         :param preclaim_fee: the fee for the preclaiming operation
         :param claim_fee: the fee for the claiming operation
         :param update_fee: the fee for the update operation
         :param tx_ttl: the ttl for the transaction
         :param name_ttl: the ttl of the name (in blocks)
-        :param target: the public key to associate the name to (pointers)
         """
         # set the blocking to true
         blocking_orig = self.client.config.blocking_mode
@@ -174,11 +173,8 @@ class AEName:
         # wait for the block confirmation
         self.client.wait_for_confirmation(tx.hash)
         hashes['claim_tx'] = tx
-        # target is the same of account is not specified
-        if target is None:
-            target = account.get_address()
         # run update
-        tx = self.update(account, target, name_ttl=name_ttl, client_ttl=client_ttl)
+        tx = self.update(account, *targets, name_ttl=name_ttl, client_ttl=client_ttl)
         hashes['update_tx'] = tx
         # restore blocking value
         self.client.config.blocking_mode = blocking_orig
