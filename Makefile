@@ -1,6 +1,8 @@
 # build output folder
 DIST_FOLDER = dist
 BUILD_FOLDER = build
+# extra test options
+TEST_OPTS = ''
 
 .PHONY: list
 list:
@@ -19,7 +21,7 @@ test: test-all
 
 test-all:
 	@echo run pytest
-	pytest -v --junitxml test-results.xml tests --cov=aeternity --cov-config .coveragerc --cov-report xml:coverage.xml
+	pytest -v --junitxml test-results.xml tests --cov=aeternity --cov-config .coveragerc --cov-report xml:coverage.xml $(TEST_OPTS)
 	@echo done
 
 lint: lint-all

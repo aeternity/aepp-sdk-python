@@ -6,8 +6,9 @@ import aeternity
 import random
 from tests.conftest import NODE_URL, NODE_URL_DEBUG, NETWORK_ID
 from aeternity.signing import Account
-from aeternity import utils
+from aeternity import utils, identifiers
 from aeternity.aens import AEName
+from tests.conftest import random_domain
 
 import pytest
 
@@ -28,9 +29,10 @@ def call_aecli(*params):
     print(cmd)
     status, output = subprocess.getstatusoutput(cmd)
     if status != 0:
-        print(output)
+        print(f"CMD status {status}, output: {output}")
         raise subprocess.CalledProcessError(status, cmd)
     try:
+        print(f"CMD status {status}, output: {output}")
         return json.loads(output)
     except Exception as e:
         return output
@@ -160,3 +162,80 @@ def test_cli_phases_spend(chain_fixture, tempdir):
     # verify
     recipient_account = chain_fixture.NODE_CLI.get_account_by_pubkey(pubkey=recipient_id)
     assert recipient_account.balance == 100
+
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+@pytest.mark.skip("Have to suppress the test for a false positive due ci input")
+def test_cli_name_claim(chain_fixture, tempdir):
+    account_alice_path = _account_path(tempdir, chain_fixture.ALICE)
+    # get a domain that is not under auction scheme
+    domain = random_domain(length=13 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= identifiers.PROTOCOL_LIMA else 'test')
+    # let alice preclaim a name 
+    j = call_aecli('name', 'pre-claim', '--password', 'aeternity_bc', account_alice_path, domain, '--wait')
+    # retrieve the salt and the transaction hash 
+    salt = j.get("metadata",{}).get("salt")
+    preclaim_hash = j.get("hash")
+    # test that they are what we expect to be
+    assert(isinstance(salt, int))
+    assert(salt > 0)
+    assert(utils.is_valid_hash(preclaim_hash, identifiers.TRANSACTION_HASH))
+    # wait for confirmation
+    chain_fixture.NODE_CLI.wait_for_confirmation(preclaim_hash)
+    # now run the claim
+    j = call_aecli('name', 'claim', account_alice_path, domain, '--password', 'aeternity_bc', '--name-salt', f"{salt}", '--preclaim-tx-hash', preclaim_hash, '--wait')
+    assert(utils.is_valid_hash(j.get("hash"), identifiers.TRANSACTION_HASH))
+    # now run the name update
+    j = call_aecli('name', 'update', '--password', 'aeternity_bc', account_alice_path, domain, chain_fixture.ALICE.get_address())
+    assert(utils.is_valid_hash(j.get("hash"), identifiers.TRANSACTION_HASH))
+    # now inspect the name
+    j = call_aecli('inspect', domain)
+    pointers = j.get('pointers',[])
+    assert(len(pointers) == 1)
+    assert(pointers[0]['id'] == chain_fixture.ALICE.get_address())
+
+
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+def test_cli_name_auction(chain_fixture, tempdir):
+    if chain_fixture.NODE_CLI.get_consensus_protocol_version() < identifiers.PROTOCOL_LIMA:
+        pytest.skip("name auction is only supported after Lima HF")
+        return
+    node_cli = chain_fixture.NODE_CLI
+    account_alice_path = _account_path(tempdir, chain_fixture.ALICE)
+    account_bob_path = _account_path(tempdir, chain_fixture.ALICE)
+    # get a domain that is under auction scheme
+    domain = random_domain(length=9 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= identifiers.PROTOCOL_LIMA else 'test')
+    # let alice preclaim a name 
+    j = call_aecli('name', 'pre-claim', '--password', 'aeternity_bc', account_alice_path, domain, '--wait')
+    # retrieve the salt and the transaction hash 
+    salt = j.get("metadata",{}).get("salt")
+    preclaim_hash = j.get("hash")
+    # test that they are what we expect to be
+    assert(isinstance(salt, int))
+    assert(salt > 0)
+    assert(utils.is_valid_hash(preclaim_hash, identifiers.TRANSACTION_HASH))
+    # wait for confirmation
+    chain_fixture.NODE_CLI.wait_for_confirmation(preclaim_hash)
+    # now run the claim
+    j = call_aecli('name', 'claim', account_alice_path, domain, '--password', 'aeternity_bc', '--name-salt', f"{salt}", '--preclaim-tx-hash', preclaim_hash, '--wait')
+    assert(utils.is_valid_hash(j.get("hash"), identifiers.TRANSACTION_HASH))
+    # check that the tx was mined
+    claim_height = chain_fixture.NODE_CLI.get_transaction_by_hash(hash=j.get('hash')).block_height
+    assert(isinstance(claim_height, int) and claim_height > 0)
+    # now we have a first claim
+    # this is the name fee and the end block
+    name_fee = AEName.compute_bid_fee(domain)
+    aucion_end = AEName.compute_auction_end_block(domain, claim_height)
+    print(f"Name {domain}, name_fee {name_fee}, claim height: {claim_height}, auction_end: {aucion_end}")
+    # now make another bid 
+    # first compute the new name fee
+    name_fee = AEName.compute_bid_fee(domain, name_fee)
+    j = call_aecli('name', 'bid', account_bob_path, domain, f'{name_fee}', '--password', 'aeternity_bc', '--wait')
+    assert(utils.is_valid_hash(j.get("hash"), identifiers.TRANSACTION_HASH))
+    # check that the tx was mined
+    claim_height = chain_fixture.NODE_CLI.get_transaction_by_hash(hash=j.get('hash')).block_height
+    assert(isinstance(claim_height, int) and claim_height > 0)
+    aucion_end = AEName.compute_auction_end_block(domain, claim_height)
+    print(f"Name {domain}, name_fee {name_fee}, claim height: {claim_height}, auction_end: {aucion_end}")
+    name = chain_fixture.NODE_CLI.AEName(domain)
+    # name should still be available
+    assert(name.is_available())
+
