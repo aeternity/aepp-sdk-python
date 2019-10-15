@@ -234,7 +234,7 @@ class Contract(object):
         Set contract ACI (if not provided during initialization)
         """
         if self.aci:
-            raise ContractError("ACI already set")
+            raise ContractError("ACI is already present. ACI is only allowed to be set once.")
         if aci is None:
             raise ValueError("Invalid ACI")
         self.aci = aci
@@ -245,7 +245,7 @@ class Contract(object):
         Set contract source (if not provided during initialization)
         """
         if self.source:
-            raise ContractError("Source already provided")
+            raise ContractError("Source is already present. Source is only allowed to be set once.")
         if source is None:
             raise ValueError("Invalid contract source")
         self.source = source
@@ -313,8 +313,8 @@ class Contract(object):
         return call_object
 
     def create(self,
-               bytecode,
                init_calldata,
+               bytecode=None,
                account=None,
                amount=None,
                deposit=defaults.CONTRACT_DEPOSIT,
@@ -330,6 +330,9 @@ class Contract(object):
         """
         try:
             opts = self.__process_options(gas=gas, gas_price=gas_price, amount=amount, fee=fee, account=account)
+            bytecode = bytecode if bytecode is not None else self.bytecode
+            if bytecode is None:
+                raise ValueError("bytecode not present. Either provide contract bytecode or set contract source using `setSource` method")
             # retrieve the correct vm/abi version
             vm, abi = self.client.get_vm_abi_versions()
             vm_version = vm if vm_version is None else vm_version
