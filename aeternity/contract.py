@@ -160,7 +160,7 @@ class Contract:
         self.gas = kwargs.get('gas', defaults.CONTRACT_GAS)
         self.gas_price = kwargs.get('gas_price', defaults.CONTRACT_GAS_PRICE)
         self.fee = kwargs.get('fee', defaults.FEE)
-
+        self.contract_amount = kwargs.get('amount', defaults.CONTRACT_AMOUNT)
         self.client = kwargs.get('client', None)
         if not self.client:
             raise ValueError("Node client not provided")
@@ -190,8 +190,8 @@ class Contract:
 
     def __add_contract_method(self, method):
         def contract_method(*args, **kwargs):
-            typeDef = method.typeDef
-            isStateful = method.stateful
+            """ typeDef = method.typeDef
+            isStateful = method.stateful """
         contract_method.__name__ = method.name
         contract_method.__doc__ = method.doc
         setattr(self, contract_method.__name__, contract_method)
@@ -205,9 +205,7 @@ class Contract:
              abi_version=None,
              tx_ttl=defaults.TX_TTL):
         """Call a sophia contract"""
-        gas = gas if gas is not None else self.gas
-        gas_price = gas_price if gas_price is not None else self.gas_price
-        fee = fee if fee is not None else self.fee
+        opts = self.__process_options(gas=gas, gas_price=gas_price, amount=amount, fee=fee)
         if not utils.is_valid_hash(contract_id, prefix=identifiers.CONTRACT_ID):
             raise ValueError(f"Invalid contract address {contract_id}")
         # check if the contract exists
@@ -273,9 +271,8 @@ class Contract:
         :return: the transaction
         """
         try:
-            gas = gas if gas is not None else self.gas
-            gas_price = gas_price if gas_price is not None else self.gas_price
-            fee = fee if fee is not None else self.fee
+            opts = self.__process_options(gas=gas, gas_price=gas_price, amount=amount, fee=fee)
+            print('Options:', opts, fee, self.fee, amount, self.contract_amount)
             # retrieve the correct vm/abi version
             vm, abi = self.client.get_vm_abi_versions()
             vm_version = vm if vm_version is None else vm_version
