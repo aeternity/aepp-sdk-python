@@ -67,7 +67,7 @@ def _sophia_contract_tx_call_online(node_cli, account):
         deployed = node_cli.get_contract(pubkey=contract.address)
         assert deployed.active is True
         assert deployed.owner_id == account.get_address()
-        tx = contract.call(contract.address, t.get("call.function"), t.get("call.arguments"), t.get("call.calldata"), account=account, gas=100000)
+        tx = contract.call(t.get("call.function"), t.get("call.arguments"), t.get("call.calldata"), account=account, gas=100000)
         # retrieve the call object
         call = contract.get_call_object(tx.hash)
         assert call.return_value == t.get("return.value")

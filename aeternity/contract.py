@@ -261,7 +261,7 @@ class Contract(object):
         """
         pass
 
-    def call(self, contract_id,
+    def call(self,
              function, args, calldata,
              account=None,
              amount=None,
@@ -272,13 +272,13 @@ class Contract(object):
              tx_ttl=defaults.TX_TTL):
         """Call a sophia contract"""
         opts = self.__process_options(gas=gas, gas_price=gas_price, amount=amount, fee=fee, account=account)
-        if not utils.is_valid_hash(contract_id, prefix=identifiers.CONTRACT_ID):
-            raise ValueError(f"Invalid contract address {contract_id}")
+        if self.address is None:
+            raise ValueError("Contract Address not present. Use `at` method to set contract address.")
         # check if the contract exists
         try:
-            self.client.get_contract(pubkey=contract_id)
+            self.client.get_contract(pubkey=self.address)
         except openapi.OpenAPIClientException:
-            raise ContractError(f"Contract {contract_id} not found")
+            raise ContractError(f"Contract {self.address} not found")
 
         try:
             # retrieve the correct vm/abi version
