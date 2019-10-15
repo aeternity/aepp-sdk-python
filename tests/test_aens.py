@@ -111,6 +111,14 @@ def test_name_update(chain_fixture):
     assert len(name.pointers) > 0, 'Pointers should not be empty'
     assert name.pointers[0].id == chain_fixture.ALICE.get_address()
     assert name.pointers[0].key == "account_pubkey"
+    # run another update
+    name.update(chain_fixture.ALICE, chain_fixture.BOB.get_address(), ("origin",chain_fixture.ALICE.get_address()))
+    name.update_status()
+    assert len(name.pointers) == 2, 'Pointers should not be empty'
+    assert name.pointers[0].id == chain_fixture.BOB.get_address()
+    assert name.pointers[0].key == "account_pubkey"
+    assert name.pointers[1].id == chain_fixture.ALICE.get_address()
+    assert name.pointers[1].key == "origin"
 
 def test_spend_by_name(chain_fixture):
     # claim a domain
