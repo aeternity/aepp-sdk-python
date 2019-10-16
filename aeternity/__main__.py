@@ -725,15 +725,15 @@ def contract_decode_data(contract_file, encoded_data, sophia_type, compiler_url,
         _print_error(e, exit_code=1)
 
 
-@cli.group(help='Deploy and execute contracts on the chain')
-def contracts():
+@cli.group(help='Deploy and execute a contract on chain')
+def contract():
     pass
 
 
-@contracts.command('deploy', help='Deploy a contract on the chain')
+@contract.command('deploy', help='Deploy a contract on the chain')
 @click.argument('keystore_name', required=True)
 @click.argument("bytecode_file", required=True)
-@click.option("--init-calldata", help="The calldata for the init function", required=True)
+@click.option("--calldata", help="The calldata for the init function", required=True)
 @click.option("--gas", default=defaults.CONTRACT_GAS, help='Amount of gas to deploy the contract', show_default=True, type=int)
 @click.option("--amount", default=defaults.CONTRACT_AMOUNT, help='Amount of tokens to transfer to the contract', show_default=True, type=int)
 @click.option("--gas-price", default=defaults.CONTRACT_GAS_PRICE, help='The gas price used to execute the contract init function', show_default=True, type=int)
@@ -742,7 +742,7 @@ def contracts():
 @account_options
 @online_options
 @transaction_options
-def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price, amount, deposit, password, ttl, fee, nonce, force, wait, json_):
+def contract_deploy(keystore_name, bytecode_file, calldata, gas, gas_price, amount, deposit, password, ttl, fee, nonce, force, wait, json_):
     """
     Deploy a contract to the chain and create a deploy descriptor
     with the contract informations that can be use to invoke the contract
@@ -758,7 +758,7 @@ def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price,
             account, _ = _account(keystore_name, password=password)
             bytecode = fp.read()
             contract = _node_cli().Contract()
-            tx = contract.create(account, bytecode, init_calldata,
+            tx = contract.create(account, bytecode, calldata,
                                  gas=gas,
                                  amount=amount,
                                  gas_price=gas_price,
@@ -770,11 +770,11 @@ def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price,
         _print_error(e, exit_code=1)
 
 
-@contracts.command('call', help='Execute a function of the contract')
+@contract.command('call', help='Execute a function of the contract')
 @click.argument('keystore_name', required=True)
 @click.argument('contract_id', required=True)
 @click.argument("function_name")
-@click.option("--call-data", default=None, help="The encoded calldata of the function", show_default=True)
+@click.option("--calldata", help="The encoded calldata of the function to call", required=True)
 @click.option("--gas", default=defaults.CONTRACT_GAS, help='Gas limit for the contract call', show_default=True)
 @click.option("--gas-price", default=defaults.CONTRACT_GAS_PRICE, help='Gas unit price for the contract call', show_default=True)
 @click.option("--amount", default=defaults.CONTRACT_AMOUNT, help='Amount of token (only for payable contracts)', show_default=True)
@@ -787,9 +787,8 @@ def contract_call(keystore_name, contract_id, function_name, calldata, gas, gas_
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
-        contract = _node_cli().Contract(address=contract_id)
-        tx = contract.call(contract_id,
-                           account, function_name, calldata,
+        contract = _node_cli().Contract()
+        tx = contract.call(contract_id, account, function_name, calldata,
                            amount=amount,
                            gas=gas,
                            gas_price=gas_price,
@@ -800,7 +799,7 @@ def contract_call(keystore_name, contract_id, function_name, calldata, gas, gas_
         _print_error(e, exit_code=1)
 
 
-@contracts.command('call-info', help='Retrieve the result of a contract call if any')
+@contract.command('call-info', help='Retrieve the result of a contract call if any')
 @click.argument('tx_hash', required=True)
 @global_options
 @online_options
