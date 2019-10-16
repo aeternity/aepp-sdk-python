@@ -691,12 +691,12 @@ def contract_aci(contract_file, compiler_url, json_):
         _print_error(e, exit_code=1)
 
 
-@compiler.command('encode-calldata', help="Encode the calldata to invoke a contract")
-@click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
-@click.argument("contract_file")
-@click.argument("function_name")
-@click.option("--arguments", default=None, help="Argument of the function if any, comma separated")
-@global_options
+# @compiler.command('encode-calldata', help="Encode the calldata to invoke a contract")
+# @click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
+# @click.argument("contract_file")
+# @click.argument("function_name")
+# @click.option("--arguments", default=None, help="Argument of the function if any, comma separated")
+# @global_options
 def contract_encode_calldata(contract_file, function_name, arguments, compiler_url, json_):
     try:
         set_global_options(json_, False, False)
@@ -706,17 +706,15 @@ def contract_encode_calldata(contract_file, function_name, arguments, compiler_u
             arguments = [] if arguments is None else arguments.split(",")
             result = c.encode_calldata(code, function_name, arguments=arguments)
             _print_object(result, title="contract")
-    # except Exception as e:
-    #     _print_error(e, exit_code=1)
-    finally:
-        pass
+    except Exception as e:
+        _print_error(e, exit_code=1)
 
 
-@compiler.command('decode-data', help="Decode the data retrieve from a contract")
-@click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
-@click.argument("sophia_type")
-@click.argument("encoded_data")
-@global_options
+# @compiler.command('decode-data', help="Decode the data retrieve from a contract")
+# @click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
+# @click.argument("sophia_type")
+# @click.argument("encoded_data")
+# @global_options
 def contract_decode_data(contract_file, encoded_data, sophia_type, compiler_url, json_):
     try:
         set_global_options(json_, False, False)
