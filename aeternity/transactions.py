@@ -907,9 +907,9 @@ class TxBuilder:
         :param code: the binary code of the contract
         :param call_data: the call data for the contract
         :param amount: initial amount(balance) of the contract
-        :param deposit: TODO: add definition
-        :param gas: TODO: add definition
-        :param gas_price: TODO: add definition
+        :param deposit: the deposit bounde to the contract
+        :param gas: the gas limit for the execution of the limit function
+        :param gas_price: the gas price for the unit of gas
         :param vm_version: the vm version of the contract
         :param abi_version: TODO: add definition
         :param fee: the transaction fee
@@ -942,9 +942,9 @@ class TxBuilder:
         :param contract_id: the contract to call
         :param call_data: the call data for the contract
         :param function: the function to execute
-        :param amount: TODO: add definition
-        :param gas: TODO: add definition
-        :param gas_price: TODO: add definition
+        :param amount: the amount associated to the transaction call
+        :param gas: the gas limit for the execution of the function
+        :param gas_price: the gas unit price
         :param abi_version: TODO: add definition
         :param fee: the transaction fee
         :param ttl: the ttl of the transaction
