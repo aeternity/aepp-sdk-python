@@ -935,14 +935,13 @@ class TxBuilder:
         return self._build_txobject(body)
         # return tx.tx, tx.contract_id
 
-    def tx_contract_call(self, caller_id, contract_id, call_data, function, arg, amount, gas, gas_price, abi_version, fee, ttl, nonce) -> tuple:
+    def tx_contract_call(self, caller_id, contract_id, call_data, function, amount, gas, gas_price, abi_version, fee, ttl, nonce) -> tuple:
         """
         Create a Contract Call transaction
         :param caller_id: the account creating the contract
         :param contract_id: the contract to call
         :param call_data: the call data for the contract
         :param function: the function to execute
-        :param arg: the function arguments
         :param amount: TODO: add definition
         :param gas: TODO: add definition
         :param gas_price: TODO: add definition
