@@ -114,5 +114,38 @@ class ContractNative(object):
         self.at(contract_id)
         return contract_id
 
-    def __transform_to_sophia(self):
+
+class SophiaTransformation:
+
+    TO_SOPHIA_METHOD_PREFIX = 'to_sophia_'
+
+    def convert_to_sophia(self, argument, sophia_type: str):
+        method_name = self.TO_SOPHIA_METHOD_PREFIX + sophia_type
+        method = getattr(self, method_name, None)
+        if method is None:
+            return f'{argument}'
+        return method(argument)
+
+    def to_sophia_string(self, arg):
+        return f'/"{arg}/"'
+
+    def to_sophia_signature(self, arg):
+        if isinstance(arg, str):
+            return f'#{arg}'
+        elif isinstance(arg, bytes):
+            return f"{arg.hex()}"
+
+    def to_sophia_map(self, arg):
+        pass
+
+    def to_sophia_list(self, arg):
+        pass
+
+    def to_sophia_option(self, arg):
+        pass
+
+    def to_sophia_tuple(self, arg):
+        pass
+
+    def to_sophia_record(self, arg):
         pass
