@@ -26,8 +26,8 @@ def _sophia_contract_tx_create_online(node_cli, account):
     ]
     for t in tests:
         contract = node_cli.Contract()
-        contract.create(account=account, bytecode=t.get("bytecode"), init_calldata=t.get("calldata"), gas=100000)
-        deployed = node_cli.get_contract(pubkey=contract.address)
+        _, contract_id = contract.create(account, t.get("bytecode"), init_calldata=t.get("calldata"), gas=100000)
+        deployed = node_cli.get_contract(pubkey=contract_id)
         assert deployed.active is True
         assert deployed.owner_id == account.get_address()
 
@@ -63,11 +63,11 @@ def _sophia_contract_tx_call_online(node_cli, account):
     ]
     for t in tests:
         contract = node_cli.Contract()
-        contract.create(account=account, bytecode=t.get("bytecode"), init_calldata=t.get("init.calldata"), gas=100000)
-        deployed = node_cli.get_contract(pubkey=contract.address)
+        _, contract_id = contract.create(account, t.get("bytecode"), init_calldata=t.get("init.calldata"), gas=100000)
+        deployed = node_cli.get_contract(pubkey=contract_id)
         assert deployed.active is True
         assert deployed.owner_id == account.get_address()
-        tx = contract.call(t.get("call.function"), t.get("call.arguments"), t.get("call.calldata"), account=account, gas=100000)
+        tx = contract.call(contract_id, account, t.get("call.function"), t.get("call.calldata"),  gas=100000)
         # retrieve the call object
         call = contract.get_call_object(tx.hash)
         assert call.return_value == t.get("return.value")
@@ -89,5 +89,3 @@ def test_sophia_contract_tx_call_native(chain_fixture):
     # save settings and go online
     _sophia_contract_tx_call_online(chain_fixture.NODE_CLI, chain_fixture.ALICE)
     # restore settings
-
-
