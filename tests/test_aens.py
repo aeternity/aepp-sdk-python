@@ -101,7 +101,7 @@ def test_name_update(chain_fixture):
     print(f"domain is {domain}")
     name = chain_fixture.NODE_CLI.AEName(domain)
     print("Claim name ", domain)
-    name.full_claim_blocking(chain_fixture.ALICE)
+    name.full_claim_blocking(chain_fixture.ALICE, chain_fixture.ALICE.get_address())
     # domain claimed
     name.update_status()
     assert not chain_fixture.NODE_CLI.AEName(domain).is_available(), 'The name should be claimed now'
@@ -111,6 +111,14 @@ def test_name_update(chain_fixture):
     assert len(name.pointers) > 0, 'Pointers should not be empty'
     assert name.pointers[0].id == chain_fixture.ALICE.get_address()
     assert name.pointers[0].key == "account_pubkey"
+    # run another update
+    name.update(chain_fixture.ALICE, chain_fixture.BOB.get_address(), ("origin",chain_fixture.ALICE.get_address()))
+    name.update_status()
+    assert len(name.pointers) == 2, 'Pointers should not be empty'
+    assert name.pointers[0].id == chain_fixture.BOB.get_address()
+    assert name.pointers[0].key == "account_pubkey"
+    assert name.pointers[1].id == chain_fixture.ALICE.get_address()
+    assert name.pointers[1].key == "origin"
 
 def test_spend_by_name(chain_fixture):
     # claim a domain
@@ -121,12 +129,12 @@ def test_spend_by_name(chain_fixture):
     # generate a new address
     target_address = Account.generate().get_address()
     print(f"Target address {target_address}")
-    name.full_claim_blocking(chain_fixture.ALICE, target=target_address)
+    name.full_claim_blocking(chain_fixture.ALICE, target_address)
     # domain claimed
     name.update_status()
     assert not chain_fixture.NODE_CLI.AEName(domain).is_available(), 'The name should be claimed now'
     name.update_status()
-    print(f"domain is {name.domain} name_hash {name.name_hash}")
+    print(f"domain is {name.domain} name_id {name.name_id}")
     print("pointers", name.pointers)
     tx = chain_fixture.NODE_CLI.spend_by_name(chain_fixture.ALICE, domain, 100)
     print("DATA ", tx)
@@ -143,8 +151,7 @@ def test_name_transfer_ownership(chain_fixture):
     name.full_claim_blocking(chain_fixture.ALICE)
     assert name.status == AEName.Status.CLAIMED
     name.update_status()
-    assert name.pointers[0].id == chain_fixture.ALICE.get_address()
-    assert name.pointers[0].key == "account_pubkey"
+    assert len(name.pointers) == 0, "Pointers should be empty"
 
     # now transfer the name to the other account
     name.transfer_ownership(chain_fixture.ALICE, chain_fixture.BOB.get_address())
