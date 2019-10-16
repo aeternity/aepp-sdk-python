@@ -149,3 +149,6 @@ class SophiaTransformation:
 
     def to_sophia_record(self, arg):
         pass
+
+    def to_sophia_variant(self, arg):
+        pass
