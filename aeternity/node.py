@@ -419,8 +419,7 @@ class NodeClient:
             raise exceptions.UnsupportedNodeVersion(f"Version {self.api_version} is not supported")
         return (protocol_abi_vm.get("vm"), protocol_abi_vm.get("abi"))
 
-    def account_basic_to_ga(self, account: Account, ga_contract: str,
-                            init_calldata: str = defaults.CONTRACT_INIT_CALLDATA,
+    def account_basic_to_ga(self, account: Account, ga_contract: str, calldata: str,
                             auth_fun: str = defaults.GA_AUTH_FUNCTION,
                             fee: int = defaults.FEE,
                             tx_ttl: int = defaults.TX_TTL,
@@ -465,7 +464,7 @@ class NodeClient:
             ttl,
             gas,
             gas_price,
-            init_calldata
+            calldata
         )
         # sign the transaction
         tx = self.sign_transaction(account, tx)
