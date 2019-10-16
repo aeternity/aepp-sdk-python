@@ -833,7 +833,7 @@ def contract_call_info(tx_hash, force, wait, json_):
 def inspect(obj, height, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
-        if obj.endswith(".test") or obj.endswith(".aet"):
+        if obj.endswith(".test") or obj.endswith(".chain"):
             data = _node_cli().get_name_entry_by_name(name=obj)
             _print_object(data, title="name")
         elif obj.startswith("kh_") or obj.startswith("mh_"):

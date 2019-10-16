@@ -53,7 +53,7 @@ class AEName:
         :param domain: the domain name to get the fee for
         :return: the minimum fee for the domain auction
         """
-        name_len = len(domain.replace(".aet", ""))
+        name_len = len(domain.replace(".chain", ""))
         if name_len >= defaults.NAME_BID_MAX_LENGTH:
             return defaults.NAME_BID_RANGES.get(defaults.NAME_BID_MAX_LENGTH)
         return defaults.NAME_BID_RANGES.get(name_len)
