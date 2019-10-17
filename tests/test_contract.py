@@ -27,7 +27,7 @@ def _sophia_contract_tx_create_online(node_cli, account):
     for t in tests:
         contract = node_cli.Contract()
         tx = contract.create(account, t.get("bytecode"), calldata=t.get("calldata"), gas=100000)
-        c_id = tx.metatada.contract_id
+        c_id = tx.metadata.contract_id
         deployed = node_cli.get_contract(pubkey=c_id)
         assert deployed.active is True
         assert deployed.owner_id == account.get_address()
@@ -65,7 +65,7 @@ def _sophia_contract_tx_call_online(node_cli, account):
     for t in tests:
         contract = node_cli.Contract()
         tx = contract.create(account, t.get("bytecode"), calldata=t.get("init.calldata"), gas=100000)
-        c_id = tx.metatada.contract_id
+        c_id = tx.metadata.contract_id
         deployed = node_cli.get_contract(pubkey=c_id)
         assert deployed.active is True
         assert deployed.owner_id == account.get_address()
