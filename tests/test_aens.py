@@ -9,23 +9,23 @@ from pytest import raises, skip
 def test_name_validation_fails(chain_fixture):
     with raises(ValueError):
         chain_fixture.NODE_CLI.AEName('test.lol')
-    chain_fixture.NODE_CLI.AEName('test.aet')
+    chain_fixture.NODE_CLI.AEName('test.chain')
     chain_fixture.NODE_CLI.AEName('test.test')
 
 
 def test_name_validation_succeeds(chain_fixture):
     chain_fixture.NODE_CLI.AEName('test.test')
-    chain_fixture.NODE_CLI.AEName('test.aet')
+    chain_fixture.NODE_CLI.AEName('test.chain')
 
 
 def test_name_is_available(chain_fixture):
-    domain = random_domain(tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+    domain = random_domain(tld='chain' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
     name = chain_fixture.NODE_CLI.AEName(domain)
     assert name.is_available()
 
 
 def test_name_status_available(chain_fixture):
-    domain = random_domain(length=13 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+    domain = random_domain(length=13 ,tld='chain' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
     name = chain_fixture.NODE_CLI.AEName(domain)
     assert name.status == AEName.Status.UNKNOWN
     name.update_status()
@@ -35,7 +35,7 @@ def test_name_status_available(chain_fixture):
 def test_name_claim_lifecycle(chain_fixture):
     try:
         # avoid auctions
-        domain = random_domain(length=13 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+        domain = random_domain(length=13 ,tld='chain' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
         node_cli = chain_fixture.NODE_CLI
         name = node_cli.AEName(domain)
         assert name.status == AEName.Status.UNKNOWN
@@ -86,7 +86,7 @@ def test_name_auction(chain_fixture):
 
 def test_name_status_unavailable(chain_fixture):
     # avoid auctions
-    domain = random_domain(length=13 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+    domain = random_domain(length=13 ,tld='chain' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
     print(f"domain is {domain}")
     occupy_name = chain_fixture.NODE_CLI.AEName(domain)
     occupy_name.full_claim_blocking(chain_fixture.ALICE)
@@ -97,11 +97,11 @@ def test_name_status_unavailable(chain_fixture):
 
 def test_name_update(chain_fixture):
     # avoid auctions
-    domain = random_domain(length=13 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+    domain = random_domain(length=13 ,tld='chain' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
     print(f"domain is {domain}")
     name = chain_fixture.NODE_CLI.AEName(domain)
     print("Claim name ", domain)
-    name.full_claim_blocking(chain_fixture.ALICE)
+    name.full_claim_blocking(chain_fixture.ALICE, chain_fixture.ALICE.get_address())
     # domain claimed
     name.update_status()
     assert not chain_fixture.NODE_CLI.AEName(domain).is_available(), 'The name should be claimed now'
@@ -111,22 +111,30 @@ def test_name_update(chain_fixture):
     assert len(name.pointers) > 0, 'Pointers should not be empty'
     assert name.pointers[0].id == chain_fixture.ALICE.get_address()
     assert name.pointers[0].key == "account_pubkey"
+    # run another update
+    name.update(chain_fixture.ALICE, chain_fixture.BOB.get_address(), ("origin",chain_fixture.ALICE.get_address()))
+    name.update_status()
+    assert len(name.pointers) == 2, 'Pointers should not be empty'
+    assert name.pointers[0].id == chain_fixture.BOB.get_address()
+    assert name.pointers[0].key == "account_pubkey"
+    assert name.pointers[1].id == chain_fixture.ALICE.get_address()
+    assert name.pointers[1].key == "origin"
 
 def test_spend_by_name(chain_fixture):
     # claim a domain
-    domain = random_domain(tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+    domain = random_domain(tld='chain' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
     print(f"domain is {domain}")
     name = chain_fixture.NODE_CLI.AEName(domain)
     print("Claim name ", domain)
     # generate a new address
     target_address = Account.generate().get_address()
     print(f"Target address {target_address}")
-    name.full_claim_blocking(chain_fixture.ALICE, target=target_address)
+    name.full_claim_blocking(chain_fixture.ALICE, target_address)
     # domain claimed
     name.update_status()
     assert not chain_fixture.NODE_CLI.AEName(domain).is_available(), 'The name should be claimed now'
     name.update_status()
-    print(f"domain is {name.domain} name_hash {name.name_hash}")
+    print(f"domain is {name.domain} name_id {name.name_id}")
     print("pointers", name.pointers)
     tx = chain_fixture.NODE_CLI.spend_by_name(chain_fixture.ALICE, domain, 100)
     print("DATA ", tx)
@@ -138,13 +146,12 @@ def test_spend_by_name(chain_fixture):
 
 def test_name_transfer_ownership(chain_fixture):
     # avoid auctions
-    domain = random_domain(length=13 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+    domain = random_domain(length=13 ,tld='chain' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
     name = chain_fixture.NODE_CLI.AEName(domain)
     name.full_claim_blocking(chain_fixture.ALICE)
     assert name.status == AEName.Status.CLAIMED
     name.update_status()
-    assert name.pointers[0].id == chain_fixture.ALICE.get_address()
-    assert name.pointers[0].key == "account_pubkey"
+    assert len(name.pointers) == 0, "Pointers should be empty"
 
     # now transfer the name to the other account
     name.transfer_ownership(chain_fixture.ALICE, chain_fixture.BOB.get_address())
@@ -160,7 +167,7 @@ def test_name_transfer_ownership(chain_fixture):
 
 def test_name_revocation(chain_fixture):
     # avoid auctions
-    domain = random_domain(length=13 ,tld='aet' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+    domain = random_domain(length=13 ,tld='chain' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
     name = chain_fixture.NODE_CLI.AEName(domain)
     name.full_claim_blocking(chain_fixture.ALICE)
     name.revoke(chain_fixture.ALICE)

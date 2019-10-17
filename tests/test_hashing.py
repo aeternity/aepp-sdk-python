@@ -127,19 +127,19 @@ def test_hashing_committment_id():
             "commitment_id": "cm_pQu4wAuiyhe1mHqZzh3yNA4JwBPaess3MY7MnZFG9vsFjD5yE"
         },
         {
-            "domain": "aeternity.aet",
+            "domain": "aeternity.chain",
             "salt": 10692426485854419779,
-            "commitment_id": "cm_s7xYUEpNNz4v3BenNMBP9YknxYRNqBMNTWG99Vu6v1d8kXxuH"
+            "commitment_id": "cm_j5Aa3senWdNskwSSHh3M182ucbqrAaSE5DVjejM8fBCgR97kq"
         },
         {
-            "domain": "whatever.aet",
+            "domain": "whatever.chain",
             "salt": 4703192432112,
-            "commitment_id": "cm_2EoRHJoWoNv4EpZLxgWKBrvgmrbSvA5BxMvDSwPDc6CUYBqanb"
+            "commitment_id": "cm_2Hd42FoCDfYxcG3MyZkiN9wXiBKfHHzBWycEvrazPYgoEh1ien"
         },
         {
-            "domain": "aepps.aet",
+            "domain": "aepps.chain",
             "salt": 723907012945811264198,
-            "commitment_id": "cm_2gPm7nAvTQojYnVGDPEMZd6uJbkVbZ4aX1nbFm1NCE5HW3kHE6"
+            "commitment_id": "cm_7aMmYzWVGK2t6gqWYD9WFbwHWaLzcux6t63i2J7VHPZfcuzjs"
         },
     ]
 

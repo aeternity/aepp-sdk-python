@@ -103,9 +103,9 @@ Transactions__________________ 0
 The æternity naming system allows you to register a name for your account (or oracle).
 
 ```
-$ aecli account mywallet name 'newby.aet' claim
+$ aecli account mywallet name 'newby.chain' claim
 Enter the wallet password []: 
-Name newby.aet claimed
+Name newby.chain claimed
 Transaction hash______________ th_vmucE7sFSc8QjWBAJwkh2drN3jKwtSd7KYtYzjL6Bfg1x8kyq
 ```
 
@@ -125,7 +125,7 @@ TTL___________________________ 86238
 and check out the name we registered, to ensure we have it:
 
 ```
-$ aecli inspect name newby.aet
+$ aecli inspect name newby.chain
 Status________________________ CLAIMED
 Pointers______________________ {'account_pubkey': 'ak_wmZUvZWrVibPM2PuSGhgWmMQXchEWgRTbwBp7tYUcPyBYHnpR'}
 TTL___________________________ 86329
