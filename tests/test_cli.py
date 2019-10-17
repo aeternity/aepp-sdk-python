@@ -4,11 +4,10 @@ import json
 import os
 import aeternity
 import random
-from tests.conftest import NODE_URL, NODE_URL_DEBUG, NETWORK_ID
-from aeternity.signing import Account
+from tests.conftest import NODE_URL, NODE_URL_DEBUG, NETWORK_ID, random_domain
 from aeternity import utils, identifiers
+from aeternity.signing import Account
 from aeternity.aens import AEName
-from tests.conftest import random_domain
 
 import pytest
 
@@ -200,7 +199,7 @@ def test_cli_name_auction(chain_fixture, tempdir):
         return
     node_cli = chain_fixture.NODE_CLI
     account_alice_path = _account_path(tempdir, chain_fixture.ALICE)
-    account_bob_path = _account_path(tempdir, chain_fixture.ALICE)
+    account_bob_path = _account_path(tempdir, chain_fixture.BOB)
     # get a domain that is under auction scheme
     domain = random_domain(length=9 ,tld='chain' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= identifiers.PROTOCOL_LIMA else 'test')
     # let alice preclaim a name 
@@ -238,4 +237,31 @@ def test_cli_name_auction(chain_fixture, tempdir):
     name = chain_fixture.NODE_CLI.AEName(domain)
     # name should still be available
     assert(name.is_available())
+
+def test_cli_contract_deploy_call(chain_fixture, compiler_fixture, tempdir):
+    node_cli = chain_fixture.NODE_CLI
+    account_alice_path = _account_path(tempdir, chain_fixture.ALICE)
+    # the contract
+    c_src = "contract Identity =\n  entrypoint main(x : int) = x"
+    c_deploy_function = "init"
+    c_call_function = "main"
+    c_call_function_param = 42
+    # compile the contract
+    compiler = compiler_fixture.COMPILER
+    # compile and encode calldatas
+    c_bin = compiler.compile(c_src).bytecode
+    c_init_calldata = compiler.encode_calldata(c_src, c_deploy_function).calldata
+    c_call_calldata = compiler.encode_calldata(c_src, c_call_function, c_call_function_param).calldata
+    # write the contract to a file and execute the command
+    contract_bin_path = os.path.join(tempdir, 'contract.bin')
+    with open(contract_bin_path, "w") as fp:
+        fp.write(c_bin)
+    # deploy the contract
+    j = call_aecli("contract", "deploy", "--wait" , "--password", "aeternity_bc", account_alice_path, contract_bin_path, "--calldata", c_init_calldata)
+    c_id = j.get("metadata", {}).get("contract_id")
+    assert utils.is_valid_hash(c_id, prefix=identifiers.CONTRACT_ID)
+    # now call
+    j = call_aecli("contract", "call", "--wait" , "--password", "aeternity_bc", account_alice_path, c_id, c_call_function, "--calldata", c_call_calldata)
+    th = j.get("hash")
+    assert utils.is_valid_hash(th, prefix=identifiers.TRANSACTION_HASH)
 

@@ -676,8 +676,8 @@ def contract_compile(contract_file, compiler_url, json_):
 
 
 @compiler.command('aci', help="Get the aci of a contract")
-@click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
 @click.argument("contract_file")
+@click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
 @global_options
 def contract_aci(contract_file, compiler_url, json_):
     try:
@@ -686,17 +686,20 @@ def contract_aci(contract_file, compiler_url, json_):
             code = fp.read()
             c = CompilerClient(compiler_url=compiler_url)
             result = c.aci(code)
+            if click.confirm(f'Save contract ACI to file ({contract_file}.aci.json) ?', default=True, show_default=True):
+                with open(f"{contract_file}.aci.json", "w") as fp:
+                    fp.write(json.dumps(namedtupled.reduce(result), indent=2))
             _print_object(result, title="contract")
     except Exception as e:
         _print_error(e, exit_code=1)
 
 
-@compiler.command('encode-calldata', help="Encode the calldata to invoke a contract")
-@click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
-@click.argument("contract_file")
-@click.argument("function_name")
-@click.option("--arguments", default=None, help="Argument of the function if any, comma separated")
-@global_options
+# @compiler.command('encode-calldata', help="Encode the calldata to invoke a contract")
+# @click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
+# @click.argument("contract_file")
+# @click.argument("function_name")
+# @click.option("--arguments", default=None, help="Argument of the function if any, comma separated")
+# @global_options
 def contract_encode_calldata(contract_file, function_name, arguments, compiler_url, json_):
     try:
         set_global_options(json_, False, False)
@@ -706,17 +709,15 @@ def contract_encode_calldata(contract_file, function_name, arguments, compiler_u
             arguments = [] if arguments is None else arguments.split(",")
             result = c.encode_calldata(code, function_name, arguments=arguments)
             _print_object(result, title="contract")
-    # except Exception as e:
-    #     _print_error(e, exit_code=1)
-    finally:
-        pass
+    except Exception as e:
+        _print_error(e, exit_code=1)
 
 
-@compiler.command('decode-data', help="Decode the data retrieve from a contract")
-@click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
-@click.argument("sophia_type")
-@click.argument("encoded_data")
-@global_options
+# @compiler.command('decode-data', help="Decode the data retrieve from a contract")
+# @click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
+# @click.argument("sophia_type")
+# @click.argument("encoded_data")
+# @global_options
 def contract_decode_data(contract_file, encoded_data, sophia_type, compiler_url, json_):
     try:
         set_global_options(json_, False, False)
@@ -727,24 +728,24 @@ def contract_decode_data(contract_file, encoded_data, sophia_type, compiler_url,
         _print_error(e, exit_code=1)
 
 
-@cli.group(help='Deploy and execute contracts on the chain')
-def contracts():
+@cli.group(help='Deploy and execute a contract on chain')
+def contract():
     pass
 
 
-@contracts.command('deploy', help='Deploy a contract on the chain')
+@contract.command('deploy', help='Deploy a contract on the chain')
 @click.argument('keystore_name', required=True)
 @click.argument("bytecode_file", required=True)
-@click.option("--init-calldata", default=defaults.CONTRACT_INIT_CALLDATA, help="The calldata for the init function", show_default=True)
-@click.option("--gas", default=defaults.CONTRACT_GAS, help='Amount of gas to deploy the contract', show_default=True)
-@click.option("--amount", default=defaults.CONTRACT_AMOUNT, help='Amount of tokens to transfer to the contract', show_default=True)
-@click.option("--gas-price", default=defaults.CONTRACT_GAS_PRICE, help='The gas price used to execute the contract init function', show_default=True)
-@click.option("--deposit", default=defaults.CONTRACT_AMOUNT, help='A initial deposit to the contract', show_default=True)
+@click.option("--calldata", help="The calldata for the init function", required=True)
+@click.option("--gas", default=defaults.CONTRACT_GAS, help='Amount of gas to deploy the contract', show_default=True, type=int)
+@click.option("--amount", default=defaults.CONTRACT_AMOUNT, help='Amount of tokens to transfer to the contract', show_default=True, type=int)
+@click.option("--gas-price", default=defaults.CONTRACT_GAS_PRICE, help='The gas price used to execute the contract init function', show_default=True, type=int)
+@click.option("--deposit", default=defaults.CONTRACT_AMOUNT, help='A initial deposit to the contract', show_default=True, type=int)
 @global_options
 @account_options
 @online_options
 @transaction_options
-def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price, amount, deposit, password, ttl, fee, nonce, force, wait, json_):
+def contract_deploy(keystore_name, bytecode_file, calldata, gas, gas_price, amount, deposit, password, ttl, fee, nonce, force, wait, json_):
     """
     Deploy a contract to the chain and create a deploy descriptor
     with the contract informations that can be use to invoke the contract
@@ -754,59 +755,58 @@ def contract_deploy(keystore_name, bytecode_file, init_calldata, gas, gas_price,
     source file. Multiple deploy of the same contract file will generate different
     deploy descriptor
     """
-    print("Not yet implemented")
-    return
     try:
         with open(bytecode_file) as fp:
             set_global_options(json_, force, wait)
             account, _ = _account(keystore_name, password=password)
             bytecode = fp.read()
             contract = _node_cli().Contract()
-            tx = contract.create(account, bytecode, init_calldata=init_calldata, gas=gas, amount=amount,
-                                 gas_price=gas_price, deposit=deposit, tx_ttl=ttl, fee=fee)
+            tx = contract.create(account, bytecode, calldata,
+                                 gas=gas,
+                                 amount=amount,
+                                 gas_price=gas_price,
+                                 deposit=deposit,
+                                 tx_ttl=ttl,
+                                 fee=fee)
             _print_object(tx, title="contract create")
     except Exception as e:
         _print_error(e, exit_code=1)
 
 
-@contracts.command('call', help='Execute a function of the contract')
+@contract.command('call', help='Execute a function of the contract')
 @click.argument('keystore_name', required=True)
-@click.argument("deploy_descriptor", required=True)
-@click.argument("function", required=True)
-@click.argument("params", required=True)
-@click.argument("return_type", required=True)
-@click.option("--gas", default=defaults.CONTRACT_GAS, help='Amount of gas to deploy the contract', show_default=True)
+@click.argument('contract_id', required=True)
+@click.argument("function_name")
+@click.option("--calldata", help="The encoded calldata of the function to call", required=True)
+@click.option("--gas", default=defaults.CONTRACT_GAS, help='Gas limit for the contract call', show_default=True)
+@click.option("--gas-price", default=defaults.CONTRACT_GAS_PRICE, help='Gas unit price for the contract call', show_default=True)
+@click.option("--amount", default=defaults.CONTRACT_AMOUNT, help='Amount of token (only for payable contracts)', show_default=True)
 @global_options
 @account_options
 @online_options
 @transaction_options
-def contract_call(keystore_name, deploy_descriptor, function, params, return_type, gas,  password, force, wait, json_):
-    print("Not yet implemented")
-    return
+def contract_call(keystore_name, contract_id, function_name, calldata, gas, gas_price, amount,
+                  password, ttl, fee, nonce, force, wait, json_):
     try:
-        with open(deploy_descriptor) as fp:
-            contract = json.load(fp)
-            source = contract.get('source')
-            bytecode = contract.get('bytecode')
-            address = contract.get('address')
-
-            set_global_options(json_, force, wait)
-            account, _ = _account(keystore_name, password=password)
-
-            contract = _node_cli().Contract(source, bytecode=bytecode, address=address)
-            tx = contract.tx_call(account, function, params, gas=gas)
-            _print_object(tx, "contract call")
+        set_global_options(json_, force, wait)
+        account, _ = _account(keystore_name, password=password)
+        contract = _node_cli().Contract()
+        tx = contract.call(contract_id, account, function_name, calldata,
+                           amount=amount,
+                           gas=gas,
+                           gas_price=gas_price,
+                           fee=fee,
+                           tx_ttl=ttl)
+        _print_object(tx, "contract call")
     except Exception as e:
         _print_error(e, exit_code=1)
 
 
-@contracts.command('call-info', help='Retrieve the result of a contract call if any')
+@contract.command('call-info', help='Retrieve the result of a contract call if any')
 @click.argument('tx_hash', required=True)
 @global_options
 @online_options
 def contract_call_info(tx_hash, force, wait, json_):
-    print("Not yet implemented")
-    return
     try:
         contract = _node_cli().Contract()
         call_object = contract.get_call_object(tx_hash)
