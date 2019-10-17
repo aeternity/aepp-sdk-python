@@ -122,12 +122,29 @@ class SophiaTransformation:
 
     TO_SOPHIA_METHOD_PREFIX = 'to_sophia_'
 
-    def convert_to_sophia(self, argument, sophia_type: str):
-        method_name = self.TO_SOPHIA_METHOD_PREFIX + sophia_type
+    def extractType(self, sophia_type):
+        [t] = [sophia_type] if not isinstance(sophia_type, list) else sophia_type
+
+        # TODO: Link state and typeDef
+
+        # map, tuple, list, record, bytes
+        if isinstance(t, dict):
+            [(key, val)] = t.items()
+            return key, val
+        # base types
+        if isinstance(t, str):
+            return t, None
+
+    def convert_to_sophia(self, argument, sophia_type):
+        current_type = sophia_type
+        generic = None
+        if not isinstance(current_type, str):
+            current_type, generic = self.extractType(sophia_type)
+        method_name = self.TO_SOPHIA_METHOD_PREFIX + current_type
         method = getattr(self, method_name, None)
         if method is None:
             return f'{argument}'
-        return method(argument)
+        return method(argument, generic)
 
     def to_sophia_string(self, arg):
         return f'/"{arg}/"'
