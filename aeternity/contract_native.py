@@ -164,20 +164,34 @@ class SophiaTransformation:
     def to_sophia_bool(self, arg: bool):
         return "true" if arg else "false"
 
-    def to_sophia_map(self, arg):
+    def to_sophia_map(self, arg, generic):
+        if isinstance(arg, dict):
+            arg = arg.items()
+        result = ''
+        for i, val in arg:
+            [(k, v)] = arg
+            if i != 0:
+                result += ','
+            result += f"[{self.convert_to_sophia(k, generic[0])} = {self.convert_to_sophia(v, generic[1])}]"
+        return result
+
+    def to_sophia_list(self, arg, generic):
+        result = "["
+        for val in arg:
+            result += f"{self.convert_to_sophia(val, generic)}"
+        return result + "]"
+
+    def to_sophia_option(self, arg, generic):
+        return 'None' if arg is None else self.convert_to_sophia(arg, generic)
+
+    def to_sophia_tuple(self, arg, generic):
+        result = "("
+        for i, val in arg:
+            result += f"{self.convert_to_sophia(val, generic[i])}"
+        return result + ")"
+
+    def to_sophia_record(self, arg, generic):
         pass
 
-    def to_sophia_list(self, arg):
-        pass
-
-    def to_sophia_option(self, arg):
-        pass
-
-    def to_sophia_tuple(self, arg):
-        pass
-
-    def to_sophia_record(self, arg):
-        pass
-
-    def to_sophia_variant(self, arg):
+    def to_sophia_variant(self, arg, generic):
         pass
