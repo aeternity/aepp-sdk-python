@@ -38,6 +38,7 @@ class ContractNative(object):
         if self.bytecode is None and self.aci is None:
             raise ValueError("Please provide either contract source or contract bytecode + aci")
 
+        self.contract_name = self.aci.encoded_aci.contract.name
         self.gas = kwargs.get('gas', defaults.CONTRACT_GAS)
         self.gas_price = kwargs.get('gas_price', defaults.CONTRACT_GAS_PRICE)
         self.fee = kwargs.get('fee', defaults.FEE)
