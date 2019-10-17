@@ -30,6 +30,8 @@ class ContractNative(object):
         self.bytecode = kwargs.get('bytecode', None)
         self.aci = kwargs.get('aci', None)
 
+        if self.aci is not None:
+            self.aci = namedtupled.map(self.aci, _nt_name="ACI")
         if self.source is not None:
             self.bytecode = self.compiler.compile(self.source)
             self.aci = self.compiler.aci(self.source)
