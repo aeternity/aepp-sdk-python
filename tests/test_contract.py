@@ -69,7 +69,7 @@ def _sophia_contract_tx_call_online(node_cli, account):
         deployed = node_cli.get_contract(pubkey=c_id)
         assert deployed.active is True
         assert deployed.owner_id == account.get_address()
-        tx = contract.call(contract.address, account, t.get("call.function"), t.get("call.calldata"),  gas=100000)
+        tx = contract.call(c_id, account, t.get("call.function"), t.get("call.calldata"),  gas=100000)
         # retrieve the call object
         call = contract.get_call_object(tx.hash)
         assert call.return_value == t.get("return.value")
@@ -91,5 +91,3 @@ def test_sophia_contract_tx_call_native(chain_fixture):
     # save settings and go online
     _sophia_contract_tx_call_online(chain_fixture.NODE_CLI, chain_fixture.ALICE)
     # restore settings
-
-
