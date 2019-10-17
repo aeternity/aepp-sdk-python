@@ -149,8 +149,6 @@ class ContractError(Exception):
 
 
 class Contract:
-    EVM = 'evm'
-    SOPHIA = 'sophia'
 
     def __init__(self, client):
         """
@@ -159,12 +157,6 @@ class Contract:
         :param client: the node client to use
         """
         self.client = client
-
-    def call_static(self, contract_id):
-        """
-        Execute a static contract call
-        """
-        pass
 
     def call(self, contract_id,
              account, function, calldata,
@@ -216,7 +208,6 @@ class Contract:
         # version 2.5.x
         return call_object
 
-    # TODO: this has to be deprecated, the init_calldata must always be present
     def create(self, account, bytecode, calldata,
                amount=defaults.CONTRACT_AMOUNT,
                deposit=defaults.CONTRACT_DEPOSIT,
@@ -255,9 +246,9 @@ class Contract:
                                         amount, deposit, gas, gas_price, vm_version, abi_version,
                                         fee, ttl, nonce)
             # store the contract address in the instance variable
-            self.address = hashing.contract_id(account.get_address(), nonce)
+            contract_id = hashing.contract_id(account.get_address(), nonce)
             # sign the transaction
-            tx_signed = self.client.sign_transaction(account, tx, metadata={"contract_id": self.address})
+            tx_signed = self.client.sign_transaction(account, tx, metadata={"contract_id": contract_id})
             # post the transaction to the chain
             self.client.broadcast_transaction(tx_signed)
             return tx_signed
