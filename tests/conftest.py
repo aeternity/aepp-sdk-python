@@ -28,7 +28,7 @@ def tempdir(scope="module"):
         shutil.rmtree(path)
 
 
-def random_domain(length=10, tld='aet'):
+def random_domain(length=10, tld='chain'):
     rand_str = ''.join(random.choice(string.ascii_letters) for _ in range(length))
     return f"{rand_str}.{tld}"
 

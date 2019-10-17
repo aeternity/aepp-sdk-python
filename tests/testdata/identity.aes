@@ -1,2 +1,2 @@
 contract Identity =
-  function main(x : int) = x
+  entrypoint main(x : int) = x

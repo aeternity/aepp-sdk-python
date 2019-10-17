@@ -251,6 +251,20 @@ class NodeClient:
         self.broadcast_transaction(tx)
         return tx
 
+    def spend_by_name(self, account: Account,
+                      recipient_name: str,
+                      amount: int,
+                      payload: str = "",
+                      fee: int = defaults.FEE,
+                      tx_ttl: int = defaults.TX_TTL):
+        """
+        Create and execute a spend to name_id transaction
+        """
+        if utils.is_valid_aens_name(recipient_name):
+            name_id = hashing.name_id(recipient_name)
+            return self.spend(account, name_id, amount, payload, fee, tx_ttl)
+        raise TypeError("Invalid AENS name. Please provide a valid AENS name.")
+
     def wait_for_transaction(self, tx_hash, max_retries=None, polling_interval=None):
         """
         Wait for a transaction to be mined for an account
@@ -405,8 +419,7 @@ class NodeClient:
             raise exceptions.UnsupportedNodeVersion(f"Version {self.api_version} is not supported")
         return (protocol_abi_vm.get("vm"), protocol_abi_vm.get("abi"))
 
-    def account_basic_to_ga(self, account: Account, ga_contract: str,
-                            init_calldata: str = defaults.CONTRACT_INIT_CALLDATA,
+    def account_basic_to_ga(self, account: Account, ga_contract: str, calldata: str,
                             auth_fun: str = defaults.GA_AUTH_FUNCTION,
                             fee: int = defaults.FEE,
                             tx_ttl: int = defaults.TX_TTL,
@@ -451,7 +464,7 @@ class NodeClient:
             ttl,
             gas,
             gas_price,
-            init_calldata
+            calldata
         )
         # sign the transaction
         tx = self.sign_transaction(account, tx)

@@ -907,9 +907,9 @@ class TxBuilder:
         :param code: the binary code of the contract
         :param call_data: the call data for the contract
         :param amount: initial amount(balance) of the contract
-        :param deposit: TODO: add definition
-        :param gas: TODO: add definition
-        :param gas_price: TODO: add definition
+        :param deposit: the deposit bounde to the contract
+        :param gas: the gas limit for the execution of the limit function
+        :param gas_price: the gas price for the unit of gas
         :param vm_version: the vm version of the contract
         :param abi_version: TODO: add definition
         :param fee: the transaction fee
@@ -935,17 +935,16 @@ class TxBuilder:
         return self._build_txobject(body)
         # return tx.tx, tx.contract_id
 
-    def tx_contract_call(self, caller_id, contract_id, call_data, function, arg, amount, gas, gas_price, abi_version, fee, ttl, nonce) -> tuple:
+    def tx_contract_call(self, caller_id, contract_id, call_data, function, amount, gas, gas_price, abi_version, fee, ttl, nonce) -> tuple:
         """
         Create a Contract Call transaction
         :param caller_id: the account creating the contract
         :param contract_id: the contract to call
         :param call_data: the call data for the contract
         :param function: the function to execute
-        :param arg: the function arguments
-        :param amount: TODO: add definition
-        :param gas: TODO: add definition
-        :param gas_price: TODO: add definition
+        :param amount: the amount associated to the transaction call
+        :param gas: the gas limit for the execution of the function
+        :param gas_price: the gas unit price
         :param abi_version: TODO: add definition
         :param fee: the transaction fee
         :param ttl: the ttl of the transaction

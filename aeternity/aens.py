@@ -1,8 +1,6 @@
 from aeternity.exceptions import NameNotAvailable, MissingPreclaim, NameUpdateError, NameTooEarlyClaim, NameCommitmentIdMismatch
 from aeternity.openapi import OpenAPIClientException
-from aeternity import defaults
-from aeternity import hashing, utils, oracles
-from aeternity.identifiers import ACCOUNT_ID,  PROTOCOL_LIMA
+from aeternity import defaults, identifiers, hashing, utils
 
 import math
 
@@ -34,7 +32,6 @@ class AEName:
         self.preclaimed_commitment_hash = None
         self.preclaim_salt = None
         # set after claimed
-        self.name_hash = None
         self.name_ttl = 0
         self.pointers = None
 
@@ -56,7 +53,7 @@ class AEName:
         :param domain: the domain name to get the fee for
         :return: the minimum fee for the domain auction
         """
-        name_len = len(domain.replace(".aet", ""))
+        name_len = len(domain.replace(".chain", ""))
         if name_len >= defaults.NAME_BID_MAX_LENGTH:
             return defaults.NAME_BID_RANGES.get(defaults.NAME_BID_MAX_LENGTH)
         return defaults.NAME_BID_RANGES.get(name_len)
@@ -92,11 +89,23 @@ class AEName:
             return defaults.NAME_BID_TIMEOUTS.get(8) + claim_height
         return claim_height
 
-    def _get_pointers(self, target):
-        if target.startswith(ACCOUNT_ID):
-            pointers = [{'id': target, 'key': 'account_pubkey'}]
-        else:
-            pointers = [{'id': target, 'key': 'oracle_pubkey'}]
+    def _get_pointers(self, targets):
+        """
+        Create a list of pointers given a list of addresses
+        """
+        pointers = []
+        for t in targets:
+            if isinstance(t, tuple):
+                # custom target
+                pointers.append({'key': t[0], 'id': t[1]})
+            elif utils.is_valid_hash(t, prefix=identifiers.ACCOUNT_ID):
+                pointers.append({'id': t, 'key': 'account_pubkey'})
+            elif utils.is_valid_hash(t, prefix=identifiers.ORACLE_ID):
+                pointers.append({'id': t, 'key': 'oracle_pubkey'})
+            elif utils.is_valid_hash(t, prefix=identifiers.CONTRACT_ID):
+                pointers.append({'id': t, 'key': 'contract_pubkey'})
+            else:
+                raise TypeError(f"invalid aens update pointer tartget {t}")
         return pointers
 
     def update_status(self):
@@ -105,13 +114,11 @@ class AEName:
             response = self.client.get_name_entry_by_name(name=self.domain)
             self.status = NameStatus.CLAIMED
             self.name_ttl = response.ttl
-            self.name_hash = response.id
             self.pointers = response.pointers
         except OpenAPIClientException as e:
             # e.g. if the status is already PRECLAIMED or CLAIMED, don't reset
             # it to AVAILABLE.
             self.name_ttl = 0
-            self.name_hash = None
             self.pointers = None
             if e.code == 404:
                 self.status = NameStatus.AVAILABLE
@@ -126,10 +133,9 @@ class AEName:
         self.update_status()
         return self.status == NameStatus.CLAIMED
 
-    def full_claim_blocking(self, account,
+    def full_claim_blocking(self, account, *targets,
                             name_ttl=defaults.NAME_TTL,
                             client_ttl=defaults.NAME_CLIENT_TTL,
-                            target=None,
                             tx_ttl=defaults.TX_TTL):
         """
         Execute a name claim and updates the pointer to it.
@@ -140,12 +146,12 @@ class AEName:
         3. pointers update
 
         :param account: the account registering the name
+        :param targets: the  name pointer targets to associate to the name
         :param preclaim_fee: the fee for the preclaiming operation
         :param claim_fee: the fee for the claiming operation
         :param update_fee: the fee for the update operation
         :param tx_ttl: the ttl for the transaction
         :param name_ttl: the ttl of the name (in blocks)
-        :param target: the public key to associate the name to (pointers)
         """
         # set the blocking to true
         blocking_orig = self.client.config.blocking_mode
@@ -164,11 +170,8 @@ class AEName:
         # wait for the block confirmation
         self.client.wait_for_confirmation(tx.hash)
         hashes['claim_tx'] = tx
-        # target is the same of account is not specified
-        if target is None:
-            target = account.get_address()
         # run update
-        tx = self.update(account, target, name_ttl=name_ttl, client_ttl=client_ttl)
+        tx = self.update(account, *targets, name_ttl=name_ttl, client_ttl=client_ttl)
         hashes['update_tx'] = tx
         # restore blocking value
         self.client.config.blocking_mode = blocking_orig
@@ -226,7 +229,7 @@ class AEName:
         nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
         # create transaction
         # check the protocol version
-        if protocol < PROTOCOL_LIMA:
+        if protocol < identifiers.PROTOCOL_LIMA:
             tx = txb.tx_name_claim(account.get_address(), self.domain, self.preclaim_salt, fee, ttl, nonce)
         else:
             min_name_fee = AEName.get_minimum_name_fee(self.domain)
@@ -272,20 +275,27 @@ class AEName:
         self.status = AEName.Status.CLAIMED
         return tx_signed
 
-    def update(self, account, target,
+    def update(self, account, *targets,
                name_ttl=defaults.NAME_TTL,
                client_ttl=defaults.NAME_CLIENT_TTL,
                fee=defaults.FEE,
                tx_ttl=defaults.TX_TTL):
+        """
+        Update a claimed name, an update may update the name_ttl and/or set name pointers for it.
+        A name pointer can be specified as an address for accounts, oracle or contract or using a custom
+        tuple  containing the (key, value) for the pointer
 
+        :param account: the account singing the update transaction
+        :param targets: the list of pointers targets
+        :param name_ttl: the name ttl for the name
+        :param client_ttl: the ttl for client to cache the name
+        :fee: the fee for the transaction
+        :tx_ttl: the transaction  ttl
+        """
         if not self.check_claimed():
-            raise NameUpdateError('Must be claimed to update pointer')
-
-        if isinstance(target, oracles.Oracle):
-            if target.oracle_id is None:
-                raise ValueError('You must register the oracle before using it as target')
-            target = target.oracle_id
-        pointers = self._get_pointers(target)
+            raise NameUpdateError(f"the name {self.domain} must be claimed for an update transaction to be successful")
+        # check that there are at least one target
+        pointers = self._get_pointers(targets)
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl
