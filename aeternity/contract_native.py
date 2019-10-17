@@ -130,10 +130,19 @@ class SophiaTransformation:
         return f'/"{arg}/"'
 
     def to_sophia_signature(self, arg):
+        return self.to_sophia_bytes(arg)
+
+    def to_sophia_hash(self, arg):
+        return self.to_sophia_bytes(arg)
+
+    def to_sophia_bytes(self, arg):
         if isinstance(arg, str):
             return f'#{arg}'
         elif isinstance(arg, bytes):
             return f"{arg.hex()}"
+
+    def to_sophia_bool(self, arg: bool):
+        return "true" if arg else "false"
 
     def to_sophia_map(self, arg):
         pass
