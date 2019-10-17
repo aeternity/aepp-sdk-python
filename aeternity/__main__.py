@@ -676,8 +676,8 @@ def contract_compile(contract_file, compiler_url, json_):
 
 
 @compiler.command('aci', help="Get the aci of a contract")
-@click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
 @click.argument("contract_file")
+@click.option('--compiler-url', '-c', default='http://localhost:3080', envvar='COMPILER_URL', help='Aeternity compiler url', metavar='URL')
 @global_options
 def contract_aci(contract_file, compiler_url, json_):
     try:
@@ -686,6 +686,9 @@ def contract_aci(contract_file, compiler_url, json_):
             code = fp.read()
             c = CompilerClient(compiler_url=compiler_url)
             result = c.aci(code)
+            if click.confirm(f'Save contract ACI to file ({contract_file}.aci.json) ?', default=True, show_default=True):
+                with open(f"{contract_file}.aci.json", "w") as fp:
+                    fp.write(json.dumps(namedtupled.reduce(result), indent=2))
             _print_object(result, title="contract")
     except Exception as e:
         _print_error(e, exit_code=1)
