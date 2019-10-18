@@ -105,7 +105,7 @@ class Contract:
             # get the account nonce and ttl
             nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
             # build the transaction
-            tx = txb.tx_contract_create(account.get_address(), bytecode, init_calldata,
+            tx = txb.tx_contract_create(account.get_address(), bytecode, calldata,
                                         amount, deposit, gas, gas_price, vm_version, abi_version,
                                         fee, ttl, nonce)
             # store the contract address in the instance variable
