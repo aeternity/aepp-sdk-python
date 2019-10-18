@@ -10,16 +10,9 @@ class Contract:
     def __init__(self, client):
         """
         Initialize a contract object
-
         :param client: the node client to use
         """
         self.client = client
-
-    def call_static(self, contract_id):
-        """
-        Execute a static contract call
-        """
-        pass
 
     def call(self, contract_id,
              account, function, calldata,
@@ -85,13 +78,13 @@ class Contract:
         :param account: the account signing the contract call and owner of the contract
         :param bytecode: the bytecode of the contract (ba_....)
         :param calldata: the calldata for the init function of the contract
-        :param amount: TODO: define
+        :param amount: amount to transfer to the account
         :param deposit: the deposit on the contract
         :param gas: the gas limit for the execution of the init funcion
         :param gas_price: the gas price for gas unit
         :param fee: the fee for the transaction
         :param vm_version: the virtual machine version
-        :param abi_version: TODO
+        :param abi_version: the abi version  to use
         :param tx_ttl: the transaction ttl
         :return: the transaction
         """
@@ -114,6 +107,6 @@ class Contract:
             tx_signed = self.client.sign_transaction(account, tx, metadata={"contract_id": contract_id})
             # post the transaction to the chain
             self.client.broadcast_transaction(tx_signed)
-            return tx_signed, contract_id
+            return tx_signed
         except openapi.OpenAPIClientException as e:
             raise ContractError(e)
