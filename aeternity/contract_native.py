@@ -97,7 +97,7 @@ class ContractNative(object):
         self.address = address
         self.deployed = True
 
-    def deploy(self, init_calldata,
+    def deploy(self, calldata,
                account=None,
                amount=None,
                deposit=defaults.CONTRACT_DEPOSIT,
@@ -112,15 +112,16 @@ class ContractNative(object):
         :return: the transaction
         """
         opts = self.__process_options(gas=gas, gas_price=gas_price, amount=amount, fee=fee, account=account)
-        _, contract_id = Contract.create(opts.account, self.bytecode, init_calldata, opts.amount, deposit, opts.gas,
-                                         opts.gas_price, opts.fee, vm_version, abi_version, tx_ttl)
-        self.at(contract_id)
-        return contract_id
+        tx = Contract.create(opts.account, self.bytecode, calldata, opts.amount, deposit, opts.gas,
+                             opts.gas_price, opts.fee, vm_version, abi_version, tx_ttl)
+        self.at(tx.metadata.contract_id)
+        return tx
 
 
 class SophiaTransformation:
 
     TO_SOPHIA_METHOD_PREFIX = 'to_sophia_'
+    FROM_SOPHIA_METHOD_PREFIX = 'from_sophia_'
 
     def extractType(self, sophia_type):
         [t] = [sophia_type] if not isinstance(sophia_type, list) else sophia_type
