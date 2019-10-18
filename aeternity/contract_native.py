@@ -136,10 +136,7 @@ class SophiaTransformation:
             return t, None
 
     def convert_to_sophia(self, argument, sophia_type):
-        current_type = sophia_type
-        generic = None
-        if not isinstance(current_type, str):
-            current_type, generic = self.extractType(sophia_type)
+        current_type, generic = self.extractType(sophia_type)
         method_name = self.TO_SOPHIA_METHOD_PREFIX + current_type
         method = getattr(self, method_name, None)
         if method is None:
