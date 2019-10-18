@@ -1,8 +1,37 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
+
+## [6.0.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/6.0.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/5.0.1...6.0.0)) - 2019-10-17
+
+### Bug Fixes
+
+- fix(cli): name claim and update commands (#257) ([84988f9](https://github.com/aeternity/aepp-sdk-python/commit/84988f97f96983d683a37bd58c6e01ec2cb9efde)). Related issues/PRs: #256
+- fix(hashing): fix typo in hash function name ([af06d36](https://github.com/aeternity/aepp-sdk-python/commit/af06d36f3475fd80b7b7af08981e2366c9351038)).
+
+### Features
+
+- feat(aens): allow to set multiple and custom pointers for a name ([0e60389](https://github.com/aeternity/aepp-sdk-python/commit/0e6038994ce3034c8192c6bf60d1fd83a7719051)). Related issues/PRs: #244, #244
+- feat(aens): use .chain instead of .aet as TLD after Lima HF ([e02b92c](https://github.com/aeternity/aepp-sdk-python/commit/e02b92c81afc60b44d570ecd76f725268c333f07)). Related issues/PRs: #266
+- feat(contracts): enable contracts compile, deploy, generate aci using cli ([1c0e21d](https://github.com/aeternity/aepp-sdk-python/commit/1c0e21deb2ed34e10782b69c4b190521b9eee85a)).
+- feat(node): add spend_by_name ([72d4a95](https://github.com/aeternity/aepp-sdk-python/commit/72d4a9547ad1574c56fb6dd79e8ae4eba9e816c8)).
+
+### BREAKING CHANGES
+
+- remove legacy parameters and add the required ones. Removed address from the contract object
+- the `init_calldata` used to have a default. That is not allowed anymore the user need to be provide `init_calldata`.
+- changes in the signature of the contract call in contract and transaction module
+- the encode-calldata and decode-data commands have been removed
+- rename cli name contracts to contract
+- unify parameters related to calldata to `--calldata` in cli
+- unify parameters related to calldata to `calldata` in programmatic api
+- `encode-calldata` arguments parameter is now varidic instead of a list
+- account_basic_to_ga param `init_calldata` renamed to calldata
+- account_basic_to_ga param calldata is mandatory
+- it is not possible anymore to use `.address` to retrieve the contract address, instead it can be retrieved from the deploy transaction
 
 ## [5.0.1](https://github.com/aeternity/aepp-sdk-python/releases/tag/5.0.1) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/5.0.0...5.0.1)) - 2019-10-06
 
@@ -10,17 +39,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - fix: compatibility range for node version (#251) ([a1b273e](https://github.com/aeternity/aepp-sdk-python/commit/a1b273eb73b093c81c8ef3e8de3dcfe24989a8d5)).
 - fix: inspect oracle (#252) ([9daf5ef](https://github.com/aeternity/aepp-sdk-python/commit/9daf5efae9a6abb2a312667078c1f76ccf21be39)).
 
-
-
 ## [5.0.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/5.0.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/4.3.0...5.0.0)) - 2019-10-04
-
 
 This version is cross compatible with Fortuna and Lima versions of the node
 
 ### Code Refactoring
+
 - refactor(tx): tx management consolidation (#230) ([542beb6](https://github.com/aeternity/aepp-sdk-python/commit/542beb64d4198b036d62b3b30014da02801ffac5)). Related issues/PRs: #237, #238
 
 ### Features
+
 - feat(aens): support lima aens model (#241) ([1ffae14](https://github.com/aeternity/aepp-sdk-python/commit/1ffae147c8f666c8a4674608246c2b7ca5be82be)). Related issues/PRs: #233, #236, #235
 - feat(cli): auto select the network-id for high level cli command (#246) ([e512d15](https://github.com/aeternity/aepp-sdk-python/commit/e512d15be29e3140a869d2ec8872c86a1db1fe6b)).
 - feat(compiler): support for compiler series v4 / FATE (#229) ([3276eec](https://github.com/aeternity/aepp-sdk-python/commit/3276eeca31c989ec6afa13f9eb48706eb555abee)).
@@ -31,13 +59,15 @@ This version is cross compatible with Fortuna and Lima versions of the node
 - namehash function is deprecated and will be removed after Lima HF
 
 ### BREAKING CHANGES
-- `sign_transaction(str)` has been changed to  `broadcast_transaction(TxObject)` where TxObject is the default transaction object troughout the sdk
+
+- `sign_transaction(str)` has been changed to  `broadcast_transaction(TxObject)` where TxObject is the default transaction object throughout the sdk
 - `broadcast_transaction(str)`  has been changed to  `broadcast_transaction(TxObject)` 
 changes the max length for auction from 32 to 12
 - `wait_for_transaction` drops the optional (and unused) parameter `confirm_transaction`.
 - `wait_for_confirmation` returns height where the transaction has been found (if any)
 
 For the CLI, the parameter `--network-id` has been dropped for the commands:
+
 - `aecli account spend`
 - `aecli name claim`
 - `aecli name revoke`
@@ -46,6 +76,17 @@ For the CLI, the parameter `--network-id` has been dropped for the commands:
 - `aecli name bid`
 - `aecli contract deploy`
 - `aecli contract call`
+
+In the name claim function, the first param is pre-claim tx hash and not the Account.
+example:
+
+```python
+# PREVIOUS
+name.claim(account, claim_tx.hash,...)
+
+#NEW
+name.claim(claim_tx.hash, account,...)
+```
 
 more details can be found at the relevant commit: [542beb6](https://github.com/aeternity/aepp-sdk-python/commit/542beb64d4198b036d62b3b30014da02801ffac5), [e512d15](https://github.com/aeternity/aepp-sdk-python/commit/e512d15be29e3140a869d2ec8872c86a1db1fe6b),
 [b5f3a08](https://github.com/aeternity/aepp-sdk-python/commit/b5f3a0871cf98b8b3fedd8a67fd4c1b12cacad01)
