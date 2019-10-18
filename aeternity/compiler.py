@@ -47,14 +47,17 @@ class CompilerClient(object):
         )
         return self.compiler_cli.generate_aci(body=body)
 
-    def encode_calldata(self, source_code, function_name, arguments=[], compiler_options={}):
+    def encode_calldata(self, contract_src, function_name, *arguments, compiler_options={}):
+        """
+        Encode calldata to be used to deploy or call a contract
+        :param contract_src: the source code of the contract
+        :param function_name: the name of the function to encode the calldata for
+        :param arguments: the list of arguments of the funcition
+        :compiler_options: to override the global compiler options
+        """
         compiler_options = compiler_options if len(compiler_options) > 0 else self.compiler_options
-        if not isinstance(arguments, list):
-            arguments = [arguments]
-        if arguments is None:
-            arguments = []
         body = dict(
-            source=source_code,
+            source=contract_src,
             function=function_name,
             arguments=[str(v) for v in arguments],
             options=compiler_options

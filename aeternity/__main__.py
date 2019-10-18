@@ -12,7 +12,7 @@ from aeternity.node import NodeClient, Config
 from aeternity.transactions import TxSigner, TxBuilder, TxObject
 from aeternity.identifiers import NETWORK_ID_MAINNET, PROTOCOL_LIMA  # TODO: remove after HF
 from . import utils, signing, aens, defaults, exceptions
-from aeternity.contract import CompilerClient
+from aeternity.compiler import CompilerClient
 from datetime import datetime, timezone
 
 

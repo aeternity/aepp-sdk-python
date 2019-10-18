@@ -71,7 +71,7 @@ class Contract:
         # version 2.5.x
         return call_object
 
-    def create(self, account, bytecode, init_calldata,
+    def create(self, account, bytecode, calldata,
                amount=defaults.CONTRACT_AMOUNT,
                deposit=defaults.CONTRACT_DEPOSIT,
                gas=defaults.CONTRACT_GAS,

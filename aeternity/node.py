@@ -6,7 +6,7 @@ import namedtupled
 
 from aeternity.signing import Account
 from aeternity.openapi import OpenAPIClientException
-from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers, exceptions, utils, hashing
+from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers, exceptions, utils, hashing, compiler
 from aeternity.exceptions import TransactionWaitTimeoutExpired, TransactionHashMismatch
 from aeternity import __node_compatibility__
 
@@ -436,7 +436,7 @@ class NodeClient:
             raise TypeError("The parameter auth_fun is required")
         # decode the contract and search for the authorization function
         auth_fun_hash = None
-        contract_data = contract.CompilerClient.decode_bytecode(ga_contract)
+        contract_data = compiler.CompilerClient.decode_bytecode(ga_contract)
         if len(contract_data.type_info) == 0:
             # TODO: we assume is a FATE env, but is a bit weak
             auth_fun_hash = hashing.hash(auth_fun.encode('utf-8'))
