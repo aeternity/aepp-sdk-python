@@ -184,9 +184,9 @@ class SophiaTransformation:
 
     def to_sophia_tuple(self, arg, generic):
         result = "("
-        for i, val in arg:
-            result += f"{self.convert_to_sophia(val, generic[i])}"
-        return result + ")"
+        for i, val in enumerate(arg):
+            result += f"{self.convert_to_sophia(val, generic[i])},"
+        return result[:-1] + ")"
 
     def to_sophia_record(self, arg, generic):
         pass
