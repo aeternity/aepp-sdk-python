@@ -159,7 +159,7 @@ class SophiaTransformation:
         elif isinstance(arg, bytes):
             return f"{arg.hex()}"
 
-    def to_sophia_bool(self, arg: bool, generic):
+    def to_sophia_bool(self, arg, generic):
         return "true" if arg else "false"
 
     def to_sophia_map(self, arg, generic):
