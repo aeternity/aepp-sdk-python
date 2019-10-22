@@ -144,22 +144,22 @@ class SophiaTransformation:
             return f'{argument}'
         return method(argument, generic)
 
-    def to_sophia_string(self, arg):
+    def to_sophia_string(self, arg, generic):
         return f'/"{arg}/"'
 
-    def to_sophia_signature(self, arg):
+    def to_sophia_signature(self, arg, generic):
         return self.to_sophia_bytes(arg)
 
-    def to_sophia_hash(self, arg):
+    def to_sophia_hash(self, arg, generic):
         return self.to_sophia_bytes(arg)
 
-    def to_sophia_bytes(self, arg):
+    def to_sophia_bytes(self, arg, generic):
         if isinstance(arg, str):
             return f'#{arg}'
         elif isinstance(arg, bytes):
             return f"{arg.hex()}"
 
-    def to_sophia_bool(self, arg: bool):
+    def to_sophia_bool(self, arg: bool, generic):
         return "true" if arg else "false"
 
     def to_sophia_map(self, arg, generic):
