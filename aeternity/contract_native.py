@@ -176,8 +176,8 @@ class SophiaTransformation:
     def to_sophia_list(self, arg, generic):
         result = "["
         for val in arg:
-            result += f"{self.convert_to_sophia(val, generic)}"
-        return result + "]"
+            result += f"{self.convert_to_sophia(val, generic)},"
+        return result[:-1] + "]"
 
     def to_sophia_option(self, arg, generic):
         return 'None' if arg is None else self.convert_to_sophia(arg, generic)
