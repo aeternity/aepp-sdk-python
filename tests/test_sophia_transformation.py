@@ -72,6 +72,27 @@ def test_type_conversion_to_sophia(compiler_fixture, testdata_fixture):
             "values": "A",
             "result": "12",
             "match": False
+        },
+        {
+            "method": 4,  # boolFn
+            "argument": 0,
+            "values": True,
+            "result": "true",
+            "match": True
+        },
+        {
+            "method": 4,  # boolFn
+            "argument": 0,
+            "values": False,
+            "result": "false",
+            "match": True
+        },
+        {
+            "method": 7,  # addressFn
+            "argument": 0,
+            "values": "ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi",
+            "result": "ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi",
+            "match": True
         }
     ]
 
