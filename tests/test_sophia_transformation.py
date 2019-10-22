@@ -93,6 +93,96 @@ def test_type_conversion_to_sophia(compiler_fixture, testdata_fixture):
             "values": "ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi",
             "result": "ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi",
             "match": True
+        },
+        {
+            "method": 8,  # tupleFn
+            "argument": 0,
+            "values": ["test", 1],
+            "result": '(/"test/",1)',
+            "match": True
+        },
+        {
+            "method": 8,  # tupleFn
+            "argument": 0,
+            "values": ["test", 1],
+            "result": '(1,/"test/")',
+            "match": False
+        },
+        {
+            "method": 9,  # tupleInTupleFn
+            "argument": 0,
+            "values": [["test", "test2"], 1],
+            "result": '((/"test/",/"test2/"),1)',
+            "match": True
+        },
+        {
+            "method": 10,  # tupleWithList
+            "argument": 0,
+            "values": [[1,2,3], 1],
+            "result": '([1,2,3],1)',
+            "match": True
+        },
+        {
+            "method": 11,  # listFn
+            "argument": 0,
+            "values": [1,2,3,4,5,6],
+            "result": '[1,2,3,4,5,6]',
+            "match": True
+        },
+        {
+            "method": 12,  # listInListFn
+            "argument": 0,
+            "values": [[1,2],[5,6]],
+            "result": '[[1,2],[5,6]]',
+            "match": True
+        },
+        {
+            "method": 13,  # mapFn
+            "argument": 0,
+            "values": {
+                "ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi": ["test", 12]
+            },
+            "result": '{[ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi = (/"test/",12)]}',
+            "match": True
+        },
+        {
+            "method": 14,  # mapOptionFn
+            "argument": 0,
+            "values": {
+                "ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi": ["test", 12]
+            },
+            "result": '{[ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi = (/"test/",Some(12))]}',
+            "match": True
+        },
+        {
+            "method": 14,  # mapOptionFn
+            "argument": 0,
+            "values": {
+                "ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi": ["test", None]
+            },
+            "result": '{[ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi = (/"test/",None)]}',
+            "match": True
+        },
+        {
+            "method": 17,  # intOption
+            "argument": 0,      
+            "values": 1,
+            "result": 'Some(1)',
+            "match": True
+        },
+        {
+            "method": 17,  # intOption
+            "argument": 0,
+            "values": None,
+            "result": 'None',
+            "match": True
+        },
+        {
+            "method": 18,  # listOption
+            "argument": 0,
+            "values": [["abcd", 1], ["test", 2]],
+            "result": 'Some([(abcd,/"1/"),(test,/"2/")])',
+            "match": True
         }
     ]
 
@@ -103,5 +193,5 @@ def test_type_conversion_to_sophia(compiler_fixture, testdata_fixture):
     for t in tests:
          typeDef = namedtupled.reduce(contract_aci.encoded_aci.contract.functions[t.get('method')].arguments[t.get('argument')].type)
          transformed = transformer.convert_to_sophia(t.get('values'), typeDef)
-         print(transformed)
+         #print(transformed)
          assert(t.get('match') == (transformed == t.get('result')))
