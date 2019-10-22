@@ -180,7 +180,7 @@ class SophiaTransformation:
         return result[:-1] + "]"
 
     def to_sophia_option(self, arg, generic):
-        return 'None' if arg is None else self.convert_to_sophia(arg, generic)
+        return 'None' if arg is None else f"Some({self.convert_to_sophia(arg, generic)})"
 
     def to_sophia_tuple(self, arg, generic):
         result = "("
