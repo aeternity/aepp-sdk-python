@@ -49,7 +49,7 @@ class ContractNative(object):
         self.account = kwargs.get('account', None)
         if self.account and type(self.account) is not signing.Account:
             raise TypeError("Invalid account type. Use `class Account` for creating an account")
-
+        self.sophia_transformer = SophiaTransformation()
         self.__generate_methods()
 
     def __generate_methods(self):
