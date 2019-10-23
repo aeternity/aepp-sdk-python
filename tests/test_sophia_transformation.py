@@ -162,7 +162,7 @@ def test_type_conversion_to_sophia(compiler_fixture):
             "values": {
                 "ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi": ["test", 12]
             },
-            "result": '{[ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi = (\"test\",12)]}',
+            "result": '{[ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi] = (\"test\",12)}',
             "match": True
         },
         {
@@ -171,7 +171,7 @@ def test_type_conversion_to_sophia(compiler_fixture):
             "values": {
                 "ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi": ["test", 12]
             },
-            "result": '{[ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi = (\"test\",Some(12))]}',
+            "result": '{[ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi] = (\"test\",Some(12))}',
             "match": True
         },
         {
@@ -180,7 +180,7 @@ def test_type_conversion_to_sophia(compiler_fixture):
             "values": {
                 "ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi": ["test", None]
             },
-            "result": '{[ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi = (\"test\",None)]}',
+            "result": '{[ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi] = (\"test\",None)}',
             "match": True
         },
         {
