@@ -143,10 +143,19 @@ class SophiaTransformation:
     TO_SOPHIA_METHOD_PREFIX = 'to_sophia_'
     FROM_SOPHIA_METHOD_PREFIX = 'from_sophia_'
 
-    def extractType(self, sophia_type):
+    def linkTypeDef(self, t, bindings):
+        _, typeDef = t.split('.') if isinstance(t, str) else list(t.keys())[0].split('.')
+        aciTypes = bindings.contract.type_defs + [namedtupled.map({"name": "state", "typedef": bindings.contract.state, "vars": []})]
+        aciTypes = filter(lambda x: x.name == typeDef, aciTypes)
+        # TODO: Inject vars
+        return namedtupled.reduce(list(aciTypes)[0].typedef)
+
+    def extractType(self, sophia_type, bindings={}):
         [t] = [sophia_type] if not isinstance(sophia_type, list) else sophia_type
 
-        # TODO: Link state and typeDef
+        if len(bindings) > 0:
+            if (isinstance(t, str) and bindings.contract.name in t) or (isinstance(t, dict) > 0 and bindings.contract.name in list(t.keys())[0]):
+                t = self.linkTypeDef(t, bindings)
 
         # map, tuple, list, record, bytes
         if isinstance(t, dict):
