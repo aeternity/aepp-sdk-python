@@ -171,27 +171,27 @@ class SophiaTransformation:
         method = getattr(self, method_name, None)
         if method is None:
             return f'{argument}'
-        return method(argument, generic)
+        return method(argument, generic, bindings)
 
-    def to_sophia_string(self, arg, generic):
+    def to_sophia_string(self, arg, generic, bindings={}):
         return f'\"{arg}\"'
 
-    def to_sophia_signature(self, arg, generic):
+    def to_sophia_signature(self, arg, generic, bindings={}):
         return self.to_sophia_bytes(arg)
 
-    def to_sophia_hash(self, arg, generic):
+    def to_sophia_hash(self, arg, generic, bindings={}):
         return self.to_sophia_bytes(arg)
 
-    def to_sophia_bytes(self, arg, generic):
+    def to_sophia_bytes(self, arg, generic, bindings={}):
         if isinstance(arg, str):
             return f'#{arg}'
         elif isinstance(arg, bytes):
             return f"{arg.hex()}"
 
-    def to_sophia_bool(self, arg, generic):
+    def to_sophia_bool(self, arg, generic, bindings={}):
         return "true" if arg else "false"
 
-    def to_sophia_map(self, arg, generic):
+    def to_sophia_map(self, arg, generic, bindings={}):
         if isinstance(arg, dict):
             arg = arg.items()
         result = '{'
@@ -199,31 +199,37 @@ class SophiaTransformation:
             k, v = val
             if i != 0:
                 result += ','
-            result += f"[{self.convert_to_sophia(k, generic[0])}] = {self.convert_to_sophia(v, generic[1])}"
+            result += f"[{self.convert_to_sophia(k, generic[0], bindings)}] = {self.convert_to_sophia(v, generic[1], bindings)}"
         return result + '}'
 
-    def to_sophia_list(self, arg, generic):
+    def to_sophia_list(self, arg, generic, bindings={}):
         result = "["
         for val in arg:
-            result += f"{self.convert_to_sophia(val, generic)},"
+            result += f"{self.convert_to_sophia(val, generic, bindings)},"
         return result[:-1] + "]"
 
-    def to_sophia_option(self, arg, generic):
-        return 'None' if arg is None else f"Some({self.convert_to_sophia(arg, generic)})"
+    def to_sophia_option(self, arg, generic, bindings={}):
+        return 'None' if arg is None else f"Some({self.convert_to_sophia(arg, generic, bindings)})"
 
-    def to_sophia_tuple(self, arg, generic):
+    def to_sophia_tuple(self, arg, generic, bindings={}):
         result = "("
         for i, val in enumerate(arg):
-            result += f"{self.convert_to_sophia(val, generic[i])},"
+            result += f"{self.convert_to_sophia(val, generic[i], bindings)},"
         return result[:-1] + ")"
 
-    def to_sophia_record(self, arg, generic):
+    def to_sophia_record(self, arg, generic, bindings={}):
         result = '{'
         for i, val in enumerate(generic):
             if i != 0:
                 result += ','
-            result += f"{val['name']} = {self.convert_to_sophia(arg[val['name']], val['type'])}"
+            result += f"{val['name']} = {self.convert_to_sophia(arg[val['name']], val['type'], bindings)}"
         return result + '}'
 
-    def to_sophia_variant(self, arg, generic):
-        pass
+    def to_sophia_variant(self, arg, generic, bindings={}):
+        [[variant, variantArgs]] = [[arg, []]] if isinstance(arg, str) else arg.items()
+        [[v, type_val]] = list(filter(lambda x: list(x.keys())[0].lower() == variant.lower(), generic))[0].items()
+        transfrom_arg = ""
+        if len(type_val) > 0:
+            mapped_list = list(map(lambda i, x: self.convert_to_sophia(x, type_val[i], bindings), enumerate(variantArgs[0:len(type_val)])))
+            transfrom_arg = f"({mapped_list})"
+        return f"{v}{transfrom_arg}"
