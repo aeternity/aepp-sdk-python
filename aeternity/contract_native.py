@@ -145,7 +145,7 @@ class SophiaTransformation:
         return method(argument, generic)
 
     def to_sophia_string(self, arg, generic):
-        return f'/"{arg}/"'
+        return f'\"{arg}\"'
 
     def to_sophia_signature(self, arg, generic):
         return self.to_sophia_bytes(arg)
