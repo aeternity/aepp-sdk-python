@@ -10,16 +10,19 @@ class ContractNative(object):
         """
         Initialize a ContractNative object
 
+        :param client: instance of node client
         :param source: the source code of the contract (optional)
         :param compiler: compiler url or instance of the CompilerClient
-        :param bytecode: the bytecode of the contract (optional). If provided with the source and compiler, then the provided value will be overwritten.
-        :param aci: the aci of the contract (optional). If provided with the source and compiler, then the provided value will be overwritten.
         :param address: address of the currently deployed contract (optional)
         :param gas: Gas to be used for all contract interactions (optional)
         :param fee: fee to be used for all contract interactions (optional)
         :param gas_price: Gas price to be used for all contract interactions (optional)
         :param account: Account to be used for contract deploy and contract calls (optional)
         """
+        if 'client' in kwargs:
+            self.contract = Contract(kwargs.get('client'))
+        else:
+            raise ValueError("client is not provided")
         self.compiler = kwargs.get('compiler', None)
         if self.compiler is None:
             raise ValueError("Compiler is not provided")
@@ -27,16 +30,11 @@ class ContractNative(object):
             if isinstance(self.compiler, str):
                 self.compiler = compiler.CompilerClient(self.compiler)
         self.source = kwargs.get('source', None)
-        self.bytecode = kwargs.get('bytecode', None)
-        self.aci = kwargs.get('aci', None)
-
-        if self.aci is not None:
-            self.aci = namedtupled.map(self.aci, _nt_name="ACI")
         if self.source is not None:
-            self.bytecode = self.compiler.compile(self.source)
+            self.bytecode = self.compiler.compile(self.source).bytecode
             self.aci = self.compiler.aci(self.source)
-        if self.bytecode is None and self.aci is None:
-            raise ValueError("Please provide either contract source or contract bytecode + aci")
+        else:
+            raise ValueError("contract source not provided")
 
         self.contract_name = self.aci.encoded_aci.contract.name
         self.gas = kwargs.get('gas', defaults.CONTRACT_GAS)
