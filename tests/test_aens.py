@@ -122,7 +122,7 @@ def test_name_update(chain_fixture):
 
 def test_spend_by_name(chain_fixture):
     # claim a domain
-    domain = random_domain(tld='chain' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
+    domain = random_domain(length=13, tld='chain' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= PROTOCOL_LIMA else 'test')
     print(f"domain is {domain}")
     name = chain_fixture.NODE_CLI.AEName(domain)
     print("Claim name ", domain)
