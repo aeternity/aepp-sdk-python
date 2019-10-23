@@ -203,6 +203,13 @@ def test_type_conversion_to_sophia(compiler_fixture):
             "values": [["abcd", 1], ["test", 2]],
             "result": 'Some([(abcd,\"1\"),(test,\"2\")])',
             "match": True
+        },
+        {
+            "method": 16,
+            "argument": 0,
+            "values": {"value": "ab", "key": 12, "testOption": "abcd"},
+            "result": '{value = "ab",key = 12,testOption = Some("abcd")}',
+            "match": True
         }
     ]
 
@@ -211,5 +218,5 @@ def test_type_conversion_to_sophia(compiler_fixture):
     transformer = SophiaTransformation()
     for t in tests:
          typeDef = namedtupled.reduce(contract_aci.encoded_aci.contract.functions[t.get('method')].arguments[t.get('argument')].type)
-         transformed = transformer.convert_to_sophia(t.get('values'), typeDef)
+         transformed = transformer.convert_to_sophia(t.get('values'), typeDef, contract_aci.encoded_aci)
          assert(t.get('match') == (transformed == t.get('result')))
