@@ -74,3 +74,6 @@ def test_contract_native(compiler_fixture, chain_fixture):
 
     call_info = contract_native.setRecord({"value": "test1", "key": 12, "testOption": "test2"})
     assert(call_info.return_type == 'ok')
+
+    call_info = contract_native.datTypeFn({"Year": []})
+    assert(call_info.return_type == 'ok')

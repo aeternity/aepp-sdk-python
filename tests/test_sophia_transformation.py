@@ -210,7 +210,14 @@ def test_type_conversion_to_sophia(compiler_fixture):
             "values": {"value": "ab", "key": 12, "testOption": "abcd"},
             "result": '{value = "ab",key = 12,testOption = Some("abcd")}',
             "match": True
-        }
+        },
+        {
+            "method": 23,
+            "argument": 0,
+            "values": {"Year": []},
+            "result": 'Year',
+            "match": True
+        },
     ]
 
     compiler = compiler_fixture.COMPILER
