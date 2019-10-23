@@ -1,6 +1,8 @@
-from aeternity import hashing
 import validators
+import re
+
 from decimal import Decimal
+from aeternity import hashing
 
 
 def is_valid_hash(hash_str: str, prefix: str = None) -> bool:
@@ -75,3 +77,39 @@ def format_amount(value: int, precision: int = -18, unit_label: str = "AE") -> s
     # remove trailing 0
     value = str(value).rstrip('0').rstrip('.')
     return f"{value}{unit_label}"
+
+
+def amount_to_aettos(value) -> int:
+    """
+    Trasform a value describing an amount in AE to aettos.
+    Supported amount format are
+    - floats: ex 1.2 3e12
+    - string: ex 12AE 12ae 12Ae
+    - int: will return the same number
+
+    if the input value does not match any of the types above
+    a TypeErorr is raised
+
+    :param value: the value to transform
+    :retuen: the amount ins aettos
+    """
+    amount = None
+    if isinstance(value, int):
+        amount = value
+    elif isinstance(value, str):
+        if value.isdigit():
+            amount = int(value)
+        elif re.match(r'^\d+(\.\d+)?ae$', value, re.IGNORECASE):  # with ae
+            amount = Decimal(value[:-2]).scaleb(18).quantize(Decimal('1'))
+        elif re.match(r'^\d+\.\d+$', value, re.IGNORECASE):  # just float
+            amount = Decimal(value).scaleb(18).quantize(Decimal('1'))
+        else:
+            raise TypeError(f"Invalid value for amount: {value}")
+    elif isinstance(value, float):
+        amount = Decimal(f'{value}').scaleb(18).quantize(Decimal('1'))
+    else:
+        raise TypeError(f"Invalid value for amount: {value}")
+    # validate the number
+    if amount < 0:
+        raise TypeError("Amount values must be greather then 0")
+    return amount

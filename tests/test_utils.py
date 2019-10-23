@@ -1,5 +1,5 @@
-
 from aeternity import utils
+import pytest
 
 
 def test_utils_is_valid_hash():
@@ -67,3 +67,27 @@ def test_utils_format_amount():
         got = utils.format_amount(a[0])
         expected = a[1]
         assert got == expected
+
+
+def test_utils_amount_to_aettos():
+    args = [
+        ("1.2AE", 1200000000000000000),
+        ("1.2ae", 1200000000000000000),
+        ("1.25ae", 1250000000000000000),
+        (1.3, 1300000000000000000),
+        (10, 10),
+        (-1, TypeError()),
+        ("10", 10),
+        ("1,25ae", TypeError()),
+        ("1ae", 1000000000000000000),
+        ("0.000000005", 5000000000),
+    ]
+
+    for a in args:
+        expected = a[1]
+        if issubclass(type(expected), Exception):
+            with pytest.raises(type(expected)):
+                utils.amount_to_aettos(a[0])
+        else:
+            got = utils.amount_to_aettos(a[0])
+            assert got == expected
