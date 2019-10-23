@@ -190,7 +190,7 @@ class SophiaTransformation:
             k, v = val
             if i != 0:
                 result += ','
-            result += f"[{self.convert_to_sophia(k, generic[0])} = {self.convert_to_sophia(v, generic[1])}]"
+            result += f"[{self.convert_to_sophia(k, generic[0])}] = {self.convert_to_sophia(v, generic[1])}"
         return result + '}'
 
     def to_sophia_list(self, arg, generic):
