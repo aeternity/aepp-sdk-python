@@ -1,4 +1,3 @@
-import pytest
 import namedtupled
 from aeternity.contract_native import SophiaTransformation
 
@@ -43,8 +42,29 @@ contract = """contract StateContract =
   entrypoint bytesFn(s: bytes(32)): bytes(32) = s
   entrypoint datTypeFn(s: dateUnit): dateUnit = s"""
 
-def test_type_conversion_to_sophia(compiler_fixture, testdata_fixture):
+def test_type_conversion_to_sophia(compiler_fixture):
     tests = [
+        {
+            "method": 0,
+            "argument": 0,
+            "values": "abcd",
+            "result": '\"abcd\"',
+            "match": True
+        },
+        {
+            "method": 0,  # init
+            "argument": 1,
+            "values": 12,
+            "result": "12",
+            "match": True
+        },
+        {
+            "method": 0,  # init
+            "argument": 2,
+            "values": "A",
+            "result": 'Some(\"A\")',
+            "match": True
+        },
         {
             "method": 2, #intFn
             "argument": 0,
@@ -63,7 +83,7 @@ def test_type_conversion_to_sophia(compiler_fixture, testdata_fixture):
             "method": 3,  # stringFn
             "argument": 0,
             "values": "A",
-            "result": '/"A/"',
+            "result": '\"A\"',
             "match": True
         },
         {
@@ -98,21 +118,21 @@ def test_type_conversion_to_sophia(compiler_fixture, testdata_fixture):
             "method": 8,  # tupleFn
             "argument": 0,
             "values": ["test", 1],
-            "result": '(/"test/",1)',
+            "result": '(\"test\",1)',
             "match": True
         },
         {
             "method": 8,  # tupleFn
             "argument": 0,
             "values": ["test", 1],
-            "result": '(1,/"test/")',
+            "result": '(1,\"test\")',
             "match": False
         },
         {
             "method": 9,  # tupleInTupleFn
             "argument": 0,
             "values": [["test", "test2"], 1],
-            "result": '((/"test/",/"test2/"),1)',
+            "result": '((\"test\",\"test2\"),1)',
             "match": True
         },
         {
@@ -142,7 +162,7 @@ def test_type_conversion_to_sophia(compiler_fixture, testdata_fixture):
             "values": {
                 "ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi": ["test", 12]
             },
-            "result": '{[ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi = (/"test/",12)]}',
+            "result": '{[ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi = (\"test\",12)]}',
             "match": True
         },
         {
@@ -151,7 +171,7 @@ def test_type_conversion_to_sophia(compiler_fixture, testdata_fixture):
             "values": {
                 "ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi": ["test", 12]
             },
-            "result": '{[ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi = (/"test/",Some(12))]}',
+            "result": '{[ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi = (\"test\",Some(12))]}',
             "match": True
         },
         {
@@ -160,7 +180,7 @@ def test_type_conversion_to_sophia(compiler_fixture, testdata_fixture):
             "values": {
                 "ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi": ["test", None]
             },
-            "result": '{[ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi = (/"test/",None)]}',
+            "result": '{[ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi = (\"test\",None)]}',
             "match": True
         },
         {
@@ -181,17 +201,15 @@ def test_type_conversion_to_sophia(compiler_fixture, testdata_fixture):
             "method": 18,  # listOption
             "argument": 0,
             "values": [["abcd", 1], ["test", 2]],
-            "result": 'Some([(abcd,/"1/"),(test,/"2/")])',
+            "result": 'Some([(abcd,\"1\"),(test,\"2\")])',
             "match": True
         }
     ]
 
     compiler = compiler_fixture.COMPILER
-    bytecode = compiler.compile(contract)
     contract_aci = compiler.aci(contract)
     transformer = SophiaTransformation()
     for t in tests:
          typeDef = namedtupled.reduce(contract_aci.encoded_aci.contract.functions[t.get('method')].arguments[t.get('argument')].type)
          transformed = transformer.convert_to_sophia(t.get('values'), typeDef)
-         #print(transformed)
          assert(t.get('match') == (transformed == t.get('result')))
