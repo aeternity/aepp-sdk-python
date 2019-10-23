@@ -95,7 +95,7 @@ class ContractNative(object):
         self.address = address
         self.deployed = True
 
-    def deploy(self, calldata,
+    def deploy(self, function, *arguments,
                account=None,
                amount=None,
                deposit=defaults.CONTRACT_DEPOSIT,
@@ -109,9 +109,10 @@ class ContractNative(object):
         Create a contract and deploy it to the chain
         :return: the transaction
         """
+        calldata = self.compiler.encode_calldata(self.source, function, *arguments).calldata
         opts = self.__process_options(gas=gas, gas_price=gas_price, amount=amount, fee=fee, account=account)
-        tx = Contract.create(opts.account, self.bytecode, calldata, opts.amount, deposit, opts.gas,
-                             opts.gas_price, opts.fee, vm_version, abi_version, tx_ttl)
+        tx = self.contract.create(opts.account, self.bytecode, calldata, opts.amount, deposit, opts.gas,
+                                  opts.gas_price, opts.fee, vm_version, abi_version, tx_ttl)
         self.at(tx.metadata.contract_id)
         return tx
 
