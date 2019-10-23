@@ -50,3 +50,24 @@ def test_contract_native(compiler_fixture, chain_fixture):
     assert(contract_native.address is not None)
     call_info = contract_native.intFn(12)
     assert(call_info.return_type == 'ok')
+
+    call_info = contract_native.stringFn("test_call")
+    assert(call_info.return_type == 'ok')
+
+    call_info = contract_native.addressFn(chain_fixture.ALICE.get_address())
+    assert(call_info.return_type == 'ok')
+
+    call_info = contract_native.boolFn(False)
+    assert(call_info.return_type == 'ok')
+
+    call_info = contract_native.tupleFn(["test", 1])
+    assert(call_info.return_type == 'ok')
+
+    call_info = contract_native.listFn([1,2,3,4,5])
+    assert(call_info.return_type == 'ok')
+
+    call_info = contract_native.mapFn({"ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi": ["test", 12]})
+    assert(call_info.return_type == 'ok')
+
+    call_info = contract_native.intOption(12)
+    assert(call_info.return_type == 'ok')
