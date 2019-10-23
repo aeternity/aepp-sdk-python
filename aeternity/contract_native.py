@@ -116,6 +116,22 @@ class ContractNative(object):
         self.at(tx.metadata.contract_id)
         return tx
 
+    def call(self, function, calldata,
+             account=None,
+             amount=None,
+             gas=None,
+             gas_price=None,
+             fee=None,
+             abi_version=None,
+             tx_ttl=defaults.TX_TTL):
+        """
+        call a contract method
+        :return: the transaction
+        """
+        opts = self.__process_options(gas=gas, gas_price=gas_price, amount=amount, fee=fee, account=account)
+        return self.contract.call(self.address, opts.account, function, calldata, opts.amount, opts.gas,
+                                  opts.gas_price, opts.fee, abi_version, tx_ttl)
+
 
 class SophiaTransformation:
 
