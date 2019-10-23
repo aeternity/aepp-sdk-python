@@ -354,7 +354,7 @@ def account_balance(keystore_name, password, height, force, wait, json_):
 @account.command('spend', help="Create a transaction to another account or AENS Name")
 @click.argument('keystore_name', required=True)
 @click.argument('recipient_id', required=True)
-@click.argument('amount', required=True, type=int)
+@click.argument('amount', required=True, type=str)
 @click.option('--payload', default="", help="Spend transaction payload")
 @global_options
 @account_options
