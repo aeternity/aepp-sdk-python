@@ -21,9 +21,10 @@ class OpenAPIArgsException(Exception):
 class OpenAPIClientException(Exception):
     """Raised when there is an error executing requests"""
 
-    def __init__(self, message, code=500):
+    def __init__(self, message, code=500, data={}):
         self.message = message
         self.code = code
+        self.data = data
 
 
 class OpenAPIException(Exception):
@@ -220,7 +221,7 @@ class OpenAPICli(object):
                 jr = http_reply.json()
                 return namedtupled.map(jr, _nt_name=api_response.schema)
             # error
-            raise OpenAPIClientException(f"Error: {api_response.desc}", code=http_reply.status_code)
+            raise OpenAPIClientException(f"{api_response.desc}", code=http_reply.status_code, data=http_reply.json())
         # register the method
         api_method.__name__ = api.name
         api_method.__doc__ = api.doc
