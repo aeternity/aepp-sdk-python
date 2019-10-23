@@ -218,7 +218,12 @@ class SophiaTransformation:
         return result[:-1] + ")"
 
     def to_sophia_record(self, arg, generic):
-        pass
+        result = '{'
+        for i, val in enumerate(generic):
+            if i != 0:
+                result += ','
+            result += f"{val['name']} = {self.convert_to_sophia(arg[val['name']], val['type'])}"
+        return result + '}'
 
     def to_sophia_variant(self, arg, generic):
         pass
