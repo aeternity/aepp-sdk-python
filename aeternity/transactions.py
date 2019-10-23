@@ -394,10 +394,10 @@ class TxObject:
     """
 
     def __init__(self, **kwargs):
-        self.data = self.set_data(kwargs.get("data", None))
+        self.set_data(kwargs.get("data", None))
         self.tx = kwargs.get("tx", None)
         self.hash = kwargs.get("hash", None)
-        self.metadata = self.set_metadata(kwargs.get("metadata", None))
+        self.set_metadata(kwargs.get("metadata", None))
 
     def set_data(self, data):
         self.data = namedtupled.map(data, _nt_name="TxData")
