@@ -58,7 +58,7 @@ class ContractNative(object):
                 self.__add_contract_method(namedtupled.map({
                     "name": f.name,
                     "doc": f"Contract Method {f.name}",
-                    "typeDef": f.arguments,
+                    "type_def": f.arguments,
                     "stateful": f.stateful
                 }, _nt_name="ContractMethod"))
 
@@ -66,7 +66,7 @@ class ContractNative(object):
         def contract_method(*args, **kwargs):
             tansformed_args = []
             for i, val in enumerate(args):
-                tansformed_args.append(self.sophia_transformer.convert_to_sophia(val, namedtupled.reduce(method.typeDef[i].type), self.aci.encoded_aci))
+                tansformed_args.append(self.sophia_transformer.convert_to_sophia(val, namedtupled.reduce(method.type_def[i].type), self.aci.encoded_aci))
             calldata = self.compiler.encode_calldata(self.source, method.name, *tansformed_args).calldata
             call_tx = self.call(method.name, calldata)
             call_info = self.contract.get_call_object(call_tx.hash)
@@ -143,19 +143,42 @@ class SophiaTransformation:
     TO_SOPHIA_METHOD_PREFIX = 'to_sophia_'
     FROM_SOPHIA_METHOD_PREFIX = 'from_sophia_'
 
-    def linkTypeDef(self, t, bindings):
-        _, typeDef = t.split('.') if isinstance(t, str) else list(t.keys())[0].split('.')
-        aciTypes = bindings.contract.type_defs + [namedtupled.map({"name": "state", "typedef": bindings.contract.state, "vars": []})]
-        aciTypes = filter(lambda x: x.name == typeDef, aciTypes)
-        # TODO: Inject vars
-        return namedtupled.reduce(list(aciTypes)[0].typedef)
+    def __inject_vars(self, t, aci_types):
+        [[base_type, generic]] = aci_types.items()
+        [[_, variant_value]] = t.items()
+        if base_type == 'variant':
+            vars_map = []
+            for x in generic:
+                [tag, gen] = x.items()[0]
+                gen_map = []
+                for y in gen:
+                    var_name_list = list(map(lambda e: e.name, aci_types['vars']))
+                    index = -1
+                    if y in var_name_list:
+                        index = var_name_list.index(y)
+                        gen_map.append(variant_value[index])      
+                    else:
+                        gen_map.append(y)
+                vars_map.append({[tag]: gen_map})
+            return {
+                [base_type]: vars_map
+            }
 
-    def extractType(self, sophia_type, bindings={}):
+    def __link_type_def(self, t, bindings):
+        _, type_defs = t.split('.') if isinstance(t, str) else list(t.keys())[0].split('.')
+        aci_types = bindings.contract.type_defs + [namedtupled.map({"name": "state", "typedef": bindings.contract.state, "vars": []})]
+        aci_types = filter(lambda x: x.name == type_defs, aci_types)
+        aci_types = list(aci_types)[0]
+        if len(list(aci_types.vars)) > 0:
+            aci_types.typedef = self.__inject_vars(t, aci_types)
+        return namedtupled.reduce(aci_types.typedef)
+
+    def __extract_type(self, sophia_type, bindings={}):
         [t] = [sophia_type] if not isinstance(sophia_type, list) else sophia_type
 
         if len(bindings) > 0:
             if (isinstance(t, str) and bindings.contract.name in t) or (isinstance(t, dict) > 0 and bindings.contract.name in list(t.keys())[0]):
-                t = self.linkTypeDef(t, bindings)
+                t = self.__link_type_def(t, bindings)
 
         # map, tuple, list, record, bytes
         if isinstance(t, dict):
@@ -166,7 +189,7 @@ class SophiaTransformation:
             return t, None
 
     def convert_to_sophia(self, argument, sophia_type, bindings={}):
-        current_type, generic = self.extractType(sophia_type, bindings)
+        current_type, generic = self.__extract_type(sophia_type, bindings)
         method_name = self.TO_SOPHIA_METHOD_PREFIX + current_type
         method = getattr(self, method_name, None)
         if method is None:
@@ -226,10 +249,10 @@ class SophiaTransformation:
         return result + '}'
 
     def to_sophia_variant(self, arg, generic, bindings={}):
-        [[variant, variantArgs]] = [[arg, []]] if isinstance(arg, str) else arg.items()
+        [[variant, variant_args]] = [[arg, []]] if isinstance(arg, str) else arg.items()
         [[v, type_val]] = list(filter(lambda x: list(x.keys())[0].lower() == variant.lower(), generic))[0].items()
         transfrom_arg = ""
         if len(type_val) > 0:
-            mapped_list = list(map(lambda i, x: self.convert_to_sophia(x, type_val[i], bindings), enumerate(variantArgs[0:len(type_val)])))
+            mapped_list = list(map(lambda i, x: self.convert_to_sophia(x, type_val[i], bindings), enumerate(variant_args[0:len(type_val)])))
             transfrom_arg = f"({mapped_list})"
         return f"{v}{transfrom_arg}"
