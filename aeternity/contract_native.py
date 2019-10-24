@@ -156,7 +156,7 @@ class SophiaTransformation:
                     index = -1
                     if y in var_name_list:
                         index = var_name_list.index(y)
-                        gen_map.append(variant_value[index])  
+                        gen_map.append(variant_value[index])
                     else:
                         gen_map.append(y)
                 vars_map.append({[tag]: gen_map})
