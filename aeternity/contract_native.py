@@ -64,10 +64,10 @@ class ContractNative(object):
 
     def __add_contract_method(self, method):
         def contract_method(*args, **kwargs):
-            tansformed_args = []
+            transformed_args = []
             for i, val in enumerate(args):
-                tansformed_args.append(self.sophia_transformer.convert_to_sophia(val, namedtupled.reduce(method.type_def[i].type), self.aci.encoded_aci))
-            calldata = self.compiler.encode_calldata(self.source, method.name, *tansformed_args).calldata
+                transformed_args.append(self.sophia_transformer.convert_to_sophia(val, namedtupled.reduce(method.type_def[i].type), self.aci.encoded_aci))
+            calldata = self.compiler.encode_calldata(self.source, method.name, *transformed_args).calldata
             call_tx = self.call(method.name, calldata)
             call_info = self.contract.get_call_object(call_tx.hash)
             return call_info
