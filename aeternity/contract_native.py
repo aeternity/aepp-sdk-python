@@ -123,6 +123,8 @@ class ContractNative(object):
         calldata = None
         if len(method_list) == 1 and method_list[0].name == entrypoint:
             calldata = self.__encode_method_args(method_list[0], *arguments)
+        else:
+            calldata = self.compiler.encode_calldata(self.source, entrypoint, *arguments).calldata
         opts = self.__process_options(gas=gas, gas_price=gas_price, amount=amount, fee=fee, account=account)
         tx = self.contract.create(opts.account, self.bytecode, calldata, opts.amount, deposit, opts.gas,
                                   opts.gas_price, opts.fee, vm_version, abi_version, tx_ttl)

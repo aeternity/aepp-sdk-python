@@ -84,3 +84,14 @@ def test_contract_native(compiler_fixture, chain_fixture):
     except Exception as e:
       expected_error_message = "Invalid number of arguments. Expected 1, Provided 2"
       assert(str(e) == expected_error_message)
+
+
+def test_contract_native_without_init(compiler_fixture, chain_fixture):
+    identity_contract = "contract Identity =\n  entrypoint main(x : int) = x"
+    compiler = compiler_fixture.COMPILER
+    account = chain_fixture.ALICE
+    contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=identity_contract, compiler=compiler, account=account)
+    contract_native.deploy()
+    assert(contract_native.address is not None)
+    call_info = contract_native.main(12)
+    assert(call_info.return_type == 'ok')
