@@ -64,7 +64,7 @@ class ContractNative(object):
 
     def __encode_method_args(self, method, *args):
         if len(args) != len(method.arguments):
-                raise ValueError(f"Invalid number of arguments. Expected {len(method.arguments)}, Provided {len(args)}")
+            raise ValueError(f"Invalid number of arguments. Expected {len(method.arguments)}, Provided {len(args)}")
         transformed_args = []
         for i, val in enumerate(args):
             transformed_args.append(self.sophia_transformer.convert_to_sophia(val, namedtupled.reduce(method.arguments[i].type), self.aci.encoded_aci))
