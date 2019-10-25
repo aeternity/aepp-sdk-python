@@ -46,7 +46,7 @@ def test_contract_native(compiler_fixture, chain_fixture):
     compiler = compiler_fixture.COMPILER
     account = chain_fixture.ALICE
     contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=contract, compiler=compiler, account=account)
-    contract_native.deploy("init", '\"abcd\"', "12", 'Some(\"A\")')
+    contract_native.deploy("abcd", 12, "A")
     assert(contract_native.address is not None)
     call_info = contract_native.intFn(12)
     assert(call_info.return_type == 'ok')

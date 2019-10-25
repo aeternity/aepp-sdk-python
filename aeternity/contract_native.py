@@ -58,18 +58,21 @@ class ContractNative(object):
                 self.__add_contract_method(namedtupled.map({
                     "name": f.name,
                     "doc": f"Contract Method {f.name}",
-                    "type_def": f.arguments,
+                    "arguments": f.arguments,
                     "stateful": f.stateful
                 }, _nt_name="ContractMethod"))
 
+    def __encode_method_args(self, method, *args):
+        if len(args) != len(method.arguments):
+                raise ValueError(f"Invalid number of arguments. Expected {len(method.arguments)}, Provided {len(args)}")
+        transformed_args = []
+        for i, val in enumerate(args):
+            transformed_args.append(self.sophia_transformer.convert_to_sophia(val, namedtupled.reduce(method.arguments[i].type), self.aci.encoded_aci))
+        return self.compiler.encode_calldata(self.source, method.name, *transformed_args).calldata
+
     def __add_contract_method(self, method):
         def contract_method(*args, **kwargs):
-            transformed_args = []
-            for i, val in enumerate(args):
-                if len(args) != len(method.type_def):
-                    raise ValueError(f"Invalid number of arguments. Expected {len(method.type_def)}, Provided {len(args)}")
-                transformed_args.append(self.sophia_transformer.convert_to_sophia(val, namedtupled.reduce(method.type_def[i].type), self.aci.encoded_aci))
-            calldata = self.compiler.encode_calldata(self.source, method.name, *transformed_args).calldata
+            calldata = self.__encode_method_args(method, *args)
             call_tx = self.call(method.name, calldata)
             call_info = self.contract.get_call_object(call_tx.hash)
             return call_info
@@ -102,7 +105,7 @@ class ContractNative(object):
         self.address = address
         self.deployed = True
 
-    def deploy(self, function, *arguments,
+    def deploy(self, *arguments, entrypoint="init",
                account=None,
                amount=None,
                deposit=defaults.CONTRACT_DEPOSIT,
@@ -116,7 +119,10 @@ class ContractNative(object):
         Create a contract and deploy it to the chain
         :return: the transaction
         """
-        calldata = self.compiler.encode_calldata(self.source, function, *arguments).calldata
+        method_list = list(filter(lambda f: f.name == entrypoint, self.aci.encoded_aci.contract.functions))
+        calldata = None
+        if len(method_list) == 1 and method_list[0].name == entrypoint:
+            calldata = self.__encode_method_args(method_list[0], *arguments)
         opts = self.__process_options(gas=gas, gas_price=gas_price, amount=amount, fee=fee, account=account)
         tx = self.contract.create(opts.account, self.bytecode, calldata, opts.amount, deposit, opts.gas,
                                   opts.gas_price, opts.fee, vm_version, abi_version, tx_ttl)
