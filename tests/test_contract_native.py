@@ -77,3 +77,10 @@ def test_contract_native(compiler_fixture, chain_fixture):
 
     call_info = contract_native.datTypeFn({"Year": []})
     assert(call_info.return_type == 'ok')
+
+    try:
+      call_info = contract_native.intOption(12, 13)
+      raise ValueError("Method call should fail")
+    except Exception as e:
+      expected_error_message = "Invalid number of arguments. Expected 1, Provided 2"
+      assert(str(e) == expected_error_message)
