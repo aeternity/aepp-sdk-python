@@ -13,6 +13,7 @@ from aeternity.transactions import TxSigner, TxBuilder, TxObject
 from aeternity.identifiers import NETWORK_ID_MAINNET, PROTOCOL_LIMA  # TODO: remove after HF
 from . import utils, signing, aens, defaults, exceptions
 from aeternity.compiler import CompilerClient
+from aeternity.openapi import OpenAPIClientException
 from datetime import datetime, timezone
 
 
@@ -671,6 +672,8 @@ def contract_compile(contract_file, compiler_url, json_):
                 with open(f"{contract_file}.bin", "w") as fp:
                     fp.write(result.bytecode)
             _print_object(result, title="contract")
+    except OpenAPIClientException as e:
+        _print_object(e.data, title="compiler error")
     except Exception as e:
         _print_error(e, exit_code=1)
 
@@ -690,6 +693,8 @@ def contract_aci(contract_file, compiler_url, json_):
                 with open(f"{contract_file}.aci.json", "w") as fp:
                     fp.write(json.dumps(namedtupled.reduce(result), indent=2))
             _print_object(result, title="contract")
+    except OpenAPIClientException as e:
+        _print_object(e.data, title="compiler error")
     except Exception as e:
         _print_error(e, exit_code=1)
 
@@ -709,6 +714,8 @@ def contract_encode_calldata(contract_file, function_name, arguments, compiler_u
             arguments = [] if arguments is None else arguments.split(",")
             result = c.encode_calldata(code, function_name, arguments=arguments)
             _print_object(result, title="contract")
+    except OpenAPIClientException as e:
+        _print_object(e.data, title="compiler error")
     except Exception as e:
         _print_error(e, exit_code=1)
 
@@ -724,6 +731,8 @@ def contract_decode_data(contract_file, encoded_data, sophia_type, compiler_url,
         c = CompilerClient(compiler_url=compiler_url)
         result = c.decode_data(sophia_type, encoded_data)
         _print_object(result, title="contract")
+    except OpenAPIClientException as e:
+        _print_object(e.data, title="compiler error")
     except Exception as e:
         _print_error(e, exit_code=1)
 
