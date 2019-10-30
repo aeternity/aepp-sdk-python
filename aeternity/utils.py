@@ -112,4 +112,4 @@ def amount_to_aettos(value) -> int:
     # validate the number
     if amount < 0:
         raise TypeError("Amount values must be greather then 0")
-    return amount
+    return int(amount)
