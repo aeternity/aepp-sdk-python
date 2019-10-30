@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [6.0.1](https://github.com/aeternity/aepp-sdk-python/releases/tag/6.0.1) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/6.0.0...6.0.1)) - 2019-10-30
+
+### Bug Fixes
+- fix: version range for node compatibility (#277) ([fdd8018](https://github.com/aeternity/aepp-sdk-python/commit/fdd801800a18862e124eee583d6e4bf43d2c482b)).
+
 ## [6.0.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/6.0.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/5.0.1...6.0.0)) - 2019-10-17
 
 ### Bug Fixes
