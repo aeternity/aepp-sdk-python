@@ -7,7 +7,7 @@ import random
 import string
 from aeternity.signing import Account
 from aeternity.node import NodeClient, Config
-from aeternity.contract import CompilerClient
+from aeternity.compiler import CompilerClient
 
 
 PUBLIC_KEY = os.environ.get('WALLET_PUB')

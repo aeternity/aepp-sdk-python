@@ -15,7 +15,7 @@ how to execute a spend transaction from a generalized account.
 from aeternity.node import NodeClient, Config
 from aeternity.signing import Account
 from aeternity.transactions import TxBuilder
-from aeternity.contract import CompilerClient
+from aeternity.compiler import CompilerClient
 from aeternity import defaults, hashing, utils
 
 import requests
