@@ -384,6 +384,21 @@ class NodeClient:
         self.broadcast_transaction(tx)
         return tx
 
+    def transfer_by_name(self, account: Account,
+                         recipient_name: str,
+                         percentage: float,
+                         payload: str = "",
+                         tx_ttl: int = defaults.TX_TTL,
+                         fee: int = defaults.FEE,
+                         include_fee=True):
+        """
+        Create and execute a spend to name_id transaction
+        """
+        if utils.is_valid_aens_name(recipient_name):
+            name_id = hashing.name_id(recipient_name)
+            return self.transfer_funds(account, name_id, percentage, payload, tx_ttl, fee, include_fee)
+        raise TypeError("Invalid AENS name. Please provide a valid AENS name.")
+
     def get_consensus_protocol_version(self, height: int = None) -> int:
         """
         Get the consensus protocol version number
