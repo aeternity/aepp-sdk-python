@@ -276,8 +276,8 @@ class AEName:
         return tx_signed
 
     def update(self, account, *targets,
-               name_ttl=defaults.NAME_TTL,
-               client_ttl=defaults.NAME_CLIENT_TTL,
+               name_ttl=defaults.NAME_MAX_TTL,
+               client_ttl=defaults.NAME_MAX_CLIENT_TTL,
                fee=defaults.FEE,
                tx_ttl=defaults.TX_TTL):
         """
