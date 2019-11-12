@@ -61,7 +61,9 @@ To verify that the CLI is available in your ``PATH`` run the command
 
 
 
+
+
 That's it!
 ==========
 
-That's it -- you can now :doc:`move onto the tutorial </intro/tutorial01>`.
+That's it -- you can now :doc:`move onto the tutorial </intro/tutorial01-spend>`.
