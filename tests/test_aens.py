@@ -136,7 +136,7 @@ def test_spend_by_name(chain_fixture):
     name.update_status()
     print(f"domain is {name.domain} name_id {name.name_id}")
     print("pointers", name.pointers)
-    tx = chain_fixture.NODE_CLI.spend_by_name(chain_fixture.ALICE, domain, 100)
+    tx = chain_fixture.NODE_CLI.spend(chain_fixture.ALICE, domain, 100)
     print("DATA ", tx)
     recipient_account = chain_fixture.NODE_CLI.get_account_by_pubkey(pubkey=target_address)
     print(f"recipient address {target_address}, balance {recipient_account.balance}")
