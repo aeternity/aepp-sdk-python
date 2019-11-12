@@ -94,8 +94,7 @@ class OpenAPICli(object):
         # prepare the baseurl
         base_path = self.api_def.get('basePath', '').rstrip('/')
         self.base_url = f"{url}{base_path}"
-        print(">>>>>>>>> Internal URL: ", url_internal)
-        if url_internal is None:
+        if self.url_internal is None:
             # do not build internal endpoints
             self.skip_tags.add("internal")
         else:
