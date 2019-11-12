@@ -371,10 +371,7 @@ def account_spend(keystore_name, recipient_id, amount, payload, fee, ttl, nonce,
         account, _ = _account(keystore_name, password=password)
         account.nonce = nonce
         tx = None
-        if utils.is_valid_hash(recipient_id, prefix="ak"):
-            tx = _node_cli().spend(account, recipient_id, amount, tx_ttl=ttl, fee=fee, payload=payload)
-        else:
-            tx = _node_cli().spend_by_name(account, recipient_id, amount, tx_ttl=ttl, fee=fee, payload=payload)
+        tx = _node_cli().spend(account, recipient_id, amount, tx_ttl=ttl, fee=fee, payload=payload)
         _print_object(tx, title='spend transaction')
     except Exception as e:
         _print_error(e, exit_code=1)
@@ -396,10 +393,7 @@ def account_transfer_amount(keystore_name, recipient_id, transfer_amount, includ
         account, _ = _account(keystore_name, password=password)
         account.nonce = nonce
         tx = None
-        if utils.is_valid_hash(recipient_id, prefix="ak"):
-            tx = _node_cli().transfer_funds(account, recipient_id, transfer_amount, tx_ttl=ttl, payload=payload, include_fee=include_fee)
-        else:
-            tx = _node_cli().transfer_by_name(account, recipient_id, transfer_amount, tx_ttl=ttl, payload=payload, include_fee=include_fee)
+        tx = _node_cli().transfer_funds(account, recipient_id, transfer_amount, tx_ttl=ttl, payload=payload, include_fee=include_fee)
         _print_object(tx, title='spend transaction')
     except Exception as e:
         _print_error(e, exit_code=1)
