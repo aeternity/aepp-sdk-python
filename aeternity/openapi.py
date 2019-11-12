@@ -97,8 +97,9 @@ class OpenAPICli(object):
         logging.debug(f">>>> Internal URL {url_internal}, {type(url_internal)}, {(url_internal is None)}, {self.base_url_internal}")
         if url_internal is None:
             # do not build internal endpoints
-            logging.debug("Removing internal endpoints")
             self.skip_tags.add("internal")
+        else:
+            self.base_url_internal = f"{url_internal}{base_path}"
 
         # parse the api
         # definition of a field
