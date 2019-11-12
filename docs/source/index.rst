@@ -4,32 +4,17 @@
    contain the root `toctree` directive.
 
 Aeternty Python SDK Documentation (aepp-sdk)
-====================================
+============================================
 
 .. rubric:: Everything you need to know about the Aeternity Python SDK.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-   ...
-
-Getting help
-============
-
-Having trouble? We'd like to help!
-
-* Try the :doc:`FAQ <faq/index>` -- it's got answers to many common questions.
-
-* Looking for specific information? Try the :ref:`genindex`, :ref:`modindex` or
-  the :doc:`detailed table of contents <contents>`.
-
-* Search for information in the `Aeternity forum`_, or `post a question`_.
-
-* Report bugs with the Python SDK in our `issue tracker`_.
-
-.. _Aeternity forum: https://forums.aeternity.com
-.. _post a question: https://forums.aeternity.com
-.. _issue tracker: https://github.com/aeternity/aepp-sdk-python/issues
+   :hidden:
+   
+   intro/index
+   howto/index
+   topics/index
+   faq/index
 
 
 How the documentation is organized
@@ -38,7 +23,7 @@ How the documentation is organized
 A high-level overview of how it's organized will help you know 
 where to look for certain things:
 
-* :doc:`Tutorials </tutorials/index>` take you by the hand through a series of
+* :doc:`Tutorials </intro/index>` take you by the hand through a series of
   steps to create a python aepp. Start here if you're new to Aeternity
   application development. Also look at the ":ref:`index-first-steps`" below.
 
@@ -56,24 +41,47 @@ where to look for certain things:
 First steps
 ===========
 
-Are you new to Django or to programming? This is the place to start!
+Are you new to the Aeternity SDK? This is the place to start!
 
 * **From scratch:**
-  :doc:`Installation <intro/install>`
+  
+  * :doc:`Installation <intro/install>`
 
 * **Tutorial:**
-  :doc:`Part 1: Requests and responses <intro/tutorial01>` |
-  :doc:`Part 2: Models and the admin site <intro/tutorial02>` |
-  :doc:`Part 3: Views and templates <intro/tutorial03>` |
-  :doc:`Part 4: Forms and generic views <intro/tutorial04>` |
-  :doc:`Part 5: Testing <intro/tutorial05>` |
-  :doc:`Part 6: Static files <intro/tutorial06>` |
-  :doc:`Part 7: Customizing the admin site <intro/tutorial07>`
+  
+  * :doc:`Spend transactions <intro/tutorial01-spend>`
+  * :doc:`Claiming a name <intro/tutorial02-claim>`
+  * :doc:`Deploy a contract <intro/tutorial03-contract>`
+  * :doc:`Using Generalized accounts <intro/tutorial04-ga>`
 
-* **Advanced Tutorials:**
-  :doc:`How to write reusable apps <intro/reusable-apps>` |
-  :doc:`Writing your first patch for Django <intro/contributing>`
+* **How to:**
+  
+  * :doc:`Generate a list of accounts on the fly <howto/accounts>`
+  * :doc:`Use the json output from the CLI with jq <howto/json_jq>`
+  * :doc:`Pretty print amounts <howto/amounts>`
 
+* **Reference:**
+
+  * :doc:`The NodeClient and Config <ref/client_and_config>`
+  * :doc:`The TxObject <ref/txobject>`
+
+
+Getting help
+============
+
+Having trouble? We'd like to help!
+
+* Try the :doc:`FAQ <faq/index>` -- it's got answers to many common questions.
+
+* Looking for specific information? Try the :ref:`genindex` or :ref:`modindex`
+  
+* Search for information in the `Aeternity forum`_, or `post a question`_.
+
+* Report bugs with the Python SDK in our `issue tracker`_.
+
+.. _Aeternity forum: https://forum.aeternity.com
+.. _post a question: https://forum.aeternity.com
+.. _issue tracker: https://github.com/aeternity/aepp-sdk-python/issues
 
 
 Indices and tables
