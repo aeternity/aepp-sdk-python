@@ -239,6 +239,10 @@ class NodeClient:
         """
         Create and execute a spend transaction
         """
+        if utils.is_valid_aens_name(recipient_id):
+            recipient_id = hashing.name_id(recipient_id)
+        elif not utils.is_valid_hash(recipient_id, prefix="ak"):
+            raise TypeError("Invalid recipient_id. Please provide a valid AENS name or account pub_key.")
         # retrieve the nonce
         account.nonce = self.get_next_nonce(account.get_address()) if account.nonce == 0 else account.nonce + 1
         # retrieve ttl
@@ -250,20 +254,6 @@ class NodeClient:
         # post the signed transaction transaction
         self.broadcast_transaction(tx)
         return tx
-
-    def spend_by_name(self, account: Account,
-                      recipient_name: str,
-                      amount: int,
-                      payload: str = "",
-                      fee: int = defaults.FEE,
-                      tx_ttl: int = defaults.TX_TTL):
-        """
-        Create and execute a spend to name_id transaction
-        """
-        if utils.is_valid_aens_name(recipient_name):
-            name_id = hashing.name_id(recipient_name)
-            return self.spend(account, name_id, amount, payload, fee, tx_ttl)
-        raise TypeError("Invalid AENS name. Please provide a valid AENS name.")
 
     def wait_for_transaction(self, tx_hash, max_retries=None, polling_interval=None):
         """
@@ -362,6 +352,10 @@ class NodeClient:
         """
         Create and execute a spend transaction
         """
+        if utils.is_valid_aens_name(recipient_id):
+            recipient_id = hashing.name_id(recipient_id)
+        elif not utils.is_valid_hash(recipient_id, prefix="ak"):
+            raise TypeError("Invalid recipient_id. Please provide a valid AENS name or account pub_key.")
         if percentage < 0 or percentage > 1:
             raise ValueError(f"Percentage should be a number between 0 and 1, got {percentage}")
         account_on_chain = self.get_account_by_pubkey(pubkey=account.get_address())
