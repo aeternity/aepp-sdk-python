@@ -38,7 +38,6 @@ class OpenAPICli(object):
     """
     Generates a OpenAPI client
     """
-    
     # openapi versions
     open_api_versions = ["2.0"]
     # type mapping
