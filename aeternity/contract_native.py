@@ -71,12 +71,16 @@ class ContractNative(object):
             transformed_args.append(self.sophia_transformer.convert_to_sophia(val, namedtupled.reduce(method.arguments[i].type), self.aci.encoded_aci))
         return self.compiler.encode_calldata(self.source, method.name, *transformed_args).calldata
 
+    def __decode_method_args(self, method, args):
+        return self.sophia_transformer.convert_to_py(namedtupled.reduce(args), namedtupled.reduce(method.returns), self.aci.encoded_aci)
+
     def __add_contract_method(self, method):
         def contract_method(*args, **kwargs):
             calldata = self.__encode_method_args(method, *args)
             call_tx = self.call(method.name, calldata)
             call_info = self.contract.get_call_object(call_tx.hash)
-            return call_info
+            decoded_call_result = self.compiler.decode_call_result(self.source, method.name, call_info.return_value, call_info.return_type)
+            return self.__decode_method_args(method, decoded_call_result)
         contract_method.__name__ = method.name
         contract_method.__doc__ = method.doc
         setattr(self, contract_method.__name__, contract_method)
