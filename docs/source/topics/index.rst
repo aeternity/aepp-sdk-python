@@ -1,6 +1,0 @@
-Topics
-==============
-
-.. toctree::
-   
-   install

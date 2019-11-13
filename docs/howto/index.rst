@@ -1,4 +1,3 @@
-===============
 "How-to" guides
 ===============
 
@@ -17,3 +16,8 @@ you quickly accomplish common tasks.
     how-to material.
 
     .. _Aeternity forum: https://forum.aeternity.com
+=======
+How To
+======
+
+TODO
