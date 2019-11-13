@@ -82,8 +82,8 @@ def test_contract_native(compiler_fixture, chain_fixture):
     call_result = contract_native.retrieve()
     assert(call_result == ['test1', 12])
 
-    """ call_result = contract_native.datTypeFn({"Year": []})
-    assert(call_result == 'ok') """
+    call_result = contract_native.datTypeFn({"Year": []})
+    assert(call_result == {'Year': []})
 
     try:
       call_info = contract_native.intOption(12, 13)
