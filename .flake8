@@ -1,4 +1,4 @@
 [flake8]
 max-line-length = 160
-exclude = tests/*,private/*,dist/*,build/*
+exclude = tests/*,private/*,dist/*,build/*,docs/*
 
