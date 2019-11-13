@@ -76,8 +76,8 @@ def test_contract_native(compiler_fixture, chain_fixture):
     call_result = contract_native.setRecord({"value": "test1", "key": 12, "testOption": "test2"})
     assert(call_result == [])
 
-    """ call_result = contract_native.getRecord()
-    assert(call_result == 'ok') """
+    call_result = contract_native.getRecord()
+    assert(call_result == {'key': 12, 'testOption': 'test2', 'value': 'test1'})
 
     call_result = contract_native.retrieve()
     assert(call_result == ['test1', 12])

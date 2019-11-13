@@ -258,10 +258,8 @@ class SophiaTransformation:
 
     def from_sophia_map(self, arg, generic, bindings={}):
         [key_t, value_t] = generic
-        print("inside sophia map ", arg, key_t, value_t)
         result = {}
         for (key, val) in arg:
-            print("Decoding: ", key, val)
             key = self.convert_to_py(key, key_t, bindings)
             val = self.convert_to_py(val, value_t, bindings)
             result[key] = val
@@ -305,6 +303,15 @@ class SophiaTransformation:
                 result += ','
             result += f"{val['name']} = {self.convert_to_sophia(arg[val['name']], val['type'], bindings)}"
         return result + '}'
+
+    def from_sophia_record(self, arg, generic, bindings={}):
+        result = {}
+        generic_map = {}
+        for val in generic:
+            generic_map[val['name']] = {'type': val['type']}
+        for [name, value] in arg.items():
+            result[name] = self.convert_to_py(value, generic_map[name]['type'], bindings)
+        return result
 
     def to_sophia_variant(self, arg, generic, bindings={}):
         [[variant, variant_args]] = [[arg, []]] if isinstance(arg, str) else arg.items()
