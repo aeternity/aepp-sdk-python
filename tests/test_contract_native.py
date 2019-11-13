@@ -48,35 +48,42 @@ def test_contract_native(compiler_fixture, chain_fixture):
     contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=contract, compiler=compiler, account=account)
     contract_native.deploy("abcd", 12, "A")
     assert(contract_native.address is not None)
-    call_info = contract_native.intFn(12)
-    assert(call_info.return_type == 'ok')
 
-    call_info = contract_native.stringFn("test_call")
-    assert(call_info.return_type == 'ok')
+    result = contract_native.intFn(12)
+    assert(result == 12)
 
-    call_info = contract_native.addressFn(chain_fixture.ALICE.get_address())
-    assert(call_info.return_type == 'ok')
+    call_result = contract_native.stringFn("test_call")
+    assert(call_result == 'test_call')
 
-    call_info = contract_native.boolFn(False)
-    assert(call_info.return_type == 'ok')
+    call_result = contract_native.addressFn(chain_fixture.ALICE.get_address())
+    assert(call_result == chain_fixture.ALICE.get_address())
 
-    call_info = contract_native.tupleFn(["test", 1])
-    assert(call_info.return_type == 'ok')
+    call_result = contract_native.boolFn(False)
+    assert(call_result == False)
 
-    call_info = contract_native.listFn([1,2,3,4,5])
-    assert(call_info.return_type == 'ok')
+    call_result = contract_native.tupleFn(["test", 1])
+    assert(call_result == ["test", 1])
 
-    call_info = contract_native.mapFn({"ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi": ["test", 12]})
-    assert(call_info.return_type == 'ok')
+    call_result = contract_native.listFn([1,2,3,4,5])
+    assert(call_result == [1,2,3,4,5])
 
-    call_info = contract_native.intOption(12)
-    assert(call_info.return_type == 'ok')
+    call_result = contract_native.mapFn({"ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi": ["test", 12]})
+    assert(call_result == {'ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi': ['test', 12]})
 
-    call_info = contract_native.setRecord({"value": "test1", "key": 12, "testOption": "test2"})
-    assert(call_info.return_type == 'ok')
+    call_result = contract_native.intOption(12)
+    assert(call_result == 12)
 
-    call_info = contract_native.datTypeFn({"Year": []})
-    assert(call_info.return_type == 'ok')
+    call_result = contract_native.setRecord({"value": "test1", "key": 12, "testOption": "test2"})
+    assert(call_result == [])
+
+    """ call_result = contract_native.getRecord()
+    assert(call_result == 'ok') """
+
+    call_result = contract_native.retrieve()
+    assert(call_result == ['test1', 12])
+
+    """ call_result = contract_native.datTypeFn({"Year": []})
+    assert(call_result == 'ok') """
 
     try:
       call_info = contract_native.intOption(12, 13)
@@ -94,4 +101,4 @@ def test_contract_native_without_init(compiler_fixture, chain_fixture):
     contract_native.deploy()
     assert(contract_native.address is not None)
     call_info = contract_native.main(12)
-    assert(call_info.return_type == 'ok')
+    assert(call_info == 12)
