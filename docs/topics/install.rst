@@ -37,7 +37,7 @@ This is the recommended way to install the Aeternity SDK
 
 #. After you've created and activated a virtual environment, enter the command:
 
-   .. console::
+::
 
         $ python -m pip install aepp-sdk
 
@@ -63,11 +63,11 @@ latest bug fixes and improvements, follow these instructions:
 
 #. Check out the SDK main development branch like so:
 
-   .. console::
+::
 
         $ git clone https://github.com/aeternity/aepp-sdk-python.git
 
-   This will create a directory ``aepp-sdk-python`` in your current directory.
+This will create a directory ``aepp-sdk-python`` in your current directory.
 
 #. Make sure that the Python interpreter can load the SDK's code. The most
    convenient way to do this is to use virtualenv_, virtualenvwrapper_, and
@@ -75,14 +75,13 @@ latest bug fixes and improvements, follow these instructions:
 
 #. After setting up and activating the virtualenv, run the following command:
 
-   .. console::
+::
 
         $ poetry build 
         $ python -m pip install dist/$(ls -tr dist | grep whl | tail -1)
 
-   This will make the SDK code importable, and will also make the
-   ``aecli`` utility command available. In other words, you're all
-   set!
+This will make the SDK code importable, and will also make the
+``aecli`` utility command available. In other words, you're all set!
 
 .. _Poetry: https://poetry.eustace.io/
 
