@@ -13,3 +13,4 @@ test-results.xml
 private
 .DS_Store
 .envrc
+docs/_build
