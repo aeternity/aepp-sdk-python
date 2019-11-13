@@ -9,7 +9,6 @@ check the :doc:`installation guide </topics/install>`.
 
 
 Install Python
-==============
 
 The Aeternity Python SDK requires Python v3.7
 
