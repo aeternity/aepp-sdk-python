@@ -14,6 +14,7 @@ Aeternty Python SDK Documentation (aepp-sdk)
    intro/index
    howto/index
    topics/index
+   ref/index
    faq/index
 
 
@@ -38,6 +39,8 @@ where to look for certain things:
   steps involved in addressing key problems and use-cases. They are more
   advanced than tutorials and assume some knowledge of how the Aeternity SDK works.
 
+.. _index-first-steps:
+
 First steps
 ===========
 
@@ -50,9 +53,11 @@ Are you new to the Aeternity SDK? This is the place to start!
 * **Tutorial:**
   
   * :doc:`Spend transactions <intro/tutorial01-spend>`
-  * :doc:`Claiming a name <intro/tutorial02-claim>`
-  * :doc:`Deploy a contract <intro/tutorial03-contract>`
   * :doc:`Using Generalized accounts <intro/tutorial04-ga>`
+..  * :doc:`Claiming a name <intro/tutorial02-claim>`
+  * :doc:`Deploy a contract <intro/tutorial03-contract>`
+  
+  
 
 * **How to:**
   
