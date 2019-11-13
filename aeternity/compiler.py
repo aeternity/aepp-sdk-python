@@ -3,6 +3,7 @@ from aeternity import utils, hashing, openapi, identifiers
 
 import namedtupled
 import semver
+from deprecated import deprecated
 
 
 class CompilerError(exceptions.AException):
@@ -64,6 +65,7 @@ class CompilerClient(object):
         )
         return self.compiler_cli.encode_calldata(body=body)
 
+    @deprecated(reason="This method has been deprecated in favour of decode_call_result")
     def decode_data(self, sophia_type, encoded_data):
         body = {
             "data": encoded_data,
