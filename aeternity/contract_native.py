@@ -190,7 +190,6 @@ class SophiaTransformation:
 
     def __extract_type(self, sophia_type, bindings={}):
         [t] = [sophia_type] if not isinstance(sophia_type, list) else sophia_type
-
         if len(bindings) > 0:
             if (isinstance(t, str) and bindings.contract.name in t) or (isinstance(t, dict) > 0 and bindings.contract.name in list(t.keys())[0]):
                 t = self.__link_type_def(t, bindings)
@@ -211,20 +210,37 @@ class SophiaTransformation:
             return f'{argument}'
         return method(argument, generic, bindings)
 
+    def convert_to_py(self, argument, sophia_type, bindings={}):
+        current_type, generic = self.__extract_type(sophia_type, bindings)
+        method_name = self.FROM_SOPHIA_METHOD_PREFIX + current_type
+        method = getattr(self, method_name, None)
+        if method is None:
+            return argument
+        return method(argument, generic, bindings)
+
     def to_sophia_string(self, arg, generic, bindings={}):
         return f'\"{arg}\"'
 
     def to_sophia_signature(self, arg, generic, bindings={}):
         return self.to_sophia_bytes(arg)
 
+    def from_sophia_signature(self, arg, generic, bindings={}):
+        return self.from_sophia_bytes(arg)
+
     def to_sophia_hash(self, arg, generic, bindings={}):
         return self.to_sophia_bytes(arg)
+
+    def from_sophia_hash(self, arg, generic, bindings={}):
+        return self.from_sophia_bytes(arg)
 
     def to_sophia_bytes(self, arg, generic, bindings={}):
         if isinstance(arg, str):
             return f'#{arg}'
         elif isinstance(arg, bytes):
             return f"{arg.hex()}"
+
+    def from_sophia_bytes(self, arg, generic, bindings={}):
+        return arg.split('#')[1]
 
     def to_sophia_bool(self, arg, generic, bindings={}):
         return "true" if arg else "false"
@@ -240,14 +256,41 @@ class SophiaTransformation:
             result += f"[{self.convert_to_sophia(k, generic[0], bindings)}] = {self.convert_to_sophia(v, generic[1], bindings)}"
         return result + '}'
 
+    def from_sophia_map(self, arg, generic, bindings={}):
+        [key_t, value_t] = generic
+        print("inside sophia map ", arg, key_t, value_t)
+        result = {}
+        for (key, val) in arg:
+            print("Decoding: ", key, val)
+            key = self.convert_to_py(key, key_t, bindings)
+            val = self.convert_to_py(val, value_t, bindings)
+            result[key] = val
+        return result
+
     def to_sophia_list(self, arg, generic, bindings={}):
         result = "["
         for val in arg:
             result += f"{self.convert_to_sophia(val, generic, bindings)},"
         return result[:-1] + "]"
 
+    def from_sophia_list(self, arg, generic, bindings={}):
+        result = []
+        for x in arg:
+            result.append(self.convert_to_py(x, generic, bindings))
+        return result
+
     def to_sophia_option(self, arg, generic, bindings={}):
         return 'None' if arg is None else f"Some({self.convert_to_sophia(arg, generic, bindings)})"
+
+    def from_sophia_option(self, arg, generic, bindings={}):
+        if arg == 'None':
+            return None
+        else:
+            [(variantType, [value])] = arg.items()
+            if variantType == 'Some':
+                return self.convert_to_py(value, generic, bindings)
+            else:
+                return None
 
     def to_sophia_tuple(self, arg, generic, bindings={}):
         result = "("
