@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile.ci
     depends_on: [node, compiler]
-    entrypoint: docker/wait-for-it.sh node:3013 --
+    entrypoint: docker/wait-for-it.sh node:3013 -- docker/wait-for-it.sh node:3113 --
     env_file: [./docker/sdk.env]
     environment:
       - WALLET_PRIV=${WALLET_PRIV}
