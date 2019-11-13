@@ -1,10 +1,11 @@
 ===================
-Install guide
+Quick install guide
 ===================
 
 Before you can use the Aeternity SDK, you'll need to get it installed. 
 This guide will guide you to a minimal installation that'll work
-while you walk through the introduction.
+while you walk through the introduction. For more installation options  
+check the :doc:`installation guide </topics/install>`.
 
 
 Install Python
