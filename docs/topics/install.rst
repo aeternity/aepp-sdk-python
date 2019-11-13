@@ -37,11 +37,7 @@ This is the recommended way to install the Aeternity SDK
 
 #. After you've created and activated a virtual environment, enter the command:
 
-<<<<<<< HEAD
 ::
-=======
-   .. console::
->>>>>>> reorganize directory structure for docs
 
         $ python -m pip install aepp-sdk
 
