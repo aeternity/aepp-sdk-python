@@ -22,15 +22,34 @@ class Config:
                  force_compatibility=False,
                  **kwargs):
         """
+        Initialize a configuration object to be used with the NodeClient
+
         :param external_url: the node external url
         :param internal_url: the node internal url
         :param websocket_url: the node websocket url
-        :param blocking_mode: block the client waiting for transactions (default False)
-        :param native: build transaction natively (do not use the node internal endpoints) (default True)
         :param force_compatibility: ignore node version compatibility check (default False)
-        :param debug: enable debug logging (default False)
+        :param `**kwargs`: see below
+
+        Kwargs:
+            :blocking_mode (bool): whenever to block the execution when broadcasting a transaction until the transaction is mined in the chain, default: False
+            :tx_gas_per_byte (int): the amount of gas per byte used to calculate the transaction fees, [optional, default: defaults.GAS_PER_BYTE]
+            :tx_base_gas (int): the amount of gas per byte used to calculate the transaction fees, [optional, default: defaults.BASE_GAS]
+            :tx_gas_price (int): the gas price used to calculate the transaction fees,
+                it is set by consensus but can be increased by miners [optional, default: defaults.GAS_PRICE]
+            :network_id (str): the id of the network that is the target for the transactions, if not provided it will be automatically selected by the client
+            :contract_gas (int): default gas limit to be used for contract calls, [optional, default: defaults.CONTRACT_GAS]
+            :contract_gas_price (int): default gas price used for contract calls, [optional, default: defaults.CONTRACT_GAS_PRICE]
+            :oracle_ttl_type (int): default oracle ttl type
+            :key_block_interval (int): the key block interval in minutes
+            :key_block_confirmation_num (int): the number of key blocks to consider a transaction confirmed
+            :poll_tx_max_retries (int): max poll retries when checking if a transaction has been included
+            :poll_tx_retries_interval (int): the interval in seconds between retries
+            :poll_block_max_retries (int): TODO
+            :poll_block_retries_interval (int): TODO
+            :debug (bool): TODO
+
         """
-        # endpoint urls
+        # endpoint URLs
         self.api_url = external_url
         self.api_url_internal = internal_url
         self.websocket_url = websocket_url
@@ -67,6 +86,7 @@ class NodeClient:
     def __init__(self, config=Config()):
         """
         Initialize a new EpochClient
+
         :param config: the configuration to use or empty for default (default None)
         """
         self.config = config
@@ -97,6 +117,7 @@ class NodeClient:
     def compute_absolute_ttl(self, relative_ttl):
         """
         Compute the absolute ttl by adding the ttl to the current height of the chain
+
         :param relative_ttl: the relative ttl, if 0 will set the ttl to 0
         """
         ttl = dict(
@@ -112,8 +133,10 @@ class NodeClient:
     def get_next_nonce(self, account_address):
         """
         Get the next nonce to be used for a transaction for an account
+
         :param node: the node client
         :return: the next nonce for an account
+
         """
         try:
             account = self.api.get_account_by_pubkey(pubkey=account_address)
@@ -124,6 +147,7 @@ class NodeClient:
     def _get_nonce_ttl(self, account_address: str, relative_ttl: int):
         """
         Helper method to compute both absolute ttl and  nonce for an account
+
         :return: (nonce, ttl)
         """
         ttl = self.compute_absolute_ttl(relative_ttl).absolute_ttl if relative_ttl > 0 else 0
@@ -134,6 +158,8 @@ class NodeClient:
         """
         Override the native method to transform the get top block response object
         to a Block
+
+        :return: a block (either key block or micro block)
         """
         b = self.api.get_top_block()
         return b.key_block if hasattr(b, 'key_block') else b.micro_block
@@ -142,8 +168,10 @@ class NodeClient:
         """
         Retrieve a key block or a micro block header
         based on the block hash_prefix
+
         :param block_hash: either a key block or micro block hash
         :return: the block matching the hash
+
         """
         block = None
         if hash is None:
@@ -160,6 +188,11 @@ class NodeClient:
         """
         Post a transaction to the chain and verify that the hash match the local calculated hash
         It blocks for a period of time to wait for the transaction to be included if in blocking_mode
+
+        :param tx: the transaction to broadcast
+        :return: the transaction hash of the transaction
+
+        :raises TransactionHashMismatch: if the transaction hash returned by the node is different from the one calculated
         """
         reply = self.post_transaction(body={"tx": tx.tx})
         if reply.tx_hash != tx.hash:
@@ -169,10 +202,29 @@ class NodeClient:
             self.wait_for_transaction(reply.tx_hash)
         return reply.tx_hash
 
-    def sign_transaction(self, account: Account, tx: transactions.TxObject, metadata: dict = {}, **kwargs) -> tuple:
+    def sign_transaction(self, account: Account, tx: transactions.TxObject, metadata: dict = {}, **kwargs) -> transactions.TxObject:
         """
-        Sign a transaction
-        :return: the transaction for the transaction
+        The function sign a transaction to be broadcast to the chain.
+        It automatically detect if the account is Basic or GA and return
+        the correct transaction to be broadcast.
+
+        :param account: the account signing the transaction
+        :param tx: the transaction to be signed
+        :param metadata: additional metadata to maintain in the TxObject
+        :param `**kwargs`:  for GA accounts, see below
+
+        Kwargs:
+            :auth_data (str): the encoded calldata for the GA auth function
+            :gas (int): the gas limit for the GA auth function [optional]
+            :gas_price (int): the gas price for the GA auth function [optional]
+            :fee (int): the fee for the GA transaction [optional, automatically calculated]
+            :abi_version (int): the abi_version to select FATE or AEVM [optional, default 3/FATE]
+            :ttl (str): the transaction ttl expressed in relative number of blocks [optional, default 0/max_ttl]:
+
+        :return: a TxObject of the signed transaction or metat transaction for GA
+        :raises TypeError: if the auth_data is missing and the account is GA
+        :raises TypeError: if the gas for auth_func is gt defaults.GA_MAX_AUTH_FUN_GAS
+
         """
         # first retrieve the account from the node
         # so we can check if it is generalized or not
@@ -227,7 +279,9 @@ class NodeClient:
     def get_balance(self, account) -> int:
         """
         Retrieve the balance of an account, return 0 if the account has not balance
+
         :param account: either an account address or a signing.Account object
+        :return: the account balance or 0 if the account is not known to the network
         """
         address = account.get_address() if isinstance(account, Account) else account
         try:
@@ -245,10 +299,24 @@ class NodeClient:
               recipient_id: str,
               amount,
               payload: str = "",
-              fee=defaults.FEE,
-              tx_ttl: int = defaults.TX_TTL):
+              fee: int = defaults.FEE,
+              tx_ttl: int = defaults.TX_TTL) -> transactions.TxObject:
         """
-        Create and execute a spend transaction
+        Create and execute a spend transaction,
+        automatically retrieve the nonce for the siging account
+        and calculate the absolut ttl.
+
+        :param account: the account signing the spend transaction (sender)
+        :param recipient_id: the recipient address or name_id
+        :param amount: the amount to spend
+        :param payload: the payload for the transaction
+        :param fee: the fee for the transaction (automatically calculated if not provided)
+        :param tx_ttl: the transaction ttl expressed in relative number of blocks
+
+        :return: the TxObject of the transaction
+
+        :raises TypeError:  if the recipient_id is not a valid name_id or address
+
         """
         if utils.is_valid_aens_name(recipient_id):
             recipient_id = hashing.name_id(recipient_id)
@@ -282,7 +350,7 @@ class NodeClient:
         :param polling_interval: the interval between transaction polls
         :return: the block height of the transaction if it has been found
 
-        Raises TransactionWaitTimeoutExpired if the transaction hasn't been found
+        :raises TransactionWaitTimeoutExpired: if the transaction hasn't been found
         """
 
         retries = max_retries if max_retries is not None else self.config.poll_tx_max_retries
