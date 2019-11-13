@@ -59,6 +59,7 @@ class ContractNative(object):
                     "name": f.name,
                     "doc": f"Contract Method {f.name}",
                     "arguments": f.arguments,
+                    "returns": f.returns,
                     "stateful": f.stateful
                 }, _nt_name="ContractMethod"))
 
