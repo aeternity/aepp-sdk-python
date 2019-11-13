@@ -351,7 +351,7 @@ def account_balance(keystore_name, password, height, force, wait, json_):
         _print_error(e, exit_code=1)
 
 
-@account.command('spend', help="Create a transaction to another account")
+@account.command('spend', help="Create a transaction to another account or AENS Name")
 @click.argument('keystore_name', required=True)
 @click.argument('recipient_id', required=True)
 @click.argument('amount', required=True, type=int)
@@ -361,12 +361,16 @@ def account_balance(keystore_name, password, height, force, wait, json_):
 @online_options
 @transaction_options
 def account_spend(keystore_name, recipient_id, amount, payload, fee, ttl, nonce, password, force, wait, json_):
+    """
+    KEYSTORE_NAME is the name of the keystore file of the sender account
+    RECIPIENT_ID can be address of the recipient account or an AENS Name
+    AMOUNT is the amount to transfer
+    """
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
         account.nonce = nonce
-        if not utils.is_valid_hash(recipient_id, prefix="ak"):
-            raise ValueError("Invalid recipient address")
+        tx = None
         tx = _node_cli().spend(account, recipient_id, amount, tx_ttl=ttl, fee=fee, payload=payload)
         _print_object(tx, title='spend transaction')
     except Exception as e:
@@ -388,8 +392,7 @@ def account_transfer_amount(keystore_name, recipient_id, transfer_amount, includ
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
         account.nonce = nonce
-        if not utils.is_valid_hash(recipient_id, prefix="ak"):
-            raise ValueError("Invalid recipient address")
+        tx = None
         tx = _node_cli().transfer_funds(account, recipient_id, transfer_amount, tx_ttl=ttl, payload=payload, include_fee=include_fee)
         _print_object(tx, title='spend transaction')
     except Exception as e:
@@ -589,7 +592,7 @@ def name_update(keystore_name, domain, address, name_ttl, ttl, fee, nonce, passw
         if name.status != name.Status.CLAIMED:
             print(f"Domain is {name.status} and cannot be transferred")
             exit(0)
-        tx = name.update(account, target=address, name_ttl=name_ttl, tx_ttl=ttl)
+        tx = name.update(account, address, name_ttl=name_ttl, tx_ttl=ttl)
         _print_object(tx, title=f"Name {domain} status update")
     except Exception as e:
         _print_error(e, exit_code=1)
