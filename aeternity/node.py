@@ -224,6 +224,17 @@ class NodeClient:
         remote_account = self.get_account_by_pubkey(pubkey=address)
         return Account.from_node_api(remote_account)
 
+    def get_balance(self, account) -> int:
+        """
+        Retrieve the balance of an account, return 0 if the account has not balance
+        :param account: either an account address or a signing.Account object
+        """
+        address = account.get_address() if isinstance(account, Account) else account
+        try:
+            return self.get_account(address).balance
+        except Exception:
+            return 0
+
     def get_transaction(self, transaction_hash):  # TODO: continue
         if not utils.is_valid_hash(transaction_hash, identifiers.TRANSACTION_HASH):
             raise TypeError(f"Input {transaction_hash} is not a valid aeternity address")
