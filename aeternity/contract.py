@@ -54,15 +54,14 @@ class Contract:
 
         try:
             tx = self.__prepare_call_tx(contract_id, address, function, calldata, amount, gas, gas_price, fee, abi_version, tx_ttl)
-            # post the transaction to the chain
-            if top is None:
-                top = self.client.get_top_block()
-                top = top.hash if top.hash.startswith('kh') else top.prev_key_hash
             account = {
                 "amount": amount,
                 "pub_key": address
             }
-            result = self.client.dry_run_txs(body={"txs": [{"tx": tx.tx}], "accounts": [account], "top": top})
+            body = {"txs": [{"tx": tx.tx}], "accounts": [account]}
+            if top is not None and top.startswith('kh'):
+                body['top'] = top
+            result = self.client.dry_run_txs(body=body)
             return result.results[0]
         except openapi.OpenAPIClientException as e:
             raise ContractError(e)

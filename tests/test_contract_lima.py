@@ -96,7 +96,7 @@ def _sophia_contract_tx_call_static(node_cli, account):
         assert deployed.active is True
         assert deployed.owner_id == account.get_address()
         tx = contract.call_static(c_id, t.get("call.function"), t.get("call.calldata"), address=account.get_address())
-        assert tx.result == "ok" or (tx.result == "error" and hasattr(tx, 'reason'))
+        assert tx.result == "ok"
 
 def test_sophia_contract_tx_create_native_lima(chain_fixture):
     # save settings and go online
