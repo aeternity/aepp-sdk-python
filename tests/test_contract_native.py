@@ -133,3 +133,17 @@ def test_contract_native_default_account_overriding(compiler_fixture, chain_fixt
     contract_native.set_account(chain_fixture.BOB)
     call_info, _ = contract_native.main(12)
     assert(call_info.caller_id == chain_fixture.BOB.get_address())
+
+def test_contract_native_without_dry_run(compiler_fixture, chain_fixture):
+    identity_contract = "contract Identity =\n  entrypoint main(x : int) = x"
+    compiler = compiler_fixture.COMPILER
+    account = chain_fixture.ALICE
+    contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=identity_contract, compiler=compiler, account=account)
+    contract_native.deploy()
+    assert(contract_native.address is not None)
+
+    call_info, call_result = contract_native.main(12)
+    assert(call_result == 12 and not hasattr(call_info, 'tx_hash'))
+
+    call_info, call_result = contract_native.main(12, use_dry_run=False)
+    assert(call_result == 12 and hasattr(call_info, 'tx_hash'))
