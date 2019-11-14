@@ -16,6 +16,7 @@ Aeternty Python SDK Documentation (aepp-sdk)
    topics/index
    ref/index
    faq/index
+   snippets/index
 
 
 How the documentation is organized
@@ -38,6 +39,9 @@ where to look for certain things:
 * :doc:`How-to guides </howto/index>` are recipes. They guide you through the
   steps involved in addressing key problems and use-cases. They are more
   advanced than tutorials and assume some knowledge of how the Aeternity SDK works.
+
+* :doc:`Code snippets </snippets/index>` are various pieces of codes to copy/paste.
+  They may be useful to find pieces of codes to get stuff done.
 
 .. _index-first-steps:
 
