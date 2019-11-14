@@ -48,35 +48,42 @@ def test_contract_native(compiler_fixture, chain_fixture):
     contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=contract, compiler=compiler, account=account)
     contract_native.deploy("abcd", 12, "A")
     assert(contract_native.address is not None)
-    call_info = contract_native.intFn(12)
-    assert(call_info.return_type == 'ok')
 
-    call_info = contract_native.stringFn("test_call")
-    assert(call_info.return_type == 'ok')
+    _, call_result = contract_native.intFn(12)
+    assert(call_result == 12)
 
-    call_info = contract_native.addressFn(chain_fixture.ALICE.get_address())
-    assert(call_info.return_type == 'ok')
+    _, call_result = contract_native.stringFn("test_call")
+    assert(call_result == 'test_call')
 
-    call_info = contract_native.boolFn(False)
-    assert(call_info.return_type == 'ok')
+    _, call_result = contract_native.addressFn(chain_fixture.ALICE.get_address())
+    assert(call_result == chain_fixture.ALICE.get_address())
 
-    call_info = contract_native.tupleFn(["test", 1])
-    assert(call_info.return_type == 'ok')
+    _, call_result = contract_native.boolFn(False)
+    assert(call_result == False)
 
-    call_info = contract_native.listFn([1,2,3,4,5])
-    assert(call_info.return_type == 'ok')
+    _, call_result = contract_native.tupleFn(["test", 1])
+    assert(call_result == ["test", 1])
 
-    call_info = contract_native.mapFn({"ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi": ["test", 12]})
-    assert(call_info.return_type == 'ok')
+    _, call_result = contract_native.listFn([1,2,3,4,5])
+    assert(call_result == [1,2,3,4,5])
 
-    call_info = contract_native.intOption(12)
-    assert(call_info.return_type == 'ok')
+    _, call_result = contract_native.mapFn({"ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi": ["test", 12]})
+    assert(call_result == {'ak_2a1j2Mk9YSmC1gioUq4PWRm3bsv887MbuRVwyv4KaUGoR1eiKi': ['test', 12]})
 
-    call_info = contract_native.setRecord({"value": "test1", "key": 12, "testOption": "test2"})
-    assert(call_info.return_type == 'ok')
+    _, call_result = contract_native.intOption(12)
+    assert(call_result == 12)
 
-    call_info = contract_native.datTypeFn({"Year": []})
-    assert(call_info.return_type == 'ok')
+    _, call_result = contract_native.setRecord({"value": "test1", "key": 12, "testOption": "test2"})
+    assert(call_result == [])
+
+    _, call_result = contract_native.getRecord()
+    assert(call_result == {'key': 12, 'testOption': 'test2', 'value': 'test1'})
+
+    _, call_result = contract_native.retrieve()
+    assert(call_result == ['test1', 12])
+
+    _, call_result = contract_native.datTypeFn({"Year": []})
+    assert(call_result == {'Year': []})
 
     try:
       call_info = contract_native.intOption(12, 13)
@@ -93,5 +100,36 @@ def test_contract_native_without_init(compiler_fixture, chain_fixture):
     contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=identity_contract, compiler=compiler, account=account)
     contract_native.deploy()
     assert(contract_native.address is not None)
-    call_info = contract_native.main(12)
-    assert(call_info.return_type == 'ok')
+    _, call_result = contract_native.main(12)
+    assert(call_result == 12)
+
+def test_contract_native_without_default_account(compiler_fixture, chain_fixture):
+    identity_contract = "contract Identity =\n  entrypoint main(x : int) = x"
+    compiler = compiler_fixture.COMPILER
+    contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=identity_contract, compiler=compiler)
+    contract_native.deploy(account=chain_fixture.ALICE)
+    assert(contract_native.address is not None)
+    call_info, call_result = contract_native.main(12, account=chain_fixture.BOB)
+    assert(call_result == 12)
+    try:
+      _, call_result = contract_native.main(12)
+      raise ValueError("Method call should fail")
+    except Exception as e:
+      assert(str(e) == "Please provide an account to sign contract call transactions. You can set a default account using 'set_account' method")
+
+def test_contract_native_default_account_overriding(compiler_fixture, chain_fixture):
+    identity_contract = "contract Identity =\n  entrypoint main(x : int) = x"
+    compiler = compiler_fixture.COMPILER
+    account = chain_fixture.ALICE
+    contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=identity_contract, compiler=compiler, account=account)
+    contract_native.deploy()
+    assert(contract_native.address is not None)
+    call_info, _ = contract_native.main(12)
+    assert(call_info.caller_id == chain_fixture.ALICE.get_address())
+
+    call_info, _ = contract_native.main(12, account=chain_fixture.BOB)
+    assert(call_info.caller_id == chain_fixture.BOB.get_address())
+
+    contract_native.set_account(chain_fixture.BOB)
+    call_info, _ = contract_native.main(12)
+    assert(call_info.caller_id == chain_fixture.BOB.get_address())
