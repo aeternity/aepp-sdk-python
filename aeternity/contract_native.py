@@ -10,14 +10,15 @@ class ContractNative(object):
         """
         Initialize a ContractNative object
 
-        :param client: instance of NodeClient
+        :param client: an instance of NodeClient
         :param source: the source code of the contract
-        :param compiler: instance of the CompilerClient
+        :param compiler: an instance of the CompilerClient
         :param address: address of the currently deployed contract (optional)
         :param gas: Gas to be used for all contract interactions (optional)
         :param fee: fee to be used for all contract interactions (optional)
         :param gas_price: Gas price to be used for all contract interactions (optional)
         :param account: Account to be used for contract deploy and contract calls (optional)
+        :param use_dry_run: use dry run for all method calls except for payable and stateful methods (default: True)
         """
         if 'client' in kwargs:
             self.contract = Contract(kwargs.get('client'))
@@ -41,6 +42,7 @@ class ContractNative(object):
         self.gas_price = kwargs.get('gas_price', defaults.CONTRACT_GAS_PRICE)
         self.fee = kwargs.get('fee', defaults.FEE)
         self.contract_amount = kwargs.get('amount', defaults.CONTRACT_AMOUNT)
+        self.use_dry_run = kwargs.get('use_dry_run', True)
 
         address = kwargs.get('address', None)
         if address:
@@ -60,7 +62,8 @@ class ContractNative(object):
                     "doc": f"Contract Method {f.name}",
                     "arguments": f.arguments,
                     "returns": f.returns,
-                    "stateful": f.stateful
+                    "stateful": f.stateful,
+                    "payable": f.payable
                 }, _nt_name="ContractMethod"))
 
     def __encode_method_args(self, method, *args):
@@ -77,8 +80,18 @@ class ContractNative(object):
     def __add_contract_method(self, method):
         def contract_method(*args, **kwargs):
             calldata = self.__encode_method_args(method, *args)
-            call_tx = self.call(method.name, calldata, **kwargs)
-            call_info = self.contract.get_call_object(call_tx.hash)
+            use_dry_run = kwargs.get('use_dry_run', self.use_dry_run)
+            call_info = None
+            if method.stateful or method.payable or not use_dry_run:
+                tx_hash = self.call(method.name, calldata, **kwargs).hash
+                call_info = namedtupled.reduce(self.contract.get_call_object(tx_hash))
+                call_info['tx_hash'] = tx_hash
+                call_info = namedtupled.map(call_info)
+            else:
+                call_info = self.call_static(method.name, calldata, **kwargs)
+                if call_info.result == 'error':
+                    raise ValueError(call_info.reason)
+                call_info = call_info.call_obj
             decoded_call_result = self.compiler.decode_call_result(self.source, method.name, call_info.return_value, call_info.return_type)
             return call_info, self.__decode_method_args(method, decoded_call_result)
         contract_method.__name__ = method.name
@@ -152,6 +165,19 @@ class ContractNative(object):
         opts = self.__process_options(**kwargs)
         return self.contract.call(self.address, opts.account, function, calldata, opts.amount, opts.gas,
                                   opts.gas_price, opts.fee, abi_version, tx_ttl)
+
+    def call_static(self, function, calldata,
+                    abi_version=None,
+                    tx_ttl=defaults.TX_TTL,
+                    top=None,
+                    **kwargs):
+        """
+        call-static a contract method
+        :return: the call object
+        """
+        opts = self.__process_options(**kwargs)
+        return self.contract.call_static(self.address, function, calldata, opts.account.get_address(), opts.amount, opts.gas,
+                                         opts.gas_price, opts.fee, abi_version, tx_ttl, top)
 
 
 class SophiaTransformation:
