@@ -10,9 +10,9 @@ class ContractNative(object):
         """
         Initialize a ContractNative object
 
-        :param client: instance of node client
-        :param source: the source code of the contract (optional)
-        :param compiler: compiler url or instance of the CompilerClient
+        :param client: instance of NodeClient
+        :param source: the source code of the contract
+        :param compiler: instance of the CompilerClient
         :param address: address of the currently deployed contract (optional)
         :param gas: Gas to be used for all contract interactions (optional)
         :param fee: fee to be used for all contract interactions (optional)
@@ -77,10 +77,10 @@ class ContractNative(object):
     def __add_contract_method(self, method):
         def contract_method(*args, **kwargs):
             calldata = self.__encode_method_args(method, *args)
-            call_tx = self.call(method.name, calldata)
+            call_tx = self.call(method.name, calldata, **kwargs)
             call_info = self.contract.get_call_object(call_tx.hash)
             decoded_call_result = self.compiler.decode_call_result(self.source, method.name, call_info.return_value, call_info.return_type)
-            return self.__decode_method_args(method, decoded_call_result)
+            return call_info, self.__decode_method_args(method, decoded_call_result)
         contract_method.__name__ = method.name
         contract_method.__doc__ = method.doc
         setattr(self, contract_method.__name__, contract_method)
@@ -91,6 +91,8 @@ class ContractNative(object):
         amount = self.contract_amount if kwargs.get('amount') is None else kwargs.get('amount')
         fee = self.fee if kwargs.get('fee') is None else kwargs.get('fee')
         account = self.account if kwargs.get('account') is None else kwargs.get('account')
+        if account is None:
+            raise ValueError("Please provide an account to sign contract call transactions. You can set a default account using 'set_account' method")
         if account and type(account) is not signing.Account:
             raise TypeError("Invalid account type. Use `class Account` for creating an account")
         return namedtupled.map({
@@ -110,16 +112,19 @@ class ContractNative(object):
         self.address = address
         self.deployed = True
 
+    def set_account(self, account):
+        if account is None:
+            raise ValueError("Account can not be of None type")
+        if type(account) is not signing.Account:
+            raise TypeError("Invalid account type. Use `class Account` for creating an account")
+        self.account = account
+
     def deploy(self, *arguments, entrypoint="init",
-               account=None,
-               amount=None,
                deposit=defaults.CONTRACT_DEPOSIT,
-               gas=None,
-               gas_price=None,
-               fee=None,
                vm_version=None,
                abi_version=None,
-               tx_ttl=defaults.TX_TTL):
+               tx_ttl=defaults.TX_TTL,
+               **kwargs):
         """
         Create a contract and deploy it to the chain
         :return: the transaction
@@ -130,25 +135,21 @@ class ContractNative(object):
             calldata = self.__encode_method_args(method_list[0], *arguments)
         else:
             calldata = self.compiler.encode_calldata(self.source, entrypoint, *arguments).calldata
-        opts = self.__process_options(gas=gas, gas_price=gas_price, amount=amount, fee=fee, account=account)
+        opts = self.__process_options(**kwargs)
         tx = self.contract.create(opts.account, self.bytecode, calldata, opts.amount, deposit, opts.gas,
                                   opts.gas_price, opts.fee, vm_version, abi_version, tx_ttl)
         self.at(tx.metadata.contract_id)
         return tx
 
     def call(self, function, calldata,
-             account=None,
-             amount=None,
-             gas=None,
-             gas_price=None,
-             fee=None,
              abi_version=None,
-             tx_ttl=defaults.TX_TTL):
+             tx_ttl=defaults.TX_TTL,
+             **kwargs):
         """
         call a contract method
         :return: the transaction
         """
-        opts = self.__process_options(gas=gas, gas_price=gas_price, amount=amount, fee=fee, account=account)
+        opts = self.__process_options(**kwargs)
         return self.contract.call(self.address, opts.account, function, calldata, opts.amount, opts.gas,
                                   opts.gas_price, opts.fee, abi_version, tx_ttl)
 
