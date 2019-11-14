@@ -518,7 +518,7 @@ def name_pre_claim(keystore_name, domain, ttl, fee, nonce, password, force, wait
 @name.command('claim', help="Claim a domain name")
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
-@click.option("--name-ttl", default=defaults.NAME_TTL, help=f'Lifetime of the name in blocks', show_default=True, type=int)
+@click.option("--name-ttl", default=defaults.NAME_MAX_TTL, help=f'Lifetime of the name in blocks', show_default=True, type=int)
 @click.option("--name-salt", help=f'Salt used for the pre-claim transaction', required=True, type=int)
 @click.option("--preclaim-tx-hash", help=f'The transaction hash of the pre-claim', required=True)
 @global_options
@@ -547,7 +547,7 @@ def name_claim(keystore_name, domain, name_ttl, name_salt, preclaim_tx_hash, ttl
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
 @click.argument('name_fee', required=True, type=int)
-@click.option("--name-ttl", default=defaults.NAME_TTL, help=f'Lifetime of the name in blocks', show_default=True, type=int)
+@click.option("--name-ttl", default=defaults.NAME_MAX_TTL, help=f'Lifetime of the name in blocks', show_default=True, type=int)
 @global_options
 @account_options
 @online_options
@@ -575,7 +575,7 @@ def name_bid(keystore_name, domain, name_ttl, name_fee, ttl, fee, nonce, passwor
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
 @click.argument('address', required=True)
-@click.option("--name-ttl", default=defaults.NAME_TTL, help=f'Lifetime of the claim in blocks', show_default=True)
+@click.option("--name-ttl", default=defaults.NAME_MAX_TTL, help=f'Lifetime of the claim in blocks', show_default=True)
 @global_options
 @account_options
 @online_options

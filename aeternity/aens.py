@@ -134,8 +134,8 @@ class AEName:
         return self.status == NameStatus.CLAIMED
 
     def full_claim_blocking(self, account, *targets,
-                            name_ttl=defaults.NAME_TTL,
-                            client_ttl=defaults.NAME_CLIENT_TTL,
+                            name_ttl=defaults.NAME_MAX_TTL,
+                            client_ttl=defaults.NAME_MAX_CLIENT_TTL,
                             tx_ttl=defaults.TX_TTL):
         """
         Execute a name claim and updates the pointer to it.
@@ -276,8 +276,8 @@ class AEName:
         return tx_signed
 
     def update(self, account, *targets,
-               name_ttl=defaults.NAME_TTL,
-               client_ttl=defaults.NAME_CLIENT_TTL,
+               name_ttl=defaults.NAME_MAX_TTL,
+               client_ttl=defaults.NAME_MAX_CLIENT_TTL,
                fee=defaults.FEE,
                tx_ttl=defaults.TX_TTL):
         """
