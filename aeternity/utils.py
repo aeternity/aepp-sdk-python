@@ -114,3 +114,10 @@ def amount_to_aettos(value) -> int:
     if amount < 0:
         raise TypeError("Amount values must be greater then 0")
     return int(amount)
+
+
+def _amounts_to_aettos(*values):
+    """
+    Shortcut function to convert multiple values in one call
+    """
+    return [amount_to_aettos(x) for x in values]

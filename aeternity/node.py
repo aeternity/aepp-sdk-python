@@ -232,9 +232,9 @@ class NodeClient:
 
     def spend(self, account: Account,
               recipient_id: str,
-              amount: int,
+              amount,
               payload: str = "",
-              fee: int = defaults.FEE,
+              fee=defaults.FEE,
               tx_ttl: int = defaults.TX_TTL):
         """
         Create and execute a spend transaction
@@ -243,6 +243,8 @@ class NodeClient:
             recipient_id = hashing.name_id(recipient_id)
         elif not utils.is_valid_hash(recipient_id, prefix="ak"):
             raise TypeError("Invalid recipient_id. Please provide a valid AENS name or account pub_key.")
+        # parse amount and fee
+        amount, fee = utils._amounts_to_aettos(amount, fee)
         # retrieve the nonce
         account.nonce = self.get_next_nonce(account.get_address()) if account.nonce == 0 else account.nonce + 1
         # retrieve ttl
@@ -358,6 +360,9 @@ class NodeClient:
             raise TypeError("Invalid recipient_id. Please provide a valid AENS name or account pub_key.")
         if percentage < 0 or percentage > 1:
             raise ValueError(f"Percentage should be a number between 0 and 1, got {percentage}")
+        # parse amounts
+        fee = utils.amount_to_aettos(fee)
+        # retrieve the balance
         account_on_chain = self.get_account_by_pubkey(pubkey=account.get_address())
         request_transfer_amount = int(account_on_chain.balance * percentage)
         # retrieve the nonce
@@ -415,19 +420,32 @@ class NodeClient:
 
     def account_basic_to_ga(self, account: Account, ga_contract: str, calldata: str,
                             auth_fun: str = defaults.GA_AUTH_FUNCTION,
-                            fee: int = defaults.FEE,
+                            fee=defaults.FEE,
                             tx_ttl: int = defaults.TX_TTL,
                             gas: int = defaults.CONTRACT_GAS,
-                            gas_price: int = defaults.CONTRACT_GAS_PRICE):
+                            gas_price=defaults.CONTRACT_GAS_PRICE) -> transactions.TxObject:
         """
-        Transform a POA (Plain Old Account) to a GA (Generalized Account)
+        Transform a Basic to a GA (Generalized Account)
+
         :param account: the account to transform
-        :param contract: the compiled contract associated to the GA
+        :param ga_contract: the compiled contract associated to the GA
+        :param calldata: the calldata for the authentication function
         :param auth_fun: the name of the contract function to use for authorization (default: authorize)
+        :param gas: the gas limit for the authorization function execution
+        :param gas_price: the gas price for the contract execution
+        :param fee: TODO
+        :param ttl: TODO
+
+        :return: the TxObject of the transaction
+
+        :raises TypeError: if the auth_fun is missing
+        :raises TypeError: if the auth_fun is no found in the contract
         """
         # check the auth_fun name
         if auth_fun is None or len(auth_fun) == 0:
             raise TypeError("The parameter auth_fun is required")
+        # parse amounts
+        fee, gas_price = utils._amounts_to_aettos(fee, gas_price)
         # decode the contract and search for the authorization function
         auth_fun_hash = None
         contract_data = compiler.CompilerClient.decode_bytecode(ga_contract)
