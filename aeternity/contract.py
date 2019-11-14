@@ -14,15 +14,9 @@ class Contract:
         """
         self.client = client
 
-    def call(self, contract_id,
-             account, function, calldata,
-             amount=defaults.CONTRACT_AMOUNT,
-             gas=defaults.CONTRACT_GAS,
-             gas_price=defaults.CONTRACT_GAS_PRICE,
-             fee=defaults.FEE,
-             abi_version=None,
-             tx_ttl=defaults.TX_TTL):
-        """Call a sophia contract"""
+    def __prepare_call_tx(self, contract_id, address, function, calldata,
+                          amount, gas, gas_price, fee, abi_version, tx_ttl):
+        """Prepare a Contract Tx"""
 
         if not utils.is_valid_hash(contract_id, prefix=identifiers.CONTRACT_ID):
             raise ValueError(f"Invalid contract id {contract_id}")
@@ -39,12 +33,52 @@ class Contract:
             # get the transaction builder
             txb = self.client.tx_builder
             # get the account nonce and ttl
-            nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
+            nonce, ttl = self.client._get_nonce_ttl(address, tx_ttl)
             # build the transaction
-            tx = txb.tx_contract_call(account.get_address(), contract_id, calldata, function,
-                                      amount, gas, gas_price, abi_version,
-                                      fee, ttl, nonce)
-            # sign the transaction
+            return txb.tx_contract_call(address, contract_id, calldata, function,
+                                        amount, gas, gas_price, abi_version, fee, ttl, nonce)
+        except openapi.OpenAPIClientException as e:
+            raise ContractError(e)
+
+    def call_static(self, contract_id,
+                    function, calldata,
+                    address=defaults.DRY_RUN_ADDRESS,
+                    amount=defaults.DRY_RUN_AMOUNT,
+                    gas=defaults.CONTRACT_GAS,
+                    gas_price=defaults.CONTRACT_GAS_PRICE,
+                    fee=defaults.FEE,
+                    abi_version=None,
+                    tx_ttl=defaults.TX_TTL,
+                    top=None):
+        """Call Static a sophia contract"""
+
+        try:
+            tx = self.__prepare_call_tx(contract_id, address, function, calldata, amount, gas, gas_price, fee, abi_version, tx_ttl)
+            # post the transaction to the chain
+            if top is None:
+                top = self.client.get_top_block()
+                top = top.hash if top.hash.startswith('kh') else top.prev_key_hash
+            account = {
+                "amount": amount,
+                "pub_key": address
+            }
+            result = self.client.dry_run_txs(body={"txs": [{"tx": tx.tx}], "accounts": [account], "top": top})
+            return result.results[0]
+        except openapi.OpenAPIClientException as e:
+            raise ContractError(e)
+
+    def call(self, contract_id,
+             account, function, calldata,
+             amount=defaults.CONTRACT_AMOUNT,
+             gas=defaults.CONTRACT_GAS,
+             gas_price=defaults.CONTRACT_GAS_PRICE,
+             fee=defaults.FEE,
+             abi_version=None,
+             tx_ttl=defaults.TX_TTL):
+        """Call a sophia contract"""
+
+        try:
+            tx = self.__prepare_call_tx(contract_id, account.get_address(), function, calldata, amount, gas, gas_price, fee, abi_version, tx_ttl)
             tx_signed = self.client.sign_transaction(account, tx)
             # post the transaction to the chain
             self.client.broadcast_transaction(tx_signed)

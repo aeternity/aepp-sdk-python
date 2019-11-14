@@ -38,8 +38,6 @@ class OpenAPICli(object):
     """
     Generates a OpenAPI client
     """
-    # skip tags
-    skip_tags = set(["obsolete"])
     # openapi versions
     open_api_versions = ["2.0"]
     # type mapping
@@ -52,6 +50,7 @@ class OpenAPICli(object):
     def __init__(self, url, url_internal=None, debug=False, compatibility_version_range=(None, None), force_compatibility=False):
         try:
             self.url, self.url_internal = url, url_internal
+            self.skip_tags = set(["obsolete"])
             # load the openapi json file from the node
             api_reply = requests.get(f"{url}/api")
             self.api_def = api_reply.json()
@@ -94,6 +93,8 @@ class OpenAPICli(object):
         # prepare the baseurl
         base_path = self.api_def.get('basePath', '').rstrip('/')
         self.base_url = f"{url}{base_path}"
+        self.base_url_internal = f"{url_internal}{base_path}"
+        logging.debug(f"Internal URL {url_internal}, {type(url_internal)}, {(url_internal is None)}, {self.base_url_internal}")
         if url_internal is None:
             # do not build internal endpoints
             self.skip_tags.add("internal")
