@@ -1,7 +1,7 @@
 from . import conftest
 
 """
-WARINING: this file is used as source for the tutorial in
+WARNING: this file is used as source for the tutorial in
 docs/intro/tutorial01-spend.rst
 line numbers are important
 verify the doc file for consistency after edit
@@ -21,7 +21,7 @@ def test_node_spend(sender_account):
         blocking_mode=True,
     ))
 
-    # genrate ALICE account 
+    # generate ALICE account 
     alice = Account.generate()
 
     # generate BOB account
@@ -54,8 +54,8 @@ def test_node_spend(sender_account):
     assert alice.get_address() == tx.data.tx.data.sender_id
     #  end - tests execution section
 
-    print(f"alice balance is {utils.format_amount(alice_balance)}")
-    print(f"bob balance is {utils.format_amount(bob_balance)}")
+    print(f"Alice balance is {utils.format_amount(alice_balance)}")
+    print(f"Bob balance is {utils.format_amount(bob_balance)}")
 
     # begin - tests execution section
     assert bob_balance > 0
