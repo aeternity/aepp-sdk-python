@@ -10,14 +10,15 @@ class ContractNative(object):
         """
         Initialize a ContractNative object
 
-        :param client: instance of NodeClient
+        :param client: an instance of NodeClient
         :param source: the source code of the contract
-        :param compiler: instance of the CompilerClient
+        :param compiler: an instance of the CompilerClient
         :param address: address of the currently deployed contract (optional)
         :param gas: Gas to be used for all contract interactions (optional)
         :param fee: fee to be used for all contract interactions (optional)
         :param gas_price: Gas price to be used for all contract interactions (optional)
         :param account: Account to be used for contract deploy and contract calls (optional)
+        :param use_dry_run: use dry run for all method calls except for payable and stateful methods (default: True)
         """
         if 'client' in kwargs:
             self.contract = Contract(kwargs.get('client'))
@@ -41,6 +42,7 @@ class ContractNative(object):
         self.gas_price = kwargs.get('gas_price', defaults.CONTRACT_GAS_PRICE)
         self.fee = kwargs.get('fee', defaults.FEE)
         self.contract_amount = kwargs.get('amount', defaults.CONTRACT_AMOUNT)
+        self.use_dry_run = kwargs.get('use_dry_run', True)
 
         address = kwargs.get('address', None)
         if address:
@@ -78,7 +80,7 @@ class ContractNative(object):
     def __add_contract_method(self, method):
         def contract_method(*args, **kwargs):
             calldata = self.__encode_method_args(method, *args)
-            use_dry_run = kwargs.get('use_dry_run', True)
+            use_dry_run = kwargs.get('use_dry_run', self.use_dry_run)
             call_info = None
             if method.stateful or method.payable or not use_dry_run:
                 tx_hash = self.call(method.name, calldata, **kwargs).hash
