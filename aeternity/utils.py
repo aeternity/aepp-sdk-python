@@ -1,5 +1,4 @@
 import validators
-import re
 
 from decimal import Decimal
 from aeternity import hashing
@@ -81,35 +80,37 @@ def format_amount(value: int, precision: int = -18, unit_label: str = "AE") -> s
 
 def amount_to_aettos(value) -> int:
     """
-    Trasform a value describing an amount in AE to aettos.
+    Transform a value describing an amount in AE to aettos.
     Supported amount format are
     - floats: ex 1.2 3e12
     - string: ex 12AE 12ae 12Ae
     - int: will return the same number
 
-    if the input value does not match any of the types above
-    a TypeErorr is raised
-
     :param value: the value to transform
-    :retuen: the amount ins aettos
+    :return: the amount ins aettos
+    :raises TypeError: if the input value is not recognized or if the amount is lt 0 or amount is gt 1e28
+
+    for additional reference check https://docs.python.org/3/library/decimal.html#decimal.Decimal.quantize
+
     """
     amount = None
     if isinstance(value, int):
         amount = value
     elif isinstance(value, str):
-        if value.isdigit():
-            amount = int(value)
-        elif re.match(r'^\d+(\.\d+)?ae$', value, re.IGNORECASE):  # with ae
-            amount = Decimal(value[:-2]).scaleb(18).quantize(Decimal('1'))
-        elif re.match(r'^\d+\.\d+$', value, re.IGNORECASE):  # just float
-            amount = Decimal(value).scaleb(18).quantize(Decimal('1'))
+        clean_val = value.strip().lower()
+        if clean_val.isdigit():
+            amount = int(clean_val)
         else:
-            raise TypeError(f"Invalid value for amount: {value}")
+            clean_val = clean_val[:-2] if clean_val.endswith("ae") else clean_val
+            try:
+                amount = Decimal(clean_val).scaleb(18).quantize(Decimal('1'))
+            except Exception as e:
+                raise TypeError(f"Invalid value for amount: {value}, {e}")
     elif isinstance(value, float):
         amount = Decimal(f'{value}').scaleb(18).quantize(Decimal('1'))
     else:
         raise TypeError(f"Invalid value for amount: {value}")
     # validate the number
     if amount < 0:
-        raise TypeError("Amount values must be greather then 0")
+        raise TypeError("Amount values must be greater then 0")
     return int(amount)
