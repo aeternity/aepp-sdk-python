@@ -23,8 +23,8 @@ import sphinx_rtd_theme
 # -- Project information -----------------------------------------------------
 
 project = 'aepp-sdk'
-copyright = '2019, Andrea Giacobino, Shubhendu Sheckar'
-author = 'Andrea Giacobino, Shubhendu Sheckar'
+copyright = '2019, Andrea Giacobino, Shubhendu Shekhar'
+author = 'Andrea Giacobino, Shubhendu Shekhar'
 
 # The short X.Y version
 version = aeternity._version()
@@ -143,7 +143,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'aepp-sdk.tex', 'aepp-sdk Documentation',
-     'Andrea Giacobino, Shubhendu Sheckar', 'manual'),
+     'Andrea Giacobino, Shubhendu Shekhar', 'manual'),
 ]
 
 
