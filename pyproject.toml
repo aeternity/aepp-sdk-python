@@ -41,6 +41,8 @@ flake8 = "^3.7"
 dephell = "^0.7.3"
 pytest-cov = "^2.7"
 coverage = "^4.5"
+sphinx = "^2.2"
+sphinx_rtd_theme = "^0.4.3"
 
 [tool.poetry.extras]
 test = ["coverage", "pytest"]
