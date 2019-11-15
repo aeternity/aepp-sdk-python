@@ -484,7 +484,6 @@ class TxBuilder:
         self.gas_per_byte = gas_per_byte
         self.gas_price = gas_price
         self.key_block_interval = key_block_interval
-        pass
 
     @staticmethod
     def compute_tx_hash(encoded_tx: str) -> str:
@@ -731,7 +730,7 @@ class TxBuilder:
         )
         return self._build_txobject(body, metadata=metadata)
 
-    def tx_spend(self, sender_id, recipient_id, amount, payload, fee, ttl, nonce) -> tuple:
+    def tx_spend(self, sender_id, recipient_id, amount, payload, fee, ttl, nonce) -> TxObject:
         """
         create a spend transaction
         :param sender_id: the public key of the sender
@@ -759,7 +758,7 @@ class TxBuilder:
 
     # NAMING #
 
-    def tx_name_preclaim(self, account_id, commitment_id, fee, ttl, nonce) -> tuple:
+    def tx_name_preclaim(self, account_id, commitment_id, fee, ttl, nonce) -> TxObject:
         """
         create a preclaim transaction
         :param account_id: the account registering the name
@@ -780,7 +779,7 @@ class TxBuilder:
         return self._build_txobject(body)
         # return self.api.post_name_preclaim(body=body).tx
 
-    def tx_name_claim(self, account_id, name, name_salt, fee, ttl, nonce) -> tuple:
+    def tx_name_claim(self, account_id, name, name_salt, fee, ttl, nonce) -> TxObject:
         """
         create a preclaim transaction
         :param account_id: the account registering the name
@@ -802,13 +801,13 @@ class TxBuilder:
         )
         return self._build_txobject(body)
 
-    def tx_name_claim_v2(self, account_id, name, name_salt, name_fee, fee, ttl, nonce) -> tuple:
+    def tx_name_claim_v2(self, account_id, name, name_salt, name_fee, fee, ttl, nonce) -> TxObject:
         """
         create a preclaim transaction
         :param account_id: the account registering the name
         :param name: the actual name to claim
         :param name_salt: the salt used to create the commitment_id during preclaim
-        :param name_fee: the fee bidded to claim the name
+        :param name_fee: the fee bid to claim the name
         :param fee:  the fee for the transaction
         :param ttl:  the ttl for the transaction
         :param nonce: the nonce of the account for the transaction
@@ -826,7 +825,7 @@ class TxBuilder:
         )
         return self._build_txobject(body)
 
-    def tx_name_update(self, account_id, name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce) -> tuple:
+    def tx_name_update(self, account_id, name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce) -> TxObject:
         """
         create an update transaction
         :param account_id: the account updating the name
@@ -853,7 +852,7 @@ class TxBuilder:
         return self._build_txobject(body)
         # return self.api.post_name_update(body=body).tx
 
-    def tx_name_transfer(self, account_id, name_id, recipient_id, fee, ttl, nonce) -> tuple:
+    def tx_name_transfer(self, account_id, name_id, recipient_id, fee, ttl, nonce) -> TxObject:
         """
         create a transfer transaction
         :param account_id: the account transferring the name
@@ -876,7 +875,7 @@ class TxBuilder:
         return self._build_txobject(body)
         # return self.api.post_name_transfer(body=body).tx
 
-    def tx_name_revoke(self, account_id, name_id, fee, ttl, nonce) -> tuple:
+    def tx_name_revoke(self, account_id, name_id, fee, ttl, nonce) -> TxObject:
         """
         create a revoke transaction
         :param account_id: the account revoking the name
@@ -900,14 +899,14 @@ class TxBuilder:
 
     # CONTRACTS
 
-    def tx_contract_create(self, owner_id, code, call_data, amount, deposit, gas, gas_price, vm_version, abi_version, fee, ttl, nonce) -> tuple:
+    def tx_contract_create(self, owner_id, code, call_data, amount, deposit, gas, gas_price, vm_version, abi_version, fee, ttl, nonce) -> TxObject:
         """
         Create a contract transaction
         :param owner_id: the account creating the contract
         :param code: the binary code of the contract
         :param call_data: the call data for the contract
         :param amount: initial amount(balance) of the contract
-        :param deposit: the deposit bounde to the contract
+        :param deposit: the deposit bound to the contract
         :param gas: the gas limit for the execution of the limit function
         :param gas_price: the gas price for the unit of gas
         :param vm_version: the vm version of the contract
@@ -935,7 +934,7 @@ class TxBuilder:
         return self._build_txobject(body)
         # return tx.tx, tx.contract_id
 
-    def tx_contract_call(self, caller_id, contract_id, call_data, function, amount, gas, gas_price, abi_version, fee, ttl, nonce) -> tuple:
+    def tx_contract_call(self, caller_id, contract_id, call_data, function, amount, gas, gas_price, abi_version, fee, ttl, nonce) -> TxObject:
         """
         Create a Contract Call transaction
         :param caller_id: the account creating the contract
@@ -973,7 +972,7 @@ class TxBuilder:
     def tx_oracle_register(self, account_id,
                            query_format, response_format,
                            query_fee, ttl_type, ttl_value, vm_version,
-                           fee, ttl, nonce) -> tuple:
+                           fee, ttl, nonce) -> TxObject:
         """
         Create a register oracle transaction
         """
@@ -997,7 +996,7 @@ class TxBuilder:
     def tx_oracle_query(self, oracle_id, sender_id, query,
                         query_fee, query_ttl_type, query_ttl_value,
                         response_ttl_type, response_ttl_value,
-                        fee, ttl, nonce) -> tuple:
+                        fee, ttl, nonce) -> TxObject:
         """
         Create a oracle query transaction
         """
@@ -1023,7 +1022,7 @@ class TxBuilder:
 
     def tx_oracle_respond(self, oracle_id, query_id, response,
                           response_ttl_type, response_ttl_value,
-                          fee, ttl, nonce) -> tuple:
+                          fee, ttl, nonce) -> TxObject:
         """
         Create a oracle response transaction
         """
@@ -1045,7 +1044,7 @@ class TxBuilder:
 
     def tx_oracle_extend(self, oracle_id,
                          ttl_type, ttl_value,
-                         fee, ttl, nonce) -> tuple:
+                         fee, ttl, nonce) -> TxObject:
         """
         Create a oracle extends transaction
         """
@@ -1065,7 +1064,7 @@ class TxBuilder:
 
     def tx_ga_attach(self, owner_id, nonce, code,
                      auth_fun, vm_version, abi_version,
-                     fee, ttl, gas, gas_price, call_data):
+                     fee, ttl, gas, gas_price, call_data) -> TxObject:
         """
         :param owner_id: the owner of the contra
         :param nonce: the transaction nonce
@@ -1100,7 +1099,7 @@ class TxBuilder:
                    gas,
                    gas_price,
                    ttl,
-                   tx):
+                   tx) -> TxObject:
         """
         :param ga_id: the account id
         :param auth_data: the authorized data

@@ -715,7 +715,7 @@ def contract_encode_calldata(contract_file, function_name, arguments, compiler_u
             code = fp.read()
             c = CompilerClient(compiler_url=compiler_url)
             arguments = [] if arguments is None else arguments.split(",")
-            result = c.encode_calldata(code, function_name, arguments=arguments)
+            result = c.encode_calldata(code, function_name, *arguments)
             _print_object(result, title="contract")
     except OpenAPIClientException as e:
         _print_object(e.data, title="compiler error")
@@ -902,7 +902,6 @@ def inspect(obj, height, force, wait, json_):
 @online_options
 def chain(json_, force, wait):
     set_global_options(json_, force, wait)
-    pass
 
 
 @chain.command('ttl')
@@ -1003,8 +1002,6 @@ def chain_play(height,  limit, force, wait, json_):
             g = cli.get_generation_by_hash(hash=g.key_block.prev_key_hash)
     except Exception as e:
         _print_error(e)
-        g = None
-        pass
 
 
 # run the client
