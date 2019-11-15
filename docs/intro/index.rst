@@ -14,6 +14,7 @@ place: read this material to quickly get up and running.
    install
    tutorial01-spend
    tutorial04-ga
+   tutorial05-contracts
    contributing
 
 .. seealso::
