@@ -392,7 +392,6 @@ def account_transfer_amount(keystore_name, recipient_id, transfer_amount, includ
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
         account.nonce = nonce
-        tx = None
         tx = _node_cli().transfer_funds(account, recipient_id, transfer_amount, tx_ttl=ttl, payload=payload, include_fee=include_fee)
         _print_object(tx, title='spend transaction')
     except Exception as e:
@@ -462,13 +461,14 @@ def tx_broadcast(signed_transaction, force, wait, json_):
 @tx.command('spend', help="Create a transaction to another account")
 @click.argument('sender_id', required=True)
 @click.argument('recipient_id', required=True)
-@click.argument('amount', required=True, type=int)
+@click.argument('amount', required=True)
 @click.option('--payload', default="", help="Spend transaction payload")
 @global_options
 @transaction_options
 def tx_spend(sender_id, recipient_id, amount,  ttl, fee, nonce, payload, json_):
     try:
         set_global_options(json_)
+        amount, fee = utils._amounts_to_aettos(amount, fee)
         tx = TxBuilder().tx_spend(sender_id, recipient_id, amount, payload, fee, ttl, nonce)
         # print the results
         _print_object(tx, title='spend tx')
@@ -506,9 +506,9 @@ def name_pre_claim(keystore_name, domain, ttl, fee, nonce, password, force, wait
         if name.status != aens.AEName.Status.AVAILABLE:
             print("Domain not available")
             exit(0)
-        # preclaim
+        # pre-claim
         tx = name.preclaim(account, fee, ttl)
-        _print_object(tx, title='preclaim transaction')
+        _print_object(tx, title='pre-claim transaction')
     except ValueError as e:
         _print_error(e, exit_code=1)
     except Exception as e:
@@ -614,7 +614,7 @@ def name_revoke(keystore_name, domain, ttl, fee, nonce, password, force, wait, j
         if name.status == name.Status.AVAILABLE:
             print("Domain is available, nothing to revoke")
             exit(0)
-        tx = name.revoke(account)
+        tx = name.revoke(account, fee=fee, tx_ttl=ttl)
         _print_object(tx, title=f"Name {domain} status revoke")
     except Exception as e:
         _print_error(e, exit_code=1)
@@ -640,7 +640,7 @@ def name_transfer(keystore_name, domain, address, ttl, fee, nonce, password, for
         if name.status != name.Status.CLAIMED:
             print(f"Domain is {name.status} and cannot be transferred")
             exit(0)
-        tx = name.transfer_ownership(account, address)
+        tx = name.transfer_ownership(account, address, fee=fee, tx_ttl=ttl)
         _print_object(tx, title=f"Name {domain} status transfer to {address}")
     except Exception as e:
         _print_error(e, exit_code=1)
