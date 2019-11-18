@@ -22,13 +22,20 @@ blind_auth_contract = """contract BlindAuth =
 
 def _test_node_spend(node_cli, sender_account):
     account = Account.generate().get_address()
+    # with numbers 
     tx = node_cli.spend(sender_account, account, 100)
     print("DATA", tx)
     assert account == tx.data.tx.data.recipient_id
     assert sender_account.get_address() == tx.data.tx.data.sender_id
     account = node_cli.get_account_by_pubkey(pubkey=account)
-    balance = account.balance
-    assert balance > 0
+    assert account.balance == 100 
+    # with strings 
+    tx = node_cli.spend(sender_account, account, "0.5ae")
+    print("DATA", tx)
+    assert account == tx.data.tx.data.recipient_id
+    assert sender_account.get_address() == tx.data.tx.data.sender_id
+    account = node_cli.get_account_by_pubkey(pubkey=account)
+    assert account.balance == 500000000000000100
 
 
 def test_node_spend_native(chain_fixture):
