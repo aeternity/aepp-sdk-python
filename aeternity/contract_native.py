@@ -195,7 +195,6 @@ class SophiaTransformation:
                 gen_map = []
                 for y in gen:
                     var_name_list = list(map(lambda e: e.name, aci_types['vars']))
-                    index = -1
                     if y in var_name_list:
                         index = var_name_list.index(y)
                         gen_map.append(variant_value[index])
@@ -249,16 +248,16 @@ class SophiaTransformation:
         return f'\"{arg}\"'
 
     def to_sophia_signature(self, arg, generic, bindings={}):
-        return self.to_sophia_bytes(arg)
+        return self.to_sophia_bytes(arg, generic, bindings={})
 
     def from_sophia_signature(self, arg, generic, bindings={}):
-        return self.from_sophia_bytes(arg)
+        return self.from_sophia_bytes(arg, generic, bindings={})
 
     def to_sophia_hash(self, arg, generic, bindings={}):
-        return self.to_sophia_bytes(arg)
+        return self.to_sophia_bytes(arg, generic, bindings={})
 
     def from_sophia_hash(self, arg, generic, bindings={}):
-        return self.from_sophia_bytes(arg)
+        return self.from_sophia_bytes(arg, generic, bindings={})
 
     def to_sophia_bytes(self, arg, generic, bindings={}):
         if isinstance(arg, str):
