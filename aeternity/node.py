@@ -282,7 +282,7 @@ class NodeClient:
         # start polling
         n = 1
         total_sleep = 0
-        tx_height = -1
+        # tx_height = -1
         while True:
             # query the transaction
             try:
