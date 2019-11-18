@@ -5,7 +5,7 @@ Working with Contracts
 This guide describes how you can leverage aepp-sdk to compile,
 deploy and interact with aeternity smart contracts.
 
-.. admonition:: Sophia: An Æternity BlockChain Language
+.. seealso:: Sophia: An Æternity Blockchain Language
 
                 The Sophia is a language in the ML family.
                 It is strongly typed and has restricted mutable state.
@@ -69,8 +69,7 @@ You can read the contract from the stored `.aes` file and use it to initilaize t
 If you have not provided the `internal_endpoint` or simple do not want to use the `dry-run` functionality
 you can disable it by passing `use-dry-run=False` to the `ContractNative` constructor.
 
-.. admonition:: Warning
-
+.. warning::
                 If you DO NOT provide the `internal_url` during NodeClient initialization
                 and also DID NOT disable the `dry-run` then the contract method calls for
                 `un-stateful` methods WILL FAIL.
@@ -96,8 +95,7 @@ Call the contract methods
 Once the contract is deployed, all the methods inside the contract are
 also available (with same signature) to use from the contract instance.
 
-.. admonition:: Note
-
+.. note:: 
                 All the methods that are NOT `stateful`, by default are processed using the `dry-run` endpoint to save gas.
                 And therefore, a transaction hash will also not be provided for them.
                 This functionality can be either diabled for the contract instance or per method by using `use_dry_run` argument.
