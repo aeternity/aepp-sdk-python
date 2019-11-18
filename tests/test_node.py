@@ -22,7 +22,7 @@ blind_auth_contract = """contract BlindAuth =
 
 def _test_node_spend(node_cli, sender_account):
     account = Account.generate().get_address()
-    tx = node_cli.spend(sender_account, account, 100)
+    tx = node_cli.spend(sender_account, account, '0.1AE')
     print("DATA", tx)
     assert account == tx.data.tx.data.recipient_id
     assert sender_account.get_address() == tx.data.tx.data.sender_id
