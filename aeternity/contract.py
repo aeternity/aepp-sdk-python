@@ -16,10 +16,17 @@ class Contract:
 
     def __prepare_call_tx(self, contract_id, address, function, calldata,
                           amount, gas, gas_price, fee, abi_version, tx_ttl):
-        """Prepare a Contract Tx"""
+        """
+        Prepare a Contract call transaction
+
+        :param contract_id: the contract address
+        :param address: the address preparing the transaction
+        """
 
         if not utils.is_valid_hash(contract_id, prefix=identifiers.CONTRACT_ID):
             raise ValueError(f"Invalid contract id {contract_id}")
+        # parse amounts
+        amount, gas_price, fee = utils._amounts_to_aettos(amount, gas_price, fee)
         # check if the contract exists
         try:
             self.client.get_contract(pubkey=contract_id)
@@ -40,8 +47,7 @@ class Contract:
         except openapi.OpenAPIClientException as e:
             raise ContractError(e)
 
-    def call_static(self, contract_id,
-                    function, calldata,
+    def call_static(self, contract_id, function, calldata,
                     address=defaults.DRY_RUN_ADDRESS,
                     amount=defaults.DRY_RUN_AMOUNT,
                     gas=defaults.CONTRACT_GAS,
@@ -50,7 +56,22 @@ class Contract:
                     abi_version=None,
                     tx_ttl=defaults.TX_TTL,
                     top=None):
-        """Call Static a sophia contract"""
+        """
+        Call Static a sophia contract
+
+        :param contract_id:TODO
+        :param function: TODO
+        :param calldata: TODO
+        :param address: TODO
+        :param amount: TODO
+        :param gas: TODO
+        :param gas_price: TODO
+        :param fee: TODO
+        :param abi_version:TODO
+        :param tx_ttl: TODO
+        :param top: TODO
+
+        """
 
         try:
             tx = self.__prepare_call_tx(contract_id, address, function, calldata, amount, gas, gas_price, fee, abi_version, tx_ttl)
@@ -113,7 +134,7 @@ class Contract:
         :param calldata: the calldata for the init function of the contract
         :param amount: amount to transfer to the account
         :param deposit: the deposit on the contract
-        :param gas: the gas limit for the execution of the init funcion
+        :param gas: the gas limit for the execution of the init function
         :param gas_price: the gas price for gas unit
         :param fee: the fee for the transaction
         :param vm_version: the virtual machine version
@@ -122,6 +143,8 @@ class Contract:
         :return: the transaction
         """
         try:
+            # parse amounts
+            deposit, amount, gas_price, fee = utils._amounts_to_aettos(deposit, amount, gas_price, fee)
             # retrieve the correct vm/abi version
             vm, abi = self.client.get_vm_abi_versions()
             vm_version = vm if vm_version is None else vm_version
