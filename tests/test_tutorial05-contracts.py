@@ -16,7 +16,7 @@ from aeternity.signing import Account
 def test_example_contract_native(chain_fixture):
 
     NODE_URL = os.environ.get('TEST_URL', 'http://127.0.0.1:3013')
-    NODE_INTERNAL_URL = os.environ.get('TEST_URL', 'http://127.0.0.1:3113')
+    NODE_INTERNAL_URL = os.environ.get('TEST_DEBUG_URL', 'http://127.0.0.1:3113')
     COMPILER_URL = os.environ.get('TEST_COMPILER__URL', 'https://compiler.aepps.com')
 
     node_cli = NodeClient(Config(
