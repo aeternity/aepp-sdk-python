@@ -12,7 +12,7 @@ from aeternity.signing import Account
 from aeternity import utils
 import os
 
-def test_node_spend(chain_fixture):
+def test_tutorial_spend(chain_fixture):
 
     NODE_URL = os.environ.get('TEST_URL', 'https://testnet.aeternity.io')
 
@@ -40,7 +40,7 @@ def test_node_spend(chain_fixture):
     # begin - tests execution section
     # top up the account from the test suite account,
     # outside the tests use the faucet to top_up an account
-    node_cli.spend(chain_fixture.BOB, alice.get_address(), "5AE")
+    tx = node_cli.spend(chain_fixture.ALICE, alice.get_address(), "5AE")
     #  end - tests execution section
 
     #TODO pause the execution while using the faucet
@@ -53,6 +53,10 @@ def test_node_spend(chain_fixture):
     assert bob.get_address() == tx.data.tx.data.recipient_id
     assert alice.get_address() == tx.data.tx.data.sender_id
     #  end - tests execution section
+
+    # retrieve the balances for the accounts
+    bob_balance = node_cli.get_balance(bob)
+    alice_balance = node_cli.get_balance(alice)
 
     print(f"Alice balance is {utils.format_amount(alice_balance)}")
     print(f"Bob balance is {utils.format_amount(bob_balance)}")
