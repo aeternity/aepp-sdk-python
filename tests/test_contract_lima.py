@@ -89,7 +89,6 @@ def _sophia_contract_tx_call_static(node_cli, account):
 
     ]
     for t in tests:
-        print(f"call contract {t.get('name')}")
         contract = node_cli.Contract()
         tx = contract.create(account, t.get("bytecode"), calldata=t.get("init.calldata"))
         c_id = tx.metadata.contract_id

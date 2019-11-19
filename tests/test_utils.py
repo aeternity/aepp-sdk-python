@@ -1,5 +1,6 @@
-
 from aeternity import utils
+import pytest
+import random
 
 
 def test_utils_is_valid_hash():
@@ -67,3 +68,50 @@ def test_utils_format_amount():
         got = utils.format_amount(a[0])
         expected = a[1]
         assert got == expected
+
+
+
+def test_utils_amount_to_aettos():
+    args = [
+        ("1.2AE", 1200000000000000000),
+        ("1.2ae", 1200000000000000000),
+        (" 1.2ae  ", 1200000000000000000),
+        ("1.25ae", 1250000000000000000),
+        (1.3, 1300000000000000000),
+        (10, 10),
+        (-1, TypeError()),
+        ("10", 10),
+        (" 1000  ", 1000),
+        ("1001  ", 1001),
+        ("   1002", 1002),
+        ("1,25ae", TypeError()),
+        ("1ae", 1000000000000000000),
+        ("0.000000005", 5000000000),
+        ("0", 0),
+        (0, 0),
+    ]
+
+
+    # TODO: test more float 
+    for i in range(10000):
+        val = random.randint(0, 1000000000000000000000000)
+        args.append((utils.format_amount(val), val))
+
+    for i in range(10000):
+        val = random.randint(0, 1000000)
+        args.append((utils.format_amount(val), val))
+
+    # the default context has 28 for max prcision
+    # therefore anything greater than 1e28 will fail
+    for i in range(10000):
+        val = random.randint(1000000000000000000, 10000000000000000000000000000)
+        args.append((utils.format_amount(val), val))
+
+    for a in args:
+        expected = a[1]
+        if issubclass(type(expected), Exception):
+            with pytest.raises(type(expected)):
+                utils.amount_to_aettos(a[0])
+        else:
+            got = utils.amount_to_aettos(a[0])
+            assert got == expected

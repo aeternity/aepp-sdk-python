@@ -1,26 +1,3 @@
-# aepp-sdk-python
-
-[![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
-[![Build Status](https://ci.aepps.com/buildStatus/icon?job=aepp-sdk-python/develop)](https://ci.aepps.com/job/aepp-sdk-python/job/develop/)
-[![PyPI version](https://badge.fury.io/py/aepp-sdk.svg)](https://badge.fury.io/py/aepp-sdk)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/aeternity/aepp-sdk-python.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/aeternity/aepp-sdk-python/context:python)
-
-## Introduction 
-
-[This repo](https://github.com/aeternity/aepp-sdk-python) is for developing apps for the æternity blockchain in Python. Please see the [main dev site](https://dev.aepps.com) for instructions on accessing the testnet, and for running a local æternity node.
-
-## Installation
-
-The SDK required Python >= 3.6. For out of the box use, it is recommended to use
-`venv` and install dependencies into it.
-
-```
-python3 -m venv venv
-source venv/bin/activate
-pip install aepp-sdk
-```
-
-Whenever you come back, don't forget to run `source venv/bin/activate`, again.
 
 
 ## CLI Usage
@@ -74,6 +51,7 @@ Use the environment variables
 The following is a walkthrough to execute an offline spend transaction on the *testnet* network
 
 1. Set the environment variables
+
 ```
 export NODE_URL=https://sdk-testnet.aepps.com
 ```
@@ -81,6 +59,7 @@ export NODE_URL=https://sdk-testnet.aepps.com
 ❗ When not set the command line client will connect to mainnet
 
 2. Retrieve the top block
+
 ```
 $ aecli chain top
 <top for node at https://sdk-testnet.aepps.com >
@@ -118,6 +97,7 @@ Enter the account password []:
 ![](docs/assets/images/faucet.png)
 
 5. Inspect the transaction reported by the faucet app
+
 ```
 aecli inspect th_2CV4a7xxDYj5ysaDjXNoCSLxnkowGM5bbyAvtdoPvHZwTSYykX
 <transaction>
@@ -190,13 +170,3 @@ aecli inspect ak_9j8akv2PE2Mnt5khFeDvS9BGc3TBBrJkfcgaJHgBXcLLagX8M
 
 
 
-## Advanced usage
-
-For advanced usage check the [documentation](docs).
-
-
-## Reference:
-
-[AENS API Spec](https://github.com/aeternity/protocol/blob/master/node/api/naming_system_api_usage.md)
-
-[AENS Protocol](https://github.com/aeternity/protocol/blob/master/AENS.md)

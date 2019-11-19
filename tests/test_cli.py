@@ -92,6 +92,11 @@ def test_cli_spend(chain_fixture, tempdir):
     recipient_account = chain_fixture.NODE_CLI.get_account_by_pubkey(pubkey=recipient_address)
     print(f"recipient address {recipient_address}, balance {recipient_account.balance}")
     assert recipient_account.balance == 90
+    # call the cli
+    call_aecli('account', 'spend', account_path, recipient_address, "1ae", '--password', 'aeternity_bc', '--wait')
+    recipient_account = chain_fixture.NODE_CLI.get_account_by_pubkey(pubkey=recipient_address)
+    assert recipient_account.balance == 1000000000000000090
+
 
 def test_cli_spend_by_name(chain_fixture, tempdir):
     account_alice_path = _account_path(tempdir, chain_fixture.ALICE)
