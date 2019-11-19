@@ -12,7 +12,7 @@ from aeternity.signing import Account
 from aeternity import utils
 import os
 
-def test_node_spend(sender_account):
+def test_node_spend(chain_fixture):
 
     NODE_URL = os.environ.get('TEST_URL', 'https://testnet.aeternity.io')
 
@@ -40,7 +40,7 @@ def test_node_spend(sender_account):
     # begin - tests execution section
     # top up the account from the test suite account,
     # outside the tests use the faucet to top_up an account
-    node_cli.spend(sender_account, alice.get_address(), "5AE")
+    node_cli.spend(chain_fixture.BOB, alice.get_address(), "5AE")
     #  end - tests execution section
 
     #TODO pause the execution while using the faucet
