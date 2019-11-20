@@ -236,9 +236,7 @@ def set_global_options(json_, force=False, wait=False):
 @click.version_option(version=_version())
 def cli(ctx, url, debug_url, json_):
     """
-    Welcome to the aecli client.
-
-    The client is to interact with an aeternity node.
+    Welcome to the Python CLI for the Aeternty blockchain
 
     """
     ctx.obj[CTX_NODE_URL] = url
