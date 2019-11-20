@@ -316,6 +316,8 @@ version = "0.1.17"
 attrs = "*"
 dephell-pythons = "*"
 requests = "*"
+<<<<<<< HEAD
+=======
 
 [[package]]
 category = "dev"
@@ -327,6 +329,26 @@ version = "0.1.1"
 
 [package.dependencies]
 packaging = "*"
+>>>>>>> rearrange dependencies and update lock file
+
+[[package]]
+category = "dev"
+description = "Library for bumping project version like a pro"
+name = "dephell-versioning"
+optional = false
+<<<<<<< HEAD
+python-versions = ">=3.5"
+version = "0.1.1"
+
+[package.dependencies]
+packaging = "*"
+=======
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+version = "1.2.7"
+
+[package.dependencies]
+wrapt = ">=1.10,<2"
+>>>>>>> rearrange dependencies and update lock file
 
 [[package]]
 category = "main"
@@ -505,6 +527,14 @@ name = "mistune"
 optional = false
 python-versions = "*"
 version = "0.8.4"
+
+[[package]]
+category = "main"
+description = "Implementation of Bitcoin BIP-0039"
+name = "mnemonic"
+optional = false
+python-versions = "*"
+version = "0.19"
 
 [[package]]
 category = "dev"
@@ -692,6 +722,22 @@ name = "pyyaml"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "5.1.2"
+<<<<<<< HEAD
+=======
+
+[[package]]
+category = "dev"
+description = "A docutils-compatibility bridge to CommonMark, enabling you to write CommonMark inside of Docutils & Sphinx projects."
+name = "recommonmark"
+optional = false
+python-versions = "*"
+version = "0.6.0"
+
+[package.dependencies]
+commonmark = ">=0.8.1"
+docutils = ">=0.11"
+sphinx = ">=1.3.1"
+>>>>>>> rearrange dependencies and update lock file
 
 [[package]]
 category = "main"
@@ -949,9 +995,12 @@ name = "zipp"
 optional = false
 python-versions = ">=2.7"
 version = "0.6.0"
+<<<<<<< HEAD
 
 [package.dependencies]
 more-itertools = "*"
+=======
+>>>>>>> rearrange dependencies and update lock file
 
 [extras]
 test = []
