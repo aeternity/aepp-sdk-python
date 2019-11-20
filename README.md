@@ -3,7 +3,7 @@
 [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
 [![Build Status](https://ci.aepps.com/buildStatus/icon?job=aepp-sdk-python/develop)](https://ci.aepps.com/job/aepp-sdk-python/job/develop/)
 [![PyPI version](https://badge.fury.io/py/aepp-sdk.svg)](https://badge.fury.io/py/aepp-sdk)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/aeternity/aepp-sdk-python.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/aeternity/aepp-sdk-python/context:python)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/aeternity/aepp-sdk-python.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/aeternity/aepp-sdk-python/context:python)[![Documentation Status](https://readthedocs.org/projects/aepp-sdk-python/badge/?version=latest)](https://aepp-sdk-python.readthedocs.io/en/latest/?badge=latest)
 
 ## Introduction 
 

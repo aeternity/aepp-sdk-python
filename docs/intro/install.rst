@@ -37,7 +37,7 @@ To install or upgrade run the command
 
 ::
 
-  pip install --update aepp-sdk
+  pip install -U aepp-sdk
 
 
 Verifying
