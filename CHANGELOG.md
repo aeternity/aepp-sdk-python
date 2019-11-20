@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [6.1.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/6.1.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/6.0.1...6.1.0)) - 2019-11-20
+
+### Features
+- feat(contracts): contract interactions using ACI (#263) ([767204e](https://github.com/aeternity/aepp-sdk-python/commit/767204ee590716e797dde5ee102387624e3aa10e)).
+- feat(contracts): add contracts dry run support (#284) ([f0f1397](https://github.com/aeternity/aepp-sdk-python/commit/f0f1397ecdb7727b405bc4c2d4b5d649774a2a18)).
+- feat(contracts): transform sophia datatypes to python datatypes (#294) ([e3bd00e](https://github.com/aeternity/aepp-sdk-python/commit/e3bd00e12627e2135d9b51ce0d010e00efd8287b)).
+- feat(docs): read-the-docs (#300) ([bf931c2](https://github.com/aeternity/aepp-sdk-python/commit/bf931c2572a72d75a4db3ac5e3b5f8f0b07025ba)).
+- feat: set the default name ttl to 50000 (#288) ([ef57a7a](https://github.com/aeternity/aepp-sdk-python/commit/ef57a7ae7fd9679f40ae9a7746f5c93f38146da3)). Related issues/PRs: #287
+- feat: support human readable value in ae (#273) ([8a8c0ef](https://github.com/aeternity/aepp-sdk-python/commit/8a8c0ef884eea36ae71da643f4753354cc55dc0c)). Related issues/PRs: #269
+
+### Misc
+- add transfer_by_name, and add spend and transfer by name to cli (#285) ([7a228b0](https://github.com/aeternity/aepp-sdk-python/commit/7a228b0dfcb8fc0b9d348be137bf9f256906a783)).
+- docs: add documentation using sphinx  (#298) ([05b0f17](https://github.com/aeternity/aepp-sdk-python/commit/05b0f17b2a3301922fbc8299ac6e3e95eb949990)). Related issues/PRs: #170
+- docs: add LGTM badge (#297) ([325fa53](https://github.com/aeternity/aepp-sdk-python/commit/325fa53f8604dca3180785bf97c46553f676bd17)).
+
+
 ## [6.0.1](https://github.com/aeternity/aepp-sdk-python/releases/tag/6.0.1) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/6.0.0...6.0.1)) - 2019-10-30
 
 ### Bug Fixes
