@@ -6,8 +6,6 @@
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/aeternity/aepp-sdk-python.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/aeternity/aepp-sdk-python/context:python)
 [![Documentation Status](https://readthedocs.org/projects/aepp-sdk-python/badge/?version=latest)](https://aepp-sdk-python.readthedocs.io/en/latest/?badge=latest)
 
-
-
 Welcome to the [Aeternity](https://aeternity.com) SDK for Python
 
 For support visit the [forum](https://forum.aeternity.com), for bug reports or feature requests visit open an [issue](https://github.com/aeternity/aepp-sdk-python/issues).
