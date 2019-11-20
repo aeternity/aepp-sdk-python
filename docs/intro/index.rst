@@ -1,6 +1,3 @@
-Tutorials
-====================================
-
 ===============
 Getting started
 ===============
@@ -14,10 +11,7 @@ place: read this material to quickly get up and running.
    install
    tutorial01-spend
    tutorial04-ga
-<<<<<<< HEAD
-=======
    tutorial05-contracts
->>>>>>> af00916fd94545935183c245eb95b14bec296fc4
    contributing
 
 .. seealso::
