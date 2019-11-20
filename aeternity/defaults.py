@@ -42,12 +42,9 @@ GA_MAX_AUTH_FUN_GAS = 50000
 GA_ACCOUNTS_NONCE = 0  # for tx in ga transactions the nonce must be 0
 # Aens
 # max number of block into the future that the name is going to be available
-# https://github.com/aeternity/protocol/blob/epoch-v0.22.0/AENS.md#update
-# https://github.com/aeternity/protocol/blob/44a93d3aab957ca820183c3520b9daf6b0fedff4/AENS.md#aens-entry
-NAME_MAX_TTL = 36000
-NAME_MAX_CLIENT_TTL = 84600
-NAME_CLIENT_TTL = NAME_MAX_CLIENT_TTL
-NAME_TTL = 500
+# https://github.com/aeternity/protocol/blob/master/AENS.md#aens-entry
+NAME_MAX_TTL = 50000  # in blocks
+NAME_MAX_CLIENT_TTL = 84600  # in seconds
 NAME_FEE = 0
 # see https://github.com/aeternity/aeternity/blob/72e440b8731422e335f879a31ecbbee7ac23a1cf/apps/aecore/src/aec_governance.erl#L67
 NAME_FEE_MULTIPLIER = 100000000000000
@@ -99,3 +96,7 @@ NAME_BID_TIMEOUTS = {
     4: 31 * NAME_BID_TIMEOUT_BLOCKS,  # 14880 blocks
     1: 62 * NAME_BID_TIMEOUT_BLOCKS,  # 29760 blocks
 }
+
+# dry run
+DRY_RUN_ADDRESS = "ak_11111111111111111111111111111111273Yts"
+DRY_RUN_AMOUNT = 100000000000000000000000000000000000

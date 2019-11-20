@@ -6,7 +6,7 @@ import namedtupled
 
 from aeternity.signing import Account
 from aeternity.openapi import OpenAPIClientException
-from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers, exceptions, utils, hashing
+from aeternity import aens, openapi, transactions, contract, oracles, defaults, identifiers, exceptions, utils, hashing, compiler
 from aeternity.exceptions import TransactionWaitTimeoutExpired, TransactionHashMismatch
 from aeternity import __node_compatibility__
 
@@ -22,15 +22,34 @@ class Config:
                  force_compatibility=False,
                  **kwargs):
         """
+        Initialize a configuration object to be used with the NodeClient
+
         :param external_url: the node external url
         :param internal_url: the node internal url
         :param websocket_url: the node websocket url
-        :param blocking_mode: block the client waiting for transactions (default False)
-        :param native: build transaction natively (do not use the node internal endpoints) (default True)
         :param force_compatibility: ignore node version compatibility check (default False)
-        :param debug: enable debug logging (default False)
+        :param `**kwargs`: see below
+
+        Kwargs:
+            :blocking_mode (bool): whenever to block the execution when broadcasting a transaction until the transaction is mined in the chain, default: False
+            :tx_gas_per_byte (int): the amount of gas per byte used to calculate the transaction fees, [optional, default: defaults.GAS_PER_BYTE]
+            :tx_base_gas (int): the amount of gas per byte used to calculate the transaction fees, [optional, default: defaults.BASE_GAS]
+            :tx_gas_price (int): the gas price used to calculate the transaction fees,
+                it is set by consensus but can be increased by miners [optional, default: defaults.GAS_PRICE]
+            :network_id (str): the id of the network that is the target for the transactions, if not provided it will be automatically selected by the client
+            :contract_gas (int): default gas limit to be used for contract calls, [optional, default: defaults.CONTRACT_GAS]
+            :contract_gas_price (int): default gas price used for contract calls, [optional, default: defaults.CONTRACT_GAS_PRICE]
+            :oracle_ttl_type (int): default oracle ttl type
+            :key_block_interval (int): the key block interval in minutes
+            :key_block_confirmation_num (int): the number of key blocks to consider a transaction confirmed
+            :poll_tx_max_retries (int): max poll retries when checking if a transaction has been included
+            :poll_tx_retries_interval (int): the interval in seconds between retries
+            :poll_block_max_retries (int): TODO
+            :poll_block_retries_interval (int): TODO
+            :debug (bool): TODO
+
         """
-        # endpoint urls
+        # endpoint URLs
         self.api_url = external_url
         self.api_url_internal = internal_url
         self.websocket_url = websocket_url
@@ -67,6 +86,7 @@ class NodeClient:
     def __init__(self, config=Config()):
         """
         Initialize a new EpochClient
+
         :param config: the configuration to use or empty for default (default None)
         """
         self.config = config
@@ -97,6 +117,7 @@ class NodeClient:
     def compute_absolute_ttl(self, relative_ttl):
         """
         Compute the absolute ttl by adding the ttl to the current height of the chain
+
         :param relative_ttl: the relative ttl, if 0 will set the ttl to 0
         """
         ttl = dict(
@@ -112,8 +133,10 @@ class NodeClient:
     def get_next_nonce(self, account_address):
         """
         Get the next nonce to be used for a transaction for an account
+
         :param node: the node client
         :return: the next nonce for an account
+
         """
         try:
             account = self.api.get_account_by_pubkey(pubkey=account_address)
@@ -124,6 +147,7 @@ class NodeClient:
     def _get_nonce_ttl(self, account_address: str, relative_ttl: int):
         """
         Helper method to compute both absolute ttl and  nonce for an account
+
         :return: (nonce, ttl)
         """
         ttl = self.compute_absolute_ttl(relative_ttl).absolute_ttl if relative_ttl > 0 else 0
@@ -134,6 +158,8 @@ class NodeClient:
         """
         Override the native method to transform the get top block response object
         to a Block
+
+        :return: a block (either key block or micro block)
         """
         b = self.api.get_top_block()
         return b.key_block if hasattr(b, 'key_block') else b.micro_block
@@ -142,8 +168,10 @@ class NodeClient:
         """
         Retrieve a key block or a micro block header
         based on the block hash_prefix
+
         :param block_hash: either a key block or micro block hash
         :return: the block matching the hash
+
         """
         block = None
         if hash is None:
@@ -160,6 +188,11 @@ class NodeClient:
         """
         Post a transaction to the chain and verify that the hash match the local calculated hash
         It blocks for a period of time to wait for the transaction to be included if in blocking_mode
+
+        :param tx: the transaction to broadcast
+        :return: the transaction hash of the transaction
+
+        :raises TransactionHashMismatch: if the transaction hash returned by the node is different from the one calculated
         """
         reply = self.post_transaction(body={"tx": tx.tx})
         if reply.tx_hash != tx.hash:
@@ -169,10 +202,29 @@ class NodeClient:
             self.wait_for_transaction(reply.tx_hash)
         return reply.tx_hash
 
-    def sign_transaction(self, account: Account, tx: transactions.TxObject, metadata: dict = {}, **kwargs) -> tuple:
+    def sign_transaction(self, account: Account, tx: transactions.TxObject, metadata: dict = {}, **kwargs) -> transactions.TxObject:
         """
-        Sign a transaction
-        :return: the transaction for the transaction
+        The function sign a transaction to be broadcast to the chain.
+        It automatically detect if the account is Basic or GA and return
+        the correct transaction to be broadcast.
+
+        :param account: the account signing the transaction
+        :param tx: the transaction to be signed
+        :param metadata: additional metadata to maintain in the TxObject
+        :param `**kwargs`:  for GA accounts, see below
+
+        Kwargs:
+            :auth_data (str): the encoded calldata for the GA auth function
+            :gas (int): the gas limit for the GA auth function [optional]
+            :gas_price (int): the gas price for the GA auth function [optional]
+            :fee (int): the fee for the GA transaction [optional, automatically calculated]
+            :abi_version (int): the abi_version to select FATE or AEVM [optional, default 3/FATE]
+            :ttl (str): the transaction ttl expressed in relative number of blocks [optional, default 0/max_ttl]:
+
+        :return: a TxObject of the signed transaction or metat transaction for GA
+        :raises TypeError: if the auth_data is missing and the account is GA
+        :raises TypeError: if the gas for auth_func is gt defaults.GA_MAX_AUTH_FUN_GAS
+
         """
         # first retrieve the account from the node
         # so we can check if it is generalized or not
@@ -224,6 +276,19 @@ class NodeClient:
         remote_account = self.get_account_by_pubkey(pubkey=address)
         return Account.from_node_api(remote_account)
 
+    def get_balance(self, account) -> int:
+        """
+        Retrieve the balance of an account, return 0 if the account has not balance
+
+        :param account: either an account address or a signing.Account object
+        :return: the account balance or 0 if the account is not known to the network
+        """
+        address = account.get_address() if isinstance(account, Account) else account
+        try:
+            return self.get_account(address).balance
+        except Exception:
+            return 0
+
     def get_transaction(self, transaction_hash):  # TODO: continue
         if not utils.is_valid_hash(transaction_hash, identifiers.TRANSACTION_HASH):
             raise TypeError(f"Input {transaction_hash} is not a valid aeternity address")
@@ -232,13 +297,33 @@ class NodeClient:
 
     def spend(self, account: Account,
               recipient_id: str,
-              amount: int,
+              amount,
               payload: str = "",
               fee: int = defaults.FEE,
-              tx_ttl: int = defaults.TX_TTL):
+              tx_ttl: int = defaults.TX_TTL) -> transactions.TxObject:
         """
-        Create and execute a spend transaction
+        Create and execute a spend transaction,
+        automatically retrieve the nonce for the siging account
+        and calculate the absolut ttl.
+
+        :param account: the account signing the spend transaction (sender)
+        :param recipient_id: the recipient address or name_id
+        :param amount: the amount to spend
+        :param payload: the payload for the transaction
+        :param fee: the fee for the transaction (automatically calculated if not provided)
+        :param tx_ttl: the transaction ttl expressed in relative number of blocks
+
+        :return: the TxObject of the transaction
+
+        :raises TypeError:  if the recipient_id is not a valid name_id or address
+
         """
+        if utils.is_valid_aens_name(recipient_id):
+            recipient_id = hashing.name_id(recipient_id)
+        elif not utils.is_valid_hash(recipient_id, prefix="ak"):
+            raise TypeError("Invalid recipient_id. Please provide a valid AENS name or account pub_key.")
+        # parse amount and fee
+        amount, fee = utils._amounts_to_aettos(amount, fee)
         # retrieve the nonce
         account.nonce = self.get_next_nonce(account.get_address()) if account.nonce == 0 else account.nonce + 1
         # retrieve ttl
@@ -250,20 +335,6 @@ class NodeClient:
         # post the signed transaction transaction
         self.broadcast_transaction(tx)
         return tx
-
-    def spend_by_name(self, account: Account,
-                      recipient_name: str,
-                      amount: int,
-                      payload: str = "",
-                      fee: int = defaults.FEE,
-                      tx_ttl: int = defaults.TX_TTL):
-        """
-        Create and execute a spend to name_id transaction
-        """
-        if utils.is_valid_aens_name(recipient_name):
-            name_id = hashing.name_id(recipient_name)
-            return self.spend(account, name_id, amount, payload, fee, tx_ttl)
-        raise TypeError("Invalid AENS name. Please provide a valid AENS name.")
 
     def wait_for_transaction(self, tx_hash, max_retries=None, polling_interval=None):
         """
@@ -279,7 +350,7 @@ class NodeClient:
         :param polling_interval: the interval between transaction polls
         :return: the block height of the transaction if it has been found
 
-        Raises TransactionWaitTimeoutExpired if the transaction hasn't been found
+        :raises TransactionWaitTimeoutExpired: if the transaction hasn't been found
         """
 
         retries = max_retries if max_retries is not None else self.config.poll_tx_max_retries
@@ -290,7 +361,7 @@ class NodeClient:
         # start polling
         n = 1
         total_sleep = 0
-        tx_height = -1
+        # tx_height = -1
         while True:
             # query the transaction
             try:
@@ -362,8 +433,15 @@ class NodeClient:
         """
         Create and execute a spend transaction
         """
+        if utils.is_valid_aens_name(recipient_id):
+            recipient_id = hashing.name_id(recipient_id)
+        elif not utils.is_valid_hash(recipient_id, prefix="ak"):
+            raise TypeError("Invalid recipient_id. Please provide a valid AENS name or account pub_key.")
         if percentage < 0 or percentage > 1:
             raise ValueError(f"Percentage should be a number between 0 and 1, got {percentage}")
+        # parse amounts
+        fee = utils.amount_to_aettos(fee)
+        # retrieve the balance
         account_on_chain = self.get_account_by_pubkey(pubkey=account.get_address())
         request_transfer_amount = int(account_on_chain.balance * percentage)
         # retrieve the nonce
@@ -421,22 +499,35 @@ class NodeClient:
 
     def account_basic_to_ga(self, account: Account, ga_contract: str, calldata: str,
                             auth_fun: str = defaults.GA_AUTH_FUNCTION,
-                            fee: int = defaults.FEE,
+                            fee=defaults.FEE,
                             tx_ttl: int = defaults.TX_TTL,
                             gas: int = defaults.CONTRACT_GAS,
-                            gas_price: int = defaults.CONTRACT_GAS_PRICE):
+                            gas_price=defaults.CONTRACT_GAS_PRICE) -> transactions.TxObject:
         """
-        Transform a POA (Plain Old Account) to a GA (Generalized Account)
+        Transform a Basic to a GA (Generalized Account)
+
         :param account: the account to transform
-        :param contract: the compiled contract associated to the GA
+        :param ga_contract: the compiled contract associated to the GA
+        :param calldata: the calldata for the authentication function
         :param auth_fun: the name of the contract function to use for authorization (default: authorize)
+        :param gas: the gas limit for the authorization function execution
+        :param gas_price: the gas price for the contract execution
+        :param fee: TODO
+        :param ttl: TODO
+
+        :return: the TxObject of the transaction
+
+        :raises TypeError: if the auth_fun is missing
+        :raises TypeError: if the auth_fun is no found in the contract
         """
         # check the auth_fun name
         if auth_fun is None or len(auth_fun) == 0:
             raise TypeError("The parameter auth_fun is required")
+        # parse amounts
+        fee, gas_price = utils._amounts_to_aettos(fee, gas_price)
         # decode the contract and search for the authorization function
         auth_fun_hash = None
-        contract_data = contract.CompilerClient.decode_bytecode(ga_contract)
+        contract_data = compiler.CompilerClient.decode_bytecode(ga_contract)
         if len(contract_data.type_info) == 0:
             # TODO: we assume is a FATE env, but is a bit weak
             auth_fun_hash = hashing.hash(auth_fun.encode('utf-8'))
@@ -484,5 +575,5 @@ class NodeClient:
         return oracles.OracleQuery(self, oracle_id, id=query_id)
 
     # support contract
-    def Contract(self):
-        return contract.Contract(client=self)
+    def Contract(self, **kwargs):
+        return contract.Contract(client=self, **kwargs)

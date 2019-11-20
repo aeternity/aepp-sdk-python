@@ -21,9 +21,10 @@ class OpenAPIArgsException(Exception):
 class OpenAPIClientException(Exception):
     """Raised when there is an error executing requests"""
 
-    def __init__(self, message, code=500):
+    def __init__(self, message, code=500, data={}):
         self.message = message
         self.code = code
+        self.data = data
 
 
 class OpenAPIException(Exception):
@@ -37,8 +38,6 @@ class OpenAPICli(object):
     """
     Generates a OpenAPI client
     """
-    # skip tags
-    skip_tags = set(["obsolete"])
     # openapi versions
     open_api_versions = ["2.0"]
     # type mapping
@@ -51,6 +50,7 @@ class OpenAPICli(object):
     def __init__(self, url, url_internal=None, debug=False, compatibility_version_range=(None, None), force_compatibility=False):
         try:
             self.url, self.url_internal = url, url_internal
+            self.skip_tags = set(["obsolete"])
             # load the openapi json file from the node
             api_reply = requests.get(f"{url}/api")
             self.api_def = api_reply.json()
@@ -93,6 +93,8 @@ class OpenAPICli(object):
         # prepare the baseurl
         base_path = self.api_def.get('basePath', '').rstrip('/')
         self.base_url = f"{url}{base_path}"
+        self.base_url_internal = f"{url_internal}{base_path}"
+        logging.debug(f"Internal URL {url_internal}, {type(url_internal)}, {(url_internal is None)}, {self.base_url_internal}")
         if url_internal is None:
             # do not build internal endpoints
             self.skip_tags.add("internal")
@@ -220,7 +222,7 @@ class OpenAPICli(object):
                 jr = http_reply.json()
                 return namedtupled.map(jr, _nt_name=api_response.schema)
             # error
-            raise OpenAPIClientException(f"Error: {api_response.desc}", code=http_reply.status_code)
+            raise OpenAPIClientException(f"{api_response.desc}", code=http_reply.status_code, data=http_reply.json())
         # register the method
         api_method.__name__ = api.name
         api_method.__doc__ = api.doc

@@ -1,6 +1,6 @@
 from aeternity.exceptions import NameNotAvailable, MissingPreclaim, NameUpdateError, NameTooEarlyClaim, NameCommitmentIdMismatch
 from aeternity.openapi import OpenAPIClientException
-from aeternity import defaults, identifiers, hashing, utils
+from aeternity import defaults, identifiers, hashing, utils, transactions
 
 import math
 
@@ -105,18 +105,18 @@ class AEName:
             elif utils.is_valid_hash(t, prefix=identifiers.CONTRACT_ID):
                 pointers.append({'id': t, 'key': 'contract_pubkey'})
             else:
-                raise TypeError(f"invalid aens update pointer tartget {t}")
+                raise TypeError(f"invalid aens update pointer target {t}")
         return pointers
 
     def update_status(self):
         try:
-            # use the openapi client inside the node client
+            # use the Openapi client inside the node client
             response = self.client.get_name_entry_by_name(name=self.domain)
             self.status = NameStatus.CLAIMED
             self.name_ttl = response.ttl
             self.pointers = response.pointers
         except OpenAPIClientException as e:
-            # e.g. if the status is already PRECLAIMED or CLAIMED, don't reset
+            # e.g. if the status is already PRE-CLAIMED or CLAIMED, don't reset
             # it to AVAILABLE.
             self.name_ttl = 0
             self.pointers = None
@@ -134,20 +134,20 @@ class AEName:
         return self.status == NameStatus.CLAIMED
 
     def full_claim_blocking(self, account, *targets,
-                            name_ttl=defaults.NAME_TTL,
-                            client_ttl=defaults.NAME_CLIENT_TTL,
+                            name_ttl=defaults.NAME_MAX_TTL,
+                            client_ttl=defaults.NAME_MAX_CLIENT_TTL,
                             tx_ttl=defaults.TX_TTL):
         """
         Execute a name claim and updates the pointer to it.
 
         It executes:
-        1. preclaim
+        1. pre-claim
         2. claim
         3. pointers update
 
         :param account: the account registering the name
         :param targets: the  name pointer targets to associate to the name
-        :param preclaim_fee: the fee for the preclaiming operation
+        :param pre-claim_fee: the fee for the pre-claiming operation
         :param claim_fee: the fee for the claiming operation
         :param update_fee: the fee for the update operation
         :param tx_ttl: the ttl for the transaction
@@ -160,7 +160,7 @@ class AEName:
         if not self.is_available():
             raise NameNotAvailable(self.domain)
         hashes = {}
-        # run preclaim
+        # run pre-claim
         tx = self.preclaim(account)
         hashes['preclaim_tx'] = tx
         # wait for the block confirmation
@@ -177,11 +177,20 @@ class AEName:
         self.client.config.blocking_mode = blocking_orig
         return hashes
 
-    def preclaim(self, account, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
+    def preclaim(self, account, fee=defaults.FEE, tx_ttl=defaults.TX_TTL) -> transactions.TxObject:
         """
-        Execute a name preclaim
+        Execute a name pre-claim transaction
+
+        :param account: the account performing the pre-claim
+        :param fee: the fee for the transaction, [optional, calculated automatically]
+        :param tx_ttl: relative number of blocks for the validity of the transaction
+
+        :return: the TxObject of the pre-claim transaction including the parameters to
+          calculate the commitment_id in the meta-data
         """
-        # check which block we used to create the preclaim
+        # parse the fee
+        fee = utils.amount_to_aettos(fee)
+        # check which block we used to create the pre-claim
         self.preclaimed_block_height = self.client.get_current_key_block_height()
         # calculate the commitment id
         commitment_id, self.preclaim_salt = hashing.commitment_id(self.domain)
@@ -200,14 +209,37 @@ class AEName:
         self.preclaim_tx_hash = tx_signed.hash
         return tx_signed
 
-    def claim(self, preclaim_tx_hash, account, name_salt, name_fee=defaults.NAME_FEE, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
+    def claim(self, preclaim_tx_hash, account, name_salt,
+              name_fee=defaults.NAME_FEE,
+              fee=defaults.FEE,
+              tx_ttl=defaults.TX_TTL) -> transactions.TxObject:
+        """
+        Create and executes a claim transaction; performs a preliminary check
+        to verify that the pre-claim exists and it has been confirmed
+
+        :param preclaim_tx_hash: the transaction hash of the pre-claim transaction
+        :param account: the account performing the transaction
+        :param name_salt: the salt used to calculated the commitment_id in the pre-claim phase
+        :param name_fee: the initial fee for the claim [optional, automatically calculated]
+        :param fee: the fee for the transaction, [optional, calculated automatically]
+        :param tx_ttl: relative number of blocks for the validity of the transaction
+
+        :return: the TxObject of the claim
+
+        :raises MissingPreclaim: if the pre-claim transaction cannot be found
+        :raises NameCommitmentIdMismatch: if the commitment_id does not match the one from the pre-claim transaction
+        :raises NameTooEarlyClaim: if the pre-claim transaction has not been confirmed yet
+        :raises TypeError: if the value of the name_fee is not sufficient to successfully execute the claim
+        """
         self.preclaim_salt = name_salt
-        # get the preclaim height
+        # parse the amounts
+        name_fee, fee = utils._amounts_to_aettos(name_fee, fee)
+        # get the pre-claim height
         try:
             pre_claim_tx = self.client.get_transaction_by_hash(hash=preclaim_tx_hash)
             self.preclaimed_block_height = pre_claim_tx.block_height
         except OpenAPIClientException:
-            raise MissingPreclaim(f"Preclaim transaction {preclaim_tx_hash} not found")
+            raise MissingPreclaim(f"Pre-claim transaction {preclaim_tx_hash} not found")
         # first get the protocol version
         protocol = self.client.get_consensus_protocol_version()
         # if the commitment_id mismatch
@@ -245,7 +277,7 @@ class AEName:
         self.status = AEName.Status.CLAIMED
         return tx_signed
 
-    def bid(self, account, bid_fee, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
+    def bid(self, account, bid_fee, fee=defaults.FEE, tx_ttl=defaults.TX_TTL) -> transactions.TxObject:
         """
         Implements bidding for a name, the precondition are:
         the name has been claimed and bidding is allowed, meaning that
@@ -255,14 +287,17 @@ class AEName:
         the actual bid value will be selected by max(current_name_fee*fee_multiplier, bid_fee).
 
         If no parameter is set the bidding strategy is to bid the minimum required by protocol
-        :param preclaim_tx_hash: the hash of the preclaim transaction
 
-        :param account: the account making the bidding
-        :param bid_fee: the  absolute value of the bidding fee
-        :fee: the transaction fee
-        :tx_ttl: the transaction ttl
+        :param account: the account performing the transaction
+        :param bid_fee: the amount for the bid
+        :param fee: the fee for the transaction, [optional, calculated automatically]
+        :param tx_ttl: relative number of blocks for the validity of the transaction
+
+        :return: the TxObject of the bid (same of claim)
         """
         txb = self.client.tx_builder
+        # parse amounts
+        bid_fee, fee = utils._amounts_to_aettos(bid_fee, fee)
         # get the account nonce and ttl
         nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
         # check the protocol version
@@ -276,24 +311,30 @@ class AEName:
         return tx_signed
 
     def update(self, account, *targets,
-               name_ttl=defaults.NAME_TTL,
-               client_ttl=defaults.NAME_CLIENT_TTL,
+               name_ttl=defaults.NAME_MAX_TTL,
+               client_ttl=defaults.NAME_MAX_CLIENT_TTL,
                fee=defaults.FEE,
                tx_ttl=defaults.TX_TTL):
         """
         Update a claimed name, an update may update the name_ttl and/or set name pointers for it.
-        A name pointer can be specified as an address for accounts, oracle or contract or using a custom
-        tuple  containing the (key, value) for the pointer
+        A name pointer can be specified as an address for accounts, oracles or contracts or using a custom
+        tuple  containing the (key, value) for the pointer.
 
         :param account: the account singing the update transaction
         :param targets: the list of pointers targets
-        :param name_ttl: the name ttl for the name
-        :param client_ttl: the ttl for client to cache the name
-        :fee: the fee for the transaction
-        :tx_ttl: the transaction  ttl
+        :param name_ttl: the number of blocks before the name enters in the revoked state
+        :param client_ttl: the ttl for client to cache the name in seconds
+        :param fee: the fee for the transaction, [optional, calculated automatically]
+        :param tx_ttl: relative number of blocks for the validity of the transaction
+
+        :return: the TxObject of the update transaction
+
+        :raises NameUpdateError: if the name is not claimed
         """
         if not self.check_claimed():
             raise NameUpdateError(f"the name {self.domain} must be claimed for an update transaction to be successful")
+        # parse amounts
+        fee = utils.amount_to_aettos(fee)
         # check that there are at least one target
         pointers = self._get_pointers(targets)
         # get the transaction builder
@@ -308,17 +349,29 @@ class AEName:
         self.client.broadcast_transaction(tx_signed)
         return tx_signed
 
-    def transfer_ownership(self, account, recipient_pubkey, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
+    def transfer_ownership(self, account, recipient_id, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
         """
-        transfer ownership of a name
-        :return: the transaction
+        Transfer ownership of a name to another account
+
+        :param account: the account singing the transfer transaction and owner of the name
+        :param recipient_id: the recipient of the name transfer that will become the new owner
+        :param fee: the fee for the transaction, [optional, calculated automatically]
+        :param tx_ttl: relative number of blocks for the validity of the transaction
+
+        :return: the TxObject of the transfer transaction
+
+        :raises NameUpdateError: if the name is not claimed
         """
+        if not self.check_claimed():
+            raise NameUpdateError(f"the name {self.domain} must be claimed for an update transaction to be successful")
         # get the transaction builder
         txb = self.client.tx_builder
+        # parse amounts
+        fee = utils.amount_to_aettos(fee)
         # get the account nonce and ttl
         nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
         # create transaction
-        tx = txb.tx_name_transfer(account.get_address(), self.name_id, recipient_pubkey, fee, ttl, nonce)
+        tx = txb.tx_name_transfer(account.get_address(), self.name_id, recipient_id, fee, ttl, nonce)
         # sign the transaction
         tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain
@@ -329,9 +382,18 @@ class AEName:
 
     def revoke(self, account, fee=defaults.FEE, tx_ttl=defaults.TX_TTL):
         """
-        revoke a name
-        :return: the transaction
+        Revoke a registered name
+
+        :param account: the account singing the revoke transaction and owner of the name
+        :param fee: the fee for the transaction, [optional, calculated automatically]
+        :param tx_ttl: relative number of blocks for the validity of the transaction
+
+        :return: the TxObject of the revoke transaction
+
+        :raises NameUpdateError: if the name is not claimed
         """
+        if not self.check_claimed():
+            raise NameUpdateError(f"the name {self.domain} must be claimed for an update transaction to be successful")
         # get the transaction builder
         txb = self.client.tx_builder
         # get the account nonce and ttl

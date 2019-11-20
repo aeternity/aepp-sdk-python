@@ -57,6 +57,7 @@ class TransactionWaitTimeoutExpired(AException):
     """Raised when a transaction hasn't been found after waiting for an amount of time"""
 
     def __init__(self, tx_hash, reason):
+        AENSException.__init__(self)
         self.tx_hash = tx_hash
         self.reason = reason
 

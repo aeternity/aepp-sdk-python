@@ -73,6 +73,30 @@ def _sophia_contract_tx_call_online(node_cli, account):
         assert call.return_value == t.get("return.value")
         assert call.return_type == "ok"
 
+def _sophia_contract_tx_call_static(node_cli, account):
+    tests = [
+        {
+            "name": "identity.aes",
+            "sourcecode": "contract Identity =\n  entrypoint main(x : int) = x",
+            "bytecode": "cb_+GpGA6Abk28ISckRxfWDHCo6FYfNzlAYCRW6TBDvQZ2BYQUmH8C4OZ7+RNZEHwA3ADcAGg6CPwEDP/64F37sADcBBwcBAQCWLwIRRNZEHxFpbml0EbgXfuwRbWFpboIvAIk0LjAuMC1yYzUAfpEWYw==",
+            "init.calldata": "cb_KxFE1kQfP4oEp9E=",
+            "call.function": "main",
+            "call.arguments": [42],
+            "call.calldata": "cb_KxG4F37sG1Q/+F7e",
+            "return.value": "cb_VNLOFXc="  # 42
+
+        }
+
+    ]
+    for t in tests:
+        contract = node_cli.Contract()
+        tx = contract.create(account, t.get("bytecode"), calldata=t.get("init.calldata"))
+        c_id = tx.metadata.contract_id
+        deployed = node_cli.get_contract(pubkey=c_id)
+        assert deployed.active is True
+        assert deployed.owner_id == account.get_address()
+        tx = contract.call_static(c_id, t.get("call.function"), t.get("call.calldata"), address=account.get_address())
+        assert tx.result == "ok"
 
 def test_sophia_contract_tx_create_native_lima(chain_fixture):
     # save settings and go online
@@ -88,6 +112,14 @@ def test_sophia_contract_tx_call_native_lima(chain_fixture):
         skip("this is the new contract interaction, not applicable before Lima HF")
         return
     _sophia_contract_tx_call_online(chain_fixture.NODE_CLI, chain_fixture.ALICE)
+    # restore settings
+
+def test_sophia_contract_tx_call_static_native_lima(chain_fixture):
+    # save settings and go online
+    if chain_fixture.NODE_CLI.get_consensus_protocol_version() < PROTOCOL_LIMA:
+        skip("this is the new contract interaction, not applicable before Lima HF")
+        return
+    _sophia_contract_tx_call_static(chain_fixture.NODE_CLI, chain_fixture.BOB)
     # restore settings
 
 

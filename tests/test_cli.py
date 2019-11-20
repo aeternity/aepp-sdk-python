@@ -92,7 +92,35 @@ def test_cli_spend(chain_fixture, tempdir):
     recipient_account = chain_fixture.NODE_CLI.get_account_by_pubkey(pubkey=recipient_address)
     print(f"recipient address {recipient_address}, balance {recipient_account.balance}")
     assert recipient_account.balance == 90
+    # call the cli
+    call_aecli('account', 'spend', account_path, recipient_address, "1ae", '--password', 'aeternity_bc', '--wait')
+    recipient_account = chain_fixture.NODE_CLI.get_account_by_pubkey(pubkey=recipient_address)
+    assert recipient_account.balance == 1000000000000000090
 
+
+def test_cli_spend_by_name(chain_fixture, tempdir):
+    account_alice_path = _account_path(tempdir, chain_fixture.ALICE)
+    # generate a new address
+    recipient_address = Account.generate().get_address()
+    domain = __fullclaim_domain(chain_fixture, tempdir, recipient_address)
+    call_aecli('account', 'spend', account_alice_path, domain, "90", '--password', 'aeternity_bc', '--wait')
+    # test that the recipient account has the requested amount
+    print(f"recipient domain is {domain}")
+    recipient_account = chain_fixture.NODE_CLI.get_account_by_pubkey(pubkey=recipient_address)
+    print(f"recipient address {recipient_address}, balance {recipient_account.balance}")
+    assert recipient_account.balance == 90
+
+def test_cli_transfer_by_name(chain_fixture, tempdir):
+    account_alice_path = _account_path(tempdir, chain_fixture.ALICE)
+    # generate a new address
+    recipient_address = Account.generate().get_address()
+    domain = __fullclaim_domain(chain_fixture, tempdir, recipient_address)
+    val = call_aecli('account', 'transfer', account_alice_path, domain, "0.01", '--password', 'aeternity_bc', '--wait')
+    # test that the recipient account has the requested amount
+    print(f"recipient domain is {domain}")
+    recipient_account = chain_fixture.NODE_CLI.get_account_by_pubkey(pubkey=recipient_address)
+    print(f"recipient address {recipient_address}, balance {recipient_account.balance}")
+    assert recipient_account.balance == val['data']['tx']['data']['amount']
 
 def test_cli_spend_invalid_amount(chain_fixture, tempdir):
     with pytest.raises(subprocess.CalledProcessError):
@@ -265,3 +293,18 @@ def test_cli_contract_deploy_call(chain_fixture, compiler_fixture, tempdir):
     th = j.get("hash")
     assert utils.is_valid_hash(th, prefix=identifiers.TRANSACTION_HASH)
 
+def __fullclaim_domain(chain_fixture, tempdir, recipient_address):
+    account_path = _account_path(tempdir, chain_fixture.ALICE)
+    domain = random_domain(length=13 ,tld='chain' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= identifiers.PROTOCOL_LIMA else 'test')
+    # let alice preclaim a name 
+    j = call_aecli('name', 'pre-claim', '--password', 'aeternity_bc', account_path, domain, '--wait')
+    # retrieve the salt and the transaction hash 
+    salt = j.get("metadata",{}).get("salt")
+    preclaim_hash = j.get("hash")
+    # wait for confirmation
+    chain_fixture.NODE_CLI.wait_for_confirmation(preclaim_hash)
+    # now run the claim
+    j = call_aecli('name', 'claim', account_path, domain, '--password', 'aeternity_bc', '--name-salt', f"{salt}", '--preclaim-tx-hash', preclaim_hash, '--wait')
+    # now run the name update
+    j = call_aecli('name', 'update', '--password', 'aeternity_bc', account_path, domain, recipient_address)
+    return domain
