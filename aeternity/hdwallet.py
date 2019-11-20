@@ -1,7 +1,7 @@
-from mnemonic import Mnemonic
 import hmac
 import hashlib
 from nacl.signing import SigningKey
+from mnemonic import Mnemonic
 from aeternity.signing import Account
 
 HARDENED_OFFSET = 0x800001c9
