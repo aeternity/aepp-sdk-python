@@ -26,12 +26,12 @@ First step will be to generate two new accounts using the command line client:
 
 First import the required libraries 
 
-.. literalinclude:: ../../tests/example_tutorial01-spend.py
+.. literalinclude:: ../../tests/test_tutorial01-spend.py
    :lines: 9-14
 
 Then instantiate the node client and generate 2 accounts
 
-.. literalinclude:: ../../tests/example_tutorial01-spend.py
+.. literalinclude:: ../../tests/test_tutorial01-spend.py
    :lines: 16-39
    :dedent: 4
 
@@ -42,14 +42,14 @@ Now copy the Alice address and paste it into the `Aeternity Faucet`_ to top up t
 .. _Aeternity Faucet: https://testnet.faucet.aepps.com
 
 
-.. literalinclude:: ../../tests/example_tutorial01-spend.py
+.. literalinclude:: ../../tests/test_tutorial01-spend.py
    :lines: 45-51
    :dedent: 4
 
 And finally verify the new balance:
 
-.. literalinclude:: ../../tests/example_tutorial01-spend.py
+.. literalinclude:: ../../tests/test_tutorial01-spend.py
    :lines: 56-63
    :dedent: 4
 
-Thats it! You have successfully executed your transaction in the Aeternity Blochain testnet network. For the mainnet network the procedure is the same except you will have to get some tokens via an exchange or via other means.
+Thats it! You have successfully executed your transaction in the Aeternity Blockchain testnet network. For the mainnet network the procedure is the same except you will have to get some tokens via an exchange or via other means.
