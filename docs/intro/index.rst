@@ -10,12 +10,14 @@ place: read this material to quickly get up and running.
 
    install
    tutorial01-spend
+   tutorial02-contracts
+   tutorial03-aens
    tutorial04-ga
-   tutorial05-contracts
+   tutorial05-cli
    contributing
 
 .. seealso::
-    If you are new to Aeternity blockchain, you may want to start by checking 
+    If you are new to Aeternity blockchain, you may want to start by checking
     the website_ and the forum_.
 
     .. _website: https://aeternity.com

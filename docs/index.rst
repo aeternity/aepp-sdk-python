@@ -51,21 +51,23 @@ First steps
 Are you new to the Aeternity SDK? This is the place to start!
 
 * **From scratch:**
-  
+
   * :doc:`Installation <intro/install>`
 
 * **Tutorial:**
-  
+
   * :doc:`Spend transactions <intro/tutorial01-spend>`
+  * :doc:`Deploy a contract <intro/tutorial02-contracts>`
+  * :doc:`Claiming a name <intro/tutorial03-aens>`
   * :doc:`Using Generalized accounts <intro/tutorial04-ga>`
-..  * :doc:`Claiming a name <intro/tutorial02-claim>`
-  * :doc:`Deploy a contract <intro/tutorial03-contract>`
-  
-  
+  * :doc:`The CLI <intro/tutorial05-cli>`
+
 
 * **How to:**
-  
-  * :doc:`Generate a list of accounts on the fly <howto/accounts>`
+
+  * Coming soon...
+
+..  * :doc:`Generate a list of accounts on the fly <howto/accounts>`
   * :doc:`Use the json output from the CLI with jq <howto/json_jq>`
   * :doc:`Pretty print amounts <howto/amounts>`
 

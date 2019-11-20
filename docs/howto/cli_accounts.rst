@@ -3,10 +3,10 @@ Account management via CLI
 ==========================
 
 The Python SDK comes with a command line client (CLI) that can be used
-among other things to generate, store, inspect and load accounts 
+among other things to generate, store, inspect and load accounts
 
 
-Generate a new account 
+Generate a new account
 ======================
 
 The command to generate a new (non HD) account is:

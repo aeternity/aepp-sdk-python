@@ -14,8 +14,8 @@
 #
 import os
 import sys
+sys.path.append(os.path.join(os.path.dirname(__name__), '..'))
 import aeternity
-sys.path.insert(0, os.path.abspath('../aeternity'))
 
 
 import sphinx_rtd_theme
