@@ -3,6 +3,11 @@ DIST_FOLDER = dist
 BUILD_FOLDER = build
 # extra test options
 TEST_OPTS = ''
+# Documentation
+SPHINXOPTS    =
+SPHINXBUILD   = sphinx-build
+SOURCEDIR     = docs
+BUILDDIR      = docs/_build
 
 .PHONY: list
 list:
@@ -16,6 +21,11 @@ build-dist:
 	@echo build 
 	poetry build
 	@echo done
+
+install: build
+	@echo build and install the SDK
+	python -m pip install dist/$(shell ls -tr dist | grep whl | tail -1)
+	@echo installation completed
 
 test: test-all
 
@@ -55,3 +65,17 @@ changelog:
 	@echo build changelog
 	gitolog -t keepachangelog -s angular . -o CHANGELOG.md 
 	@echo done
+
+docs-html:
+	@echo build html documentation
+	$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@echo done
+
+docs-view: docs-html
+	python -c "import webbrowser; webbrowser.open('docs/_build/html/index.html')"
+
+docs-lint:
+	@echo lint documentation
+	$(SPHINXBUILD) -M linkcheck "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@echo done
+
