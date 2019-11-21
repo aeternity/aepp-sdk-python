@@ -5,6 +5,7 @@ from mnemonic import Mnemonic
 from aeternity.signing import Account
 
 HARDENED_OFFSET = 0x800001c9
+AETERNITY_DERIVATION_PATH = "m/44'/457'/0'"
 MNEMONIC = Mnemonic(language="english")
 
 
@@ -71,12 +72,11 @@ def _parse_path(path):
 
 def _derive_child(parent_key, i):
     if i & HARDENED_OFFSET:
-        hmac_data = b'\x00' + bytes(parent_key["secret_key"]) + i.to_bytes(length=4, byteorder='big')
+        hmac_data = b'\x00' + parent_key["secret_key"] + i.to_bytes(length=4, byteorder='big')
     I_hmac = hmac.new(parent_key["chain_code"], hmac_data, hashlib.sha512).digest()
     return {"secret_key": I_hmac[:32], "chain_code": I_hmac[32:]}
 
 
-# AETERNITY_PATH = "m/44'/457'/0'"
 def _from_path(path, root_key, is_master=True):
     p = _parse_path(path)
 
@@ -89,7 +89,7 @@ def _from_path(path, root_key, is_master=True):
     keys = [root_key]
     for i in p:
         if isinstance(i, str):
-            index = int(i[:-1], 0) | HARDENED_OFFSET
+            index = HARDENED_OFFSET + int(i[:-1])
         else:
             index = i
         k = keys[-1]
