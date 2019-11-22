@@ -35,7 +35,6 @@ We need to import the following classes to use contracts.
 
 .. literalinclude:: ../../tests/test_tutorial05-contracts.py
    :lines: 11-14
-   :dedent: 4
 
 Initializing NodeClient and Compiler
 ====================================
