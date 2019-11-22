@@ -29,6 +29,14 @@ class HDWallet():
         return HDWallet.MNEMONIC.generate()
 
     def derive_child(self, account_index=None, address_index=0):
+        """
+        Derives the account using the master key
+        Args:
+            account_index(int): Account index to use for derivation path (optional)
+            address_index(int): Address index to use for derivation path (default: 0)
+        Returns:
+            derivation path and generated account
+        """
         if account_index is None:
             account_index = self.account_index
             self.account_index += 1
@@ -37,9 +45,15 @@ class HDWallet():
         return derivation_path, self._get_account(derived_keys[-1]["secret_key"])
 
     def get_master_key(self):
+        """
+        Returns the master key
+        """
         return self.master_key
 
     def get_master_account(self):
+        """
+        Returns the account generated using the master_key
+        """
         return self.master_account
 
     def _get_account(self, secret_key):
