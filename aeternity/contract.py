@@ -169,7 +169,6 @@ class Contract:
 
     def is_deployed(self, contract_id: str):
         try:
-            self.client.get_contract(pubkey=contract_id)
+            return self.client.get_contract(pubkey=contract_id).active
         except Exception:
             return False
-        return True
