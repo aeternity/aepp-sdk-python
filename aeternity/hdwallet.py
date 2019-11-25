@@ -115,7 +115,7 @@ class HDWallet():
         keys = [root_key]
         for i in p:
             if isinstance(i, str):
-                index = self.HARDENED_OFFSET + int(i[:-1])
+                index = int(i[:-1]) | self.HARDENED_OFFSET
             else:
                 index = i
             k = keys[-1]
