@@ -263,7 +263,7 @@ class SophiaTransformation:
         if isinstance(arg, str):
             return f'#{arg}'
         elif isinstance(arg, bytes):
-            return f"{arg.hex()}"
+            return f"#{arg.hex()}"
 
     def from_sophia_bytes(self, arg, generic, bindings={}):
         return arg.split('#')[1]
