@@ -147,3 +147,18 @@ def test_contract_native_without_dry_run(compiler_fixture, chain_fixture):
 
     call_info, call_result = contract_native.main(12, use_dry_run=False)
     assert(call_result == 12 and hasattr(call_info, 'tx_hash'))
+
+def test_contract_native_verify_contract_id(compiler_fixture, chain_fixture):
+    identity_contract = "contract Identity =\n  entrypoint main(x : int) = x"
+    compiler = compiler_fixture.COMPILER
+    account = chain_fixture.ALICE
+    contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=identity_contract, compiler=compiler, account=account)
+    contract_native.deploy()
+    contract_native.at(contract_native.address)
+
+    INVALID_ADDRESS = 'ct_M9yohHgcLjhpp1Z8SaA1UTmRMQzR4FWjJHajGga8KBoZTEPwC'
+
+    try:
+      contract_native.at(INVALID_ADDRESS)
+    except Exception as e:
+      assert str(e) == 'Contract not deployed'

@@ -122,6 +122,8 @@ class ContractNative(object):
         """
         if not address or not utils.is_valid_hash(address, prefix=identifiers.CONTRACT_ID):
             raise ValueError(f"Invalid contract address {address}")
+        if not self.contract.is_deployed(address):
+            raise ValueError("Contract not deployed")
         self.address = address
         self.deployed = True
 
@@ -263,7 +265,7 @@ class SophiaTransformation:
         if isinstance(arg, str):
             return f'#{arg}'
         elif isinstance(arg, bytes):
-            return f"{arg.hex()}"
+            return f"#{arg.hex()}"
 
     def from_sophia_bytes(self, arg, generic, bindings={}):
         return arg.split('#')[1]
