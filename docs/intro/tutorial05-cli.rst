@@ -149,6 +149,7 @@ to execute a spend transaction on the testnet_ network
 #. Create another account
 
 ::
+
   $ aecli account create Alice.json
   Enter the account password []:
   <account>
@@ -157,10 +158,10 @@ to execute a spend transaction on the testnet_ network
   </account>
 
 
-
 #. Transfer some tokens to an account to the other
 
 ::
+
   $ aecli account spend Bob.json ak_9j8akv2PE2Mnt5khFeDvS9BGc3TBBrJkfcgaJHgBXcLLagX8M 1AE
   Enter the account password []:
   <spend transaction>
@@ -186,6 +187,7 @@ to execute a spend transaction on the testnet_ network
 #. Verify the balance of the new account
 
 ::
+
   $ aecli inspect ak_9j8akv2PE2Mnt5khFeDvS9BGc3TBBrJkfcgaJHgBXcLLagX8M
   <account>
     Balance ___________________________________________ 1AE
