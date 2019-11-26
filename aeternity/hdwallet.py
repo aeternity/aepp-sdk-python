@@ -7,7 +7,7 @@ from aeternity.signing import Account
 
 class HDWallet():
 
-    HARDENED_OFFSET = 0x80000000  # Correct offset: 0x800001c9
+    HARDENED_OFFSET = 0x80000000
     AETERNITY_DERIVATION_PATH = "m/44'/457'/%d'/0'/%d'"
     MNEMONIC = Mnemonic(language="english")
 
