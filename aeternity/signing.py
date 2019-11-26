@@ -10,6 +10,8 @@ from nacl.pwhash import argon2id
 from nacl import secret, utils as nacl_utils
 from aeternity.identifiers import ACCOUNT_ID, ACCOUNT_API_FORMAT, ACCOUNT_SOFIA_FORMAT, ACCOUNT_RAW_FORMAT
 from aeternity.identifiers import ACCOUNT_KIND_BASIC
+#  from aeternity.identifiers import SECRET_TYPE_BIP39, SECRET_TYPE_SLIP0010, SECRET_TYPE_SLIP0010_LEGACY
+from aeternity.identifiers import SECRET_TYPE_SLIP0010
 from aeternity import hashing, utils
 
 
@@ -181,14 +183,14 @@ class Account:
             with open(path) as fp:
                 j = json.load(fp)
                 raw_private_key = keystore_open(j, password)
-                signing_key = SigningKey(seed=raw_private_key[0:32], encoder=RawEncoder)
+                signing_key, secret_type = SigningKey(seed=raw_private_key[0:32], encoder=RawEncoder)
                 kp = Account(signing_key, signing_key.verify_key)
                 return kp
         except CryptoError as e:
             raise ValueError(e)
 
 
-def keystore_seal(secret_key, password, address, name=""):
+def keystore_seal(secret_key, password, address, name="", secret_type=SECRET_TYPE_SLIP0010):
     """
     Seal a keystore
 
@@ -211,7 +213,7 @@ def keystore_seal(secret_key, password, address, name=""):
     k = {
         "public_key": address,
         "crypto": {
-            "secret_type": "ed25519",
+            "secret_type": secret_key,
             "symmetric_alg": "xsalsa20-poly1305",
             "ciphertext": bytes.hex(ciphertext),
             "cipher_params": {
@@ -247,7 +249,8 @@ def keystore_open(k, password):
     nonce = bytes.fromhex(k.get("crypto", {}).get("cipher_params", {}).get("nonce"))
     encrypted = bytes.fromhex(k.get("crypto", {}).get("ciphertext"))
     private_key = box.decrypt(encrypted, nonce=nonce, encoder=RawEncoder)
-    return private_key
+    secret_type = k.get("crypto", {}).get("secret_type", SECRET_TYPE_SLIP0010)
+    return (private_key, secret_type)
 
 
 def is_signature_valid(account_id, signature, data: bytes) -> bool:
