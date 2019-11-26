@@ -1,4 +1,3 @@
-import logging
 import click
 import os
 import json
@@ -15,9 +14,6 @@ from . import utils, signing, aens, defaults, exceptions
 from aeternity.compiler import CompilerClient
 from aeternity.openapi import OpenAPIClientException
 from datetime import datetime, timezone
-
-
-logging.basicConfig(format='%(message)s', level=logging.INFO)
 
 
 CTX_NODE_URL = 'NODE_URL'
