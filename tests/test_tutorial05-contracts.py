@@ -42,14 +42,26 @@ def test_example_contract_native(chain_fixture):
 
     """
     Initialize the contract instance
-    To disable use of dry-run endpoint use:
-    crypto_hamster = ContractNative(client=node_cli, compiler=compiler, account=alice, source=crypto_hamster_contract, use_dry_run=False)
+    Note: To disable use of dry-run endpoint add the parameter
+    use_dry_run=False
     """
-    crypto_hamster = ContractNative(client=node_cli, compiler=compiler, account=alice, source=crypto_hamster_contract)
+    crypto_hamster = ContractNative(client=node_cli, 
+                                    compiler=compiler, 
+                                    account=alice, 
+                                    source=crypto_hamster_contract)
     
-    # deploy the contract (you can also pass the args if required by the init method of the contract)
+    # deploy the contract 
+    # (also pass the args of thr init function - if any)
     tx = crypto_hamster.deploy()
-    
+    print(f"contract address: {crypto_hamster.address}")
+
+
+    # PART 2 Call the contract
+    CONTRACT_ADDRESS = crypto_hamster.address
+
+    # CONTRACT_ADDRESS is the address of the deployed contract 
+    crypto_hamster.at(CONTRACT_ADDRESS)
+
     # call the contract method (stateful)
     tx_info, tx_result = crypto_hamster.add_test_value(1, 2)
 
