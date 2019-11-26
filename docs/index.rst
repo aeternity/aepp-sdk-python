@@ -57,7 +57,8 @@ Are you new to the Aeternity SDK? This is the place to start!
 * **Tutorial:**
 
   * :doc:`Spend transactions <intro/tutorial01-spend>`
-  * :doc:`Deploy a contract <intro/tutorial02-contracts>`
+  * :doc:`Deploy a contract <intro/tutorial02-contracts-deploy>`
+  * :doc:`Call a contract <intro/tutorial02-contracts-call>`
   * :doc:`Claiming a name <intro/tutorial03-aens>`
   * :doc:`Using Generalized accounts <intro/tutorial04-ga>`
   * :doc:`The CLI <intro/tutorial05-cli>`
