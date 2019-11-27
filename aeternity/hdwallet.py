@@ -18,7 +18,7 @@ class HDWallet():
             raise ValueError("Invalid Mnemonic")
         self.mnemonic = mnemonic
         self.master_key = self._master_key_from_mnemonic(mnemonic)
-        self.master_account = self._get_account(self.master_key["secret_key"])
+        self.master_account = HDWallet._get_account(self.master_key["secret_key"])
         self.account_index = 0
 
     @staticmethod
@@ -42,7 +42,7 @@ class HDWallet():
             self.account_index += 1
         derivation_path = self.AETERNITY_DERIVATION_PATH % (account_index, address_index)
         derived_keys = HDWallet._from_path(derivation_path, self.master_key)
-        return derivation_path, self._get_account(derived_keys[-1]["secret_key"])
+        return derivation_path, HDWallet._get_account(derived_keys[-1]["secret_key"])
 
     def get_master_key(self):
         """
@@ -56,7 +56,8 @@ class HDWallet():
         """
         return self.master_account
 
-    def _get_account(self, secret_key):
+    @staticmethod
+    def _get_account(secret_key):
         """
         Generate Account from secret key
 
