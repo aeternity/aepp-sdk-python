@@ -31,6 +31,11 @@ Sample Sophia Contract
 
 Below is the sample sophia contract that we'll use in this guide.
 
+.. literalinclude:: ../../tests/testdata/CryptoHamster.aes
+
+Importing required classes and methods
+======================================
+
 We need to import the following classes to use contracts. 
 
 .. literalinclude:: ../../tests/test_tutorial05-contracts.py
