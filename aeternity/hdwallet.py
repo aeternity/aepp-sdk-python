@@ -74,7 +74,7 @@ class HDWallet():
         """
         Generate master key from a given mnemonic
         Args:
-            mnemonic (str): a BIP32 compliant mnemonic string
+            mnemonic (str): a BIP39 compliant mnemonic string
         Returns:
             dict containing 'secret_key' and 'chain_code'
         """
