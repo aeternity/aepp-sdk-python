@@ -1,5 +1,6 @@
 import os
 from aeternity.hdwallet import HDWallet
+from aeternity.signing import Account
 from nacl.signing import SigningKey
 
 def test_hdwallet_generate_wallet():
@@ -12,7 +13,7 @@ def test_hdwallet_generate_wallet_without_mnemonic():
     hdwallet = HDWallet()
     assert hdwallet.mnemonic is not None
 
-def test_hdwallet_keystore(tempdir):
+def test_hdwallet_keystore_save_load_pass(tempdir):
     hdwallet = HDWallet()
     password = "testpassword"
     saved_filename = hdwallet.save_mnemonic_to_keystore(tempdir, password)
@@ -20,6 +21,28 @@ def test_hdwallet_keystore(tempdir):
     print(f"\nAccount keystore is {path}")
     hdwallet_decrypted = HDWallet.from_keystore(path, password)
     assert hdwallet_decrypted.mnemonic == hdwallet.mnemonic
+
+def test_hdwallet_keystore_save_load_wrong_pwd(tempdir):
+    try:
+      hdwallet = HDWallet()
+      password_original = "testpassword"
+      password_wrong = "whateverpassword"
+      saved_filename = hdwallet.save_mnemonic_to_keystore(tempdir, password_original)
+      path = os.path.join(tempdir, saved_filename)
+      print(f"\nAccount keystore is {path}")
+      hdwallet_decrypted = HDWallet.from_keystore(path, password_wrong)
+    except Exception as e:
+      assert str(e) == "Decryption failed. Ciphertext failed verification"
+
+def test_hdwallet_keystore_save_load_wrong_type(tempdir):
+    try:
+      original_account = Account.generate()
+      filename = original_account.save_to_keystore(tempdir, "whatever")
+      path = os.path.join(tempdir, filename)
+      print(f"\nAccount keystore is {path}")
+      hdwallet_decrypted = HDWallet.from_keystore(path, "whatever")
+    except Exception as e:
+      assert str(e) == "Invalid keystore"
 
 def test_hdwallet_path_derivation():
     mnemonic = "energy pass install genuine sell enroll wear announce brother marble test cruise"
