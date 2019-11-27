@@ -33,7 +33,7 @@ def test_example_contract_native(chain_fixture):
     alice = Account.generate()
 
     node_cli.spend(sender_account, alice.get_address(), 5000000000000000000)
-    
+
     CONTRACT_FILE = os.path.join(os.path.dirname(__file__), "testdata/CryptoHamster.aes")
 
     # read contract file
@@ -49,7 +49,7 @@ def test_example_contract_native(chain_fixture):
                                     compiler=compiler, 
                                     account=alice, 
                                     source=crypto_hamster_contract)
-    
+
     # deploy the contract 
     # (also pass the args of thr init function - if any)
     tx = crypto_hamster.deploy()
@@ -57,10 +57,10 @@ def test_example_contract_native(chain_fixture):
 
 
     # PART 2 Call the contract
-    CONTRACT_ADDRESS = crypto_hamster.address
+    CONTRACT_ID = crypto_hamster.address
 
-    # CONTRACT_ADDRESS is the address of the deployed contract 
-    crypto_hamster.at(CONTRACT_ADDRESS)
+    # CONTRACT_ID is the address of the deployed contract 
+    crypto_hamster.at(CONTRACT_ID)
 
     # call the contract method (stateful)
     tx_info, tx_result = crypto_hamster.add_test_value(1, 2)
