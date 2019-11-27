@@ -111,6 +111,7 @@ class HDWallet():
         I_hmac = hmac.new(parent_key["chain_code"], hmac_data, hashlib.sha512).digest()
         return {"secret_key": I_hmac[:32], "chain_code": I_hmac[32:]}
 
+    @staticmethod
     def _from_path(path, root_key, is_master=True):
         p = HDWallet._parse_path(path)
 
