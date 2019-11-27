@@ -166,3 +166,9 @@ class Contract:
             return tx_signed
         except openapi.OpenAPIClientException as e:
             raise ContractError(e)
+
+    def is_deployed(self, contract_id: str):
+        try:
+            return self.client.get_contract(pubkey=contract_id).active
+        except Exception:
+            return False
