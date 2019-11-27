@@ -41,7 +41,7 @@ class HDWallet():
             account_index = self.account_index
             self.account_index += 1
         derivation_path = self.AETERNITY_DERIVATION_PATH % (account_index, address_index)
-        derived_keys = self._from_path(derivation_path, self.master_key)
+        derived_keys = HDWallet._from_path(derivation_path, self.master_key)
         return derivation_path, self._get_account(derived_keys[-1]["secret_key"])
 
     def get_master_key(self):
