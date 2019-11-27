@@ -544,13 +544,12 @@ def name_claim(keystore_name, domain, name_ttl, name_salt, preclaim_tx_hash, ttl
 @name.command('bid', help="Bid on a name auction")
 @click.argument('keystore_name', required=True)
 @click.argument('domain', required=True)
-@click.argument('name_fee', required=True, type=int)
-@click.option("--name-ttl", default=defaults.NAME_MAX_TTL, help=f'Lifetime of the name in blocks', show_default=True, type=int)
+@click.argument('name_fee', required=True)
 @global_options
 @account_options
 @online_options
 @transaction_options
-def name_bid(keystore_name, domain, name_ttl, name_fee, ttl, fee, nonce, password, force, wait, json_):
+def name_bid(keystore_name, domain, name_fee, ttl, fee, nonce, password, force, wait, json_):
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
