@@ -1,3 +1,4 @@
+import os
 from aeternity.hdwallet import HDWallet
 from nacl.signing import SigningKey
 
@@ -10,6 +11,15 @@ def test_hdwallet_generate_wallet():
 def test_hdwallet_generate_wallet_without_mnemonic():
     hdwallet = HDWallet()
     assert hdwallet.mnemonic is not None
+
+def test_hdwallet_keystore(tempdir):
+    hdwallet = HDWallet()
+    password = "testpassword"
+    saved_filename = hdwallet.save_mnemonic_to_keystore(tempdir, password)
+    path = os.path.join(tempdir, saved_filename)
+    print(f"\nAccount keystore is {path}")
+    hdwallet_decrypted = HDWallet.from_keystore(path, password)
+    assert hdwallet_decrypted.mnemonic == hdwallet.mnemonic
 
 def test_hdwallet_path_derivation():
     mnemonic = "energy pass install genuine sell enroll wear announce brother marble test cruise"

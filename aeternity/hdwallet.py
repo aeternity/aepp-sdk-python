@@ -1,8 +1,10 @@
 import hmac
 import hashlib
+import json
 from nacl.signing import SigningKey
 from mnemonic import Mnemonic
-from aeternity.signing import Account
+from aeternity.signing import Account, keystore_seal, keystore_open, save_keystore_to_file, save_keystore_to_folder
+from aeternity.identifiers import SECRET_TYPE_BIP39
 
 
 class HDWallet():
@@ -55,6 +57,34 @@ class HDWallet():
         Returns the account generated using the master_key
         """
         return self.master_account
+
+    def mnemonic_to_keystore(self, password):
+        return keystore_seal(self.mnemonic, password, secret_type=SECRET_TYPE_BIP39)
+
+    def save_mnemonic_to_keystore_file(self, path, password):
+        """
+        Utility method for save_to_keystore
+        """
+        return save_keystore_to_file(path, self.mnemonic_to_keystore(password))
+
+    def save_mnemonic_to_keystore(self, path, password):
+        """
+        Save an account in a Keystore/JSON format
+        :param path: the folder where to store the keystore file
+        :param password: the password for the keystore
+        :return: the filename that has been used for the keystore
+        """
+        return save_keystore_to_folder(path, self.mnemonic_to_keystore(password), self.master_account.get_address())
+
+    @staticmethod
+    def from_keystore(path, password=""):
+        with open(path) as fp:
+            keystore = json.load(fp)
+        if keystore.get("crypto", {}).get("secret_type") == SECRET_TYPE_BIP39:
+            mnemonic = keystore_open(keystore, password).decode()
+            return HDWallet(mnemonic)
+        else:
+            raise TypeError("Invalid keystore")
 
     @staticmethod
     def _get_account(secret_key):
