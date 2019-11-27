@@ -70,6 +70,13 @@ class HDWallet():
 
     @staticmethod
     def _master_key_from_mnemonic(mnemonic):
+        """
+        Generate master key from a given mnemonic
+        Args:
+            mnemonic (str): a BIP32 compliant mnemonic string
+        Returns:
+            dict containing 'secret_key' and 'chain_code'
+        """
         return HDWallet._master_key_from_seed(Mnemonic.to_seed(mnemonic))
 
     @staticmethod
@@ -97,14 +104,15 @@ class HDWallet():
 
         return p
 
-    def _derive_child_key(self, parent_key, i):
-        if i & self.HARDENED_OFFSET:
+    @staticmethod
+    def _derive_child_key(parent_key, i):
+        if i & HDWallet.HARDENED_OFFSET:
             hmac_data = b'\x00' + parent_key["secret_key"] + i.to_bytes(length=4, byteorder='big')
         I_hmac = hmac.new(parent_key["chain_code"], hmac_data, hashlib.sha512).digest()
         return {"secret_key": I_hmac[:32], "chain_code": I_hmac[32:]}
 
-    def _from_path(self, path, root_key, is_master=True):
-        p = self._parse_path(path)
+    def _from_path(path, root_key, is_master=True):
+        p = HDWallet._parse_path(path)
 
         if p[0] == "m":
             if is_master:
@@ -115,10 +123,10 @@ class HDWallet():
         keys = [root_key]
         for i in p:
             if isinstance(i, str):
-                index = int(i[:-1]) | self.HARDENED_OFFSET
+                index = int(i[:-1]) | HDWallet.HARDENED_OFFSET
             else:
                 index = i
             k = keys[-1]
-            keys.append(self._derive_child_key(k, index))
+            keys.append(HDWallet._derive_child_key(k, index))
 
         return keys
