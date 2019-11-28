@@ -11,7 +11,6 @@ from aeternity.exceptions import TransactionWaitTimeoutExpired, TransactionHashM
 from aeternity import __node_compatibility__
 
 logger = logging.getLogger(__name__)
-logging.root.setLevel(logging.DEBUG)
 
 
 class Config:
@@ -46,7 +45,7 @@ class Config:
             :poll_tx_retries_interval (int): the interval in seconds between retries
             :poll_block_max_retries (int): TODO
             :poll_block_retries_interval (int): TODO
-            :debug (bool): TODO
+            :debug (bool): enable debug logging for api calls
 
         """
         # endpoint URLs
@@ -76,6 +75,8 @@ class Config:
         self.poll_block_retries_interval = kwargs.get("poll_block_retries_interval", defaults.POLL_BLOCK_RETRIES_INTERVAL)
         # debug
         self.debug = kwargs.get("debug", False)
+        if self.debug:
+            logging.root.setLevel(logging.DEBUG)
 
     def __str__(self):
         return f'ws:{self.websocket_url} ext:{self.api_url} int:{self.api_url_internal}'
