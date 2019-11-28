@@ -18,7 +18,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - fix(logging): print debug logging if debug enabled for openapi  (#310) ([d4f3a34](https://github.com/aeternity/aepp-sdk-python/commit/d4f3a34d7f2329c52cef0b596b0ad1a2a3a912e8)).
 - fix dry-run call and test (#295) ([af2ef09](https://github.com/aeternity/aepp-sdk-python/commit/af2ef091c033e7750eb5f625f239f7d673dc8059)).
 
-
 ## [6.1.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/6.1.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/6.0.1...6.1.0)) - 2019-11-20
 
 ### Features
