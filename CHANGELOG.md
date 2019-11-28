@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [6.2.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/6.2.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/6.1.0...6.2.0))
+
+### Features
+- feat(contracts): check if contract is deployed (#307) ([6c6bb63](https://github.com/aeternity/aepp-sdk-python/commit/6c6bb631963232137eb3981f0422479602e5b92e)). Related issues/PRs: #281
+- feat(HDWallet): add HD Wallet Support (#301) ([2a3c5c3](https://github.com/aeternity/aepp-sdk-python/commit/2a3c5c3e4474f73e9a40f59da3e43c1c00da7ced)). Related issues/PRs: #280
+
+### Bug Fixes
+- fix(cli): name bid command (#309) ([06437a7](https://github.com/aeternity/aepp-sdk-python/commit/06437a7e25ffa3f8e0621ff9378346d8da7ed0f5)). Related issues/PRs: #305, #291
+- fix(contracts): remove static init data (#312) ([62a4303](https://github.com/aeternity/aepp-sdk-python/commit/62a4303625b92cf796778afc50fea6fd0e419bd2)).
+- fix(docs): include sophia sample contract (#311) ([f91fb69](https://github.com/aeternity/aepp-sdk-python/commit/f91fb69c7440155e96483c288f28bc2391e01dff)).
+- fix(logging): print debug logging if debug enabled for openapi  (#310) ([d4f3a34](https://github.com/aeternity/aepp-sdk-python/commit/d4f3a34d7f2329c52cef0b596b0ad1a2a3a912e8)).
+- fix dry-run call and test (#295) ([af2ef09](https://github.com/aeternity/aepp-sdk-python/commit/af2ef091c033e7750eb5f625f239f7d673dc8059)).
+
 ## [6.1.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/6.1.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/6.0.1...6.1.0)) - 2019-11-20
 
 ### Features
