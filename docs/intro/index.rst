@@ -15,6 +15,7 @@ place: read this material to quickly get up and running.
    tutorial03-aens
    tutorial04-ga
    tutorial05-cli
+   tutorial06-hdwallet
    contributing
 
 .. seealso::

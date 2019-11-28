@@ -10,6 +10,7 @@ from nacl.pwhash import argon2id
 from nacl import secret, utils as nacl_utils
 from aeternity.identifiers import ACCOUNT_ID, ACCOUNT_API_FORMAT, ACCOUNT_SOFIA_FORMAT, ACCOUNT_RAW_FORMAT
 from aeternity.identifiers import ACCOUNT_KIND_BASIC
+from aeternity.identifiers import SECRET_TYPE_SLIP0010
 from aeternity import hashing, utils
 
 
@@ -89,24 +90,16 @@ class Account:
         """
         Utility method for save_to_keystore
         """
-        folder = os.path.dirname(path)
-        filename = os.path.basename(path)
-        self.save_to_keystore(folder, password, filename=filename)
+        return save_keystore_to_file(path, keystore_seal(self.signing_key, password))
 
-    def save_to_keystore(self, path, password, filename=None):
+    def save_to_keystore(self, path, password):
         """
         Save an account in a Keystore/JSON format
         :param path: the folder where to store the keystore file
         :param password: the password for the keystore
-        :param filename: an optional filename to use for the keystore (default to UTC--ISO8601Date--AccountAddress)
         :return: the filename that has been used for the keystore
         """
-        if filename is None:
-            filename = f"UTC--{datetime.utcnow().isoformat()}--{self.get_address()}"
-        with open(os.open(os.path.join(path, filename), os.O_TRUNC | os.O_CREAT | os.O_WRONLY, 0o600), 'w') as fp:
-            j = keystore_seal(self.signing_key, password, self.get_address())
-            json.dump(j, fp)
-        return filename
+        return save_keystore_to_folder(path, keystore_seal(self.signing_key, password), self.get_address())
 
     #
     # initializers
@@ -188,14 +181,14 @@ class Account:
             raise ValueError(e)
 
 
-def keystore_seal(secret_key, password, address, name=""):
+def keystore_seal(secret_key, password, name="", secret_type=SECRET_TYPE_SLIP0010):
     """
     Seal a keystore
 
     :param secret_key: the secret key to store in the keystore
     :param password: the keystore password
-    :param address: the address
     :param name: the optional name of the keystore
+    :param secret_type: type of the secret to store (default: ed25519-slip0010-masterkey)
     """
     # password
     salt = nacl_utils.random(argon2id.SALTBYTES)
@@ -205,13 +198,15 @@ def keystore_seal(secret_key, password, address, name=""):
     # ciphertext
     box = secret.SecretBox(key)
     nonce = nacl_utils.random(secret.SecretBox.NONCE_SIZE)
-    sk = secret_key.encode(encoder=RawEncoder) + secret_key.verify_key.encode(encoder=RawEncoder)
+    if isinstance(secret_key, SigningKey):
+        sk = secret_key.encode() + secret_key.verify_key.encode()
+    else:
+        sk = secret_key.encode('utf-8')
     ciphertext = box.encrypt(sk, nonce=nonce).ciphertext
     # build the keystore
     k = {
-        "public_key": address,
         "crypto": {
-            "secret_type": "ed25519",
+            "secret_type": secret_type,
             "symmetric_alg": "xsalsa20-poly1305",
             "ciphertext": bytes.hex(ciphertext),
             "cipher_params": {
@@ -265,3 +260,24 @@ def is_signature_valid(account_id, signature, data: bytes) -> bool:
         return True
     except Exception:
         return False
+
+
+def save_keystore_to_file(path, keystore):
+    """
+    Utility method for save_to_keystore
+    """
+    with open(os.open(path, os.O_TRUNC | os.O_CREAT | os.O_WRONLY, 0o600), 'w') as fp:
+        json.dump(keystore, fp)
+    return os.path.basename(path)
+
+
+def save_keystore_to_folder(path, keystore, account_address):
+    """
+    Save an account in a Keystore/JSON format
+    :param path: the folder where to store the keystore file
+    :param password: the password for the keystore
+    :param account_address: address of the account
+    :return: the filename that has been used for the keystore
+    """
+    filename = f"UTC--{datetime.utcnow().isoformat()}--{account_address}"
+    return save_keystore_to_file(os.path.join(path, filename), keystore)
