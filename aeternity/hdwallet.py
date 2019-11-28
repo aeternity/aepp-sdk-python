@@ -84,7 +84,7 @@ class HDWallet():
             mnemonic = keystore_open(keystore, password).decode()
             return HDWallet(mnemonic)
         else:
-            raise TypeError("Invalid keystore")
+            raise TypeError(f"Invalid keystore. Expected keystore of type {SECRET_TYPE_BIP39}")
 
     @staticmethod
     def _get_account(secret_key):

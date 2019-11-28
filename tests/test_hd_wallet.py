@@ -42,7 +42,7 @@ def test_hdwallet_keystore_save_load_wrong_type(tempdir):
       print(f"\nAccount keystore is {path}")
       hdwallet_decrypted = HDWallet.from_keystore(path, "whatever")
     except Exception as e:
-      assert str(e) == "Invalid keystore"
+      assert str(e) == "Invalid keystore. Expected keystore of type ed25519-bip39-mnemonic"
 
 def test_hdwallet_path_derivation():
     mnemonic = "energy pass install genuine sell enroll wear announce brother marble test cruise"
