@@ -265,3 +265,8 @@ NETWORK_ID_TESTNET = "ae_uat"
 # Accounts Kind
 ACCOUNT_KIND_BASIC = "basic"
 ACCOUNT_KIND_GENERALIZED = "generalized"
+
+# Secret types
+SECRET_TYPE_BIP39 = "ed25519-bip39-mnemonic"
+SECRET_TYPE_SLIP0010 = "ed25519-slip0010-masterkey"
+SECRET_TYPE_SLIP0010_LEGACY = "ed25519"

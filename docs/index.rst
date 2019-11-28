@@ -62,6 +62,7 @@ Are you new to the Aeternity SDK? This is the place to start!
   * :doc:`Claiming a name <intro/tutorial03-aens>`
   * :doc:`Using Generalized accounts <intro/tutorial04-ga>`
   * :doc:`The CLI <intro/tutorial05-cli>`
+  * :doc:`Generating and using a HD Wallet <intro/tutorial06-hdwallet>`
 
 
 * **How to:**

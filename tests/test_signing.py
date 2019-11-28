@@ -57,7 +57,7 @@ def test_signing_keystore_save_load(tempdir):
     ######
     original_account = Account.generate()
     filename = "account_ks"
-    filename = original_account.save_to_keystore(tempdir, "whatever", filename=filename)
+    filename = original_account.save_to_keystore(tempdir, "whatever")
     path = os.path.join(tempdir, filename)
     print(f"\nAccount keystore is {path}")
     # now load again the same
