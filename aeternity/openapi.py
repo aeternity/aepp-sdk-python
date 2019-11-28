@@ -75,7 +75,8 @@ class OpenAPICli(object):
             raise e
 
         # enable printing debug messages
-        self.debug = debug
+        # create logger
+        self.logger = logging.getLogger(__name__)
 
         # check open_api_version
         if self.api_def.get('swagger', 'x') not in self.open_api_versions:
@@ -94,7 +95,7 @@ class OpenAPICli(object):
         base_path = self.api_def.get('basePath', '').rstrip('/')
         self.base_url = f"{url}{base_path}"
         self.base_url_internal = f"{url_internal}{base_path}"
-        logging.debug(f"Internal URL {url_internal}, {type(url_internal)}, {(url_internal is None)}, {self.base_url_internal}")
+        self.logger.debug(f"Internal URL {url_internal}, {type(url_internal)}, {(url_internal is None)}, {self.base_url_internal}")
         if url_internal is None:
             # do not build internal endpoints
             self.skip_tags.add("internal")
@@ -202,11 +203,11 @@ class OpenAPICli(object):
             if api.http_method == 'get':
                 http_reply = requests.get(target_endpoint, params=query_params)
                 api_response = api.responses.get(http_reply.status_code, None)
+                self.logger.debug(f"GET {target_endpoint}, params:{query_params} --> {http_reply.text}")
             else:
                 http_reply = requests.post(target_endpoint, params=query_params, json=post_body)
                 api_response = api.responses.get(http_reply.status_code, None)
-                if self.debug:
-                    logging.debug(f">>>> ENDPOINT {target_endpoint}\n >> QUERY \n{query_params}\n >> BODY \n{post_body} \n >> REPLY \n{http_reply.text}", )
+                self.logger.debug(f"POST {target_endpoint}, params:{query_params}, body: \n{post_body} \n --> {http_reply.text}", )
             # unknown error
             if api_response is None:
                 raise OpenAPIClientException(f"Unknown error {target_endpoint} {http_reply.status_code} - {http_reply.text}", code=http_reply.status_code)
