@@ -14,3 +14,4 @@ semver==2.*,>=2.8.0
 simplejson==3.*,>=3.16.0
 validators==0.*,>=0.13.0
 websockets==7.*,>=7.0.0
+mnemonic==0.19.*, >=0.19.0

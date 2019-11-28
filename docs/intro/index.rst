@@ -10,10 +10,12 @@ place: read this material to quickly get up and running.
 
    install
    tutorial01-spend
-   tutorial02-contracts
+   tutorial02-contracts-deploy
+   tutorial02-contracts-call
    tutorial03-aens
    tutorial04-ga
    tutorial05-cli
+   tutorial06-hdwallet
    contributing
 
 .. seealso::

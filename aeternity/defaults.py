@@ -13,9 +13,6 @@ CONTRACT_GAS = 10000
 CONTRACT_GAS_PRICE = 1000000000
 CONTRACT_DEPOSIT = 0
 CONTRACT_AMOUNT = 0
-# calldata for the init function with no parameters
-CONTRACT_INIT_CALLDATA = "cb_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACC5yVbyizFJqfWYeqUF89obIgnMVzkjQAYrtsG9n5" + \
-    "+Z6gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAnHQYrA=="
 # https://github.com/aeternity/protocol/blob/master/oracles/oracles.md#technical-aspects-of-oracle-operations
 ORACLE_VM_VERSION = identifiers.NO_VM
 ORACLE_TTL_TYPE = identifiers.ORACLE_TTL_TYPE_DELTA

@@ -1,7 +1,11 @@
 import pkg_resources
+import logging
 
 __node_compatibility__ = (">=3.0.1", "<=6.0.0")
 __compiler_compatibility__ = (">=3.2.0", "<5.0.0")
+
+# initialize logging
+logging.basicConfig(level=logging.ERROR)
 
 
 def _version():
