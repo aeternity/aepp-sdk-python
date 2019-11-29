@@ -1,3 +1,8 @@
+branches:
+  only:
+  - master
+  - develop
+
 dist: xenial
 addons:
   apt:
