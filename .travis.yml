@@ -1,0 +1,46 @@
+branches:
+  only:
+  - master
+  - develop
+
+dist: xenial
+addons:
+  apt:
+    packages:
+      - build-essential
+      - curl
+      - libltdl7
+      - git
+      - make
+
+services:
+  - docker
+
+language: python
+python:
+  - "3.7"
+
+env:
+  global:
+    - TEST_NODE=http://localhost:3013
+    - TEST_URL=http://localhost:3013
+    - TEST_DEBUG_URL=http://localhost:3113
+    - TEST_NETWORK_ID=ae_devnet
+    - COMPILER_URL=http://localhost:3080
+
+cache:
+  timeout: 604800 # 7 days
+  directories:
+    - $HOME/.cache/pip
+before_cache:
+  - rm -f $HOME/.cache/pip/log/debug.log
+
+before_install:
+  - docker-compose up -d node compiler
+
+install:
+  - pip install -r requirements.txt
+
+script:
+  - make lint
+  - make test
