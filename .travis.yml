@@ -14,6 +14,11 @@ services:
 language: python
 python:
   - "3.7"
+cache:
+  directories:
+    - $HOME/.cache/pip
+before_cache:
+  - rm -f $HOME/.cache/pip/log/debug.log
 
 before_install:
   - docker-compose up -d node compiler
