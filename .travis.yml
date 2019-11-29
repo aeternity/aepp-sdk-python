@@ -18,8 +18,8 @@ python:
 env:
   global:
     - TEST_NODE=http://localhost:3013
-    - TEST_URL=http://http://localhost:3013
-    - TEST_DEBUG_URL=http://http://localhost:3113
+    - TEST_URL=http://localhost:3013
+    - TEST_DEBUG_URL=http://localhost:3113
     - TEST_NETWORK_ID=ae_devnet
     - COMPILER_URL=http://localhost:3080
 
