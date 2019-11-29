@@ -16,7 +16,7 @@ services:
   node:
     image: aeternity/aeternity:${NODE_TAG}
     hostname: node
-    expose: [3013, 3113]
+    ports: ["3013:3013", "3113:3113"]
     environment:
       AETERNITY_CONFIG: /home/aeterinty/aeternity.yaml
     command: bin/aeternity console -noinput -aecore expected_mine_rate ${EPOCH_MINE_RATE:-5000}
@@ -31,7 +31,7 @@ services:
   compiler:
     image: aeternity/aesophia_http:${COMPILER_TAG}
     hostname: compiler
-    expose: [3080]
+    ports: ["3080:3080"]
 
 volumes:
   node_db:

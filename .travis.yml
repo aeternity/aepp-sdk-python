@@ -16,7 +16,7 @@ python:
   - "3.7"
 
 before_install:
-  - docker-compose up node compiler
+  - docker-compose up -d node compiler
 
 install:
   - pip install -r requirements.txt
