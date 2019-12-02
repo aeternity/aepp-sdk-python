@@ -41,6 +41,20 @@ before_install:
 install:
   - pip install -r requirements.txt
 
-script:
-  - make lint
-  - make test
+jobs:
+  include:
+    - stage: Tests
+      name: Test AENS, Channels
+      script:
+        - make lint
+        - make test TEST_OPTS="-k 'test_name or test_channel'"
+    - stage: Tests
+      name: Test Compiler, Contracts, Sophia Transformation, Hashing, CLI, HDWallet, Oracle, Node, OpenAPI, Signing, Transactions, Utils
+      script:
+        - make lint
+        - make test TEST_OPTS="-k 'test_sophia or test_contract_native or test_type_conversion_to_sophia or test_oracle or test_cli or test_transaction or test_utils or test_hashing or test_hdwallet or test_node or test_generatedcli or test_signing'"
+    - stage: Tests
+      name: Test API, Tutorials, Examples
+      script:
+        - make lint
+        - make test TEST_OPTS="-k 'test_api or test_tutorial or test_example'"
