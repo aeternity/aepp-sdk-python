@@ -44,10 +44,10 @@ install:
 jobs:
   include:
     - stage: Tests
-      name: Test AENS, API, Compiler, Contracts, Sophia Transformation, Examples, Tutorials
+      name: Test AENS, API, Compiler, Contracts, Sophia Transformation
       script:
         - make lint
-        - make test TEST_OPTS="-k 'test_name or test_api or test_channel or test_sophia or test_contract_native or test_type_conversion_to_sophia or test_tutorial or test_example'"
+        - make test TEST_OPTS="-k 'test_name or test_api or test_channel or test_sophia or test_contract_native or test_type_conversion_to_sophia'"
     - stage: Tests
       name: Test Hashing, CLI, HDWallet, Oracle, Node, OpenAPI, Signing, Transactions, Utils
       script:
