@@ -44,6 +44,10 @@ install:
 
 jobs:
   include:
+    - if: branch = upcoming
+        env:
+          - COMPILER_TAG=latest
+          - NODE_TAG=master
     - stage: Tests
       name: Test AENS, Channels
       script:
