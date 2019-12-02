@@ -53,3 +53,8 @@ jobs:
       script:
         - make lint
         - make test TEST_OPTS="-k 'test_oracle or test_cli or test_transaction or test_utils or test_hashing or test_hdwallet or test_node or test_generatedcli or test_signing'"
+    - stage: Tests
+      name: Test Tutorials and Examples
+      script:
+        - make lint
+        - make test TEST_OPTS="-k 'test_tutorial or test_example'"
