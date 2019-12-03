@@ -30,11 +30,11 @@ env:
     - COMPILER_URL=http://localhost:3080
     - FORCE_COMPATIBILITY=false
 
-
 cache:
   timeout: 604800 # 7 days
   directories:
     - $HOME/.cache/pip
+
 before_cache:
   - rm -f $HOME/.cache/pip/log/debug.log
 
@@ -48,24 +48,24 @@ jobs:
   include:
     - stage: Tests
       name: Test AENS, Channels
-      if: env(TRAVIS_EVENT_TYPE) != cron
+      if: type != "cron"
       script:
         - make lint
         - make test TEST_OPTS="-k 'test_name or test_channel'"
     - stage: Tests
       name: Test Compiler, Contracts, Sophia Transformation, Hashing, CLI, HDWallet, Oracle, Node, OpenAPI, Signing, Transactions, Utils
-      if: env(TRAVIS_EVENT_TYPE) != cron
+      if: type != "cron"
       script:
         - make lint
         - make test TEST_OPTS="-k 'test_sophia or test_contract_native or test_type_conversion_to_sophia or test_oracle or test_cli or test_transaction or test_utils or test_hashing or test_hdwallet or test_node or test_generatedcli or test_signing'"
     - stage: Tests
       name: Test API, Tutorials, Examples
-      if: env(TRAVIS_EVENT_TYPE) != cron
+      if: type != "cron"
       script:
         - make lint
         - make test TEST_OPTS="-k 'test_api or test_tutorial or test_example'"
     - stage: Test with latest node and compiler
-      if: env(TRAVIS_EVENT_TYPE) = cron
+      if: type = "cron"
       env:
         - NODE_TAG=master
         - COMPILER_TAG=latest
