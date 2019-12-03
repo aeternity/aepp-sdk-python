@@ -207,7 +207,7 @@ class OpenAPICli(object):
             else:
                 http_reply = requests.post(target_endpoint, params=query_params, json=post_body)
                 api_response = api.responses.get(http_reply.status_code, None)
-                self.logger.debug(f"POST {target_endpoint}, params:{query_params}, body: \n{post_body} \n --> {http_reply.text}", )
+                self.logger.debug(f"POST {target_endpoint}, params:{query_params}, body: {post_body} --> {http_reply.text}", )
             # unknown error
             if api_response is None:
                 raise OpenAPIClientException(f"Unknown error {target_endpoint} {http_reply.status_code} - {http_reply.text}", code=http_reply.status_code)

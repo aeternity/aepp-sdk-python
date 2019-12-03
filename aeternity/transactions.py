@@ -168,7 +168,11 @@ tx_descriptors = {
             "call_data": Fd(12, _ENC, prefix=idf.BYTECODE),
         }},
     (idf.OBJECT_TAG_CONTRACT_CALL_TRANSACTION, 1): {
-        "fee": Fee(SIZE_BASED, base_gas_multiplier=30),
+        "fee": Fee(SIZE_BASED, base_gas_multiplier=(
+            'abi_version', {
+                idf.ABI_FATE: 12,
+                idf.ABI_SOPHIA: 30
+            })),
         "schema": {
             "version": Fd(1),
             "caller_id": Fd(2, _ID),
@@ -500,8 +504,13 @@ class TxBuilder:
             return 0
         # extract the parameters from the descriptor
         fee_field_index = tx_descriptor.get("schema").get("fee").index
-        base_gas_multiplier = tx_descriptor.get("fee").base_gas_multiplier
         fee_type = tx_descriptor.get("fee").fee_type
+        base_gas_multiplier = tx_descriptor.get("fee").base_gas_multiplier
+        # for property based multiplier
+        if isinstance(base_gas_multiplier, tuple):
+            # check CONTRACT_CALL definition for an example
+            field_modifier_value = tx_data.get(base_gas_multiplier[0])
+            base_gas_multiplier = base_gas_multiplier[1].get(field_modifier_value)
         # if the fee is ttl based compute the ttl component
         ttl_component = 0
         if fee_type is TTL_BASED:
