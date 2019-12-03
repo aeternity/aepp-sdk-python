@@ -2,7 +2,6 @@ branches:
   only:
   - master
   - develop
-  - feature/fix-ci-cron
 
 dist: xenial
 os: linux
