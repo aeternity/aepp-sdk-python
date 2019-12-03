@@ -28,6 +28,7 @@ env:
     - TEST_DEBUG_URL=http://localhost:3113
     - TEST_NETWORK_ID=ae_devnet
     - COMPILER_URL=http://localhost:3080
+    - FORCE_COMPATIBILITY=false
 
 
 cache:
@@ -68,6 +69,7 @@ jobs:
       env:
         - NODE_TAG=master
         - COMPILER_TAG=latest
+        - FORCE_COMPATIBILITY=true
       script:
         - make lint
         - make test
