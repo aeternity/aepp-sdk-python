@@ -16,6 +16,7 @@ NODE_URL = os.environ.get('TEST_URL', 'http://localhost:3013')
 NODE_URL_DEBUG = os.environ.get('TEST_DEBUG_URL', 'http://localhost:3113')
 NETWORK_ID = os.environ.get('TEST_NETWORK_ID', 'ae_devnet')
 COMPILER_URL = os.environ.get("COMPILER_URL", 'http://localhost:3080')
+FORCE_COMPATIBILITY = os.environ.get("FORCE_COMPATIBILITY", False)
 
 
 @pytest.fixture
@@ -36,12 +37,14 @@ def random_domain(length=10, tld='chain'):
 @pytest.fixture
 def client_fixture(scope="module"):
     # Instantiate the node client for the tests
+    fc = True if FORCE_COMPATIBILITY == "true" else False
     NODE_CLI = NodeClient(Config(
         external_url=NODE_URL,
         internal_url=NODE_URL_DEBUG,
         # network_id=NETWORK_ID,
         blocking_mode=True,
         debug=True,
+        force_compatibility=fc,
     ))
     return namedtupled.map({"NODE_CLI": NODE_CLI}, _nt_name="TestData")
 
