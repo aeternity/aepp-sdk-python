@@ -32,6 +32,11 @@ class CompilerClient(object):
     def set_option(self, name, value):
         self.compiler_options[name] = value
 
+    def get_version(self):
+        if self.version is None:
+            self.version = self.compiler_cli.version().version
+        return self.version
+
     def compile(self, source_code, compiler_options={}):
         compiler_options = compiler_options if len(compiler_options) > 0 else self.compiler_options
         body = dict(
