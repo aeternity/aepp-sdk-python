@@ -107,6 +107,16 @@ class CompilerClient(object):
         }
         return self.compiler_cli.decode_calldata_source(body=body)
 
+    def validate_bytecode(self, sourcecode, bytecode, compiler_options={}):
+        if semver.match(self.compiler_cli.version().version, ">=4.1.0"):
+            compiler_options = compiler_options if len(compiler_options) > 0 else self.compiler_options
+            body = {
+                "source": sourcecode,
+                "bytecode": bytecode,
+                "options": compiler_options
+            }
+            return self.compiler_cli.validate_byte_code(body=body)
+
     @staticmethod
     def decode_bytecode(compiled):
         """
