@@ -418,7 +418,7 @@ class TxObject:
         if self.hash is not None:
             t["hash"] = self.hash
         if "tx" in t.get("data", {}):
-            t["data"]["tx"] = Munch.toDict(t["data"]["tx"])
+            t["data"]["tx"] = t["data"]["tx"].asdict()
 
         return t
 
