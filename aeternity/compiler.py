@@ -1,7 +1,7 @@
 from aeternity import exceptions, __compiler_compatibility__
 from aeternity import utils, hashing, openapi, identifiers
 
-import namedtupled
+from munch import Munch
 import semver
 from deprecated import deprecated
 
@@ -147,4 +147,4 @@ class CompilerClient(object):
                 arg_type=t[2],
                 out_type=t[3],
             ))
-        return namedtupled.map(contract_data, _nt_name="ContractBin")
+        return Munch.fromDict(contract_data)
