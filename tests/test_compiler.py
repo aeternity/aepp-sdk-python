@@ -121,7 +121,7 @@ def test_sophia_validate_bytecode(compiler_fixture, chain_fixture):
     compiler = compiler_fixture.COMPILER
     account = chain_fixture.ALICE
     sourcecode = "contract Identity =\n  entrypoint main(x : int) = x"
-    compiler = compiler_fixture.COMPILER
+    
     contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=sourcecode, compiler=compiler, account=account)
     contract_native.deploy()
     chain_bytecode = chain_fixture.NODE_CLI.get_contract_code(pubkey=contract_native.address).bytecode
