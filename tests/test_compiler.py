@@ -120,12 +120,21 @@ def test_sophia_decode_calldata_bytecode(compiler_fixture):
 def test_sophia_validate_bytecode(compiler_fixture, chain_fixture):
     compiler = compiler_fixture.COMPILER
     account = chain_fixture.ALICE
-    sourcecode = "contract Identity =\n  entrypoint main(x : int) = x"
+    node_client = chain_fixture.NODE_CLI
+
+    sourcecode = """contract SimpleStorage =
+      record state = { data : int }
+      entrypoint init(value : int) : state = { data = value }
+      entrypoint get() : int = state.data
+      stateful entrypoint set(value : int) = put(state{data = value})"""
     
-    contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=sourcecode, compiler=compiler, account=account)
-    contract_native.deploy()
-    chain_bytecode = chain_fixture.NODE_CLI.get_contract_code(pubkey=contract_native.address).bytecode
+    contract_native = ContractNative(client=node_client, source=sourcecode, compiler=compiler, account=account)
+    contract_native.deploy(12)
+
+    chain_bytecode = node_client.get_contract_code(pubkey=contract_native.address).bytecode
     result = compiler.validate_bytecode(sourcecode, chain_bytecode)
+    print(f"Contract Validation Result: {result}")
+
     assert result == {}
 
 
