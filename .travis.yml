@@ -54,37 +54,37 @@ jobs:
   include:
     - stage: Tests
       name: Test AENS, Channels
+      if: type != "cron"
+      script:
+        - make test TEST_OPTS="-k 'test_name or test_channel'"
+        - cp coverage.xml coverage.1/coverage.xml
       workspaces:
         create:
           name: coverage1
           paths:
             - "coverage.1"
-      if: type != "cron"
-      script:
-        - make test TEST_OPTS="-k 'test_name or test_channel'"
-        - cp coverage.xml coverage.1/coverage.xml
     - stage: Tests
       name: Test Compiler, Contracts, Sophia Transformation, Hashing, CLI, HDWallet, Oracle, Node, OpenAPI, Signing, Transactions, Utils
+      if: type != "cron"
+      script:
+        - make test TEST_OPTS="-k 'test_sophia or test_contract_native or test_type_conversion_to_sophia or test_oracle or test_cli or test_transaction or test_utils or test_hashing or test_hdwallet or test_node or test_generatedcli or test_signing'"
+        - cp coverage.xml coverage.2/coverage.xml
       workspaces:
         create:
           name: coverage2
           paths:
             - "coverage.2"
-      if: type != "cron"
-      script:
-        - make test TEST_OPTS="-k 'test_sophia or test_contract_native or test_type_conversion_to_sophia or test_oracle or test_cli or test_transaction or test_utils or test_hashing or test_hdwallet or test_node or test_generatedcli or test_signing'"
-        - cp coverage.xml coverage.2/coverage.xml
     - stage: Tests
       name: Test API, Tutorials, Examples
+      if: type != "cron"
+      script:
+        - make test TEST_OPTS="-k 'test_api or test_tutorial or test_example'"
+        - cp coverage.xml coverage.3/coverage.xml
       workspaces:
         create:
           name: coverage3
           paths:
             - "coverage.3"
-      if: type != "cron"
-      script:
-        - make test TEST_OPTS="-k 'test_api or test_tutorial or test_example'"
-        - cp coverage.xml coverage.3/coverage.xml
     - stage: Test with latest node and compiler
       if: type = "cron"
       env:
@@ -97,9 +97,9 @@ jobs:
     - stage: Upload test coverage
       workspaces:
         use:
-          - coverage.1
-          - coverage.2
-          - coverage.3
+          - coverage1
+          - coverage2
+          - coverage3
       if: type != "cron"
       script:
         - if [[ "$TRAVIS_TEST_RESULT" == 0 ]]; then ./cc-test-reporter sum-coverage --output - --parts 3 coverage.*/coverage.xml | ./cc-test-reporter upload-coverage --input -; fi
