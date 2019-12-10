@@ -4,7 +4,7 @@ import json
 from enum import Enum
 from queue import Queue
 
-import namedtupled
+from munch import Munch
 import websockets
 
 from aeternity import defaults
@@ -71,7 +71,7 @@ class Channel(object):
         self.sign = kwargs.get('sign', None)
         self.params = {k: kwargs[k] for k in kwargs.keys() if k not in options_keys}
         self.url = self.__channel_url(wsUrl, self.params, endpoint)
-        self.params = namedtupled.map(self.params)
+        self.params = Munch.fromDict(self.params)
         self.status = None
         self.id = None
         self.is_locked = False

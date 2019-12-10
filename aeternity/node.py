@@ -2,7 +2,7 @@ import logging
 import time
 import random
 from datetime import datetime, timedelta
-import namedtupled
+from munch import Munch
 
 from aeternity.signing import Account
 from aeternity.openapi import OpenAPIClientException
@@ -129,7 +129,7 @@ class NodeClient:
         if relative_ttl > 0:
             ttl["absolute_ttl"] = ttl["height"] + relative_ttl
             ttl["estimated_expiration"] = datetime.now() + timedelta(minutes=self.config.key_block_interval * relative_ttl)
-        return namedtupled.map(ttl, _nt_name="TTL")
+        return Munch.fromDict(ttl)
 
     def get_next_nonce(self, account_address):
         """
