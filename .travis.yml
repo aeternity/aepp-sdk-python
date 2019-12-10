@@ -60,6 +60,8 @@ jobs:
             - coverage.1.xml
             - coverage.2.xml
             - coverage.3.xml
+      script:
+        - make lint
     - stage: Tests
       name: Test AENS, Channels
       workspaces:
