@@ -2,6 +2,7 @@ branches:
   only:
   - master
   - develop
+  - feature/cc-codecoverage
 
 dist: xenial
 os: linux
@@ -107,4 +108,5 @@ jobs:
           - coverage
       if: type != "cron"
       script:
+        - cat coverage.1.xml
         - if [[ "$TRAVIS_TEST_RESULT" == 0 ]]; then ./cc-test-reporter sum-coverage --output - --parts 3 coverage.*.xml | ./cc-test-reporter upload-coverage --input -; fi
