@@ -57,10 +57,6 @@ jobs:
       workspaces:
         create:
           name: coverage
-          paths:
-            - coverage.1.xml
-            - coverage.2.xml
-            - coverage.3.xml
       script:
         - make lint
     - stage: Tests
@@ -72,7 +68,7 @@ jobs:
       script:
         - make lint
         - make test TEST_OPTS="-k 'test_name or test_channel'"
-        - cp coverage.xml coverage.1.xml
+        - cp coverage.xml /coverage/coverage.1.xml
     - stage: Tests
       name: Test Compiler, Contracts, Sophia Transformation, Hashing, CLI, HDWallet, Oracle, Node, OpenAPI, Signing, Transactions, Utils
       workspaces:
@@ -82,7 +78,7 @@ jobs:
       script:
         - make lint
         - make test TEST_OPTS="-k 'test_sophia or test_contract_native or test_type_conversion_to_sophia or test_oracle or test_cli or test_transaction or test_utils or test_hashing or test_hdwallet or test_node or test_generatedcli or test_signing'"
-        - cp coverage.xml coverage.2.xml
+        - cp coverage.xml /coverage/coverage.2.xml
     - stage: Tests
       name: Test API, Tutorials, Examples
       workspaces:
@@ -92,7 +88,7 @@ jobs:
       script:
         - make lint
         - make test TEST_OPTS="-k 'test_api or test_tutorial or test_example'"
-        - cp coverage.xml coverage.3.xml
+        - cp coverage.xml /coverage/coverage.3.xml
     - stage: Test with latest node and compiler
       if: type = "cron"
       env:
@@ -109,4 +105,4 @@ jobs:
       if: type != "cron"
       script:
         - cat coverage.1.xml
-        - if [[ "$TRAVIS_TEST_RESULT" == 0 ]]; then ./cc-test-reporter sum-coverage --output - --parts 3 coverage.*.xml | ./cc-test-reporter upload-coverage --input -; fi
+        - if [[ "$TRAVIS_TEST_RESULT" == 0 ]]; then ./cc-test-reporter sum-coverage --output - --parts 3 /coverage/coverage.*.xml | ./cc-test-reporter upload-coverage --input -; fi
