@@ -834,7 +834,7 @@ class TxBuilder:
         return self._build_txobject(body)
         # return self.api.post_name_preclaim(body=body).tx
 
-    def tx_name_claim(self, account_id, name, name_salt, fee, ttl, nonce) -> TxObject:
+    def tx_name_claim(self, account_id, name, name_salt, fee, ttl, nonce) -> TxObject:  # lgtm [py/similar-function]
         """
         create a preclaim transaction
         :param account_id: the account registering the name
@@ -880,7 +880,7 @@ class TxBuilder:
         )
         return self._build_txobject(body)
 
-    def tx_name_update(self, account_id, name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce) -> TxObject:
+    def tx_name_update(self, account_id, name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce) -> TxObject:  # lgtm [py/similar-function]
         """
         create an update transaction
         :param account_id: the account updating the name
@@ -907,7 +907,7 @@ class TxBuilder:
         return self._build_txobject(body)
         # return self.api.post_name_update(body=body).tx
 
-    def tx_name_transfer(self, account_id, name_id, recipient_id, fee, ttl, nonce) -> TxObject:
+    def tx_name_transfer(self, account_id, name_id, recipient_id, fee, ttl, nonce) -> TxObject:  # lgtm [py/similar-function]
         """
         create a transfer transaction
         :param account_id: the account transferring the name
