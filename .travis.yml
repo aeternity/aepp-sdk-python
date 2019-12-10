@@ -57,7 +57,7 @@ jobs:
       script:
         - make lint
         - make test TEST_OPTS="-k 'test_name or test_channel'"
-        - ./cc-test-reporter format-coverage -t simplecov -o codeclimate.1.json coverage.xml
+        - ./cc-test-reporter format-coverage -t coverage.py -o codeclimate.1.json coverage.xml
       workspaces:
         create:
           name: coverage.1
@@ -69,7 +69,7 @@ jobs:
       script:
         - make lint
         - make test TEST_OPTS="-k 'test_sophia or test_contract_native or test_type_conversion_to_sophia or test_oracle or test_cli or test_transaction or test_utils or test_hashing or test_hdwallet or test_node or test_generatedcli or test_signing'"
-        - ./cc-test-reporter format-coverage -t simplecov -o codeclimate.2.json coverage.xml
+        - ./cc-test-reporter format-coverage -t coverage.py -o codeclimate.2.json coverage.xml
       workspaces:
         create:
           name: coverage.2
@@ -81,7 +81,7 @@ jobs:
       script:
         - make lint
         - make test TEST_OPTS="-k 'test_api or test_tutorial or test_example'"
-        - ./cc-test-reporter format-coverage -t simplecov -o codeclimate.3.json coverage.xml
+        - ./cc-test-reporter format-coverage -t coverage.py -o codeclimate.3.json coverage.xml
       workspaces:
         create:
           name: coverage.3
