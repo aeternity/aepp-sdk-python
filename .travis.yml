@@ -38,7 +38,15 @@ cache:
 
 cache:
   directories:
-    - $HOME/coverage
+    - $HOME/coverage.1/
+
+cache:
+  directories:
+    - $HOME/coverage.2/
+
+cache:
+  directories:
+    - $HOME/coverage.3/
 
 before_cache:
   - rm -f $HOME/.cache/pip/log/debug.log
@@ -61,19 +69,19 @@ jobs:
       if: type != "cron"
       script:
         - make test TEST_OPTS="-k 'test_name or test_channel'"
-        - cp coverage.xml $HOME/coverage/coverage.1.xml
+        - cp coverage.xml $HOME/coverage.1/coverage.xml
     - stage: Tests
       name: Test Compiler, Contracts, Sophia Transformation, Hashing, CLI, HDWallet, Oracle, Node, OpenAPI, Signing, Transactions, Utils
       if: type != "cron"
       script:
         - make test TEST_OPTS="-k 'test_sophia or test_contract_native or test_type_conversion_to_sophia or test_oracle or test_cli or test_transaction or test_utils or test_hashing or test_hdwallet or test_node or test_generatedcli or test_signing'"
-        - cp coverage.xml $HOME/coverage/coverage.2.xml
+        - cp coverage.xml $HOME/coverage.2/coverage.xml
     - stage: Tests
       name: Test API, Tutorials, Examples
       if: type != "cron"
       script:
         - make test TEST_OPTS="-k 'test_api or test_tutorial or test_example'"
-        - cp coverage.xml $HOME/coverage/coverage.3.xml
+        - cp coverage.xml $HOME/coverage.3/coverage.xml
     - stage: Test with latest node and compiler
       if: type = "cron"
       env:
@@ -86,5 +94,4 @@ jobs:
     - stage: Upload test coverage
       if: type != "cron"
       script:
-        - ls -l
-        - if [[ "$TRAVIS_TEST_RESULT" == 0 ]]; then ./cc-test-reporter sum-coverage --output - --parts 3 $HOME/coverage/coverage.*.xml | ./cc-test-reporter upload-coverage --input -; fi
+        - if [[ "$TRAVIS_TEST_RESULT" == 0 ]]; then ./cc-test-reporter sum-coverage --output - --parts 3 $HOME/coverage.*/coverage.xml | ./cc-test-reporter upload-coverage --input -; fi
