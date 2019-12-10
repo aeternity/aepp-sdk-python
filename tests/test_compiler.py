@@ -1,5 +1,5 @@
 import pytest
-
+from aeternity.contract_native import ContractNative
 
 def test_sophia_contract_compile(compiler_fixture, testdata_fixture):
     tests = [
@@ -116,6 +116,26 @@ def test_sophia_decode_calldata_bytecode(compiler_fixture):
                 result.function == t.get("function") and
                 result.arguments[0].value == t.get("arguments")[0]
             ))
+
+def test_sophia_validate_bytecode(compiler_fixture, chain_fixture):
+    compiler = compiler_fixture.COMPILER
+    account = chain_fixture.ALICE
+    node_client = chain_fixture.NODE_CLI
+
+    sourcecode = """contract SimpleStorage =
+      record state = { data : int }
+      entrypoint init(value : int) : state = { data = value }
+      entrypoint get() : int = state.data
+      stateful entrypoint set(value : int) = put(state{data = value})"""
+    
+    contract_native = ContractNative(client=node_client, source=sourcecode, compiler=compiler, account=account)
+    contract_native.deploy(12)
+
+    chain_bytecode = node_client.get_contract_code(pubkey=contract_native.address).bytecode
+    result = compiler.validate_bytecode(sourcecode, chain_bytecode)
+    print(f"Contract Validation Result: {result}")
+
+    assert result == {}
 
 
 @pytest.mark.skip("to be verified")

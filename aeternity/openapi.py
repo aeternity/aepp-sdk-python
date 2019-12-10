@@ -2,7 +2,7 @@ import re
 import requests
 import keyword
 from collections import namedtuple
-import namedtupled
+from munch import Munch
 import logging
 
 from aeternity.exceptions import UnsupportedNodeVersion, ConfigException
@@ -221,7 +221,7 @@ class OpenAPICli(object):
                     raw = http_reply.json()
                     return list(raw.values())[0]
                 jr = http_reply.json()
-                return namedtupled.map(jr, _nt_name=api_response.schema)
+                return Munch.fromDict(jr)
             # error
             raise OpenAPIClientException(f"{api_response.desc}", code=http_reply.status_code, data=http_reply.json())
         # register the method

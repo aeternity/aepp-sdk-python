@@ -6,8 +6,8 @@ from aeternity import defaults
 import rlp
 import math
 import pprint
-import namedtupled
 import copy
+from munch import Munch
 
 
 _INT = 0  # int type
@@ -404,15 +404,15 @@ class TxObject:
         self.set_metadata(kwargs.get("metadata", None))
 
     def set_data(self, data):
-        self.data = namedtupled.map(data, _nt_name="TxData")
+        self.data = Munch.fromDict(data)
 
     def set_metadata(self, metadata):
-        self.metadata = namedtupled.map(metadata, _nt_name="TxMeta")
+        self.metadata = Munch.fromDict(metadata)
 
     def asdict(self):
         t = dict(
-            data=namedtupled.reduce(self.data),
-            metadata=namedtupled.reduce(self.metadata),
+            data=Munch.toDict(self.data),
+            metadata=Munch.toDict(self.metadata),
             tx=self.tx,
         )
         if self.hash is not None:
@@ -549,7 +549,7 @@ class TxBuilder:
         a different ways from other transactions, and their data is mixed with block informations
         """
         # transform the data to a dict since the openapi module maps them to a named tuple
-        tx_data = namedtupled.reduce(api_data)
+        tx_data = Munch.toDict(api_data)
         if "signatures" in tx_data:
             tx_data["tag"] = idf.OBJECT_TAG_SIGNED_TRANSACTION
             tx_data["type"] = idf.TRANSACTION_TAG_TO_TYPE.get(idf.OBJECT_TAG_SIGNED_TRANSACTION)
@@ -625,7 +625,7 @@ class TxBuilder:
         tx_data = copy.deepcopy(data)
         # build the tx object
         txo = TxObject(
-            data=namedtupled.map(tx_data, _nt_name="TxData"),
+            data=Munch.fromDict(tx_data),
             tx=rlp_b64_tx,
         )
         # compute the tx hash
