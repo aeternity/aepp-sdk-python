@@ -1,5 +1,4 @@
 from aeternity.hashing import _int, _int_decode, _binary, _binary_decode, _id, _id_decode, encode, decode, hash_encode
-from aeternity.openapi import OpenAPICli
 from aeternity import identifiers as idf
 from aeternity import defaults
 
@@ -8,6 +7,7 @@ import math
 import pprint
 import copy
 from munch import Munch
+from deprecated import deprecated
 
 
 _INT = 0  # int type
@@ -402,12 +402,25 @@ class TxObject:
         self.tx = kwargs.get("tx", None)
         self.hash = kwargs.get("hash", None)
         self.set_metadata(kwargs.get("metadata", None))
+        self._properties = {"tx": {}, "ga": {}, "meta": {}}
 
     def set_data(self, data):
+        self._build_index(data, "tx")
         self.data = Munch.fromDict(data)
 
     def set_metadata(self, metadata):
+        self._build_index(metadata, "meta")
         self.metadata = Munch.fromDict(metadata)
+
+    def _build_index(self, data: dict, group: str):
+        def __bi(src: dict) -> dict:
+            res = {}
+            for k, v in src.items:
+                if k == "tx":
+                    res.update(__bi(v))
+                    continue
+                res[k] = v
+        self._properties[group] = __bi(data)
 
     def asdict(self):
         t = dict(
@@ -422,6 +435,38 @@ class TxObject:
 
         return t
 
+    def get(self, name):
+        """
+        Get the value of a property of the transaction by name,
+        searching recursively in the TxObject structure.
+
+        For GA transaction the properties of the GA use the ga_meta() method
+        below
+
+        :param name: the name of the property to get
+        :return: the property value or None if there is no such property
+        """
+        return self.get("tx", {}).get(name)
+
+    def meta(self, name):
+        """
+        Get the value of a meta property such as the min_fee.
+
+        :param name: the name of the meta property
+        :return: the value of the meta property or none if not found
+        """
+        return self.get("meta", {}).get(name)
+
+    def ga_meta(self, name):
+        """
+        Get the value of a GA meta transaction property
+
+        :param name: the name of the property to get
+        :return: the property value or None if there is no such property
+        """
+        return self.get("ga", {}).get(name)
+
+    @deprecated(reason="This method has been deprecated in favour of get('signatures')")
     def get_signatures(self):
         """
         retrieves the list of signatures for a signed transaction, otherwise returns a empty list
@@ -430,6 +475,7 @@ class TxObject:
             return self.data.signatures
         return []
 
+    @deprecated(reason="This method has been deprecated in favour of get('signatures')[index]")
     def get_signature(self, index):
         """
         get the signature at the requested index, or raise type error if there is no such index
@@ -1132,13 +1178,3 @@ class TxBuilder:
             tx=tx,
         )
         return self._build_txobject(body)
-
-
-class TxBuilderDebug:
-    def __init__(self, api: OpenAPICli):
-        """
-        :param native: if the transactions should be built by the sdk (True) or requested to the debug api (False)
-        """
-        if api is None:
-            raise ValueError("A initialized api rest client has to be provided to build a transaction using the node internal API ")
-        self.api = api
