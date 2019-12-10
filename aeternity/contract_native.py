@@ -1,7 +1,7 @@
 from aeternity import utils, defaults, identifiers, signing, compiler
 from aeternity.contract import Contract
 
-import namedtupled
+from munch import Munch
 
 
 class ContractNative(object):
@@ -57,25 +57,25 @@ class ContractNative(object):
     def __generate_methods(self):
         if self.aci:
             for f in self.aci.encoded_aci.contract.functions:
-                self.__add_contract_method(namedtupled.map({
+                self.__add_contract_method(Munch.fromDict({
                     "name": f.name,
                     "doc": f"Contract Method {f.name}",
                     "arguments": f.arguments,
                     "returns": f.returns,
                     "stateful": f.stateful,
                     "payable": f.payable
-                }, _nt_name="ContractMethod"))
+                }))
 
     def __encode_method_args(self, method, *args):
         if len(args) != len(method.arguments):
             raise ValueError(f"Invalid number of arguments. Expected {len(method.arguments)}, Provided {len(args)}")
         transformed_args = []
         for i, val in enumerate(args):
-            transformed_args.append(self.sophia_transformer.convert_to_sophia(val, namedtupled.reduce(method.arguments[i].type), self.aci.encoded_aci))
+            transformed_args.append(self.sophia_transformer.convert_to_sophia(val, method.arguments[i].type, self.aci.encoded_aci))
         return self.compiler.encode_calldata(self.source, method.name, *transformed_args).calldata
 
     def __decode_method_args(self, method, args):
-        return self.sophia_transformer.convert_to_py(namedtupled.reduce(args), namedtupled.reduce(method.returns), self.aci.encoded_aci)
+        return self.sophia_transformer.convert_to_py(args, method.returns, self.aci.encoded_aci)
 
     def __add_contract_method(self, method):
         def contract_method(*args, **kwargs):
@@ -84,9 +84,8 @@ class ContractNative(object):
             call_info = None
             if method.stateful or method.payable or not use_dry_run:
                 tx_hash = self.call(method.name, calldata, **kwargs).hash
-                call_info = namedtupled.reduce(self.contract.get_call_object(tx_hash))
-                call_info['tx_hash'] = tx_hash
-                call_info = namedtupled.map(call_info)
+                call_info = self.contract.get_call_object(tx_hash)
+                call_info.tx_hash = tx_hash
             else:
                 call_info = self.call_static(method.name, calldata, **kwargs)
                 if call_info.result == 'error':
@@ -108,13 +107,13 @@ class ContractNative(object):
             raise ValueError("Please provide an account to sign contract call transactions. You can set a default account using 'set_account' method")
         if account and type(account) is not signing.Account:
             raise TypeError("Invalid account type. Use `class Account` for creating an account")
-        return namedtupled.map({
+        return Munch.fromDict({
             "gas": gas,
             "gas_price": gas_price,
             "amount": amount,
             "fee": fee,
             "account": account
-        }, _nt_name="ContractOptions")
+        })
 
     def at(self, address):
         """
@@ -209,12 +208,12 @@ class SophiaTransformation:
 
     def __link_type_def(self, t, bindings):
         _, type_defs = t.split('.') if isinstance(t, str) else list(t.keys())[0].split('.')
-        aci_types = bindings.contract.type_defs + [namedtupled.map({"name": "state", "typedef": bindings.contract.state, "vars": []})]
+        aci_types = bindings.contract.type_defs + [Munch.fromDict({"name": "state", "typedef": bindings.contract.state, "vars": []})]
         aci_types = filter(lambda x: x.name == type_defs, aci_types)
         aci_types = list(aci_types)[0]
         if len(list(aci_types.vars)) > 0:
             aci_types.typedef = self.__inject_vars(t, aci_types)
-        return namedtupled.reduce(aci_types.typedef)
+        return aci_types.typedef
 
     def __extract_type(self, sophia_type, bindings={}):
         [t] = [sophia_type] if not isinstance(sophia_type, list) else sophia_type

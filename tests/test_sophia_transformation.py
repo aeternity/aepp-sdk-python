@@ -1,6 +1,4 @@
-import namedtupled
 from aeternity.contract_native import SophiaTransformation
-
 
 contract = """contract StateContract =
   type number = int
@@ -224,6 +222,6 @@ def test_type_conversion_to_sophia(compiler_fixture):
     contract_aci = compiler.aci(contract)
     transformer = SophiaTransformation()
     for t in tests:
-         type_def = namedtupled.reduce(contract_aci.encoded_aci.contract.functions[t.get('method')].arguments[t.get('argument')].type)
+         type_def = contract_aci.encoded_aci.contract.functions[t.get('method')].arguments[t.get('argument')].type
          transformed = transformer.convert_to_sophia(t.get('values'), type_def, contract_aci.encoded_aci)
          assert(t.get('match') == (transformed == t.get('result')))

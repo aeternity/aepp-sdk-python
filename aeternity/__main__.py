@@ -3,8 +3,7 @@ import os
 import json
 import sys
 import getpass
-import namedtupled
-
+from munch import Munch
 from aeternity import _version
 
 from aeternity.node import NodeClient, Config
@@ -101,7 +100,7 @@ def _po(label, value, offset=0, label_prefix=None):
     elif isinstance(value, tuple):
         _pl(f"<{label}>", offset)
         o = offset + 2
-        for k, v in value._asdict().items():
+        for k, v in value.items():
             _po(k, v, o)
         _pl(f"</{label}>", offset)
     elif isinstance(value, list):
@@ -135,7 +134,7 @@ def _print_object(data, title):
 
     if ctx.obj.get(CTX_OUTPUT_JSON, False):
         if isinstance(data, tuple):
-            print(json.dumps(namedtupled.reduce(data), indent=2))
+            print(json.dumps(Munch.toDict(data), indent=2))
             return
         if isinstance(data, TxObject):
             print(json.dumps(data.asdict(), indent=2))
@@ -687,7 +686,7 @@ def contract_aci(contract_file, compiler_url, json_):
             result = c.aci(code)
             if click.confirm(f'Save contract ACI to file ({contract_file}.aci.json) ?', default=True, show_default=True):
                 with open(f"{contract_file}.aci.json", "w") as fp:
-                    fp.write(json.dumps(namedtupled.reduce(result), indent=2))
+                    fp.write(json.dumps(Munch.toDict(result), indent=2))
             _print_object(result, title="contract")
     except OpenAPIClientException as e:
         _print_object(e.data, title="compiler error")
