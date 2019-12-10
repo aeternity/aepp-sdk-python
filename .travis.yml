@@ -62,7 +62,7 @@ jobs:
         create:
           name: coverage1
           paths:
-            - "coverage.1"
+            - "coverage1"
     - stage: Tests
       name: Test Compiler, Contracts, Sophia Transformation, Hashing, CLI, HDWallet, Oracle, Node, OpenAPI, Signing, Transactions, Utils
       if: type != "cron"
@@ -73,7 +73,7 @@ jobs:
         create:
           name: coverage2
           paths:
-            - "coverage.2"
+            - "coverage2"
     - stage: Tests
       name: Test API, Tutorials, Examples
       if: type != "cron"
@@ -84,7 +84,7 @@ jobs:
         create:
           name: coverage3
           paths:
-            - "coverage.3"
+            - "coverage3"
     - stage: Test with latest node and compiler
       if: type = "cron"
       env:
@@ -102,4 +102,5 @@ jobs:
           - coverage3
       if: type != "cron"
       script:
-        - if [[ "$TRAVIS_TEST_RESULT" == 0 ]]; then ./cc-test-reporter sum-coverage --output - --parts 3 coverage.*/coverage.xml | ./cc-test-reporter upload-coverage --input -; fi
+        - ls -l
+        - if [[ "$TRAVIS_TEST_RESULT" == 0 ]]; then ./cc-test-reporter sum-coverage --output - --parts 3 coverage*/coverage.xml | ./cc-test-reporter upload-coverage --input -; fi
