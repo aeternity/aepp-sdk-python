@@ -2,7 +2,6 @@ branches:
   only:
   - master
   - develop
-  - feature/cc-codecoverage
 
 dist: xenial
 os: linux
@@ -36,18 +35,6 @@ cache:
   directories:
     - $HOME/.cache/pip
 
-cache:
-  directories:
-    - $HOME/coverage.1/
-
-cache:
-  directories:
-    - $HOME/coverage.2/
-
-cache:
-  directories:
-    - $HOME/coverage.3/
-
 before_cache:
   - rm -f $HOME/.cache/pip/log/debug.log
 
@@ -64,12 +51,23 @@ before_script:
 
 jobs:
   include:
+    - stage: warm_cache
+      script:
+        - echo "foo" > foo.txt
+      workspaces:
+        create:
+          name: ws1
+          paths:
+            - foo.txt
     - stage: Tests
       name: Test AENS, Channels
       if: type != "cron"
       script:
+        - cat foo.txt || true
         - make test TEST_OPTS="-k 'test_name or test_channel'"
         - mkdir -p $HOME/coverage.1/ && cp coverage.xml $HOME/coverage.1/coverage.xml
+      workspaces:
+        use: ws1
     - stage: Tests
       name: Test Compiler, Contracts, Sophia Transformation, Hashing, CLI, HDWallet, Oracle, Node, OpenAPI, Signing, Transactions, Utils
       if: type != "cron"
