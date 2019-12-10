@@ -97,7 +97,7 @@ jobs:
       if: type != "cron"
       script:
         - ./cc-test-reporter before-build
-        - if [[ "$TRAVIS_TEST_RESULT" == 0 ]]; then ./cc-test-reporter sum-coverage -d --output - --parts 3 codeclimate.*.json | ./cc-test-reporter upload-coverage -d --input -; fi
+        - if [[ "$TRAVIS_TEST_RESULT" == 0 ]]; then ./cc-test-reporter sum-coverage --output - --parts 3 codeclimate.*.json | ./cc-test-reporter upload-coverage --input -; fi
       workspaces:
         use:
           - coverage.1
