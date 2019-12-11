@@ -6,6 +6,8 @@ from munch import Munch
 
 class ContractNative(object):
 
+    CONTRACT_ERROR_TYPES = ["revert", "error"]
+
     def __init__(self, **kwargs):
         """
         Initialize a ContractNative object
@@ -92,7 +94,11 @@ class ContractNative(object):
                     raise ValueError(call_info.reason)
                 call_info = call_info.call_obj
             decoded_call_result = self.compiler.decode_call_result(self.source, method.name, call_info.return_value, call_info.return_type)
-            return call_info, self.__decode_method_args(method, decoded_call_result)
+            decoded_call_result = self.__decode_method_args(method, decoded_call_result)
+            if call_info.return_type in self.CONTRACT_ERROR_TYPES:
+                [(k, v)] = decoded_call_result.items()
+                raise RuntimeError(f"Error occurred while executing the contract method. Error Type: {k}. Error Value: {v[0]}")
+            return call_info, decoded_call_result
         contract_method.__name__ = method.name
         contract_method.__doc__ = method.doc
         setattr(self, contract_method.__name__, contract_method)
