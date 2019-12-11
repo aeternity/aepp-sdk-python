@@ -39,10 +39,16 @@ contract = """contract StateContract =
   entrypoint hashFn(s: hash): hash = s
   entrypoint signatureFn(s: signature): signature = s
   entrypoint bytesFn(s: bytes(32)): bytes(32) = s
-  entrypoint datTypeFn(s: dateUnit): dateUnit = s"""
+  entrypoint datTypeFn(s: dateUnit): dateUnit = s
+  entrypoint cause_error_require() : unit =
+        require(2 == 1, "require failed")
+  entrypoint cause_error_abort() : unit =
+        abort("triggered abort")
+  payable stateful entrypoint spend_all() =
+        Chain.spend(Call.origin, 1000000000000000000000000)"""
 
 
-def test_contract_native(compiler_fixture, chain_fixture):
+def test_contract_native_full(compiler_fixture, chain_fixture):
     compiler = compiler_fixture.COMPILER
     account = chain_fixture.ALICE
     contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=contract, compiler=compiler, account=account)
@@ -92,6 +98,27 @@ def test_contract_native(compiler_fixture, chain_fixture):
       expected_error_message = "Invalid number of arguments. Expected 1, Provided 2"
       assert(str(e) == expected_error_message)
 
+    try:
+      call_info, call_result =  contract_native.cause_error_require()
+      raise ValueError("Method call should fail")
+    except Exception as e:
+      expected_error_message = "Error occurred while executing the contract method. Error Type: abort. Error Value: require failed"
+      assert str(e) == expected_error_message
+    
+    try:
+      call_info, call_result =  contract_native.cause_error_abort(use_dry_run=False)
+      raise ValueError("Method call should fail")
+    except Exception as e:
+      expected_error_message = "Error occurred while executing the contract method. Error Type: abort. Error Value: triggered abort"
+      assert str(e) == expected_error_message
+    
+    try:
+      call_info, call_result = contract_native.spend_all()
+      raise ValueError("Method call should fail")
+    except Exception as e:
+      expected_error_message = "Error occurred while executing the contract method. Error Type: error. Error Value: "
+      assert str(e) == expected_error_message
+    
 
 def test_contract_native_without_init(compiler_fixture, chain_fixture):
     identity_contract = "contract Identity =\n  entrypoint main(x : int) = x"
