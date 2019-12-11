@@ -43,6 +43,7 @@ before_install:
 
 install:
   - pip install -r requirements.txt
+  - pip install codecov
 
 jobs:
   include:
@@ -52,18 +53,21 @@ jobs:
       script:
         - make lint
         - make test TEST_OPTS="-k 'test_name or test_channel'"
+        - codecov
     - stage: Tests
       name: Test Compiler, Contracts, Sophia Transformation, Hashing, CLI, HDWallet, Oracle, Node, OpenAPI, Signing, Transactions, Utils
       if: type != "cron"
       script:
         - make lint
         - make test TEST_OPTS="-k 'test_sophia or test_contract_native or test_type_conversion_to_sophia or test_oracle or test_cli or test_transaction or test_utils or test_hashing or test_hdwallet or test_node or test_generatedcli or test_signing'"
+        - codecov
     - stage: Tests
       name: Test API, Tutorials, Examples
       if: type != "cron"
       script:
         - make lint
         - make test TEST_OPTS="-k 'test_api or test_tutorial or test_example'"
+        - codecov
     - stage: Test with latest node and compiler
       if: type = "cron"
       env:
@@ -73,3 +77,4 @@ jobs:
       script:
         - make lint
         - make test
+        - codecov
