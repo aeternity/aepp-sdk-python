@@ -77,3 +77,4 @@ jobs:
       script:
         - make lint
         - make test
+        - codecov
