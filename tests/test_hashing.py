@@ -8,6 +8,30 @@ def test_hashing_name_hashing():
     assert hashing.namehash_encode('nm', 'abc.test') != 'nm_2KrC4asc6fdv82uhXDwfiqB1TY2htjhnzwzJJKLxidyMymJRUQ'
 
 
+def test_hashing_base64():
+    args = [
+        {
+            "data": "sample_data".encode('utf8'),
+            "b64": "c2FtcGxlX2RhdGG8Ktkc"
+        }
+    ]
+
+    for a in args:
+        assert a.get("b64") == hashing._base64_encode(a.get("data"))
+        assert a.get("data") == hashing._base64_decode(a.get("b64"))
+
+    args = [
+        None,
+        "",
+        "abcdzz",
+        "c2FtcGxlX2RhdGG8Ktka"
+    ]
+
+    for a in args:
+        with raises(ValueError):
+            hashing._base64_decode(a)
+
+
 def test_hashing_base58_encode():
 
     inputs = [
