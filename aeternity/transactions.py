@@ -397,30 +397,38 @@ class TxObject:
 
     """
 
+    _GA_ = idf.OBJECT_TAG_GA_META_TRANSACTION
+    _TX_ = 0
+    _META_ = -1
+
     def __init__(self, **kwargs):
-        self.set_data(kwargs.get("data", None))
+        self._index = {}
+        self.set_data(kwargs.get("data", {}))
         self.tx = kwargs.get("tx", None)
         self.hash = kwargs.get("hash", None)
-        self.set_metadata(kwargs.get("metadata", None))
-        self._properties = {"tx": {}, "ga": {}, "meta": {}}
+        self.set_metadata(kwargs.get("metadata", {}))
+        # self._build_index() # the index building is triggered by the set metadata
 
     def set_data(self, data):
-        self._build_index(data, "tx")
         self.data = Munch.fromDict(data)
 
     def set_metadata(self, metadata):
-        self._build_index(metadata, "meta")
         self.metadata = Munch.fromDict(metadata)
+        self._build_index()
 
-    def _build_index(self, data: dict, group: str):
-        def __bi(src: dict) -> dict:
-            res = {}
-            for k, v in src.items:
+    def _build_index(self):
+        self._index = {}
+        for k, v in Munch.toDict(self.metadata).items():
+            self._index[f"meta.{k}"] = v
+
+        def __bi(data: dict):
+            prefix = "ga." if data.get("tag", -1) == idf.OBJECT_TAG_GA_META_TRANSACTION else ""
+            for k, v in Munch.toDict(data).items():
                 if k == "tx":
-                    res.update(__bi(v))
+                    __bi(Munch.toDict(v.data))
                     continue
-                res[k] = v
-        self._properties[group] = __bi(data)
+                self._index[f"{prefix}{k}"] = v
+        __bi(Munch.toDict(self.data))
 
     def asdict(self):
         t = dict(
@@ -446,7 +454,7 @@ class TxObject:
         :param name: the name of the property to get
         :return: the property value or None if there is no such property
         """
-        return self.get("tx", {}).get(name)
+        return self._index.get(name)
 
     def meta(self, name):
         """
@@ -455,7 +463,7 @@ class TxObject:
         :param name: the name of the meta property
         :return: the value of the meta property or none if not found
         """
-        return self.get("meta", {}).get(name)
+        return self._index.get(f"meta.{name}")
 
     def ga_meta(self, name):
         """
@@ -464,7 +472,7 @@ class TxObject:
         :param name: the name of the property to get
         :return: the property value or None if there is no such property
         """
-        return self.get("ga", {}).get(name)
+        return self._index.get(f"ga.{name}")
 
     @deprecated(reason="This method has been deprecated in favour of get('signatures')")
     def get_signatures(self):
@@ -518,6 +526,9 @@ class TxSigner:
         signature = self.account.sign(_binary(self.network_id) + tx_raw)
         # pack and encode the transaction
         return encode(idf.SIGNATURE, signature)
+
+    def __str__(self):
+        return f"{self.network_id}:{self.account.get_address()}"
 
 
 class TxBuilder:
@@ -593,6 +604,8 @@ class TxBuilder:
 
         A specific case is the one for signed transactions that in the api are treated in
         a different ways from other transactions, and their data is mixed with block informations
+
+        :param api_data: a namedtuple of the response obtained from the node api
         """
         # transform the data to a dict since the openapi module maps them to a named tuple
         tx_data = Munch.toDict(api_data)
