@@ -3,12 +3,11 @@ from aeternity.contract_native import ContractNative
 
 contract = """contract StateContract =
   type number = int
-  record state = { value: string, key: number, testOption: option(string) }
+  record state = { value: string, key: number, testOption: option(string), testmap: map(string, string) }
   record yesEr = { t: number}
-  
   datatype dateUnit = Year | Month | Day
 
-  entrypoint init(value: string, key: int, testOption: option(string)) : state = { value = value, key = key, testOption = testOption }
+  entrypoint init(value: string, key: int, testOption: option(string), testmap: map(string, string)) : state = { value = value, key = key, testOption = testOption, testmap = testmap }
   entrypoint retrieve() : string*int = (state.value, state.key)
 
   entrypoint intFn(a: int) : int = a
@@ -40,6 +39,10 @@ contract = """contract StateContract =
   entrypoint signatureFn(s: signature): signature = s
   entrypoint bytesFn(s: bytes(32)): bytes(32) = s
   entrypoint datTypeFn(s: dateUnit): dateUnit = s
+  entrypoint try_switch(name: string) = 
+        switch(Map.lookup(name, state.testmap)) 
+          Some(_name)  => _name 
+          None         => abort("name not found")
   entrypoint cause_error_require() : unit =
         require(2 == 1, "require failed")
   entrypoint cause_error_abort() : unit =
@@ -52,7 +55,7 @@ def test_contract_native_full(compiler_fixture, chain_fixture):
     compiler = compiler_fixture.COMPILER
     account = chain_fixture.ALICE
     contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=contract, compiler=compiler, account=account)
-    contract_native.deploy("abcd", 12, "A")
+    contract_native.deploy("abcd", 12, "A", { "key": "value" })
     assert(contract_native.address is not None)
 
     _, call_result = contract_native.intFn(12)
@@ -79,11 +82,11 @@ def test_contract_native_full(compiler_fixture, chain_fixture):
     _, call_result = contract_native.intOption(12)
     assert(call_result == 12)
 
-    _, call_result = contract_native.setRecord({"value": "test1", "key": 12, "testOption": "test2"})
+    _, call_result = contract_native.setRecord({"value": "test1", "key": 12, "testOption": "test2", "testmap": { "key1": "value1" }})
     assert(call_result == [])
 
     _, call_result = contract_native.getRecord()
-    assert(call_result == {'key': 12, 'testOption': 'test2', 'value': 'test1'})
+    assert(call_result == {'key': 12, 'testOption': 'test2', 'value': 'test1', "testmap": { "key1": "value1" }})
 
     _, call_result = contract_native.retrieve()
     assert(call_result == ['test1', 12])
@@ -102,21 +105,28 @@ def test_contract_native_full(compiler_fixture, chain_fixture):
       call_info, call_result =  contract_native.cause_error_require()
       raise ValueError("Method call should fail")
     except Exception as e:
-      expected_error_message = "Error occurred while executing the contract method. Error Type: abort. Error Value: require failed"
+      expected_error_message = "Error occurred while executing the contract method. Error Type: abort. Error Message: require failed"
       assert str(e) == expected_error_message
     
     try:
       call_info, call_result =  contract_native.cause_error_abort(use_dry_run=False)
       raise ValueError("Method call should fail")
     except Exception as e:
-      expected_error_message = "Error occurred while executing the contract method. Error Type: abort. Error Value: triggered abort"
+      expected_error_message = "Error occurred while executing the contract method. Error Type: abort. Error Message: triggered abort"
       assert str(e) == expected_error_message
     
     try:
       call_info, call_result = contract_native.spend_all()
       raise ValueError("Method call should fail")
     except Exception as e:
-      expected_error_message = "Error occurred while executing the contract method. Error Type: error. Error Value: "
+      expected_error_message = "Error occurred while executing the contract method. Error Type: error. Error Message: "
+      assert str(e) == expected_error_message
+
+    try:
+      call_info, call_result = contract_native.try_switch('name1')
+      raise ValueError("Method call should fail")
+    except Exception as e:
+      expected_error_message = "Error occurred while executing the contract method. Error Type: abort. Error Message: name not found"
       assert str(e) == expected_error_message
     
 
@@ -138,11 +148,6 @@ def test_contract_native_without_default_account(compiler_fixture, chain_fixture
     assert(contract_native.address is not None)
     call_info, call_result = contract_native.main(12, account=chain_fixture.BOB)
     assert(call_result == 12)
-    try:
-      _, call_result = contract_native.main(12)
-      raise ValueError("Method call should fail")
-    except Exception as e:
-      assert(str(e) == "Please provide an account to sign contract call transactions. You can set a default account using 'set_account' method")
 
 def test_contract_native_default_account_overriding(compiler_fixture, chain_fixture):
     identity_contract = "contract Identity =\n  entrypoint main(x : int) = x"
@@ -174,6 +179,17 @@ def test_contract_native_without_dry_run(compiler_fixture, chain_fixture):
 
     call_info, call_result = contract_native.main(12, use_dry_run=False)
     assert(call_result == 12 and hasattr(call_info, 'tx_hash'))
+
+def test_contract_native_dry_run_without_account(compiler_fixture, chain_fixture):
+    identity_contract = "contract Identity =\n  entrypoint main(x : int) = x"
+    compiler = compiler_fixture.COMPILER
+    account = chain_fixture.ALICE
+    contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=identity_contract, compiler=compiler, account=account)
+    contract_native.deploy()
+    assert(contract_native.address is not None)
+    contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=identity_contract, compiler=compiler, address=contract_native.address)
+    call_info, call_result = contract_native.main(12)
+    assert(call_result == 12 and not hasattr(call_info, 'tx_hash'))
 
 def test_contract_native_verify_contract_id(compiler_fixture, chain_fixture):
     identity_contract = "contract Identity =\n  entrypoint main(x : int) = x"
