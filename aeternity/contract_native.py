@@ -26,7 +26,7 @@ class ContractNative(object):
         if 'client' in kwargs:
             self.contract = Contract(kwargs.get('client'))
         else:
-            raise ValueError("client is not provided")
+            raise ValueError("Node client is not provided")
         self.compiler = kwargs.get('compiler', None)
         if self.compiler is None:
             raise ValueError("Compiler is not provided")
@@ -188,9 +188,13 @@ class ContractNative(object):
         """
         kwargs["use_dry_run"] = True
         opts = self.__process_options(**kwargs)
-        account = self.STATIC_CALL_ACCOUNT if opts.get('account') is None else opts.get('account').get_address()
-        return self.contract.call_static(self.address, function, calldata, account, opts.amount, opts.gas,
-                                         opts.gas_price, opts.fee, abi_version, tx_ttl, top)
+        if opts.get('account') is None:
+            return self.contract.call_static(self.address, function, calldata, gas=opts.gas,
+                                             gas_price=opts.gas_price, fee=opts.fee, abi_version=abi_version,
+                                             tx_ttl=tx_ttl, top=top)
+        return self.contract.call_static(self.address, function, calldata, address=opts.account.get_address(), amount=opts.amount,
+                                         gas=opts.gas, gas_price=opts.gas_price, fee=opts.fee, abi_version=abi_version,
+                                         tx_ttl=tx_ttl, top=top)
 
 
 class SophiaTransformation:
