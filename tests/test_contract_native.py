@@ -203,8 +203,15 @@ def test_contract_native_verify_contract_id(compiler_fixture, chain_fixture):
 
     try:
       contract_native.at(INVALID_ADDRESS)
+      raise RuntimeError("Method call should fail")
     except Exception as e:
       assert str(e) == 'Contract not deployed'
+
+    try:
+      contract_native.at('ak_11111')
+      raise RuntimeError("Method call should fail")
+    except Exception as e:
+      assert str(e) == 'Invalid contract address ak_11111'
 
 def test_contract_native_init_errors(compiler_fixture, chain_fixture):
     identity_contract = "contract Identity =\n  entrypoint main(x : int) = x"
@@ -227,6 +234,12 @@ def test_contract_native_init_errors(compiler_fixture, chain_fixture):
       raise RuntimeError("Method call should fail")
     except Exception as e:
       assert str(e) == 'contract source not provided'
+
+    try:
+      contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=identity_contract, compiler=compiler, account='ak_11111111111111111111111111111111273Yts')
+      raise RuntimeError("Method call should fail")
+    except Exception as e:
+      assert str(e) == 'Invalid account type. Use `class Account` for creating an account'
 
 def test_contract_native_compiler_init_str(chain_fixture, compiler_fixture):
     identity_contract = "contract Identity =\n  entrypoint main(x : int) = x"
