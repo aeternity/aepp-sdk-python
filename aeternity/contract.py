@@ -49,7 +49,8 @@ class Contract:
 
     def call_static(self, contract_id, function, calldata,
                     address=defaults.DRY_RUN_ADDRESS,
-                    amount=defaults.DRY_RUN_AMOUNT,
+                    amount=0,
+                    dry_run_amount=defaults.DRY_RUN_AMOUNT,
                     gas=defaults.CONTRACT_GAS,
                     gas_price=defaults.CONTRACT_GAS_PRICE,
                     fee=defaults.FEE,
@@ -64,6 +65,7 @@ class Contract:
         :param calldata: TODO
         :param address: TODO
         :param amount: TODO
+        :param dry_run_amount: TODO
         :param gas: TODO
         :param gas_price: TODO
         :param fee: TODO
@@ -76,7 +78,7 @@ class Contract:
         try:
             tx = self.__prepare_call_tx(contract_id, address, function, calldata, amount, gas, gas_price, fee, abi_version, tx_ttl)
             account = {
-                "amount": amount,
+                "amount": dry_run_amount,
                 "pub_key": address
             }
             body = {"txs": [{"tx": tx.tx}], "accounts": [account]}
