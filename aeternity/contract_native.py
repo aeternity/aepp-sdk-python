@@ -7,7 +7,6 @@ from munch import Munch
 class ContractNative(object):
 
     CONTRACT_ERROR_TYPES = ["revert", "abort", "error"]
-    STATIC_CALL_ACCOUNT = 'ak_11111111111111111111111111111111273Yts'
 
     def __init__(self, **kwargs):
         """
