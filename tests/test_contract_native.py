@@ -96,35 +96,35 @@ def test_contract_native_full(compiler_fixture, chain_fixture):
 
     try:
       call_info = contract_native.intOption(12, 13)
-      raise ValueError("Method call should fail")
+      raise RuntimeError("Method call should fail")
     except Exception as e:
       expected_error_message = "Invalid number of arguments. Expected 1, Provided 2"
       assert(str(e) == expected_error_message)
 
     try:
       call_info, call_result =  contract_native.cause_error_require()
-      raise ValueError("Method call should fail")
+      raise RuntimeError("Method call should fail")
     except Exception as e:
       expected_error_message = "Error occurred while executing the contract method. Error Type: abort. Error Message: require failed"
       assert str(e) == expected_error_message
     
     try:
       call_info, call_result =  contract_native.cause_error_abort(use_dry_run=False)
-      raise ValueError("Method call should fail")
+      raise RuntimeError("Method call should fail")
     except Exception as e:
       expected_error_message = "Error occurred while executing the contract method. Error Type: abort. Error Message: triggered abort"
       assert str(e) == expected_error_message
     
     try:
       call_info, call_result = contract_native.spend_all()
-      raise ValueError("Method call should fail")
+      raise RuntimeError("Method call should fail")
     except Exception as e:
       expected_error_message = "Error occurred while executing the contract method. Error Type: error. Error Message: "
       assert str(e) == expected_error_message
 
     try:
       call_info, call_result = contract_native.try_switch('name1')
-      raise ValueError("Method call should fail")
+      raise RuntimeError("Method call should fail")
     except Exception as e:
       expected_error_message = "Error occurred while executing the contract method. Error Type: abort. Error Message: name not found"
       assert str(e) == expected_error_message
@@ -205,3 +205,32 @@ def test_contract_native_verify_contract_id(compiler_fixture, chain_fixture):
       contract_native.at(INVALID_ADDRESS)
     except Exception as e:
       assert str(e) == 'Contract not deployed'
+
+def test_contract_native_init_errors(compiler_fixture, chain_fixture):
+    identity_contract = "contract Identity =\n  entrypoint main(x : int) = x"
+    compiler = compiler_fixture.COMPILER
+    account = chain_fixture.ALICE
+    try:
+      contract_native = ContractNative(source=identity_contract, compiler=compiler, account=account)
+      raise RuntimeError("Method call should fail")
+    except Exception as e:
+      assert str(e) == 'Node client is not provided'
+
+    try:
+      contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=identity_contract, account=account)
+      raise RuntimeError("Method call should fail")
+    except Exception as e:
+      assert str(e) == 'Compiler is not provided'
+
+    try:
+      contract_native = ContractNative(client=chain_fixture.NODE_CLI, compiler=compiler, account=account)
+      raise RuntimeError("Method call should fail")
+    except Exception as e:
+      assert str(e) == 'contract source not provided'
+
+def test_contract_native_compiler_init_str(chain_fixture, compiler_fixture):
+    identity_contract = "contract Identity =\n  entrypoint main(x : int) = x"
+    account = chain_fixture.ALICE
+    contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=identity_contract, compiler=compiler_fixture.COMPILER.compiler_url, account=account)
+    contract_native.deploy()
+    assert(contract_native.address is not None)
