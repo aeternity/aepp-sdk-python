@@ -247,3 +247,26 @@ def test_contract_native_compiler_init_str(chain_fixture, compiler_fixture):
     contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=identity_contract, compiler=compiler_fixture.COMPILER.compiler_url, account=account)
     contract_native.deploy()
     assert(contract_native.address is not None)
+
+def test_contract_native_compiler_set_account(chain_fixture, compiler_fixture):
+    identity_contract = "contract Identity =\n  entrypoint main(x : int) = x"
+    account = chain_fixture.ALICE
+    try:
+      contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=identity_contract, compiler=compiler_fixture.COMPILER.compiler_url, account='ak_11111')
+      raise RuntimeError("Method call should fail")
+    except Exception as e:
+      assert str(e) == 'Invalid account type. Use `class Account` for creating an account'
+
+    contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=identity_contract, compiler=compiler_fixture.COMPILER.compiler_url, account=account)
+
+    try:
+      contract_native.set_account(None)
+      raise RuntimeError("Method call should fail")
+    except Exception as e:
+      assert str(e) == 'Account can not be of None type'
+
+    try:
+      contract_native.set_account('ak_111111')
+      raise RuntimeError("Method call should fail")
+    except Exception as e:
+      assert str(e) == 'Invalid account type. Use `class Account` for creating an account'
