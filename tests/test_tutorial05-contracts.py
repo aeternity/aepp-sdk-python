@@ -63,12 +63,12 @@ def test_example_contract_native(chain_fixture):
     crypto_hamster.at(CONTRACT_ID)
 
     # call the contract method (stateful)
-    tx_info, tx_result = crypto_hamster.add_test_value(1, 2)
+    tx_info, tx_result = crypto_hamster.create_hamster("SuperCryptoHamster")
 
     print(f"Transaction Hash: {tx_info.tx_hash}")
     print(f"Transaction Result/Return Data: {tx_result}")
 
-    assert(tx_result == 3)
+    
     assert(hasattr(tx_info, 'tx_hash'))
 
     # call contract method (not stateful)

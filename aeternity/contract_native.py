@@ -6,6 +6,8 @@ from munch import Munch
 
 class ContractNative(object):
 
+    CONTRACT_ERROR_TYPES = ["revert", "abort", "error"]
+
     def __init__(self, **kwargs):
         """
         Initialize a ContractNative object
@@ -23,7 +25,7 @@ class ContractNative(object):
         if 'client' in kwargs:
             self.contract = Contract(kwargs.get('client'))
         else:
-            raise ValueError("client is not provided")
+            raise ValueError("Node client is not provided")
         self.compiler = kwargs.get('compiler', None)
         if self.compiler is None:
             raise ValueError("Compiler is not provided")
@@ -92,6 +94,12 @@ class ContractNative(object):
                     raise ValueError(call_info.reason)
                 call_info = call_info.call_obj
             decoded_call_result = self.compiler.decode_call_result(self.source, method.name, call_info.return_value, call_info.return_type)
+            if call_info.return_type in self.CONTRACT_ERROR_TYPES:
+                if isinstance(decoded_call_result, dict):
+                    [(k, v)] = decoded_call_result.items()
+                else:
+                    (k, v) = decoded_call_result
+                raise RuntimeError(f"Error occurred while executing the contract method. Error Type: {k}. Error Message: {v[0]}")
             return call_info, self.__decode_method_args(method, decoded_call_result)
         contract_method.__name__ = method.name
         contract_method.__doc__ = method.doc
@@ -103,7 +111,8 @@ class ContractNative(object):
         amount = self.contract_amount if kwargs.get('amount') is None else kwargs.get('amount')
         fee = self.fee if kwargs.get('fee') is None else kwargs.get('fee')
         account = self.account if kwargs.get('account') is None else kwargs.get('account')
-        if account is None:
+        use_dry_run = kwargs.get("use_dry_run", False)
+        if account is None and use_dry_run is False:
             raise ValueError("Please provide an account to sign contract call transactions. You can set a default account using 'set_account' method")
         if account and type(account) is not signing.Account:
             raise TypeError("Invalid account type. Use `class Account` for creating an account")
@@ -176,9 +185,15 @@ class ContractNative(object):
         call-static a contract method
         :return: the call object
         """
+        kwargs["use_dry_run"] = True
         opts = self.__process_options(**kwargs)
-        return self.contract.call_static(self.address, function, calldata, opts.account.get_address(), opts.amount, opts.gas,
-                                         opts.gas_price, opts.fee, abi_version, tx_ttl, top)
+        if opts.get('account') is None:
+            return self.contract.call_static(self.address, function, calldata, gas=opts.gas,
+                                             gas_price=opts.gas_price, fee=opts.fee, abi_version=abi_version,
+                                             tx_ttl=tx_ttl, top=top)
+        return self.contract.call_static(self.address, function, calldata, address=opts.account.get_address(), amount=opts.amount,
+                                         gas=opts.gas, gas_price=opts.gas_price, fee=opts.fee, abi_version=abi_version,
+                                         tx_ttl=tx_ttl, top=top)
 
 
 class SophiaTransformation:
