@@ -6,7 +6,8 @@ from munch import Munch
 
 class ContractNative(object):
 
-    CONTRACT_ERROR_TYPES = ["revert", "error"]
+    CONTRACT_ERROR_TYPES = ["revert", "abort", "error"]
+    STATIC_CALL_ACCOUNT = 'ak_11111111111111111111111111111111273Yts'
 
     def __init__(self, **kwargs):
         """
@@ -111,7 +112,8 @@ class ContractNative(object):
         amount = self.contract_amount if kwargs.get('amount') is None else kwargs.get('amount')
         fee = self.fee if kwargs.get('fee') is None else kwargs.get('fee')
         account = self.account if kwargs.get('account') is None else kwargs.get('account')
-        if account is None:
+        use_dry_run = kwargs.get("use_dry_run", False)
+        if account is None and use_dry_run is False:
             raise ValueError("Please provide an account to sign contract call transactions. You can set a default account using 'set_account' method")
         if account and type(account) is not signing.Account:
             raise TypeError("Invalid account type. Use `class Account` for creating an account")
@@ -184,8 +186,10 @@ class ContractNative(object):
         call-static a contract method
         :return: the call object
         """
+        kwargs["use_dry_run"] = True
         opts = self.__process_options(**kwargs)
-        return self.contract.call_static(self.address, function, calldata, opts.account.get_address(), opts.amount, opts.gas,
+        account = self.STATIC_CALL_ACCOUNT if opts.get('account') is None else opts.get('account').get_address()
+        return self.contract.call_static(self.address, function, calldata, account, opts.amount, opts.gas,
                                          opts.gas_price, opts.fee, abi_version, tx_ttl, top)
 
 
