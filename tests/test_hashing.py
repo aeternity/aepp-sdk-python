@@ -8,19 +8,66 @@ def test_hashing_name_hashing():
     assert hashing.namehash_encode('nm', 'abc.test') != 'nm_2KrC4asc6fdv82uhXDwfiqB1TY2htjhnzwzJJKLxidyMymJRUQ'
 
 
+def test_hashing_rlp():
+    args = [
+        {
+            "data": ("tx", [b"a", b"b", 1, 0, False, True]),
+            "rlp": "tx_xmFiAYCAAXNBplc=",
+        },
+        {
+            "data": ("th", [b"a", b"b", 1, 0, False, True]),
+            "rlp": "th_rCDULgdVmqKQR6W",
+        },
+    ]
+
+    for a in args:
+        prefix, data = a.get("data")
+        assert hashing.encode_rlp(prefix, data) == a.get("rlp")
+
+    with raises(TypeError):
+        hashing.encode_rlp("tx", "a string") # valid prefix wrong data
+    with raises(ValueError):
+        hashing.encode_rlp(None, [1, b'a'])
+    with raises(ValueError):
+        hashing.encode_rlp("eg", [1, b'a'])
+
+def test_hashing_base64():
+    args = [
+        {
+            "data": "sample_data".encode('utf8'),
+            "b64": "c2FtcGxlX2RhdGG8Ktkc"
+        }
+    ]
+
+    for a in args:
+        assert a.get("b64") == hashing._base64_encode(a.get("data"))
+        assert a.get("data") == hashing._base64_decode(a.get("b64"))
+
+    args = [
+        None,
+        "",
+        "abcdzz",
+        "c2FtcGxlX2RhdGG8Ktka"
+    ]
+
+    for a in args:
+        with raises(ValueError):
+            hashing._base64_decode(a)
+
+
 def test_hashing_base58_encode():
 
     inputs = [
         {
             "data": "test".encode("utf-8"),
-            "prefix": "tt",
+            "prefix": "th",
             "hash": "LUC1eAJa5jW",
             "match": True,
             "raise_error": False,
         },
         {
             "data": "test".encode("utf-8"),
-            "prefix": "tt",
+            "prefix": "th",
             "hash": "LUC1eAJa",
             "match": False,
             "raise_error": True,
@@ -28,7 +75,7 @@ def test_hashing_base58_encode():
         },
         {
             "data": "aeternity".encode("utf-8"),
-            "prefix": "aa",
+            "prefix": "th",
             "hash": "97Wv2fcowb3y3qVnDC",
             "match": True,
             "raise_error": False,
@@ -64,7 +111,7 @@ def test_hashing_transactions_binary():
     for tt in tts:
         print(tt)
         if tt['err']:
-            with raises(ValueError):
+            with raises(TypeError):
                 transactions._binary(tt['in'])
         elif tt['match']:
             assert transactions._binary(tt['in']) == tt['bval']

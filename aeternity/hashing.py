@@ -61,38 +61,62 @@ def _sha256(data):
 
 
 def encode(prefix: str, data) -> str:
-    """encode data using the default encoding/decoding algorithm and prepending the prefix with a prefix, ex: ak_encoded_data, th_encoded_data,..."""
+    """
+    Encode data using the default encoding/decoding algorithm and prepending the prefix with a prefix, ex: ak_encoded_data, th_encoded_data,...
+
+    Args:
+        prefix(str): the prefix for the encoded string (see identifiers.IDENTIFIERS_B58 and IDENTIFIERS_B64)
+        data(str|bytes): the data to encode
+    Returns:
+        The encoded string using the correct encoding based on the prefix
+    Raises:
+        ValueError if the prefix is not recognized
+
+    """
     if isinstance(data, str):
         data = data.encode("utf-8")
     if prefix in identifiers.IDENTIFIERS_B64:
         return f"{prefix}_{_base64_encode(data)}"
-    return f"{prefix}_{_base58_encode(data)}"
+    elif prefix in identifiers.IDENTIFIERS_B58:
+        return f"{prefix}_{_base58_encode(data)}"
+    else:
+        raise ValueError(f"Unknown prefix {prefix}")
 
 
-def decode(data):
+def decode(data: str) -> bytes:
     """
     Decode data using the default encoding/decoding algorithm.
-    It will raise ValueError if the input data is not recognized and cannot be decoded
-    :param data: a encoded and prefixed string (ex tx_..., sg_..., ak_....)
-    :return: the raw bytes
+
+    Args:
+        data(str): the string data to decode
+    Returns:
+        the bytes of the decode data
+    Raises:
+        ValueError: if the data cannot be recognized or the prefix is unknown
     """
     if data is None or len(data.strip()) <= 3 or data[2] != '_':
-        raise ValueError('Invalid hash')
+        raise ValueError('Invalid input string')
     if data[0:2] in identifiers.IDENTIFIERS_B64:
         return _base64_decode(data[3:])
     if data[0:2] in identifiers.IDENTIFIERS_B58:
         return _base58_decode(data[3:])
-    raise ValueError(f"Unrecognized prefix {data[0:2]}")
+    raise ValueError(f"Unknown prefix {data[0:2]}")
 
 
-def encode_rlp(prefix, data):
+def encode_rlp(prefix: str, data: list) -> str:
     """
-    Encode a list in rlp format
-    :param prefix: the prefix to use in the encoded string
-    :param data: the array that has to be encoded in rlp
+    Encode a data
+
+    Args:
+        prefix(str): the prefix to use when encoding the rlp to string
+        data(list): a list of value to be encoded in rlp
+    Returns:
+        the string representation (based on prefix) of the rlp encoded message
+    Raises:
+        TypeError: if the data is not a list
     """
     if not isinstance(data, list):
-        raise ValueError("data to be encoded to rlp must be a list")
+        raise TypeError("data to be encoded to rlp must be a list")
     payload = rlp.encode(data)
     return encode(prefix, payload)
 
@@ -190,11 +214,11 @@ def _binary(val):
     if isinstance(val, str):
         try:
             return decode(val)
-        except ValueError:
+        except Exception:
             return val.encode("utf-8")
     if isinstance(val, bytes):
         return val
-    raise ValueError("Byte serialization not supported")
+    raise TypeError("Byte serialization not supported")
 
 
 def _binary_decode(data, data_type=None):
