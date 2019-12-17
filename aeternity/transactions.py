@@ -397,10 +397,6 @@ class TxObject:
 
     """
 
-    _GA_ = idf.OBJECT_TAG_GA_META_TRANSACTION
-    _TX_ = 0
-    _META_ = -1
-
     def __init__(self, **kwargs):
         self._index = {}
         self.set_data(kwargs.get("data", {}))
