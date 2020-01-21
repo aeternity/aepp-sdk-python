@@ -77,8 +77,8 @@ category = "main"
 description = "Base58 and Base58Check implementation"
 name = "base58"
 optional = false
-python-versions = "*"
-version = "1.0.3"
+python-versions = ">=3.5"
+version = "2.0.0"
 
 [[package]]
 category = "dev"
@@ -958,7 +958,7 @@ more-itertools = "*"
 test = []
 
 [metadata]
-content-hash = "76906c28de5a74c967ec109448b4d9aab220264c6927a6df485300a73d749fc9"
+content-hash = "7abce1ed3031d32f217eb7543998a9a1b5d75e6a6ecf1441c9c1fd47bcf362fa"
 python-versions = "^3.6"
 
 [metadata.hashes]
@@ -969,7 +969,7 @@ async-timeout = ["0c3c816a028d47f659d6ff5c745cb2acf1f966da1fe5c19c77a70282b25f4c
 atomicwrites = ["03472c30eb2c5d1ba9227e4c2ca66ab8287fbfbbda3888aa93dc2e28fc6811b4", "75a9445bac02d8d058d5e1fe689654ba5a6556a1dfd8ce6ec55a0ed79866cfa6"]
 attrs = ["08a96c641c3a74e44eb59afb61a24f2cb9f4d7188748e76ba4bb5edfa3cb7d1c", "f7b7ce16570fe9965acd6d30101a28f62fb4a7f9e926b3bbc9b61f8b04247e72"]
 babel = ["af92e6106cb7c55286b25b38ad7695f8b4efb36a90ba483d7f7a6628c46158ab", "e86135ae101e31e2c8ec20a4e0c5220f4eed12487d5cf3f78be7e98d3a57fc28"]
-base58 = ["1e42993c0628ed4f898c03b522b26af78fb05115732549b21a028bc4633d19ab", "6aa0553e477478993588303c54659d15e3c17ae062508c854a8b752d07c716bd", "9a793c599979c497800eb414c852b80866f28daaed5494703fc129592cc83e60"]
+base58 = ["4c7f5687da771b519cf86b3236250e7c3543368c576404c9fe2d992a287666e0", "c83584a8b917dc52dd634307137f2ad2721a9efb4f1de32fc7eaaaf87844177e"]
 bowler = ["15deef7f153fd8589ff0c7c9ec851800caae53c76edf63c13128d5a527989be1"]
 cerberus = ["302e6694f206dd85cb63f13fd5025b31ab6d38c99c50c6d769f8fa0b0f299589"]
 certifi = ["017c25db2a153ce562900032d5bc68e9f191e44e9a0f762f373977de9df1fbb3", "25b64c7da4cd7479594d035c08c2d809eb4aab3a26e5a990ea98cc450c320f1f"]
