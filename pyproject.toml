@@ -41,7 +41,7 @@ pytest = "^5.3"
 flake8 = "^3.7"
 dephell = "^0.7.3"
 pytest-cov = "^2.7"
-coverage = "^4.5"
+coverage = "^5.0"
 sphinx = "^2.2"
 sphinx_rtd_theme = "^0.4.3"
 
