@@ -133,10 +133,18 @@ def test_sophia_validate_bytecode(compiler_fixture, chain_fixture):
 
     chain_bytecode = node_client.get_contract_code(pubkey=contract_native.address).bytecode
     result = compiler.validate_bytecode(sourcecode, chain_bytecode)
-    print(f"Contract Validation Result: {result}")
 
     assert result == {}
 
+    sourcecode_identity = """contract Identity =
+    entrypoint main(x : int) = x
+    entrypoint mainString(x : string) = x"""
+
+    try:
+        result = compiler.validate_bytecode(sourcecode_identity, chain_bytecode)
+        raise RuntimeError("Method call should fail")
+    except Exception as e:
+      assert str(e) == 'Invalid contract'
 
 @pytest.mark.skip("to be verified")
 def test_sophia_decode_calldata_sourcecode(compiler_fixture):
