@@ -115,7 +115,10 @@ class CompilerClient(object):
                 "bytecode": bytecode,
                 "options": compiler_options
             }
-            return self.compiler_cli.validate_byte_code(body=body)
+            result = self.compiler_cli.validate_byte_code(body=body)
+            if result != {}:
+                raise CompilerError(result["message"])
+            return result
 
     @staticmethod
     def decode_bytecode(compiled):
