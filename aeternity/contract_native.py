@@ -23,7 +23,8 @@ class ContractNative(object):
         :param use_dry_run: use dry run for all method calls except for payable and stateful methods (default: True)
         """
         if 'client' in kwargs:
-            self.contract = Contract(kwargs.get('client'))
+            self.client = kwargs.get('client')
+            self.contract = Contract(self.client)
         else:
             raise ValueError("Node client is not provided")
         self.compiler = kwargs.get('compiler', None)
@@ -132,8 +133,13 @@ class ContractNative(object):
             raise ValueError(f"Invalid contract address {address}")
         if not self.contract.is_deployed(address):
             raise ValueError("Contract not deployed")
+        self._compare_bytecode(address)
         self.address = address
         self.deployed = True
+
+    def _compare_bytecode(self, address):
+        onchain_bc = self.client.get_contract_code(pubkey=address).bytecode
+        self.compiler.validate_bytecode(self.source, onchain_bc)
 
     def set_account(self, account):
         if account is None:
