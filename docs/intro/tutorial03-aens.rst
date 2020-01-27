@@ -1,5 +1,5 @@
 ======================
-Claimin a name 
+Claiming a name 
 ======================
 
 This guide describes how you can leverage aepp-sdk to claim a name
