@@ -193,14 +193,26 @@ def test_contract_native_dry_run_without_account(compiler_fixture, chain_fixture
 
 def test_contract_native_verify_contract_id(compiler_fixture, chain_fixture):
     identity_contract = "contract Identity =\n  entrypoint main(x : int) = x"
+    identity_contract_2 = """contract Identity =
+    entrypoint main(x : int) = x
+    entrypoint mainString(x : string) = x"""
     compiler = compiler_fixture.COMPILER
     account = chain_fixture.ALICE
     contract_native = ContractNative(client=chain_fixture.NODE_CLI, source=identity_contract, compiler=compiler, account=account)
     contract_native.deploy()
     contract_native.at(contract_native.address)
 
+    contract_native_2 = ContractNative(client=chain_fixture.NODE_CLI, source=identity_contract_2, compiler=compiler, account=account)
+    contract_native_2.deploy()
+
     INVALID_ADDRESS = 'ct_M9yohHgcLjhpp1Z8SaA1UTmRMQzR4FWjJHajGga8KBoZTEPwC'
 
+    try:
+      contract_native_2.at(contract_native.address)
+      raise RuntimeError("Method call should fail")
+    except Exception as e:
+      assert str(e) == 'Invalid contract'
+    
     try:
       contract_native.at(INVALID_ADDRESS)
       raise RuntimeError("Method call should fail")
