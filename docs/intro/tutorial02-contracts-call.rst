@@ -86,8 +86,8 @@ you can disable it by passing `use-dry-run=False` to the `ContractNative` constr
 Now pass the address of the deployed contract
 
 .. warning::
-                If the contract is not found at the provided address and for
-                the given network, the method will fail
+                If the contract is not found at the provided address or the on-chain bytecode
+                does not match, for the given network, the method will fail.
 
 .. literalinclude:: ../../tests/test_tutorial05-contracts.py
    :lines: 62-63
