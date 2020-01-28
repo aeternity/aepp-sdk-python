@@ -1,6 +1,6 @@
-============
+========
 TxObject
-============
+========
 
 ``TxObject`` is one of the central entity of the Python SDK,
 and it represent a transaction object. 
@@ -66,9 +66,20 @@ so the example above will become:
   # access the recipient_id for any spend transaction
   tx_object.get("recipient_id")
 
-TODO: document Meta fields
+Metadata
+--------
+Metadata are special informations that are not part of the transaction itself but my be generated
+ad a additional output while creating or parsing a transaction, in particular metadata fields are:
 
-for a complete list of fields here is the list of transactions and available fields:
+- ``min_fee`` minimum fee for a transaction, this value is always calculaed and can be used to 
+  evaluate the actual fee used for the transaction.
+- ``contract_id`` the id of a contract, only present when deploying a new contract, it has the form ``ct_....``.
+- ``salt`` the random generated salt to prepare the ``commitment_id`` of a name pre-claim transaction. The 
+  salt must be used then to prepare a claim transaction.
+
+TxObject data fields
+--------------------
+here is the complete list of transactions and available fields:
 
 
 .. literalinclude:: ../../aeternity/transactions.py
