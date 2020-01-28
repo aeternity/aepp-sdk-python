@@ -12,6 +12,7 @@ you quickly accomplish common tasks.
    cli_accounts
    validate_contract_bytecode
    amounts
+   delegate_signatures
 
 .. seealso::
 
