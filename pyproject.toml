@@ -39,7 +39,7 @@ munch = "^2.5"
 [tool.poetry.dev-dependencies]
 pytest = "^5.3"
 flake8 = "^3.7"
-dephell = "^0.7.3"
+dephell = "^0.8.1"
 pytest-cov = "^2.7"
 coverage = "^5.0"
 sphinx = "^2.3"
