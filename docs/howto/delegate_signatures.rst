@@ -6,7 +6,7 @@ The `Sophia`_ language for smart contracts allow to delegate
 the transaction execution to a contract by providing 
 delegation signatures.
 
-
+.. _Sophia: https://github.com/aeternity/protocol/blob/aeternity-node-v5.4.1/contracts/sophia.md
 
 Delegate signatures for AENS
 ============================
