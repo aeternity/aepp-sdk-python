@@ -55,7 +55,7 @@ from = {format = "poetry", path = "pyproject.toml"}
 to = {format = "pip", path = "requirements.txt"}
 
 [build-system]
-requires = ["poetry>=0.12"]
+requires = ["poetry>=1.0.1"]
 build-backend = "poetry.masonry.api"
 
 

@@ -2,7 +2,7 @@
 How to install the Aeternity SDK
 ================================
 
-This document will explain differnet way to install the Aeternity Python SDK
+This document will explain different way to install the Aeternity Python SDK
 
 
 Install Python
@@ -15,7 +15,7 @@ Install the SDK
 ===============
 
 Installation instructions are slightly different depending on whether you're
-installing official relase or fetching the latest development version.
+installing official release or fetching the latest development version.
 
 .. _installing-official-release:
 
@@ -31,7 +31,7 @@ This is the recommended way to install the Aeternity SDK
 
 #. Take a look at virtualenv_ and virtualenvwrapper_. These tools provide
    isolated Python environments, which are more practical than installing
-   packages systemwide. They also allow installing packages without
+   packages system-wide. They also allow installing packages without
    administrator privileges. The :doc:`contributing tutorial
    </intro/contributing>` walks through how to create a virtualenv.
 

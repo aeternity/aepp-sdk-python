@@ -23,7 +23,7 @@ you should see something like::
     >>>
 
 .. hint::
-  The mimimum required python version is 3.6 but 3.7 is recommended!
+  The mimimum required python version is 3.7
 
 
 Install the SDK 
