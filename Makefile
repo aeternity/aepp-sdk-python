@@ -48,17 +48,18 @@ clean:
 
 publish:
 	@echo publish on pypi.org
-	twine upload dist/*
+	poetry publish --build
 	@echo done
 
 publish-test:
 	@echo publish on test.pypi.org
-	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+	poetry config repositories.testpypi https://test.pypi.org/legacy/
+	poetry publish --build --repository testpypi
 	@echo done
 
 deps:
 	@echo generating requirements.txt
-	dephell deps convert
+	poetry export --dev -f requirements.txt > requirements.txt
 	@echo done
 
 changelog:
