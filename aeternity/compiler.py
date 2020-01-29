@@ -15,19 +15,16 @@ class CompilerError(exceptions.AException):
 
 class CompilerClient(object):
     """
-    The compiler client Fate version is the client for the aesophia_http compiler v4.x.x series,
-    that is compatible with LIMA protocol (v4)
+    The compiler client to interact with the aeternity http compiler
     """
 
     def __init__(self, compiler_url='http://localhost:3080', **kwargs):
         self.compiler_url = compiler_url
         self.compiler_cli = openapi.OpenAPICli(compiler_url, compatibility_version_range=__compiler_compatibility__)
-        # chec the compatibiity node protocol
-        self.target_protocol = identifiers.PROTOCOL_LIMA if semver.match(self.compiler_cli.version().version, ">3.9.9") else identifiers.PROTOCOL_FORTUNA
+        # default backend set to FATE
         self.compiler_options = {
+            "backend": kwargs.get("backend", identifiers.COMPILER_OPTIONS_BACKEND_FATE)
         }
-        if self.target_protocol >= identifiers.PROTOCOL_LIMA:
-            self.set_option("backend", kwargs.get("backend", identifiers.COMPILER_OPTIONS_BACKEND_FATE))
 
     def set_option(self, name, value):
         self.compiler_options[name] = value
