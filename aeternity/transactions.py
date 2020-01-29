@@ -1,5 +1,4 @@
 from aeternity.hashing import _int, _int_decode, _binary, _binary_decode, _id, _id_decode, encode, decode, hash_encode
-from aeternity.openapi import OpenAPICli
 from aeternity import identifiers as idf
 from aeternity import defaults
 
@@ -8,6 +7,7 @@ import math
 import pprint
 import copy
 from munch import Munch
+from deprecated import deprecated
 
 
 _INT = 0  # int type
@@ -393,21 +393,37 @@ tx_descriptors = {
 class TxObject:
     """
     This is a TxObject that is used throughout the SDK for transactions
-    It contains all the info associated to a transaction like transaction data,transaction hash, etx
-
+    It contains all the info associated with a transaction
     """
 
     def __init__(self, **kwargs):
-        self.set_data(kwargs.get("data", None))
+        self._index = {}
+        self.set_data(kwargs.get("data", {}))
         self.tx = kwargs.get("tx", None)
         self.hash = kwargs.get("hash", None)
-        self.set_metadata(kwargs.get("metadata", None))
+        self.set_metadata(kwargs.get("metadata", {}))
+        # self._build_index() # the index building is triggered by the set metadata
 
     def set_data(self, data):
         self.data = Munch.fromDict(data)
 
     def set_metadata(self, metadata):
         self.metadata = Munch.fromDict(metadata)
+        self._build_index()
+
+    def _build_index(self):
+        self._index = {}
+        for k, v in Munch.toDict(self.metadata).items():
+            self._index[f"meta.{k}"] = v
+
+        def __bi(data: dict):
+            prefix = "ga." if data.get("tag", -1) == idf.OBJECT_TAG_GA_META_TRANSACTION else ""
+            for k, v in Munch.toDict(data).items():
+                if k == "tx":
+                    __bi(Munch.toDict(v.data))
+                    continue
+                self._index[f"{prefix}{k}"] = v
+        __bi(Munch.toDict(self.data))
 
     def asdict(self):
         t = dict(
@@ -422,6 +438,38 @@ class TxObject:
 
         return t
 
+    def get(self, name):
+        """
+        Get the value of a property of the transaction by name,
+        searching recursively in the TxObject structure.
+
+        For GA transaction the properties of the GA use the ga_meta() method
+        below
+
+        :param name: the name of the property to get
+        :return: the property value or None if there is no such property
+        """
+        return self._index.get(name)
+
+    def meta(self, name):
+        """
+        Get the value of a meta property such as the min_fee.
+
+        :param name: the name of the meta property
+        :return: the value of the meta property or none if not found
+        """
+        return self._index.get(f"meta.{name}")
+
+    def ga_meta(self, name):
+        """
+        Get the value of a GA meta transaction property
+
+        :param name: the name of the property to get
+        :return: the property value or None if there is no such property
+        """
+        return self._index.get(f"ga.{name}")
+
+    @deprecated(reason="This method has been deprecated in favour of get('signatures')")
     def get_signatures(self):
         """
         retrieves the list of signatures for a signed transaction, otherwise returns a empty list
@@ -430,6 +478,7 @@ class TxObject:
             return self.data.signatures
         return []
 
+    @deprecated(reason="This method has been deprecated in favour of get('signatures')[index]")
     def get_signature(self, index):
         """
         get the signature at the requested index, or raise type error if there is no such index
@@ -472,6 +521,9 @@ class TxSigner:
         signature = self.account.sign(_binary(self.network_id) + tx_raw)
         # pack and encode the transaction
         return encode(idf.SIGNATURE, signature)
+
+    def __str__(self):
+        return f"{self.network_id}:{self.account.get_address()}"
 
 
 class TxBuilder:
@@ -547,6 +599,8 @@ class TxBuilder:
 
         A specific case is the one for signed transactions that in the api are treated in
         a different ways from other transactions, and their data is mixed with block informations
+
+        :param api_data: a namedtuple of the response obtained from the node api
         """
         # transform the data to a dict since the openapi module maps them to a named tuple
         tx_data = Munch.toDict(api_data)
@@ -788,7 +842,7 @@ class TxBuilder:
         return self._build_txobject(body)
         # return self.api.post_name_preclaim(body=body).tx
 
-    def tx_name_claim(self, account_id, name, name_salt, fee, ttl, nonce) -> TxObject:
+    def tx_name_claim(self, account_id, name, name_salt, fee, ttl, nonce) -> TxObject:  # lgtm [py/similar-function]
         """
         create a preclaim transaction
         :param account_id: the account registering the name
@@ -834,7 +888,7 @@ class TxBuilder:
         )
         return self._build_txobject(body)
 
-    def tx_name_update(self, account_id, name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce) -> TxObject:
+    def tx_name_update(self, account_id, name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce) -> TxObject:  # lgtm [py/similar-function]
         """
         create an update transaction
         :param account_id: the account updating the name
@@ -861,7 +915,7 @@ class TxBuilder:
         return self._build_txobject(body)
         # return self.api.post_name_update(body=body).tx
 
-    def tx_name_transfer(self, account_id, name_id, recipient_id, fee, ttl, nonce) -> TxObject:
+    def tx_name_transfer(self, account_id, name_id, recipient_id, fee, ttl, nonce) -> TxObject:  # lgtm [py/similar-function]
         """
         create a transfer transaction
         :param account_id: the account transferring the name
@@ -1132,13 +1186,3 @@ class TxBuilder:
             tx=tx,
         )
         return self._build_txobject(body)
-
-
-class TxBuilderDebug:
-    def __init__(self, api: OpenAPICli):
-        """
-        :param native: if the transactions should be built by the sdk (True) or requested to the debug api (False)
-        """
-        if api is None:
-            raise ValueError("A initialized api rest client has to be provided to build a transaction using the node internal API ")
-        self.api = api
