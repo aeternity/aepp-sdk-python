@@ -59,7 +59,7 @@ publish-test:
 
 deps:
 	@echo generating requirements.txt
-	poetry export -f requirements.txt > requirements.txt
+	poetry export --dev -f requirements.txt > requirements.txt
 	@echo done
 
 changelog:
