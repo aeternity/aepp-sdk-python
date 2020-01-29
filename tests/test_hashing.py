@@ -2,10 +2,10 @@ from aeternity import hashing, transactions
 from pytest import raises
 
 
-def test_hashing_name_hashing():
-    assert hashing.namehash_encode('nm', 'welghmolql.test') == 'nm_Ziiq3M9ASEHXCV71qUNde6SsomqwZjYPFvnJSvTkpSUDiXqH3'
-    assert hashing.namehash_encode('pp', 'welghmolql.test') == 'pp_Ziiq3M9ASEHXCV71qUNde6SsomqwZjYPFvnJSvTkpSUDiXqH3'
-    assert hashing.namehash_encode('nm', 'abc.test') != 'nm_2KrC4asc6fdv82uhXDwfiqB1TY2htjhnzwzJJKLxidyMymJRUQ'
+def test_hashing_name_id():
+    assert hashing.name_id('aeternity.chain') == 'nm_S4ofw6861biSJrXgHuJPo7VotLbrY8P9ngTLvgrRwbDEA3svc'
+    assert hashing.name_id('apeunit.chain') == 'nm_vXDbXQHeSqLUwXdYMioZdg4i1AizRR6kH5bzj16zzUN7gdFri'
+    assert hashing.name_id('abc.chain') != 'nm_S4ofw6861biSJrXgHuJPo7VotLbrY8P9ngTLvgrRwbDEA3svc'
 
 
 def test_hashing_rlp():
@@ -158,21 +158,6 @@ def test_hashing_oracle_id():
 def test_hashing_committment_id():
 
     tests = [
-        {
-            "domain": "aeternity.test",
-            "salt": 10692426485854419779,
-            "commitment_id": "cm_2by2qwnum96Z78WSFRJwhsC5qFzDgatrKk7PfH3yZ2wMBmsZF2"
-        },
-        {
-            "domain": "whatever.test",
-            "salt": 4703192432112,
-            "commitment_id": "cm_2GDk2XGBEqgNKM2sz63EVhsWi6ZGxjR1M7TMFZQvcBUin1As6"
-        },
-        {
-            "domain": "aepps.test",
-            "salt": 723907012945811264198,
-            "commitment_id": "cm_pQu4wAuiyhe1mHqZzh3yNA4JwBPaess3MY7MnZFG9vsFjD5yE"
-        },
         {
             "domain": "aeternity.chain",
             "salt": 10692426485854419779,
