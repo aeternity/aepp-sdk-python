@@ -11,8 +11,6 @@ check the :doc:`installation guide </topics/install>`.
 Install Python
 ==============
 
-The Aeternity Python SDK requires Python v3.7
-
 Get the latest version of Python at https://www.python.org/downloads/ or with
 your operating system's package manager.
 
@@ -23,6 +21,9 @@ you should see something like::
     [GCC 4.x] on linux
     Type "help", "copyright", "credits" or "license" for more information.
     >>>
+
+.. hint::
+  The mimimum required python version is 3.6 but 3.7 is recommended!
 
 
 Install the SDK 
