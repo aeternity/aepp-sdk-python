@@ -68,18 +68,18 @@ so the example above will become:
 
 Metadata
 --------
-Metadata are special informations that are not part of the transaction itself but my be generated
+Metadatas are special informations that are not part of the transaction itself but my be generated
 ad a additional output while creating or parsing a transaction, in particular metadata fields are:
 
 - ``min_fee`` minimum fee for a transaction, this value is always calculaed and can be used to 
   evaluate the actual fee used for the transaction.
-- ``contract_id`` the id of a contract, only present when deploying a new contract, it has the form ``ct_....``.
+- ``contract_id`` the id of a contract, only present when deploying a new contract (starts with prefix ``ct_``).
 - ``salt`` the random generated salt to prepare the ``commitment_id`` of a name pre-claim transaction. The 
   salt must be used then to prepare a claim transaction.
 
 TxObject data fields
 --------------------
-here is the complete list of transactions and available fields:
+Here is the complete list of transactions and available fields:
 
 
 .. literalinclude:: ../../aeternity/transactions.py

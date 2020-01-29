@@ -393,7 +393,7 @@ tx_descriptors = {
 class TxObject:
     """
     This is a TxObject that is used throughout the SDK for transactions
-    It contains all the info associated to a transaction
+    It contains all the info associated with a transaction
     """
 
     def __init__(self, **kwargs):
