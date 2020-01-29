@@ -602,6 +602,8 @@ class NodeClient:
         Args:
             account: the account authorizing the transaction
             contract_id: the if of the contract executing the transaction
+        Returns:
+            the signature to use for delegation
         """
         return self._delegate_common(account, contract_id)
 
@@ -613,17 +615,8 @@ class NodeClient:
             account: the account authorizing the transaction
             contract_id: the if of the contract executing the transaction
             name: the name being claimed
-        """
-        return self._delegate_common(account, hashing.name_id(name), contract_id)
-
-    def delegate_name_update_signature(self, account: Account, contract_id: str, name: str):
-        """
-        Helper to generate a signature to delegate a name claim to a contract.
-
-        Args:
-            account: the account authorizing the transaction
-            contract_id: the if of the contract executing the transaction
-            name: the name being claimed
+        Returns:
+            the signature to use for delegation
         """
         return self._delegate_common(account, hashing.name_id(name), contract_id)
 
@@ -635,6 +628,8 @@ class NodeClient:
             account: the account authorizing the transaction
             contract_id: the if of the contract executing the transaction
             name: the name being transferred
+        Returns:
+            the signature to use for delegation
         """
         return self._delegate_common(account, hashing.name_id(name), contract_id)
 
@@ -646,6 +641,8 @@ class NodeClient:
             account: the account authorizing the transaction
             contract_id: the if of the contract executing the transaction
             name: the name being revoked
+        Returns:
+            the signature to use for delegation
         """
         return self._delegate_common(account, hashing.name_id(name), contract_id)
 
@@ -656,6 +653,8 @@ class NodeClient:
         Args:
             account: the account authorizing the transaction
             contract_id: the if of the contract executing the transaction
+        Returns:
+            the signature to use for delegation
         """
         return self._delegate_common(account, contract_id)
 
@@ -666,6 +665,8 @@ class NodeClient:
         Args:
             account: the account authorizing the transaction
             contract_id: the if of the contract executing the transaction
+        Returns:
+            the signature to use for delegation
         """
         return self._delegate_common(account, contract_id)
 
@@ -677,6 +678,8 @@ class NodeClient:
             account: the account authorizing the transaction
             contract_id: the if of the contract executing the transaction
             query_id: the id of the query being responded
+        Returns:
+            the signature to use for delegation
         """
         return self._delegate_common(account, query_id, contract_id)
 
@@ -687,6 +690,8 @@ class NodeClient:
         Args:
             account: the account authorizing the transaction
             kwargs: the list of additional entity ids to be added to the data to be signed
+        Returns:
+            the signature to use for delegation
         """
         sig_data = self.config.network_id.encode("utf8") + hashing.decode(account.get_address())
         for _id in kwargs:
