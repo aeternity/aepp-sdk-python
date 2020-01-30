@@ -45,25 +45,6 @@ def test_sophia_encode_calldata(compiler_fixture):
         assert hasattr(result, 'calldata') and result.calldata.startswith("cb_")
 
 
-def test_sophia_decode_data(compiler_fixture):
-    tests = [
-        {
-            "sophia_type": "int",
-            "encoded_data": "cb_KxHoxF62G1Sy3bqn",
-            "expected.type": "word",
-            "expected.value": 42,
-            "match": True
-        }
-    ]
-    compiler = compiler_fixture.COMPILER
-    for t in tests:
-        result = compiler.decode_data(t.get("sophia_type"), t.get('encoded_data'))
-        assert (t.get("match") and (
-            result.data.type == t.get("expected.type") and
-            result.data.value == t.get("expected.value")
-        ))
-
-
 def test_sophia_decode_calldata_bytecode(compiler_fixture):
     tests = [
         {
@@ -71,7 +52,6 @@ def test_sophia_decode_calldata_bytecode(compiler_fixture):
             "sourcecode": "contract SimpleStorage =\n  record state = { data : int }\n  entrypoint init(value : int) : state = { data = value }\n  entrypoint get() : int = state.data\n  stateful entrypoint set(value : int) = put(state{data = value})\n",
             "bytecode": "cb_+JFGA6DcSHcAbyhLqfbIDJRe1S7ZJLCZQJBUuvMmCLK5OirpHsC4YLg8/i+GW9kANwAHKCwAggD+RNZEHwA3AQc3AAwBACcMAhoCggEDP/7oxF62ADcBBzcADAEAJwwCGgKCAQM/ni8DES+GW9kNZ2V0EUTWRB8RaW5pdBHoxF62DXNldIIvAIk0LjAuMC1yYzUAFlcOUg==",
             "match": True,
-            "target_protocol": 4,
             "calldata": "cb_KxHoxF62G1Sy3bqn",
             "function": "set",
             "arguments":  [42],
@@ -81,7 +61,6 @@ def test_sophia_decode_calldata_bytecode(compiler_fixture):
             "sourcecode": "contract Identity =\n  entrypoint main(x : int) = x",
             "bytecode": "cb_+GpGA6Abk28ISckRxfWDHCo6FYfNzlAYCRW6TBDvQZ2BYQUmH8C4OZ7+RNZEHwA3ADcAGg6CPwEDP/64F37sADcBBwcBAQCWLwIRRNZEHxFpbml0EbgXfuwRbWFpboIvAIk0LjAuMC1yYzUAfpEWYw==",
             "match": True,
-            "target_protocol": 4,
             "calldata": "cb_KxG4F37sG1Q/+F7e",
             "function": "main",
             "arguments":  [42],
@@ -89,13 +68,12 @@ def test_sophia_decode_calldata_bytecode(compiler_fixture):
     ]
     compiler = compiler_fixture.COMPILER
     for t in tests:
-        if compiler.target_protocol == t.get("target_protocol"):
-            result = compiler.decode_calldata_with_bytecode(t.get("bytecode"), t.get('calldata'))
-            print("RESULT", result)
-            assert (t.get("match") and (
-                result.function == t.get("function") and
-                result.arguments[0].value == t.get("arguments")[0]
-            ))
+        result = compiler.decode_calldata_with_bytecode(t.get("bytecode"), t.get('calldata'))
+        print("RESULT", result)
+        assert (t.get("match") and (
+            result.function == t.get("function") and
+            result.arguments[0].value == t.get("arguments")[0]
+        ))
 
 def test_sophia_validate_bytecode(compiler_fixture, chain_fixture):
     compiler = compiler_fixture.COMPILER
@@ -126,7 +104,6 @@ def test_sophia_validate_bytecode(compiler_fixture, chain_fixture):
     except Exception as e:
       assert str(e) == 'Invalid contract'
 
-@pytest.mark.skip("to be verified")
 def test_sophia_decode_calldata_sourcecode(compiler_fixture):
     tests = [
         {
@@ -134,27 +111,26 @@ def test_sophia_decode_calldata_sourcecode(compiler_fixture):
             "sourcecode": "contract SimpleStorage =\n  record state = { data : int }\n  entrypoint init(value : int) : state = { data = value }\n  entrypoint get() : int = state.data\n  stateful entrypoint set(value : int) = put(state{data = value})\n",
             "bytecode": "cb_+JFGA6DcSHcAbyhLqfbIDJRe1S7ZJLCZQJBUuvMmCLK5OirpHsC4YLg8/i+GW9kANwAHKCwAggD+RNZEHwA3AQc3AAwBACcMAhoCggEDP/7oxF62ADcBBzcADAEAJwwCGgKCAQM/ni8DES+GW9kNZ2V0EUTWRB8RaW5pdBHoxF62DXNldIIvAIk0LjAuMC1yYzUAFlcOUg==",
             "match": True,
-            "target_protocol": 4,
             "calldata": "cb_KxHoxF62G1Sy3bqn",
             "function": "set",
             "arguments":  [42],
+            "response": 42
         },
         {
             "name": "identity.aes",
             "sourcecode": "contract Identity =\n  entrypoint main(x : int) = x",
             "bytecode": "cb_+GpGA6Abk28ISckRxfWDHCo6FYfNzlAYCRW6TBDvQZ2BYQUmH8C4OZ7+RNZEHwA3ADcAGg6CPwEDP/64F37sADcBBwcBAQCWLwIRRNZEHxFpbml0EbgXfuwRbWFpboIvAIk0LjAuMC1yYzUAfpEWYw==",
             "match": True,
-            "target_protocol": 4,
             "calldata": "cb_KxG4F37sG1Q/+F7e",
             "function": "main",
             "arguments":  [42],
+            "response": 42
         }
     ]
     compiler = compiler_fixture.COMPILER
     for t in tests:
-        if compiler.target_protocol == t.get("target_protocol"):
-            result = compiler.decode_calldata_with_sourcecode(t.get("sourcecode"), t.get('function'), t.get('calldata'))
-            assert (t.get("match") and (
-                result.function == t.get("function") and
-                result.arguments[0].value == t.get("sophia_value")
-            ))
+        result = compiler.decode_calldata_with_sourcecode(t.get("sourcecode"), t.get('function'), t.get('calldata'))
+        assert (t.get("match") and (
+            result.function == t.get("function") and
+            result.arguments[0].value == t.get("response")
+        ))
