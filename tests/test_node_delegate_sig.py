@@ -1,7 +1,7 @@
 from aeternity.contract_native import ContractNative
 from aeternity import hashing, utils
-from pytest import skip
 from tests.conftest import random_domain
+import pytest
 
 
 contractAens = """contract DelegateTest =
