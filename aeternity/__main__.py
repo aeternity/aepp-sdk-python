@@ -8,10 +8,11 @@ from aeternity import _version
 
 from aeternity.node import NodeClient, Config
 from aeternity.transactions import TxSigner, TxBuilder, TxObject
-from aeternity.identifiers import NETWORK_ID_MAINNET
+from aeternity.identifiers import NETWORK_ID_MAINNET, SIGNATURE
 from . import utils, signing, aens, defaults, exceptions
 from aeternity.compiler import CompilerClient
 from aeternity.openapi import OpenAPIClientException
+from aeternity.hashing import encode
 from datetime import datetime, timezone
 
 
