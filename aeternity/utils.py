@@ -2,6 +2,7 @@ import validators
 
 from decimal import Decimal
 from aeternity import hashing
+from aeternity.identifiers import GENERIC_SIGNATURE_PREFIX
 
 
 def is_valid_hash(hash_str: str, prefix: str = None) -> bool:
@@ -121,3 +122,23 @@ def _amounts_to_aettos(*values):
     Shortcut function to convert multiple values in one call
     """
     return [amount_to_aettos(x) for x in values]
+
+
+def prepare_data_to_sign(data: list) -> bytes:
+    """
+    Prepare generic data to be signed
+    see  https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md for reference
+
+    The function takes in input a lit of elements, converts each of them to string
+    and join them with a " " character (space).
+    Then builds a string composed of the GENERIC_SIGNATURE_PREFIX plus the length
+    of the message as described above and the message itself and returns it as
+    an utf-8 bytes sequence.
+
+    Args:
+        data(list): list of arbitrary data
+    Returns:
+        the byte sequence of the normalized data
+    """
+    normalized = b' '.join([t if isinstance(t, bytes) else str(t).encode("utf8") for t in data])
+    return GENERIC_SIGNATURE_PREFIX.encode('utf8') + str(len(normalized)).encode("utf8") + normalized

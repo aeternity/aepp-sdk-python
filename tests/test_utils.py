@@ -115,3 +115,13 @@ def test_utils_amount_to_aettos():
         else:
             got = utils.amount_to_aettos(a[0])
             assert got == expected
+
+def test_utils_prepare_data_to_sign():
+    args = [
+        (["aeternity","is","great"], b'\x19Aeternity Signed Message:\n18aeternity is great'),
+        ([1000,"blue",123141.32131], b'\x19Aeternity Signed Message:\n221000 blue 123141.32131'),
+        (["aeternity", b"aeternity"], b'\x19Aeternity Signed Message:\n19aeternity aeternity'),
+    ]
+
+    for a in args:
+        assert(utils.prepare_data_to_sign(a[0]) == a[1])
