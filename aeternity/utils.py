@@ -132,13 +132,16 @@ def prepare_data_to_sign(data: list) -> bytes:
     The function takes in input a lit of elements, converts each of them to string
     and join them with a " " character (space).
     Then builds a string composed of the GENERIC_SIGNATURE_PREFIX plus the length
-    of the message as described above and the message itself and returns it as
+    of the message as described above and the message itself and encodes it as
     an utf-8 bytes sequence.
+    Finally the function hashes the result using the default hashing algorithm (blake2b)
 
     Args:
         data(list): list of arbitrary data
     Returns:
-        the byte sequence of the normalized data
+        the byte sequence of the normalized, prefixed and hashed data
     """
     normalized = b' '.join([t if isinstance(t, bytes) else str(t).encode("utf8") for t in data])
-    return GENERIC_SIGNATURE_PREFIX.encode('utf8') + str(len(normalized)).encode("utf8") + normalized
+    prefixed = GENERIC_SIGNATURE_PREFIX.encode('utf8') + str(len(normalized)).encode("utf8") + normalized
+    hashed = hashing.hash(prefixed)
+    return hashed
