@@ -1,6 +1,7 @@
 from aeternity.contract_native import ContractNative
-from aeternity import hashing
+from aeternity import hashing, utils
 from pytest import skip
+from tests.conftest import random_domain
 
 
 contractAens = """contract DelegateTest =
@@ -13,8 +14,9 @@ contractAens = """contract DelegateTest =
   stateful entrypoint signedClaim(addr : address,
                                 name : string,
                                 salt : int,
+                                name_fee : int,
                                 sign : signature) : unit =
-    AENS.claim(addr, name, salt, signature = sign)
+    AENS.claim(addr, name, salt, name_fee, signature = sign)
 
 
   stateful entrypoint signedTransfer(owner     : address,
@@ -46,18 +48,21 @@ def test_node_contract_signature_delegation(compiler_fixture, chain_fixture):
     ae_cli = contract_native.client
 
     # example name
-    name = "anexampledomainname.chain"
-    c_id, salt = hashing.commitment_id(name, 987654321)
+    name = random_domain(length=15)
+    c_id, salt = hashing.commitment_id(name, 9876)
     name_ttl = 500000
     client_ttl = 36000
+    name_fee = utils.amount_to_aettos("20AE")
+    print(f"name is {name}, commitment_id: {c_id}")
 
     # aens calls
     signature = ae_cli.delegate_name_preclaim_signature(account, contract_id)
     call, r = contract_native.signedPreclaim(account.get_address(), hashing.decode(c_id), signature)
     assert(call.return_type == 'ok')
+    ae_cli.wait_for_confirmation(call.tx_hash)
 
     signature = ae_cli.delegate_name_claim_signature(account, contract_id, name)
-    call, _ = contract_native.signedClaim(account.get_address(), name, salt, signature)
+    call, _ = contract_native.signedClaim(account.get_address(), name, salt, name_fee, signature)
     assert(call.return_type == 'ok')
 
     signature = ae_cli.delegate_name_transfer_signature(account, contract_id, name)
