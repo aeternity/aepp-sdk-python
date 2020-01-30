@@ -646,43 +646,6 @@ class NodeClient:
         """
         return self._delegate_common(account, hashing.name_id(name), contract_id)
 
-    def delegate_oracle_register_signature(self, account: Account, contract_id: str):
-        """
-        Helper to generate a signature to delegate a oracle registration to a contract.
-
-        Args:
-            account: the account authorizing the transaction
-            contract_id: the if of the contract executing the transaction
-        Returns:
-            the signature to use for delegation
-        """
-        return self._delegate_common(account, contract_id)
-
-    def delegate_oracle_extend_signature(self, account: Account, contract_id: str):
-        """
-        Helper to generate a signature to delegate a oracle extend to a contract.
-
-        Args:
-            account: the account authorizing the transaction
-            contract_id: the if of the contract executing the transaction
-        Returns:
-            the signature to use for delegation
-        """
-        return self._delegate_common(account, contract_id)
-
-    def delegate_oracle_respond_signature(self, account: Account, contract_id: str, query_id: str):
-        """
-        Helper to generate a signature to delegate a oracle respond to a contract.
-
-        Args:
-            account: the account authorizing the transaction
-            contract_id: the if of the contract executing the transaction
-            query_id: the id of the query being responded
-        Returns:
-            the signature to use for delegation
-        """
-        return self._delegate_common(account, query_id, contract_id)
-
     def _delegate_common(self, account: Account, *kwargs):
         """
         Utility method to create a delegate signature for a contract
