@@ -191,11 +191,11 @@ def test_cli_phases_spend(chain_fixture, tempdir):
     assert recipient_account.balance == 100
 
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
-@pytest.mark.skip("Have to suppress the test for a false positive due ci input")
+# @pytest.mark.skip("Have to suppress the test for a false positive due ci input")
 def test_cli_name_claim(chain_fixture, tempdir):
     account_alice_path = _account_path(tempdir, chain_fixture.ALICE)
     # get a domain that is not under auction scheme
-    domain = random_domain(length=13 ,tld='chain' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= identifiers.PROTOCOL_LIMA else 'test')
+    domain = random_domain(length=13)
     # let alice preclaim a name 
     j = call_aecli('name', 'pre-claim', '--password', 'aeternity_bc', account_alice_path, domain, '--wait')
     # retrieve the salt and the transaction hash 
@@ -222,14 +222,11 @@ def test_cli_name_claim(chain_fixture, tempdir):
 
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_cli_name_auction(chain_fixture, tempdir):
-    if chain_fixture.NODE_CLI.get_consensus_protocol_version() < identifiers.PROTOCOL_LIMA:
-        pytest.skip("name auction is only supported after Lima HF")
-        return
     node_cli = chain_fixture.NODE_CLI
     account_alice_path = _account_path(tempdir, chain_fixture.ALICE)
     account_bob_path = _account_path(tempdir, chain_fixture.BOB)
     # get a domain that is under auction scheme
-    domain = random_domain(length=9 ,tld='chain' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= identifiers.PROTOCOL_LIMA else 'test')
+    domain = random_domain(length=9)
     # let alice preclaim a name 
     j = call_aecli('name', 'pre-claim', '--password', 'aeternity_bc', account_alice_path, domain, '--wait')
     # retrieve the salt and the transaction hash 
@@ -295,7 +292,7 @@ def test_cli_contract_deploy_call(chain_fixture, compiler_fixture, tempdir):
 
 def __fullclaim_domain(chain_fixture, tempdir, recipient_address):
     account_path = _account_path(tempdir, chain_fixture.ALICE)
-    domain = random_domain(length=13 ,tld='chain' if chain_fixture.NODE_CLI.get_consensus_protocol_version() >= identifiers.PROTOCOL_LIMA else 'test')
+    domain = random_domain(length=13)
     # let alice preclaim a name 
     j = call_aecli('name', 'pre-claim', '--password', 'aeternity_bc', account_path, domain, '--wait')
     # retrieve the salt and the transaction hash 

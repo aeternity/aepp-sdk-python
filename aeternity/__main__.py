@@ -8,7 +8,7 @@ from aeternity import _version
 
 from aeternity.node import NodeClient, Config
 from aeternity.transactions import TxSigner, TxBuilder, TxObject
-from aeternity.identifiers import NETWORK_ID_MAINNET, PROTOCOL_LIMA  # TODO: remove after HF
+from aeternity.identifiers import NETWORK_ID_MAINNET
 from . import utils, signing, aens, defaults, exceptions
 from aeternity.compiler import CompilerClient
 from aeternity.openapi import OpenAPIClientException
@@ -548,8 +548,6 @@ def name_bid(keystore_name, domain, name_fee, ttl, fee, nonce, password, force, 
     try:
         set_global_options(json_, force, wait)
         account, _ = _account(keystore_name, password=password)
-        if _node_cli().get_consensus_protocol_version() < PROTOCOL_LIMA:
-            raise TypeError(f"Name auctions are not supported in protocol before LIMA ({PROTOCOL_LIMA})")
         name = _node_cli().AEName(domain)
         name.update_status()
         if name.status != aens.AEName.Status.AVAILABLE:
