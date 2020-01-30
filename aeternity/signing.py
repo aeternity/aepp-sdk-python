@@ -32,6 +32,12 @@ class Account:
             pub_key = self.verifying_key.encode(encoder=RawEncoder)
             self.address = hashing.encode(ACCOUNT_ID, pub_key)
 
+    def __str__(self):
+        return self.get_address()
+
+    def __repr__(self):
+        return self.get_address()
+
     def get_address(self, format=ACCOUNT_API_FORMAT):
         """
         Get the account address
@@ -68,13 +74,17 @@ class Account:
         """
         return self.signing_key.sign(data).signature
 
-    def verify(self, data, signature):
+    def verify(self, data: bytes, signature):
         """
         Verify data signature, raise an error if the signature cannot be verified
-        :param data: the data
-        :param signature: the signature to verify
+
+        Args:
+            data(bytes): the data for which the signature has been generated
+            signature(str|bytes): the signature to verify
+        Returns:
+            True if the signature match, False otherwise
         """
-        self.verifying_key.verify(signature, data)
+        return is_signature_valid(self.get_address(), signature, data)
 
     def is_generalized(self):
         """
