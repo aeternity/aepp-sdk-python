@@ -1,6 +1,7 @@
 from aeternity.signing import Account
-from aeternity import defaults, identifiers, hashing
+from aeternity import defaults, identifiers, hashing, utils
 import pytest
+import random
 # from aeternity.exceptions import TransactionNotFoundException
 
 
@@ -20,10 +21,11 @@ blind_auth_contract = """contract BlindAuth =
     """
 
 
-def _test_node_spend(node_cli, sender_account):
-    # WARNING THIS EXAMPLE IS USED IN THE DOCUMENTATION
 
-    recipient_id = Account.generate().get_address()
+def test_node_spend_native(chain_fixture):
+    node_cli = chain_fixture.NODE_CLI
+    sender_account = chain_fixture.ALICE
+    account = Account.generate().get_address()
     # with numbers 
     tx = node_cli.spend(sender_account, recipient_id, 100)
     print("DATA", tx)
@@ -40,9 +42,25 @@ def _test_node_spend(node_cli, sender_account):
     account_balance = node_cli.get_account_by_pubkey(pubkey=recipient_id).balance
     assert account_balance == 500000000000000100
 
+def test_node_spend_burst(chain_fixture):
+    sender_account = chain_fixture.ALICE
+    # make a new non blocking client
+    ae_cli = chain_fixture.NODE_CLI
+    ae_cli.config.blocking_mode = False
+    # recipient account
+    recipient_account = Account.generate().get_address()
+    # send 50 consecutive spend
+    ths = []
+    print(">>"*20, "spend burst start")
+    for i in range(50):
+        tx = ae_cli.spend(sender_account, recipient_account, "1AE")
+        ths.append(tx.hash)
+    print("<<"*20, "spend burst end")
 
-def test_node_spend_native(chain_fixture):
-    _test_node_spend(chain_fixture.NODE_CLI, chain_fixture.ALICE)
+    for th in ths:
+        ae_cli.wait_for_transaction(th)
+
+    assert(ae_cli.get_balance(recipient_account) == utils.amount_to_aettos("50ae"))
 
 
 @pytest.mark.parametrize("height,protocol_version", [(0, 1), (1, 1), (2, 2), (3, 2), (4, 3), (5, 3)])
@@ -55,7 +73,6 @@ def test_node_get_protocol_version(chain_fixture, height, protocol_version):
     assert(chain_fixture.NODE_CLI.get_consensus_protocol_version(height)) == protocol_version
 
 def test_node_ga_attach(chain_fixture, compiler_fixture):
-
     ae_cli = chain_fixture.NODE_CLI
     account = chain_fixture.ALICE
     c_cli = compiler_fixture.COMPILER
