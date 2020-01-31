@@ -151,7 +151,7 @@ class Account:
         # TODO: the account api is a bit convoluted, could be simplified
         # api_account is namedtuple of type Account returned by the node
 
-        account = Account(None, None, **api_account._asdict())
+        account = Account(None, None, **api_account)
         if secret_key is not None:
             account.signing_key = cls._raw_key(secret_key)
             # TODO: is this test relevant?

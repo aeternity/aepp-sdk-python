@@ -1,10 +1,10 @@
 import pytest
 import os
-import namedtupled
 import shutil
 import tempfile
 import random
 import string
+from munch import Munch
 from aeternity.signing import Account
 from aeternity.node import NodeClient, Config
 from aeternity.compiler import CompilerClient
@@ -16,6 +16,7 @@ NODE_URL = os.environ.get('TEST_URL', 'http://localhost:3013')
 NODE_URL_DEBUG = os.environ.get('TEST_DEBUG_URL', 'http://localhost:3113')
 NETWORK_ID = os.environ.get('TEST_NETWORK_ID', 'ae_devnet')
 COMPILER_URL = os.environ.get("COMPILER_URL", 'http://localhost:3080')
+FORCE_COMPATIBILITY = os.environ.get("FORCE_COMPATIBILITY", False)
 
 
 @pytest.fixture
@@ -36,14 +37,16 @@ def random_domain(length=10, tld='chain'):
 @pytest.fixture
 def client_fixture(scope="module"):
     # Instantiate the node client for the tests
+    fc = True if FORCE_COMPATIBILITY == "true" else False
     NODE_CLI = NodeClient(Config(
         external_url=NODE_URL,
         internal_url=NODE_URL_DEBUG,
         # network_id=NETWORK_ID,
         blocking_mode=True,
         debug=True,
+        force_compatibility=fc,
     ))
-    return namedtupled.map({"NODE_CLI": NODE_CLI}, _nt_name="TestData")
+    return Munch.fromDict({"NODE_CLI": NODE_CLI})
 
 
 @pytest.fixture
@@ -72,14 +75,14 @@ def chain_fixture(scope="module"):
     a = NODE_CLI.get_account_by_pubkey(pubkey=ACCOUNT_1.get_address())
     print(f"Test account (1) is {ACCOUNT_1.get_address()} with balance {a.balance}")
 
-    return namedtupled.map({"NODE_CLI": NODE_CLI, "ALICE": ACCOUNT, "BOB": ACCOUNT_1}, _nt_name="TestData")
+    return Munch.fromDict({"NODE_CLI": NODE_CLI, "ALICE": ACCOUNT, "BOB": ACCOUNT_1})
 
 
 @pytest.fixture
 def compiler_fixture(scope="module"):
     # Instantiate the node client for the tests
     compiler = CompilerClient(COMPILER_URL)
-    return namedtupled.map({"COMPILER": compiler}, _nt_name="TestData")
+    return Munch.fromDict({"COMPILER": compiler})
 
 @pytest.fixture
 def testdata_fixture(scope="module"):

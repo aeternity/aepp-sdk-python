@@ -4,7 +4,6 @@ import hashlib
 import rlp
 import secrets
 import math
-from deprecated import deprecated
 
 from nacl.hash import blake2b
 from nacl.encoding import RawEncoder
@@ -61,96 +60,117 @@ def _sha256(data):
 
 
 def encode(prefix: str, data) -> str:
-    """encode data using the default encoding/decoding algorithm and prepending the prefix with a prefix, ex: ak_encoded_data, th_encoded_data,..."""
+    """
+    Encode data using the default encoding/decoding algorithm and prepending the prefix with a prefix, ex: ak_encoded_data, th_encoded_data,...
+
+    Args:
+        prefix(str): the prefix for the encoded string (see identifiers.IDENTIFIERS_B58 and IDENTIFIERS_B64)
+        data(str|bytes): the data to encode
+    Returns:
+        The encoded string using the correct encoding based on the prefix
+    Raises:
+        ValueError if the prefix is not recognized
+
+    """
     if isinstance(data, str):
         data = data.encode("utf-8")
     if prefix in identifiers.IDENTIFIERS_B64:
         return f"{prefix}_{_base64_encode(data)}"
-    return f"{prefix}_{_base58_encode(data)}"
+    elif prefix in identifiers.IDENTIFIERS_B58:
+        return f"{prefix}_{_base58_encode(data)}"
+    else:
+        raise ValueError(f"Unknown prefix {prefix}")
 
 
-def decode(data):
+def decode(data: str) -> bytes:
     """
     Decode data using the default encoding/decoding algorithm.
-    It will raise ValueError if the input data is not recognized and cannot be decoded
-    :param data: a encoded and prefixed string (ex tx_..., sg_..., ak_....)
-    :return: the raw bytes
+
+    Args:
+        data(str): the string data to decode
+    Returns:
+        the bytes of the decode data
+    Raises:
+        ValueError: if the data cannot be recognized or the prefix is unknown
     """
     if data is None or len(data.strip()) <= 3 or data[2] != '_':
-        raise ValueError('Invalid hash')
+        raise ValueError('Invalid input string')
     if data[0:2] in identifiers.IDENTIFIERS_B64:
         return _base64_decode(data[3:])
     if data[0:2] in identifiers.IDENTIFIERS_B58:
         return _base58_decode(data[3:])
-    raise ValueError(f"Unrecognized prefix {data[0:2]}")
+    raise ValueError(f"Unknown prefix {data[0:2]}")
 
 
-def encode_rlp(prefix, data):
+def encode_rlp(prefix: str, data: list) -> str:
     """
-    Encode a list in rlp format
-    :param prefix: the prefix to use in the encoded string
-    :param data: the array that has to be encoded in rlp
+    Encode input data into rlp + the encoding defined for the prefix
+
+    Args:
+        prefix(str): the prefix to use when encoding the rlp to string
+        data(list): a list of value to be encoded in rlp
+    Returns:
+        the string representation (based on prefix) of the rlp encoded message
+    Raises:
+        TypeError: if the data is not a list
     """
     if not isinstance(data, list):
-        raise ValueError("data to be encoded to rlp must be a list")
+        raise TypeError("data to be encoded to rlp must be a list")
     payload = rlp.encode(data)
     return encode(prefix, payload)
 
 
-def decode_rlp(data):
+def decode_rlp(data: str) -> list:
     """
     Decode an rlp/b2b message to a list
-    :param data: the encoded string to decode
+    Args:
+        the encoded prefixed sting
+    Returns:
+        the raw data contained in the rlp message
     """
     rlp_enc = decode(data)
     return rlp.decode(rlp_enc)
 
 
-def hash(data):
-    """run the default hashing algorithm"""
+def hash(data: bytes) -> bytes:
+    """
+    Compute the hash of the input data using the default algorithm
+
+    Args:
+        data(bytes): the data to hash
+    Returns:
+        the hash of the input data
+    """
     return _blake2b_digest(data)
 
 
-def hash_encode(prefix, data):
-    """run the default hashing + digest algorithms"""
+def hash_encode(prefix: str, data: bytes) -> str:
+    """
+    Compute the hash of the input data and encode the
+    result with the encoding mapped for the prefix
+
+    Args:
+        prefix(str): the prefix for the data
+        data(bytes): the bytes for the input data
+    Returns:
+        a string composed by the prefix and the encoded hash
+
+    """
     return encode(prefix, hash(data))
-
-
-@deprecated(version="5.0.0", reason="changes in the protocol from lima release. use name_id(name: str) instead.")
-def namehash(name: str):
-    if isinstance(name, str):
-        name = name.lower().encode('ascii')
-    # see:
-    # https://github.com/aeternity/protocol/blob/master/AENS.md#hashing
-    # and also:
-    # https://github.com/ethereum/EIPs/blob/master/EIPS/eip-137.md#namehash-algorithm
-    labels = name.split(b'.')
-    hashed = b'\x00' * 32
-    while labels:
-        hashed = hash(hashed + hash(labels[0]))
-        labels = labels[1:]
-    return hashed
-
-
-@deprecated(version="5.0.0", reason="will not be necessary from lima release")
-def namehash_encode(prefix, name):
-    """
-    Encode the namehash to
-    """
-    return encode(prefix, namehash(name))
 
 
 def commitment_id(domain: str, salt: int = None) -> tuple:
     """
-    Compute the commitment id, the computed id will be different for .test (pre lima) and .chain domains
-    :param domain: the domain for which the commitment_id has to be generated
-    :param salt: the salt to use, if not provided it is randomly generated
+    Compute the commitment id used in AENS pre-claim transactions
+
+    Args:
+        domain(str): the domain for which the commitment_id has to be generated
+        salt(int): the salt to use, if not provided it is randomly generated
+    Returns:
+        a tuple containing the commitment_id and the salt used to generate the commitment_id
     """
     name_salt = randint() if salt is None else salt
-    if domain.endswith(".chain"):
-        commitment_id = hash_encode(identifiers.COMMITMENT_ID, domain.lower().encode('ascii') + _int(name_salt, 32))
-    else:
-        commitment_id = hash_encode(identifiers.COMMITMENT_ID, namehash(domain) + _int(name_salt, 32))
+    commitment_id = hash_encode(identifiers.COMMITMENT_ID, domain.lower().encode('utf8') + _int(name_salt, 32))
     return commitment_id, name_salt
 
 
@@ -190,11 +210,11 @@ def _binary(val):
     if isinstance(val, str):
         try:
             return decode(val)
-        except ValueError:
+        except Exception:
             return val.encode("utf-8")
     if isinstance(val, bytes):
         return val
-    raise ValueError("Byte serialization not supported")
+    raise TypeError("Byte serialization not supported")
 
 
 def _binary_decode(data, data_type=None):
@@ -231,46 +251,78 @@ def _id_decode(data):
     return encode(prefix, data[1:])
 
 
-def name_id(name: str):
+def name_id(name: str) -> str:
     """
     Encode a domain name
-    :param name: the domain name to encode
+
+    Args:
+        name(str): the domain name to encode
+    Returns:
+        the encoded and prefixed name hash
     """
-    if name.endswith('.chain'):
-        return encode(identifiers.NAME_ID, hash(name.lower().encode('ascii')))
-    return encode(identifiers.NAME_ID, namehash(name))
+    return encode(identifiers.NAME_ID, hash(name.lower().encode('utf8')))
 
 
-def contract_id(owner_id, nonce):
+def contract_id(owner_id: str, nonce: int) -> str:
     """
     Compute the contract id of a contract
-    :param owner_id: the account creating the contract
-    :param nonce: the nonce of the contract creation transaction
+
+    Args:
+        owner_id(str): the account creating the contract
+        nonce(int): the nonce of the contract creation transaction
+    Returns:
+        the computed contract_id
     """
     return hash_encode(identifiers.CONTRACT_ID, decode(owner_id) + _int(nonce))
 
 
-def oracle_id(account_id):
+def oracle_id(account_id: str) -> str:
     """
     Compute the oracle id of a oracle registration
-    :parm account_id: the account registering the oracle
+
+    Args:
+        account_id(str): the account registering the oracle
+    Returns:
+        the computed oracle_id
     """
     return f"{identifiers.ORACLE_ID}_{account_id[3:]}"
 
 
-def oracle_query_id(sender_id, nonce, oracle_id):
+def oracle_query_id(sender_id: str, nonce: int, oracle_id: str) -> str:
     """
     Compute the query id for a sender and an oracle
-    :param sender_id: the account making the query
-    :param nonce: the nonce of the query transaction
-    :param oracle_id: the oracle id
+
+    Args:
+        sender_id(str): the account making the query
+        nonce(int): the nonce of the query transaction
+        oracle_id(str): the oracle id
+    Returns:
+        the computed oracle_query_id
     """
     return hash_encode(identifiers.ORACLE_QUERY_ID, decode(sender_id) + _int(nonce, byte_length=32) + decode(oracle_id))
 
 
-def randint(upper_bound=2**64):
+def randint(upper_bound: int = 2**64):
+    """
+    Generate a cryptographically secure random int between 0 and `upper_bound`
+    It uses the nacl library to do so
+
+    Args:
+        upper_bound(int): the upper bound of the generated number (default 2**64)
+    Returns:
+        a random number
+    """
     return secrets.randbelow(upper_bound)
 
 
-def randbytes(size=32):
+def randbytes(size: int = 32) -> bytes:
+    """
+    Generate a cryptographically secure random byte sequence of the requested size
+    It uses the nacl library to do so.
+
+    Args:
+        size(int): the size of the generated byte sequence (default 32)
+    Returns:
+        a random byte sequence
+    """
     return secrets.token_bytes(size)

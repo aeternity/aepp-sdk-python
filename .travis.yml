@@ -1,0 +1,66 @@
+branches:
+  only:
+  - master
+  - develop
+
+dist: xenial
+os: linux
+addons:
+  apt:
+    packages:
+      - build-essential
+      - curl
+      - libltdl7
+      - git
+      - make
+
+services:
+  - docker
+
+language: python
+python:
+  - "3.7"
+  - "3.8"
+
+env:
+  global:
+    - TEST_NODE=http://localhost:3013
+    - TEST_URL=http://localhost:3013
+    - TEST_DEBUG_URL=http://localhost:3113
+    - TEST_NETWORK_ID=ae_devnet
+    - COMPILER_URL=http://localhost:3080
+    - FORCE_COMPATIBILITY=false
+
+cache:
+  timeout: 604800 # 7 days
+  directories:
+    - $HOME/.cache/pip
+
+before_cache:
+  - rm -f $HOME/.cache/pip/log/debug.log
+
+before_install:
+  - docker-compose up -d node compiler
+
+install:
+  - pip install -r requirements.txt
+  - pip install codecov
+
+script:
+  - make lint
+  - make test
+  - codecov
+
+
+jobs:
+  include:
+    - stage: Test with latest node and compiler
+      if: type = "cron"
+      env:
+        - NODE_TAG=master
+        - COMPILER_TAG=latest
+        - FORCE_COMPATIBILITY=true
+      script:
+        - make lint
+        - make test
+        - codecov

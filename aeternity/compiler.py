@@ -1,7 +1,7 @@
 from aeternity import exceptions, __compiler_compatibility__
 from aeternity import utils, hashing, openapi, identifiers
 
-import namedtupled
+from munch import Munch
 import semver
 from deprecated import deprecated
 
@@ -15,22 +15,24 @@ class CompilerError(exceptions.AException):
 
 class CompilerClient(object):
     """
-    The compiler client Fate version is the client for the aesophia_http compiler v4.x.x series,
-    that is compatible with LIMA protocol (v4)
+    The compiler client to interact with the aeternity http compiler
     """
 
     def __init__(self, compiler_url='http://localhost:3080', **kwargs):
         self.compiler_url = compiler_url
         self.compiler_cli = openapi.OpenAPICli(compiler_url, compatibility_version_range=__compiler_compatibility__)
-        # chec the compatibiity node protocol
-        self.target_protocol = identifiers.PROTOCOL_LIMA if semver.match(self.compiler_cli.version().version, ">3.9.9") else identifiers.PROTOCOL_FORTUNA
+        # default backend set to FATE
         self.compiler_options = {
+            "backend": kwargs.get("backend", identifiers.COMPILER_OPTIONS_BACKEND_FATE)
         }
-        if self.target_protocol >= identifiers.PROTOCOL_LIMA:
-            self.set_option("backend", kwargs.get("backend", identifiers.COMPILER_OPTIONS_BACKEND_FATE))
 
     def set_option(self, name, value):
         self.compiler_options[name] = value
+
+    def get_version(self):
+        if self.version is None:
+            self.version = self.compiler_cli.version().version
+        return self.version
 
     def compile(self, source_code, compiler_options={}):
         compiler_options = compiler_options if len(compiler_options) > 0 else self.compiler_options
@@ -102,6 +104,19 @@ class CompilerClient(object):
         }
         return self.compiler_cli.decode_calldata_source(body=body)
 
+    def validate_bytecode(self, sourcecode, bytecode, compiler_options={}):
+        if semver.match(self.compiler_cli.version().version, ">=4.1.0"):
+            compiler_options = compiler_options if len(compiler_options) > 0 else self.compiler_options
+            body = {
+                "source": sourcecode,
+                "bytecode": bytecode,
+                "options": compiler_options
+            }
+            result = self.compiler_cli.validate_byte_code(body=body)
+            if result != {}:
+                raise CompilerError(result["message"])
+            return result
+
     @staticmethod
     def decode_bytecode(compiled):
         """
@@ -147,4 +162,4 @@ class CompilerClient(object):
                 arg_type=t[2],
                 out_type=t[3],
             ))
-        return namedtupled.map(contract_data, _nt_name="ContractBin")
+        return Munch.fromDict(contract_data)

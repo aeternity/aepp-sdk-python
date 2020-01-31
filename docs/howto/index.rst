@@ -10,6 +10,9 @@ you quickly accomplish common tasks.
    :maxdepth: 1
 
    cli_accounts
+   validate_contract_bytecode
+   amounts
+   delegate_signatures
 
 .. seealso::
 

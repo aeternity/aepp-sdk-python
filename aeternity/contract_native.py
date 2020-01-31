@@ -1,10 +1,12 @@
-from aeternity import utils, defaults, identifiers, signing, compiler
+from aeternity import utils, defaults, identifiers, signing, compiler, hashing
 from aeternity.contract import Contract
 
-import namedtupled
+from munch import Munch
 
 
 class ContractNative(object):
+
+    CONTRACT_ERROR_TYPES = ["revert", "abort", "error"]
 
     def __init__(self, **kwargs):
         """
@@ -21,9 +23,10 @@ class ContractNative(object):
         :param use_dry_run: use dry run for all method calls except for payable and stateful methods (default: True)
         """
         if 'client' in kwargs:
-            self.contract = Contract(kwargs.get('client'))
+            self.client = kwargs.get('client')
+            self.contract = Contract(self.client)
         else:
-            raise ValueError("client is not provided")
+            raise ValueError("Node client is not provided")
         self.compiler = kwargs.get('compiler', None)
         if self.compiler is None:
             raise ValueError("Compiler is not provided")
@@ -57,25 +60,25 @@ class ContractNative(object):
     def __generate_methods(self):
         if self.aci:
             for f in self.aci.encoded_aci.contract.functions:
-                self.__add_contract_method(namedtupled.map({
+                self.__add_contract_method(Munch.fromDict({
                     "name": f.name,
                     "doc": f"Contract Method {f.name}",
                     "arguments": f.arguments,
                     "returns": f.returns,
                     "stateful": f.stateful,
                     "payable": f.payable
-                }, _nt_name="ContractMethod"))
+                }))
 
     def __encode_method_args(self, method, *args):
         if len(args) != len(method.arguments):
             raise ValueError(f"Invalid number of arguments. Expected {len(method.arguments)}, Provided {len(args)}")
         transformed_args = []
         for i, val in enumerate(args):
-            transformed_args.append(self.sophia_transformer.convert_to_sophia(val, namedtupled.reduce(method.arguments[i].type), self.aci.encoded_aci))
+            transformed_args.append(self.sophia_transformer.convert_to_sophia(val, method.arguments[i].type, self.aci.encoded_aci))
         return self.compiler.encode_calldata(self.source, method.name, *transformed_args).calldata
 
     def __decode_method_args(self, method, args):
-        return self.sophia_transformer.convert_to_py(namedtupled.reduce(args), namedtupled.reduce(method.returns), self.aci.encoded_aci)
+        return self.sophia_transformer.convert_to_py(args, method.returns, self.aci.encoded_aci)
 
     def __add_contract_method(self, method):
         def contract_method(*args, **kwargs):
@@ -84,15 +87,20 @@ class ContractNative(object):
             call_info = None
             if method.stateful or method.payable or not use_dry_run:
                 tx_hash = self.call(method.name, calldata, **kwargs).hash
-                call_info = namedtupled.reduce(self.contract.get_call_object(tx_hash))
-                call_info['tx_hash'] = tx_hash
-                call_info = namedtupled.map(call_info)
+                call_info = self.contract.get_call_object(tx_hash)
+                call_info.tx_hash = tx_hash
             else:
                 call_info = self.call_static(method.name, calldata, **kwargs)
                 if call_info.result == 'error':
                     raise ValueError(call_info.reason)
                 call_info = call_info.call_obj
             decoded_call_result = self.compiler.decode_call_result(self.source, method.name, call_info.return_value, call_info.return_type)
+            if call_info.return_type in self.CONTRACT_ERROR_TYPES:
+                if isinstance(decoded_call_result, dict):
+                    [(k, v)] = decoded_call_result.items()
+                else:
+                    (k, v) = decoded_call_result
+                raise RuntimeError(f"Error occurred while executing the contract method. Error Type: {k}. Error Message: {v[0]}")
             return call_info, self.__decode_method_args(method, decoded_call_result)
         contract_method.__name__ = method.name
         contract_method.__doc__ = method.doc
@@ -104,17 +112,18 @@ class ContractNative(object):
         amount = self.contract_amount if kwargs.get('amount') is None else kwargs.get('amount')
         fee = self.fee if kwargs.get('fee') is None else kwargs.get('fee')
         account = self.account if kwargs.get('account') is None else kwargs.get('account')
-        if account is None:
+        use_dry_run = kwargs.get("use_dry_run", False)
+        if account is None and use_dry_run is False:
             raise ValueError("Please provide an account to sign contract call transactions. You can set a default account using 'set_account' method")
         if account and type(account) is not signing.Account:
             raise TypeError("Invalid account type. Use `class Account` for creating an account")
-        return namedtupled.map({
+        return Munch.fromDict({
             "gas": gas,
             "gas_price": gas_price,
             "amount": amount,
             "fee": fee,
             "account": account
-        }, _nt_name="ContractOptions")
+        })
 
     def at(self, address):
         """
@@ -124,8 +133,13 @@ class ContractNative(object):
             raise ValueError(f"Invalid contract address {address}")
         if not self.contract.is_deployed(address):
             raise ValueError("Contract not deployed")
+        self._compare_bytecode(address)
         self.address = address
         self.deployed = True
+
+    def _compare_bytecode(self, address):
+        onchain_bc = self.client.get_contract_code(pubkey=address).bytecode
+        self.compiler.validate_bytecode(self.source, onchain_bc)
 
     def set_account(self, account):
         if account is None:
@@ -177,9 +191,15 @@ class ContractNative(object):
         call-static a contract method
         :return: the call object
         """
+        kwargs["use_dry_run"] = True
         opts = self.__process_options(**kwargs)
-        return self.contract.call_static(self.address, function, calldata, opts.account.get_address(), opts.amount, opts.gas,
-                                         opts.gas_price, opts.fee, abi_version, tx_ttl, top)
+        if opts.get('account') is None:
+            return self.contract.call_static(self.address, function, calldata, gas=opts.gas,
+                                             gas_price=opts.gas_price, fee=opts.fee, abi_version=abi_version,
+                                             tx_ttl=tx_ttl, top=top)
+        return self.contract.call_static(self.address, function, calldata, address=opts.account.get_address(), amount=opts.amount,
+                                         gas=opts.gas, gas_price=opts.gas_price, fee=opts.fee, abi_version=abi_version,
+                                         tx_ttl=tx_ttl, top=top)
 
 
 class SophiaTransformation:
@@ -209,12 +229,12 @@ class SophiaTransformation:
 
     def __link_type_def(self, t, bindings):
         _, type_defs = t.split('.') if isinstance(t, str) else list(t.keys())[0].split('.')
-        aci_types = bindings.contract.type_defs + [namedtupled.map({"name": "state", "typedef": bindings.contract.state, "vars": []})]
+        aci_types = bindings.contract.type_defs + [Munch.fromDict({"name": "state", "typedef": bindings.contract.state, "vars": []})]
         aci_types = filter(lambda x: x.name == type_defs, aci_types)
         aci_types = list(aci_types)[0]
         if len(list(aci_types.vars)) > 0:
             aci_types.typedef = self.__inject_vars(t, aci_types)
-        return namedtupled.reduce(aci_types.typedef)
+        return aci_types.typedef
 
     def __extract_type(self, sophia_type, bindings={}):
         [t] = [sophia_type] if not isinstance(sophia_type, list) else sophia_type
@@ -263,7 +283,8 @@ class SophiaTransformation:
 
     def to_sophia_bytes(self, arg, generic, bindings={}):
         if isinstance(arg, str):
-            return f'#{arg}'
+            val = hashing.decode(arg).hex() if utils.is_valid_hash(arg) else arg
+            return f'#{val}'
         elif isinstance(arg, bytes):
             return f"#{arg.hex()}"
 

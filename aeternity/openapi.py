@@ -2,7 +2,7 @@ import re
 import requests
 import keyword
 from collections import namedtuple
-import namedtupled
+from munch import Munch
 import logging
 
 from aeternity.exceptions import UnsupportedNodeVersion, ConfigException
@@ -207,7 +207,7 @@ class OpenAPICli(object):
             else:
                 http_reply = requests.post(target_endpoint, params=query_params, json=post_body)
                 api_response = api.responses.get(http_reply.status_code, None)
-                self.logger.debug(f"POST {target_endpoint}, params:{query_params}, body: \n{post_body} \n --> {http_reply.text}", )
+                self.logger.debug(f"POST {target_endpoint}, params:{query_params}, body: {post_body} --> {http_reply.text}", )
             # unknown error
             if api_response is None:
                 raise OpenAPIClientException(f"Unknown error {target_endpoint} {http_reply.status_code} - {http_reply.text}", code=http_reply.status_code)
@@ -221,7 +221,7 @@ class OpenAPICli(object):
                     raw = http_reply.json()
                     return list(raw.values())[0]
                 jr = http_reply.json()
-                return namedtupled.map(jr, _nt_name=api_response.schema)
+                return Munch.fromDict(jr)
             # error
             raise OpenAPIClientException(f"{api_response.desc}", code=http_reply.status_code, data=http_reply.json())
         # register the method

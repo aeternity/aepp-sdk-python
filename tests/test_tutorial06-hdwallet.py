@@ -1,6 +1,6 @@
 from aeternity.hdwallet import HDWallet
 
-def test_hdwallet_tutorial():
+def test_tutorial_hdwallet():
 
     # Generating a mnemonic
     mnemonic = HDWallet.generate_mnemonic()

@@ -2,10 +2,57 @@ from aeternity import hashing, transactions
 from pytest import raises
 
 
-def test_hashing_name_hashing():
-    assert hashing.namehash_encode('nm', 'welghmolql.test') == 'nm_Ziiq3M9ASEHXCV71qUNde6SsomqwZjYPFvnJSvTkpSUDiXqH3'
-    assert hashing.namehash_encode('pp', 'welghmolql.test') == 'pp_Ziiq3M9ASEHXCV71qUNde6SsomqwZjYPFvnJSvTkpSUDiXqH3'
-    assert hashing.namehash_encode('nm', 'abc.test') != 'nm_2KrC4asc6fdv82uhXDwfiqB1TY2htjhnzwzJJKLxidyMymJRUQ'
+def test_hashing_name_id():
+    assert hashing.name_id('aeternity.chain') == 'nm_S4ofw6861biSJrXgHuJPo7VotLbrY8P9ngTLvgrRwbDEA3svc'
+    assert hashing.name_id('apeunit.chain') == 'nm_vXDbXQHeSqLUwXdYMioZdg4i1AizRR6kH5bzj16zzUN7gdFri'
+    assert hashing.name_id('abc.chain') != 'nm_S4ofw6861biSJrXgHuJPo7VotLbrY8P9ngTLvgrRwbDEA3svc'
+
+
+def test_hashing_rlp():
+    args = [
+        {
+            "data": ("tx", [b"a", b"b", 1, 0, False, True]),
+            "rlp": "tx_xmFiAYCAAXNBplc=",
+        },
+        {
+            "data": ("th", [b"a", b"b", 1, 0, False, True]),
+            "rlp": "th_rCDULgdVmqKQR6W",
+        },
+    ]
+
+    for a in args:
+        prefix, data = a.get("data")
+        assert hashing.encode_rlp(prefix, data) == a.get("rlp")
+
+    with raises(TypeError):
+        hashing.encode_rlp("tx", "a string") # valid prefix wrong data
+    with raises(ValueError):
+        hashing.encode_rlp(None, [1, b'a'])
+    with raises(ValueError):
+        hashing.encode_rlp("eg", [1, b'a'])
+
+def test_hashing_base64():
+    args = [
+        {
+            "data": "sample_data".encode('utf8'),
+            "b64": "c2FtcGxlX2RhdGG8Ktkc"
+        }
+    ]
+
+    for a in args:
+        assert a.get("b64") == hashing._base64_encode(a.get("data"))
+        assert a.get("data") == hashing._base64_decode(a.get("b64"))
+
+    args = [
+        None,
+        "",
+        "abcdzz",
+        "c2FtcGxlX2RhdGG8Ktka"
+    ]
+
+    for a in args:
+        with raises(ValueError):
+            hashing._base64_decode(a)
 
 
 def test_hashing_base58_encode():
@@ -13,14 +60,14 @@ def test_hashing_base58_encode():
     inputs = [
         {
             "data": "test".encode("utf-8"),
-            "prefix": "tt",
+            "prefix": "th",
             "hash": "LUC1eAJa5jW",
             "match": True,
             "raise_error": False,
         },
         {
             "data": "test".encode("utf-8"),
-            "prefix": "tt",
+            "prefix": "th",
             "hash": "LUC1eAJa",
             "match": False,
             "raise_error": True,
@@ -28,7 +75,7 @@ def test_hashing_base58_encode():
         },
         {
             "data": "aeternity".encode("utf-8"),
-            "prefix": "aa",
+            "prefix": "th",
             "hash": "97Wv2fcowb3y3qVnDC",
             "match": True,
             "raise_error": False,
@@ -64,7 +111,7 @@ def test_hashing_transactions_binary():
     for tt in tts:
         print(tt)
         if tt['err']:
-            with raises(ValueError):
+            with raises(TypeError):
                 transactions._binary(tt['in'])
         elif tt['match']:
             assert transactions._binary(tt['in']) == tt['bval']
@@ -111,21 +158,6 @@ def test_hashing_oracle_id():
 def test_hashing_committment_id():
 
     tests = [
-        {
-            "domain": "aeternity.test",
-            "salt": 10692426485854419779,
-            "commitment_id": "cm_2by2qwnum96Z78WSFRJwhsC5qFzDgatrKk7PfH3yZ2wMBmsZF2"
-        },
-        {
-            "domain": "whatever.test",
-            "salt": 4703192432112,
-            "commitment_id": "cm_2GDk2XGBEqgNKM2sz63EVhsWi6ZGxjR1M7TMFZQvcBUin1As6"
-        },
-        {
-            "domain": "aepps.test",
-            "salt": 723907012945811264198,
-            "commitment_id": "cm_pQu4wAuiyhe1mHqZzh3yNA4JwBPaess3MY7MnZFG9vsFjD5yE"
-        },
         {
             "domain": "aeternity.chain",
             "salt": 10692426485854419779,

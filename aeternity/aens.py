@@ -240,8 +240,6 @@ class AEName:
             self.preclaimed_block_height = pre_claim_tx.block_height
         except OpenAPIClientException:
             raise MissingPreclaim(f"Pre-claim transaction {preclaim_tx_hash} not found")
-        # first get the protocol version
-        protocol = self.client.get_consensus_protocol_version()
         # if the commitment_id mismatch
         pre_claim_commitment_id = pre_claim_tx.tx.commitment_id
         commitment_id, _ = hashing.commitment_id(self.domain, salt=name_salt)
@@ -261,14 +259,11 @@ class AEName:
         nonce, ttl = self.client._get_nonce_ttl(account.get_address(), tx_ttl)
         # create transaction
         # check the protocol version
-        if protocol < identifiers.PROTOCOL_LIMA:
-            tx = txb.tx_name_claim(account.get_address(), self.domain, self.preclaim_salt, fee, ttl, nonce)
-        else:
-            min_name_fee = AEName.get_minimum_name_fee(self.domain)
-            if name_fee != defaults.NAME_FEE and name_fee < min_name_fee:
-                raise TypeError(f"the provided fee {name_fee} is not enough to execute the claim, required: {min_name_fee}")
-            name_fee = max(min_name_fee, name_fee)
-            tx = txb.tx_name_claim_v2(account.get_address(), self.domain, self.preclaim_salt, name_fee, fee, ttl, nonce)
+        min_name_fee = AEName.get_minimum_name_fee(self.domain)
+        if name_fee != defaults.NAME_FEE and name_fee < min_name_fee:
+            raise TypeError(f"the provided fee {name_fee} is not enough to execute the claim, required: {min_name_fee}")
+        name_fee = max(min_name_fee, name_fee)
+        tx = txb.tx_name_claim_v2(account.get_address(), self.domain, self.preclaim_salt, name_fee, fee, ttl, nonce)
         # sign the transaction
         tx_signed = self.client.sign_transaction(account, tx)
         # post the transaction to the chain

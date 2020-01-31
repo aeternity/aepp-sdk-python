@@ -4,10 +4,6 @@ from aeternity.signing import Account
 from aeternity import openapi
 import semver
 
-from pytest import skip
-
-# from aeternity.exceptions import TransactionNotFoundException
-
 
 def test_api_get_account(chain_fixture):
 

@@ -1,11 +1,4 @@
 import pytest
-from pytest import skip
-from aeternity.identifiers import PROTOCOL_LIMA
-
-#
-# SOPHIA
-#
-
 
 def _sophia_contract_tx_create_online(node_cli, account):
     tests = [
@@ -100,25 +93,16 @@ def _sophia_contract_tx_call_static(node_cli, account):
 
 def test_sophia_contract_tx_create_native_lima(chain_fixture):
     # save settings and go online
-    if chain_fixture.NODE_CLI.get_consensus_protocol_version() < PROTOCOL_LIMA:
-        skip("this is the new contract interaction, not applicable before Lima HF")
-        return
     _sophia_contract_tx_create_online(chain_fixture.NODE_CLI, chain_fixture.ALICE)
 
 
 def test_sophia_contract_tx_call_native_lima(chain_fixture):
     # save settings and go online
-    if chain_fixture.NODE_CLI.get_consensus_protocol_version() < PROTOCOL_LIMA:
-        skip("this is the new contract interaction, not applicable before Lima HF")
-        return
     _sophia_contract_tx_call_online(chain_fixture.NODE_CLI, chain_fixture.ALICE)
     # restore settings
 
 def test_sophia_contract_tx_call_static_native_lima(chain_fixture):
     # save settings and go online
-    if chain_fixture.NODE_CLI.get_consensus_protocol_version() < PROTOCOL_LIMA:
-        skip("this is the new contract interaction, not applicable before Lima HF")
-        return
     _sophia_contract_tx_call_static(chain_fixture.NODE_CLI, chain_fixture.BOB)
     # restore settings
 

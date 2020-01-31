@@ -2,7 +2,7 @@ import logging
 import time
 import random
 from datetime import datetime, timedelta
-import namedtupled
+from munch import Munch
 
 from aeternity.signing import Account
 from aeternity.openapi import OpenAPIClientException
@@ -23,11 +23,11 @@ class Config:
         """
         Initialize a configuration object to be used with the NodeClient
 
-        :param external_url: the node external url
-        :param internal_url: the node internal url
-        :param websocket_url: the node websocket url
-        :param force_compatibility: ignore node version compatibility check (default False)
-        :param `**kwargs`: see below
+        Args:
+            external_url (str): the node external url
+            internal_url (str): the node internal url
+            websocket_url (str): the node websocket url
+            force_compatibility (bool): ignore node version compatibility check (default False)
 
         Kwargs:
             :blocking_mode (bool): whenever to block the execution when broadcasting a transaction until the transaction is mined in the chain, default: False
@@ -45,6 +45,7 @@ class Config:
             :poll_tx_retries_interval (int): the interval in seconds between retries
             :poll_block_max_retries (int): TODO
             :poll_block_retries_interval (int): TODO
+            :offline (bool): whenever the node should not contact the node for any information
             :debug (bool): enable debug logging for api calls
 
         """
@@ -54,11 +55,11 @@ class Config:
         self.websocket_url = websocket_url
         self.force_compatibility = force_compatibility
         self.blocking_mode = kwargs.get("blocking_mode", False)
-        # defaults # TODO: pass defaults to the tx builder
+        # defaults for transactions
         self.tx_gas_per_byte = kwargs.get("tx_gas_per_byte", defaults.GAS_PER_BYTE)
         self.tx_base_gas = kwargs.get("tx_base_gas", defaults.BASE_GAS)
         self.tx_gas_price = kwargs.get("tx_gas_price", defaults.GAS_PRICE)
-        # get the version
+        # get the network_id
         self.network_id = kwargs.get("network_id", None)
         # contracts defaults
         self.contract_gas = kwargs.get("contract_gas", defaults.CONTRACT_GAS)
@@ -86,20 +87,12 @@ class NodeClient:
 
     def __init__(self, config=Config()):
         """
-        Initialize a new EpochClient
+        Initialize a new NodeClient
 
-        :param config: the configuration to use or empty for default (default None)
+        Args:
+            config: the configuration to use or empty for default
         """
         self.config = config
-        # determine how the transaction are going to be created
-        # if running offline they are forced to be native
-        # shall the client work in blocking mode
-        # instantiate the api client
-        self.api = openapi.OpenAPICli(url=config.api_url,
-                                      url_internal=config.api_url_internal,
-                                      debug=config.debug,
-                                      force_compatibility=config.force_compatibility,
-                                      compatibility_version_range=__node_compatibility__)
         # instantiate the transaction builder object
         self.tx_builder = transactions.TxBuilder(
             base_gas=config.tx_base_gas,
@@ -107,7 +100,15 @@ class NodeClient:
             gas_price=config.tx_gas_price,
             key_block_interval=config.key_block_interval
         )
-        # network id
+
+        # instantiate the api client
+        self.api = openapi.OpenAPICli(url=config.api_url,
+                                      url_internal=config.api_url_internal,
+                                      debug=config.debug,
+                                      force_compatibility=config.force_compatibility,
+                                      compatibility_version_range=__node_compatibility__)
+
+        # auto-configure network_id
         if self.config.network_id is None:
             self.config.network_id = self.api.get_status().network_id
 
@@ -129,21 +130,34 @@ class NodeClient:
         if relative_ttl > 0:
             ttl["absolute_ttl"] = ttl["height"] + relative_ttl
             ttl["estimated_expiration"] = datetime.now() + timedelta(minutes=self.config.key_block_interval * relative_ttl)
-        return namedtupled.map(ttl, _nt_name="TTL")
+        return Munch.fromDict(ttl)
 
-    def get_next_nonce(self, account_address):
+    def get_next_nonce(self, account, use_cached=True):
         """
-        Get the next nonce to be used for a transaction for an account
+        Get the next nonce to be used for a transaction for an account.
+        If account is an instance Account, the cached value of the account.nonce will be used
+        unless the parameter use_cached is set to False
 
-        :param node: the node client
-        :return: the next nonce for an account
-
+        Args:
+            account: the account instance or account address of get the nonce for
+            use_cached: use the cached value in the account.nonce property in case of an account object (default True)
+        Returns:
+            the next nonce for an account
         """
-        try:
-            account = self.api.get_account_by_pubkey(pubkey=account_address)
-            return account.nonce + 1
-        except Exception:
-            return 1
+
+        def get_nonce(pubkey):
+            try:
+                account = self.api.get_account_by_pubkey(pubkey=pubkey)
+                return account.nonce
+            except Exception:
+                return 0
+
+        # use cache nonce value
+        if isinstance(account, Account):
+            if account.nonce > 0 and use_cached:
+                return account.nonce + 1
+            return get_nonce(account.get_address()) + 1
+        return get_nonce(account) + 1
 
     def _get_nonce_ttl(self, account_address: str, relative_ttl: int):
         """
@@ -269,7 +283,7 @@ class NodeClient:
         return sg_ga_sg_tx
 
     def get_account(self, address: str) -> Account:
-        """
+        """:
         Retrieve an account by it's public key
         """
         if not utils.is_valid_hash(address, identifiers.ACCOUNT_ID):
@@ -290,9 +304,19 @@ class NodeClient:
         except Exception:
             return 0
 
-    def get_transaction(self, transaction_hash):  # TODO: continue
+    def get_transaction(self, transaction_hash: str) -> transactions.TxObject:
+        """
+        Retrieve a transaction by it's hash.
+
+        Args:
+            transaction_hash: the hash of the transaction to retrieve
+        Returns:
+           the TxObject of the transaction
+        Raises:
+            ValueError: if the transaction  hash is not a valid hash for transactions
+        """
         if not utils.is_valid_hash(transaction_hash, identifiers.TRANSACTION_HASH):
-            raise TypeError(f"Input {transaction_hash} is not a valid aeternity address")
+            raise ValueError(f"Input {transaction_hash} is not a valid aeternity address")
         tx = self.get_transaction_by_hash(hash=transaction_hash)
         return self.tx_builder.parse_node_reply(tx)
 
@@ -326,7 +350,7 @@ class NodeClient:
         # parse amount and fee
         amount, fee = utils._amounts_to_aettos(amount, fee)
         # retrieve the nonce
-        account.nonce = self.get_next_nonce(account.get_address()) if account.nonce == 0 else account.nonce + 1
+        account.nonce = self.get_next_nonce(account)
         # retrieve ttl
         tx_ttl = self.compute_absolute_ttl(tx_ttl)
         # build the transaction
@@ -337,7 +361,7 @@ class NodeClient:
         self.broadcast_transaction(tx)
         return tx
 
-    def wait_for_transaction(self, tx_hash, max_retries=None, polling_interval=None):
+    def wait_for_transaction(self, tx, max_retries=None, polling_interval=None) -> int:
         """
         Wait for a transaction to be mined for an account
         The method will wait for a specific transaction to be included in the chain,
@@ -346,12 +370,14 @@ class NodeClient:
         - the account nonce is >= of the transaction nonce (transaction is in an illegal state)
         - the ttl of the transaction or the one passed as parameter has been reached
 
-        :param tx_hash: the hash of the transaction to wait for
-        :param max_retries: the maximum number of retries to test for transaction
-        :param polling_interval: the interval between transaction polls
-        :return: the block height of the transaction if it has been found
-
-        :raises TransactionWaitTimeoutExpired: if the transaction hasn't been found
+        Args:
+            tx (TxObject|str): the TxObject or transaction hash of the transaction to wait for
+            max_retries (int): the maximum number of retries to test for transaction
+            polling_interval (int): the interval between transaction polls
+        Returns:
+            the block height of the transaction if it has been found
+        Raises:
+            TransactionWaitTimeoutExpired: if the transaction hasn't been found
         """
 
         retries = max_retries if max_retries is not None else self.config.poll_tx_max_retries
@@ -362,6 +388,7 @@ class NodeClient:
         # start polling
         n = 1
         total_sleep = 0
+        tx_hash = tx.hash if isinstance(tx, transactions.TxObject) else tx
         # tx_height = -1
         while True:
             # query the transaction
@@ -387,17 +414,21 @@ class NodeClient:
             n += 1
         return tx_height
 
-    def wait_for_confirmation(self, tx_hash, max_retries=None, polling_interval=None):
+    def wait_for_confirmation(self, tx, max_retries=None, polling_interval=None) -> int:
         """
         Wait for a transaction to be confirmed by at least "key_block_confirmation_num" blocks (default 3)
         The amount of blocks can be configured in the Config object using key_block_confirmation_num parameter
 
-        :param tx_hash: the hash of the transaction to wait for
-        :param max_retries: the maximum number of retries to test for transaction
-        :param polling_interval: the interval between transaction polls
-        :return: the block height of the transaction if it has been found
-
+        Args:
+            tx (TxObject|str): the TxObject or transaction hash of the transaction to wait for
+            max_retries (int): the maximum number of retries to test for transaction
+            polling_interval (int): the interval between transaction polls
+        Returns:
+            the block height of the transaction if it has been found
+        Raises:
+            TransactionWaitTimeoutExpired: if the transaction hasn't been found
         """
+        tx_hash = tx.hash if isinstance(tx, transactions.TxObject) else tx
         # first wait for the transaction to be found
         tx_height = self.wait_for_transaction(tx_hash)
         # now calculate the min block height
@@ -563,6 +594,74 @@ class NodeClient:
         # broadcast the transaction
         self.broadcast_transaction(tx)
         return tx
+
+    def delegate_name_preclaim_signature(self, account: Account, contract_id: str):
+        """
+        Helper to generate a signature to delegate a name preclaim to a contract.
+
+        Args:
+            account: the account authorizing the transaction
+            contract_id: the if of the contract executing the transaction
+        Returns:
+            the signature to use for delegation
+        """
+        return self._delegate_common(account, contract_id)
+
+    def delegate_name_claim_signature(self, account: Account, contract_id: str, name: str):
+        """
+        Helper to generate a signature to delegate a name claim to a contract.
+
+        Args:
+            account: the account authorizing the transaction
+            contract_id: the if of the contract executing the transaction
+            name: the name being claimed
+        Returns:
+            the signature to use for delegation
+        """
+        return self._delegate_common(account, hashing.name_id(name), contract_id)
+
+    def delegate_name_transfer_signature(self, account: Account, contract_id: str, name: str):
+        """
+        Helper to generate a signature to delegate a name tranfer to a contract.
+
+        Args:
+            account: the account authorizing the transaction
+            contract_id: the if of the contract executing the transaction
+            name: the name being transferred
+        Returns:
+            the signature to use for delegation
+        """
+        return self._delegate_common(account, hashing.name_id(name), contract_id)
+
+    def delegate_name_revoke_signature(self, account: Account, contract_id: str, name: str):
+        """
+        Helper to generate a signature to delegate a name revoke to a contract.
+
+        Args:
+            account: the account authorizing the transaction
+            contract_id: the if of the contract executing the transaction
+            name: the name being revoked
+        Returns:
+            the signature to use for delegation
+        """
+        return self._delegate_common(account, hashing.name_id(name), contract_id)
+
+    def _delegate_common(self, account: Account, *kwargs):
+        """
+        Utility method to create a delegate signature for a contract
+
+        Args:
+            account: the account authorizing the transaction
+            kwargs: the list of additional entity ids to be added to the data to be signed
+        Returns:
+            the signature to use for delegation
+        """
+        sig_data = self.config.network_id.encode("utf8") + hashing.decode(account.get_address())
+        for _id in kwargs:
+            sig_data += hashing.decode(_id)
+        # sign the data
+        sig = account.sign(sig_data)
+        return sig
 
     # support naming
     def AEName(self, domain):

@@ -1,13 +1,13 @@
 from aeternity.hashing import _int, _int_decode, _binary, _binary_decode, _id, _id_decode, encode, decode, hash_encode
-from aeternity.openapi import OpenAPICli
 from aeternity import identifiers as idf
 from aeternity import defaults
 
 import rlp
 import math
 import pprint
-import namedtupled
 import copy
+from munch import Munch
+from deprecated import deprecated
 
 
 _INT = 0  # int type
@@ -168,7 +168,11 @@ tx_descriptors = {
             "call_data": Fd(12, _ENC, prefix=idf.BYTECODE),
         }},
     (idf.OBJECT_TAG_CONTRACT_CALL_TRANSACTION, 1): {
-        "fee": Fee(SIZE_BASED, base_gas_multiplier=30),
+        "fee": Fee(SIZE_BASED, base_gas_multiplier=(
+            'abi_version', {
+                idf.ABI_FATE: 12,
+                idf.ABI_SOPHIA: 30
+            })),
         "schema": {
             "version": Fd(1),
             "caller_id": Fd(2, _ID),
@@ -389,26 +393,42 @@ tx_descriptors = {
 class TxObject:
     """
     This is a TxObject that is used throughout the SDK for transactions
-    It contains all the info associated to a transaction like transaction data,transaction hash, etx
-
+    It contains all the info associated with a transaction
     """
 
     def __init__(self, **kwargs):
-        self.set_data(kwargs.get("data", None))
+        self._index = {}
+        self.set_data(kwargs.get("data", {}))
         self.tx = kwargs.get("tx", None)
         self.hash = kwargs.get("hash", None)
-        self.set_metadata(kwargs.get("metadata", None))
+        self.set_metadata(kwargs.get("metadata", {}))
+        # self._build_index() # the index building is triggered by the set metadata
 
     def set_data(self, data):
-        self.data = namedtupled.map(data, _nt_name="TxData")
+        self.data = Munch.fromDict(data)
 
     def set_metadata(self, metadata):
-        self.metadata = namedtupled.map(metadata, _nt_name="TxMeta")
+        self.metadata = Munch.fromDict(metadata)
+        self._build_index()
+
+    def _build_index(self):
+        self._index = {}
+        for k, v in Munch.toDict(self.metadata).items():
+            self._index[f"meta.{k}"] = v
+
+        def __bi(data: dict):
+            prefix = "ga." if data.get("tag", -1) == idf.OBJECT_TAG_GA_META_TRANSACTION else ""
+            for k, v in Munch.toDict(data).items():
+                if k == "tx":
+                    __bi(Munch.toDict(v.data))
+                    continue
+                self._index[f"{prefix}{k}"] = v
+        __bi(Munch.toDict(self.data))
 
     def asdict(self):
         t = dict(
-            data=namedtupled.reduce(self.data),
-            metadata=namedtupled.reduce(self.metadata),
+            data=Munch.toDict(self.data),
+            metadata=Munch.toDict(self.metadata),
             tx=self.tx,
         )
         if self.hash is not None:
@@ -418,6 +438,38 @@ class TxObject:
 
         return t
 
+    def get(self, name):
+        """
+        Get the value of a property of the transaction by name,
+        searching recursively in the TxObject structure.
+
+        For GA transaction the properties of the GA use the ga_meta() method
+        below
+
+        :param name: the name of the property to get
+        :return: the property value or None if there is no such property
+        """
+        return self._index.get(name)
+
+    def meta(self, name):
+        """
+        Get the value of a meta property such as the min_fee.
+
+        :param name: the name of the meta property
+        :return: the value of the meta property or none if not found
+        """
+        return self._index.get(f"meta.{name}")
+
+    def ga_meta(self, name):
+        """
+        Get the value of a GA meta transaction property
+
+        :param name: the name of the property to get
+        :return: the property value or None if there is no such property
+        """
+        return self._index.get(f"ga.{name}")
+
+    @deprecated(reason="This method has been deprecated in favour of get('signatures')")
     def get_signatures(self):
         """
         retrieves the list of signatures for a signed transaction, otherwise returns a empty list
@@ -426,6 +478,7 @@ class TxObject:
             return self.data.signatures
         return []
 
+    @deprecated(reason="This method has been deprecated in favour of get('signatures')[index]")
     def get_signature(self, index):
         """
         get the signature at the requested index, or raise type error if there is no such index
@@ -444,7 +497,12 @@ class TxObject:
 
 class TxSigner:
     """
-    TxSigner is used to sign transactions
+    TxSigner is used to compute the signature for transactions
+
+    Args:
+        account (Account): the account that will be signing the transactions
+        network_id (str): the network id of the target network
+
     """
 
     def __init__(self, account, network_id):
@@ -458,9 +516,12 @@ class TxSigner:
     def sign_transaction(self, transaction: TxObject, metadata: dict = None) -> str:
         """
         Sign, encode and compute the hash of a transaction
-        :param tx: the TxObject to be signed
-        :param metadata: additional data to include in the output of the signed transaction object
-        :return: encoded_signed_tx, encoded_signature, tx_hash
+
+        Args:
+            tx (TxObject): the TxObject to be signed
+
+        Returns:
+            the encoded and prefixed signature
         """
         # get the transaction as byte list
         tx_raw = decode(transaction.tx)
@@ -469,10 +530,20 @@ class TxSigner:
         # pack and encode the transaction
         return encode(idf.SIGNATURE, signature)
 
+    def __str__(self):
+        return f"{self.network_id}:{self.account.get_address()}"
+
 
 class TxBuilder:
     """
     TxBuilder is used to build and post transactions to the chain.
+
+    Args:
+       base_gas (int): the base gas value as defined by protocol
+       gas_per_byte (int): the gas per byte as defined by protocol
+       gas_price (int): the gas price as defined by protocol or node configuration
+       key_block_interval (int): the estimated number of minutes between blocks
+
     """
 
     def __init__(self,
@@ -489,19 +560,36 @@ class TxBuilder:
     def compute_tx_hash(encoded_tx: str) -> str:
         """
         Generate the hash from a signed and encoded transaction
-        :param encoded_tx: an encoded signed transaction
+
+        Args:
+            encoded_tx (str): an encoded signed transaction
         """
         tx_raw = decode(encoded_tx)
         return hash_encode(idf.TRANSACTION_HASH, tx_raw)
 
     def compute_min_fee(self, tx_data: dict, tx_descriptor: dict, tx_raw: list) -> int:
+        """
+        Compute the minimum fee for a transaction
+
+        Args:
+            tx_data (dict): the transaction data
+            tx_descriptor (dict): the descriptor of the transaction fields
+            tx_raw: the unencoded rlp data of the transaction
+        Returns:
+            the minimum fee for the transaction
+        """
         # if the fee is none means it is not necessary to compute the fee
         if tx_descriptor.get("fee") is None:
             return 0
         # extract the parameters from the descriptor
         fee_field_index = tx_descriptor.get("schema").get("fee").index
-        base_gas_multiplier = tx_descriptor.get("fee").base_gas_multiplier
         fee_type = tx_descriptor.get("fee").fee_type
+        base_gas_multiplier = tx_descriptor.get("fee").base_gas_multiplier
+        # for property based multiplier
+        if isinstance(base_gas_multiplier, tuple):
+            # check CONTRACT_CALL definition for an example
+            field_modifier_value = tx_data.get(base_gas_multiplier[0])
+            base_gas_multiplier = base_gas_multiplier[1].get(field_modifier_value)
         # if the fee is ttl based compute the ttl component
         ttl_component = 0
         if fee_type is TTL_BASED:
@@ -538,9 +626,11 @@ class TxBuilder:
 
         A specific case is the one for signed transactions that in the api are treated in
         a different ways from other transactions, and their data is mixed with block informations
+
+        :param api_data: a namedtuple of the response obtained from the node api
         """
         # transform the data to a dict since the openapi module maps them to a named tuple
-        tx_data = namedtupled.reduce(api_data)
+        tx_data = Munch.toDict(api_data)
         if "signatures" in tx_data:
             tx_data["tag"] = idf.OBJECT_TAG_SIGNED_TRANSACTION
             tx_data["type"] = idf.TRANSACTION_TAG_TO_TYPE.get(idf.OBJECT_TAG_SIGNED_TRANSACTION)
@@ -616,7 +706,7 @@ class TxBuilder:
         tx_data = copy.deepcopy(data)
         # build the tx object
         txo = TxObject(
-            data=namedtupled.map(tx_data, _nt_name="TxData"),
+            data=Munch.fromDict(tx_data),
             tx=rlp_b64_tx,
         )
         # compute the tx hash
@@ -717,10 +807,17 @@ class TxBuilder:
         rlp_data = decode(tx_string)
         return self._rlptx_to_txobject(rlp_data)
 
-    def tx_signed(self, signatures: list, tx: TxObject, metadata={}):
+    def tx_signed(self, signatures: list, tx: TxObject, metadata={}) -> TxObject:
         """
         Create a signed transaction. This is a special type of transaction
-        as it wraps a normal transaction adding one or more signature
+        as it wraps a normal transaction adding one or more signature.
+
+        Args:
+            signatures: the signatures to add to the transaction
+            tx (TxObject): the enclosed transaction
+            metadata: additional metadata to be saved in the TxObject
+        Returns:
+            the TxObject representing the signed transaction
         """
         body = dict(
             tag=idf.OBJECT_TAG_SIGNED_TRANSACTION,
@@ -779,7 +876,7 @@ class TxBuilder:
         return self._build_txobject(body)
         # return self.api.post_name_preclaim(body=body).tx
 
-    def tx_name_claim(self, account_id, name, name_salt, fee, ttl, nonce) -> TxObject:
+    def tx_name_claim(self, account_id, name, name_salt, fee, ttl, nonce) -> TxObject:  # lgtm [py/similar-function]
         """
         create a preclaim transaction
         :param account_id: the account registering the name
@@ -825,7 +922,7 @@ class TxBuilder:
         )
         return self._build_txobject(body)
 
-    def tx_name_update(self, account_id, name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce) -> TxObject:
+    def tx_name_update(self, account_id, name_id, pointers, name_ttl, client_ttl, fee, ttl, nonce) -> TxObject:  # lgtm [py/similar-function]
         """
         create an update transaction
         :param account_id: the account updating the name
@@ -852,7 +949,7 @@ class TxBuilder:
         return self._build_txobject(body)
         # return self.api.post_name_update(body=body).tx
 
-    def tx_name_transfer(self, account_id, name_id, recipient_id, fee, ttl, nonce) -> TxObject:
+    def tx_name_transfer(self, account_id, name_id, recipient_id, fee, ttl, nonce) -> TxObject:  # lgtm [py/similar-function]
         """
         create a transfer transaction
         :param account_id: the account transferring the name
@@ -1123,13 +1220,3 @@ class TxBuilder:
             tx=tx,
         )
         return self._build_txobject(body)
-
-
-class TxBuilderDebug:
-    def __init__(self, api: OpenAPICli):
-        """
-        :param native: if the transactions should be built by the sdk (True) or requested to the debug api (False)
-        """
-        if api is None:
-            raise ValueError("A initialized api rest client has to be provided to build a transaction using the node internal API ")
-        self.api = api
