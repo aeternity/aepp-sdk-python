@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [7.0.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/7.0.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/6.0.1...7.0.0)) - 2020-01-31
+
+### Bug Fixes
+- fix(ci): Fix CI cron jobs (#325) ([9b959f0](https://github.com/aeternity/aepp-sdk-python/commit/9b959f07b34c81b4bfd41789ccb6a3d27401d6df)).
+- fix(compiler): compiler variant decode (#327) ([4503f3b](https://github.com/aeternity/aepp-sdk-python/commit/4503f3be75a4e940457fa89ba0dec787105a5149)). Related issues/PRs: #328
+- fix(docs): fix link to travis (#317) ([1f5e073](https://github.com/aeternity/aepp-sdk-python/commit/1f5e073d5641f3da80f46c87a3eef0df9de87df4)).
+- fix: run tests also with python 3.8 (#354) ([1f21bcb](https://github.com/aeternity/aepp-sdk-python/commit/1f21bcbd5813114bbc702961c0a152d89c9bf40e)).
+
+### Features
+- feat(ci): Add conditions for cron jobs (#323) ([e8204d8](https://github.com/aeternity/aepp-sdk-python/commit/e8204d80c4d2d9f416352d158e2526ca9c24db98)).
+- feat(ci): add parallel testing for ci (#320) ([6b05ad4](https://github.com/aeternity/aepp-sdk-python/commit/6b05ad493a3e69b1b64cd34389426f35e880f6b0)).
+- feat(ci): enable codecov (#339) ([fe9e9f3](https://github.com/aeternity/aepp-sdk-python/commit/fe9e9f30367ffbd6ee5d8df5621f906f710527c2)).
+- feat(compiler): validate on-chain bytecode (#333) ([1cb0d1a](https://github.com/aeternity/aepp-sdk-python/commit/1cb0d1afa44edea05d4f74e7148e966bae6cc8f2)).
+- feat(contracts): bytecode verification in contract native (#350) ([1bd7929](https://github.com/aeternity/aepp-sdk-python/commit/1bd7929d5e049c77c81ff71379c1def602a99bb0)).
+- feat(contracts): contract_native improvements (#340) ([9056af2](https://github.com/aeternity/aepp-sdk-python/commit/9056af28c6b20e1a9299d0d85cf0ec375d4f0157)).
+- feat: AENS delegation signatures helpers (#353) ([e11d441](https://github.com/aeternity/aepp-sdk-python/commit/e11d441bbaddb32305c505e9f7e73aa7ca5157aa)).
+- feat: high level API to access transaction properties (#338) ([65f490b](https://github.com/aeternity/aepp-sdk-python/commit/65f490bad4810969f66449a8c9ef2777a403174e)). Related issues/PRs: #272
+- feat: replace namedtupled with munch (#335) ([3455714](https://github.com/aeternity/aepp-sdk-python/commit/345571457ee54ff05facd3afbbaee4b1dda418f4)).
+- feat: update compatiblity range to LIMA series (#355) ([154cde7](https://github.com/aeternity/aepp-sdk-python/commit/154cde7ec86f96ae82d656c2e59532a45b30e2e6)).
+
+### Misc
+- add fate specific fee calculation for contract calls (#326) ([59a31d1](https://github.com/aeternity/aepp-sdk-python/commit/59a31d1f656308981e03786e26061b5b746ad4c4)). Related issues/PRs: #292
+- and transfer_by_name, and add spend and transfer by name to cli (#285) ([7a228b0](https://github.com/aeternity/aepp-sdk-python/commit/7a228b0dfcb8fc0b9d348be137bf9f256906a783)).
+- build(deps): bump base58 from 1.0.3 to 2.0.0 (#347) ([1b42a9e](https://github.com/aeternity/aepp-sdk-python/commit/1b42a9e7b263f6e095e70328a58739a31509c690)).
+- build(deps): bump validators from 0.13.0 to 0.14.1 ([70f2617](https://github.com/aeternity/aepp-sdk-python/commit/70f261755f44048bb15fe0edc0ec2a30751e548f)).
+- build(deps): bump validators from 0.14.1 to 0.14.2 ([7c9da39](https://github.com/aeternity/aepp-sdk-python/commit/7c9da39186495d41100361e505dfe51863c491bb)).
+- build(deps): bump websockets from 7.0 to 8.0.2 ([d749144](https://github.com/aeternity/aepp-sdk-python/commit/d749144a84b9ce565fd3404d238152ed78770209)).
+- build(deps-dev): bump coverage from 4.5.4 to 5.0.3 (#346) ([a4e6892](https://github.com/aeternity/aepp-sdk-python/commit/a4e68925591a5b5780888ee0033a6d193b7d2161)).
+- build(deps-dev): bump pytest from 4.6.7 to 5.3.4 ([879619a](https://github.com/aeternity/aepp-sdk-python/commit/879619af8b84db92d128190412125589877083a1)).
+- build(deps-dev): bump sphinx from 2.2.2 to 2.3.1 ([8b4b94a](https://github.com/aeternity/aepp-sdk-python/commit/8b4b94addf5ba286e338de516e2a956a46e346e5)).
+- chore(ci): replace jenkins with travis (#316) ([c1c5217](https://github.com/aeternity/aepp-sdk-python/commit/c1c5217f28f146828410dca673a5396af37760c5)).
+- doc: add gitolog as dev dependency ([9fe996a](https://github.com/aeternity/aepp-sdk-python/commit/9fe996a15a94497195b6d96a7b8ae2ade55bbb6f)).
+- docs: add documentation for offline interaction (#356) ([f9a7792](https://github.com/aeternity/aepp-sdk-python/commit/f9a7792780c486f5e1b593e7809a072261adcee5)). Related issues/PRs: #318
+- Feature/contracts dry run (#284) ([f0f1397](https://github.com/aeternity/aepp-sdk-python/commit/f0f1397ecdb7727b405bc4c2d4b5d649774a2a18)).
+- fix alerts from lgtm (#296) ([e1e2f51](https://github.com/aeternity/aepp-sdk-python/commit/e1e2f51ca86064df97e5db7044510be33e04c6bf)).
+
+
 ## [6.2.0](https://github.com/aeternity/aepp-sdk-python/releases/tag/6.2.0) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/6.1.0...6.2.0))
 
 ### Features
@@ -31,7 +68,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Misc
 - add transfer_by_name, and add spend and transfer by name to cli (#285) ([7a228b0](https://github.com/aeternity/aepp-sdk-python/commit/7a228b0dfcb8fc0b9d348be137bf9f256906a783)).
 - docs: add documentation using sphinx  (#298) ([05b0f17](https://github.com/aeternity/aepp-sdk-python/commit/05b0f17b2a3301922fbc8299ac6e3e95eb949990)). Related issues/PRs: #170
-- docs: add LGTM badge (#297) ([325fa53](https://github.com/aeternity/aepp-sdk-python/commit/325fa53f8604dca3180785bf97c46553f676bd17)).
 
 
 ## [6.0.1](https://github.com/aeternity/aepp-sdk-python/releases/tag/6.0.1) ([compare](https://github.com/aeternity/aepp-sdk-python/compare/6.0.0...6.0.1)) - 2019-10-30

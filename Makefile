@@ -64,7 +64,7 @@ deps:
 
 changelog:
 	@echo build changelog
-	gitolog -t keepachangelog -s angular . -o CHANGELOG.md 
+	git-changelog -t keepachangelog -s angular . -o CHANGELOG.md 
 	@echo done
 
 docs-html:
