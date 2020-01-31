@@ -25,7 +25,7 @@ blind_auth_contract = """contract BlindAuth =
 def test_node_spend_native(chain_fixture):
     node_cli = chain_fixture.NODE_CLI
     sender_account = chain_fixture.ALICE
-    account = Account.generate().get_address()
+    recipient_id = Account.generate().get_address()
     # with numbers 
     tx = node_cli.spend(sender_account, recipient_id, 100)
     print("DATA", tx)
