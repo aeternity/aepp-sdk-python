@@ -13,6 +13,7 @@ Create an account (non HD)
 Generate a new account
 
 ::
+
   # import the Account class from signing
   from aeternity.signing import Account
 

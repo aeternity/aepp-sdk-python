@@ -1,10 +1,4 @@
 import pytest
-from pytest import skip
-
-#
-# SOPHIA
-#
-
 
 def _sophia_contract_tx_create_online(node_cli, account):
     tests = [

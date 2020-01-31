@@ -595,6 +595,74 @@ class NodeClient:
         self.broadcast_transaction(tx)
         return tx
 
+    def delegate_name_preclaim_signature(self, account: Account, contract_id: str):
+        """
+        Helper to generate a signature to delegate a name preclaim to a contract.
+
+        Args:
+            account: the account authorizing the transaction
+            contract_id: the if of the contract executing the transaction
+        Returns:
+            the signature to use for delegation
+        """
+        return self._delegate_common(account, contract_id)
+
+    def delegate_name_claim_signature(self, account: Account, contract_id: str, name: str):
+        """
+        Helper to generate a signature to delegate a name claim to a contract.
+
+        Args:
+            account: the account authorizing the transaction
+            contract_id: the if of the contract executing the transaction
+            name: the name being claimed
+        Returns:
+            the signature to use for delegation
+        """
+        return self._delegate_common(account, hashing.name_id(name), contract_id)
+
+    def delegate_name_transfer_signature(self, account: Account, contract_id: str, name: str):
+        """
+        Helper to generate a signature to delegate a name tranfer to a contract.
+
+        Args:
+            account: the account authorizing the transaction
+            contract_id: the if of the contract executing the transaction
+            name: the name being transferred
+        Returns:
+            the signature to use for delegation
+        """
+        return self._delegate_common(account, hashing.name_id(name), contract_id)
+
+    def delegate_name_revoke_signature(self, account: Account, contract_id: str, name: str):
+        """
+        Helper to generate a signature to delegate a name revoke to a contract.
+
+        Args:
+            account: the account authorizing the transaction
+            contract_id: the if of the contract executing the transaction
+            name: the name being revoked
+        Returns:
+            the signature to use for delegation
+        """
+        return self._delegate_common(account, hashing.name_id(name), contract_id)
+
+    def _delegate_common(self, account: Account, *kwargs):
+        """
+        Utility method to create a delegate signature for a contract
+
+        Args:
+            account: the account authorizing the transaction
+            kwargs: the list of additional entity ids to be added to the data to be signed
+        Returns:
+            the signature to use for delegation
+        """
+        sig_data = self.config.network_id.encode("utf8") + hashing.decode(account.get_address())
+        for _id in kwargs:
+            sig_data += hashing.decode(_id)
+        # sign the data
+        sig = account.sign(sig_data)
+        return sig
+
     # support naming
     def AEName(self, domain):
         return aens.AEName(domain, client=self)
