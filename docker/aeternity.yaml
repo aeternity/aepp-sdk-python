@@ -25,6 +25,8 @@ chain:
     "3": 4
     "4": 6
 
+mempool:
+  nonce_offset: 1000
 
 mining:
   autostart: true
