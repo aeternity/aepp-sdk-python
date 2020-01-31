@@ -1,4 +1,4 @@
-from aeternity import utils, defaults, identifiers, signing, compiler
+from aeternity import utils, defaults, identifiers, signing, compiler, hashing
 from aeternity.contract import Contract
 
 from munch import Munch
@@ -283,7 +283,8 @@ class SophiaTransformation:
 
     def to_sophia_bytes(self, arg, generic, bindings={}):
         if isinstance(arg, str):
-            return f'#{arg}'
+            val = hashing.decode(arg).hex() if utils.is_valid_hash(arg) else arg
+            return f'#{val}'
         elif isinstance(arg, bytes):
             return f"#{arg.hex()}"
 

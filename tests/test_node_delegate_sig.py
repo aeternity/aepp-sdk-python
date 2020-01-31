@@ -57,7 +57,7 @@ def test_node_contract_signature_delegation(compiler_fixture, chain_fixture):
 
     # aens calls
     signature = ae_cli.delegate_name_preclaim_signature(account, contract_id)
-    call, r = contract_native.signedPreclaim(account.get_address(), hashing.decode(c_id), signature)
+    call, r = contract_native.signedPreclaim(account.get_address(), c_id, signature)
     assert(call.return_type == 'ok')
     ae_cli.wait_for_confirmation(call.tx_hash)
 
