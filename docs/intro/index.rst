@@ -16,6 +16,7 @@ place: read this material to quickly get up and running.
    tutorial04-ga
    tutorial05-cli
    tutorial06-hdwallet
+   tutorial07-offline
    contributing
 
 .. seealso::

@@ -370,12 +370,14 @@ class NodeClient:
         - the account nonce is >= of the transaction nonce (transaction is in an illegal state)
         - the ttl of the transaction or the one passed as parameter has been reached
 
-        :param tx_hash: the hash of the transaction to wait for
-        :param max_retries: the maximum number of retries to test for transaction
-        :param polling_interval: the interval between transaction polls
-        :return: the block height of the transaction if it has been found
-
-        :raises TransactionWaitTimeoutExpired: if the transaction hasn't been found
+        Args:
+            tx (TxObject|str): the TxObject or transaction hash of the transaction to wait for
+            max_retries (int): the maximum number of retries to test for transaction
+            polling_interval (int): the interval between transaction polls
+        Returns:
+            the block height of the transaction if it has been found
+        Raises:
+            TransactionWaitTimeoutExpired: if the transaction hasn't been found
         """
 
         retries = max_retries if max_retries is not None else self.config.poll_tx_max_retries
@@ -417,11 +419,14 @@ class NodeClient:
         Wait for a transaction to be confirmed by at least "key_block_confirmation_num" blocks (default 3)
         The amount of blocks can be configured in the Config object using key_block_confirmation_num parameter
 
-        :param tx_hash: the hash of the transaction to wait for
-        :param max_retries: the maximum number of retries to test for transaction
-        :param polling_interval: the interval between transaction polls
-        :return: the block height of the transaction if it has been found
-
+        Args:
+            tx (TxObject|str): the TxObject or transaction hash of the transaction to wait for
+            max_retries (int): the maximum number of retries to test for transaction
+            polling_interval (int): the interval between transaction polls
+        Returns:
+            the block height of the transaction if it has been found
+        Raises:
+            TransactionWaitTimeoutExpired: if the transaction hasn't been found
         """
         tx_hash = tx.hash if isinstance(tx, transactions.TxObject) else tx
         # first wait for the transaction to be found
