@@ -222,6 +222,17 @@ pycodestyle = ">=2.5.0,<2.6.0"
 pyflakes = ">=2.1.0,<2.2.0"
 
 [[package]]
+category = "dev"
+description = "Automatic Changelog generator using Jinja2 templates."
+name = "gitolog"
+optional = false
+python-versions = "*"
+version = "0.1.1"
+
+[package.dependencies]
+jinja2 = "*"
+
+[[package]]
 category = "main"
 description = "Internationalized Domain Names in Applications (IDNA)"
 name = "idna"
@@ -708,7 +719,7 @@ testing = ["jaraco.itertools"]
 test = []
 
 [metadata]
-content-hash = "67aa7be863fdaf0d105bce66c4d0ef9514d6618d7685db012cc791c4f0d05899"
+content-hash = "6053b5b1915728cf5c9b0c749b27ad563d88bf0f1fb2b3660edaa8859091342a"
 python-versions = "^3.7"
 
 [metadata.files]
@@ -850,6 +861,9 @@ eth-utils = [
 flake8 = [
     {file = "flake8-3.7.9-py2.py3-none-any.whl", hash = "sha256:49356e766643ad15072a789a20915d3c91dc89fd313ccd71802303fd67e4deca"},
     {file = "flake8-3.7.9.tar.gz", hash = "sha256:45681a117ecc81e870cbf1262835ae4af5e7a8b08e40b944a8a6e6b895914cfb"},
+]
+gitolog = [
+    {file = "gitolog-0.1.1-py3-none-any.whl", hash = "sha256:a0b13982be9c67bdf503963a80778b92ea3c0635143f7f8ba53347b4a7196c87"},
 ]
 idna = [
     {file = "idna-2.8-py2.py3-none-any.whl", hash = "sha256:ea8b7f6188e6fa117537c3df7da9fc686d485087abf6ac197f9c46432f7e4a3c"},
