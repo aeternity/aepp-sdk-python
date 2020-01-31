@@ -497,7 +497,12 @@ class TxObject:
 
 class TxSigner:
     """
-    TxSigner is used to sign transactions
+    TxSigner is used to compute the signature for transactions
+
+    Args:
+        account (Account): the account that will be signing the transactions
+        network_id (str): the network id of the target network
+
     """
 
     def __init__(self, account, network_id):
@@ -511,9 +516,12 @@ class TxSigner:
     def sign_transaction(self, transaction: TxObject, metadata: dict = None) -> str:
         """
         Sign, encode and compute the hash of a transaction
-        :param tx: the TxObject to be signed
-        :param metadata: additional data to include in the output of the signed transaction object
-        :return: encoded_signed_tx, encoded_signature, tx_hash
+
+        Args:
+            tx (TxObject): the TxObject to be signed
+
+        Returns:
+            the encoded and prefixed signature
         """
         # get the transaction as byte list
         tx_raw = decode(transaction.tx)
@@ -529,6 +537,13 @@ class TxSigner:
 class TxBuilder:
     """
     TxBuilder is used to build and post transactions to the chain.
+
+    Args:
+       base_gas (int): the base gas value as defined by protocol
+       gas_per_byte (int): the gas per byte as defined by protocol
+       gas_price (int): the gas price as defined by protocol or node configuration
+       key_block_interval (int): the estimated number of minutes between blocks
+
     """
 
     def __init__(self,
@@ -545,12 +560,24 @@ class TxBuilder:
     def compute_tx_hash(encoded_tx: str) -> str:
         """
         Generate the hash from a signed and encoded transaction
-        :param encoded_tx: an encoded signed transaction
+
+        Args:
+            encoded_tx (str): an encoded signed transaction
         """
         tx_raw = decode(encoded_tx)
         return hash_encode(idf.TRANSACTION_HASH, tx_raw)
 
     def compute_min_fee(self, tx_data: dict, tx_descriptor: dict, tx_raw: list) -> int:
+        """
+        Compute the minimum fee for a transaction
+
+        Args:
+            tx_data (dict): the transaction data
+            tx_descriptor (dict): the descriptor of the transaction fields
+            tx_raw: the unencoded rlp data of the transaction
+        Returns:
+            the minimum fee for the transaction
+        """
         # if the fee is none means it is not necessary to compute the fee
         if tx_descriptor.get("fee") is None:
             return 0
@@ -780,10 +807,17 @@ class TxBuilder:
         rlp_data = decode(tx_string)
         return self._rlptx_to_txobject(rlp_data)
 
-    def tx_signed(self, signatures: list, tx: TxObject, metadata={}):
+    def tx_signed(self, signatures: list, tx: TxObject, metadata={}) -> TxObject:
         """
         Create a signed transaction. This is a special type of transaction
-        as it wraps a normal transaction adding one or more signature
+        as it wraps a normal transaction adding one or more signature.
+
+        Args:
+            signatures: the signatures to add to the transaction
+            tx (TxObject): the enclosed transaction
+            metadata: additional metadata to be saved in the TxObject
+        Returns:
+            the TxObject representing the signed transaction
         """
         body = dict(
             tag=idf.OBJECT_TAG_SIGNED_TRANSACTION,

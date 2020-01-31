@@ -7,4 +7,6 @@ API Reference
 
    client_and_config
    txobject
+   txbuilder
+   txsigner
    constants
