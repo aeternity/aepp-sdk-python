@@ -32,7 +32,7 @@ contractAens = """contract DelegateTest =
 """
 
 
-# @pytest.mark.skip("blocked by https://github.com/aeternity/aepp-sdk-python/issues/306")
+@pytest.mark.skip("blocked by https://github.com/aeternity/aepp-sdk-python/issues/306")
 def test_node_contract_signature_delegation(compiler_fixture, chain_fixture):
     compiler = compiler_fixture.COMPILER
     account = chain_fixture.ALICE
