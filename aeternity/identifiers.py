@@ -270,3 +270,6 @@ ACCOUNT_KIND_GENERALIZED = "generalized"
 SECRET_TYPE_BIP39 = "ed25519-bip39-mnemonic"
 SECRET_TYPE_SLIP0010 = "ed25519-slip0010-masterkey"
 SECRET_TYPE_SLIP0010_LEGACY = "ed25519"
+
+# Arbitrary data signature prefix
+GENERIC_SIGNATURE_PREFIX = "\x19Aeternity Signed Message:\n"

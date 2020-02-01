@@ -190,6 +190,21 @@ def test_cli_phases_spend(chain_fixture, tempdir):
     recipient_account = chain_fixture.NODE_CLI.get_account_by_pubkey(pubkey=recipient_id)
     assert recipient_account.balance == 100
 
+def test_cli_sign_data(chain_fixture, tempdir):
+    account_path = _account_path(tempdir, chain_fixture.ALICE)
+    account = chain_fixture.ALICE
+    # call the cli
+    j = call_aecli('account', 'sign-data', account_path, '--password', 'aeternity_bc', 'some', 'random', 'data', 'th_2ChfZdpFPqw6VKPCb3vQyVXTeRrCLrzSphSfs8VFybpZKb1Zkf')
+    # test that the recipient account has the requested amount
+    signature = j.get("signature")
+    sign_account = j.get("account")
+    assert(sign_account == account.get_address())
+    assert(chain_fixture.ALICE.verify(
+        utils.prepare_data_to_sign(['some', 'random', 'data', 'th_2ChfZdpFPqw6VKPCb3vQyVXTeRrCLrzSphSfs8VFybpZKb1Zkf']),
+        signature
+    ))
+    # call the cli
+
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
 # @pytest.mark.skip("Have to suppress the test for a false positive due ci input")
 def test_cli_name_claim(chain_fixture, tempdir):
@@ -305,3 +320,4 @@ def __fullclaim_domain(chain_fixture, tempdir, recipient_address):
     # now run the name update
     j = call_aecli('name', 'update', '--password', 'aeternity_bc', account_path, domain, recipient_address)
     return domain
+

@@ -4,6 +4,7 @@ from aeternity.signing import Account, is_signature_valid
 from aeternity.utils import is_valid_hash
 from aeternity import hashing, identifiers
 import os
+import random
 
 
 def test_signing_create_transaction_signature(chain_fixture):
@@ -109,3 +110,9 @@ def test_signing_get_address():
     assert(a.get_address(format=identifiers.ACCOUNT_SOFIA_FORMAT) != '8134464ef14b1433790e259d40b6ad8ca39f397a2bbc5261eeba1018a67ce35a')
     assert(a.get_address(format=identifiers.ACCOUNT_RAW_FORMAT) == b'\x814FN\xf1K\x143y\x0e%\x9d@\xb6\xad\x8c\xa3\x9f9z+\xbcRa\xee\xba\x10\x18\xa6|\xe3Z')
     assert(a.get_address(format=identifiers.ACCOUNT_RAW_FORMAT) != b'\x814FN\xf1K\x143y\x0e%\x9d@\xb6\x00\x8c\xa3\x9f9z+\xbcRa\xee\xba\x10\x18\xa6|\xe3Z')
+
+def test_signing_account_str():
+    for i in range(random.randint(100, 10000)):
+        a = Account.generate()
+        assert(str(a) == a.get_address())
+        assert(repr(a) == a.get_address())

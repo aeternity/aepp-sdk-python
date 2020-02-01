@@ -8,10 +8,11 @@ from aeternity import _version
 
 from aeternity.node import NodeClient, Config
 from aeternity.transactions import TxSigner, TxBuilder, TxObject
-from aeternity.identifiers import NETWORK_ID_MAINNET
+from aeternity.identifiers import NETWORK_ID_MAINNET, SIGNATURE
 from . import utils, signing, aens, defaults, exceptions
 from aeternity.compiler import CompilerClient
 from aeternity.openapi import OpenAPIClientException
+from aeternity.hashing import encode
 from datetime import datetime, timezone
 
 
@@ -411,6 +412,27 @@ def account_sign(keystore_name, password, network_id, unsigned_transaction, json
         txs = txb.tx_signed([signature], txu, metadata={"network_id": network_id})
         # _print_object(txu, title='unsigned transaction')
         _print_object(txs, title='signed transaction')
+    except Exception as e:
+        _print_error(e, exit_code=1)
+
+
+@account.command('sign-data', help="Sign arbitrary data")
+@click.argument('keystore_name', required=True)
+@click.argument('data', nargs=-1, type=click.UNPROCESSED, required=True)
+@global_options
+@account_options
+def account_sign_data(keystore_name, password, data, json_):
+    try:
+        set_global_options(json_)
+        account, _ = _account(keystore_name, password=password)
+        # prepare the data to sign
+        sig_data = utils.prepare_data_to_sign(data)
+        # create the signature
+        signature = encode(SIGNATURE, account.sign(sig_data))
+        _print_object({
+            "account": account.get_address(),
+            "signature": signature
+        }, title="data signature")
     except Exception as e:
         _print_error(e, exit_code=1)
 
