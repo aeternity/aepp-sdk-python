@@ -227,7 +227,7 @@ description = "Automatic Changelog generator using Jinja2 templates."
 name = "git-changelog"
 optional = false
 python-versions = ">=3.6,<4.0"
-version = "0.2.0"
+version = "0.3.0"
 
 [package.dependencies]
 Jinja2 = ">=2.10,<3.0"
@@ -719,7 +719,7 @@ testing = ["jaraco.itertools"]
 test = []
 
 [metadata]
-content-hash = "9c146bf1228cd0a6692ad64c1fc2e54570e4e020961f31015d90fb0fd665341b"
+content-hash = "44aa7ab63410c83d9df8c7148a705f59a7ba0f6ef2832340bf0a205d9917f7a4"
 python-versions = "^3.7"
 
 [metadata.files]
@@ -863,8 +863,8 @@ flake8 = [
     {file = "flake8-3.7.9.tar.gz", hash = "sha256:45681a117ecc81e870cbf1262835ae4af5e7a8b08e40b944a8a6e6b895914cfb"},
 ]
 git-changelog = [
-    {file = "git-changelog-0.2.0.tar.gz", hash = "sha256:a38a22af622d414afb2e9ecd21570d284e957757025ffd4c238d3fbb744326b0"},
-    {file = "git_changelog-0.2.0-py3-none-any.whl", hash = "sha256:549925004b061638aaa52f4c7a7f8e4fcefe34a9f21fa7d112d58c66579d08b9"},
+    {file = "git-changelog-0.3.0.tar.gz", hash = "sha256:4da7dd65de09adfca154c79962a75586ae95abe5a4a3ef615d1e7d6a8ddaa212"},
+    {file = "git_changelog-0.3.0-py3-none-any.whl", hash = "sha256:1089859af1d64cb2e7c4b09f7b89e22416f4aab68c1947cd85fd9233c09a2cb3"},
 ]
 idna = [
     {file = "idna-2.8-py2.py3-none-any.whl", hash = "sha256:ea8b7f6188e6fa117537c3df7da9fc686d485087abf6ac197f9c46432f7e4a3c"},
