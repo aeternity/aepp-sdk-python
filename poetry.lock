@@ -669,7 +669,7 @@ description = "Python Data Validation for Humans™."
 name = "validators"
 optional = false
 python-versions = "*"
-version = "0.14.2"
+version = "0.15.0"
 
 [package.dependencies]
 decorator = ">=3.4.0"
@@ -719,7 +719,7 @@ testing = ["jaraco.itertools"]
 test = []
 
 [metadata]
-content-hash = "9c146bf1228cd0a6692ad64c1fc2e54570e4e020961f31015d90fb0fd665341b"
+content-hash = "fbe16f3d0d18b6a20ae8a9ba8e5012351a14a34b0f8757fedee38d41b2563ba6"
 python-versions = "^3.7"
 
 [metadata.files]
@@ -1089,7 +1089,7 @@ urllib3 = [
     {file = "urllib3-1.25.8.tar.gz", hash = "sha256:87716c2d2a7121198ebcb7ce7cccf6ce5e9ba539041cfbaeecfb641dc0bf6acc"},
 ]
 validators = [
-    {file = "validators-0.14.2.tar.gz", hash = "sha256:b192e6bde7d617811d59f50584ed240b580375648cd032d106edeb3164099508"},
+    {file = "validators-0.15.0.tar.gz", hash = "sha256:31e8bb01b48b48940a021b8a9576b840f98fa06b91762ef921d02cb96d38727a"},
 ]
 wcwidth = [
     {file = "wcwidth-0.1.8-py2.py3-none-any.whl", hash = "sha256:8fd29383f539be45b20bd4df0dc29c20ba48654a41e661925e612311e9f3c603"},
