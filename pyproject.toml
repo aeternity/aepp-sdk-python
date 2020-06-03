@@ -37,7 +37,7 @@ mnemonic = "^0.19.0"
 munch = "^2.5"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.3"
+pytest = "^5.4"
 flake8 = "^3.7"
 pytest-cov = "^2.7"
 coverage = "^5.0"
