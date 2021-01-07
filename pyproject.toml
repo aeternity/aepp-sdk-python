@@ -43,7 +43,7 @@ pytest-cov = "^2.7"
 coverage = "^5.0"
 sphinx = "^2.3"
 sphinx_rtd_theme = "^0.4.3"
-git-changelog = "^0.2.0"
+git-changelog = "^0.4.2"
 
 [tool.poetry.extras]
 test = ["coverage", "pytest"]
